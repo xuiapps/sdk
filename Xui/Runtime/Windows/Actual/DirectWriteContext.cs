@@ -10,14 +10,14 @@ namespace Xui.Runtime.Windows.Actual;
 /// only a <see cref="DWrite.Factory"/> — making it suitable for use outside render passes
 /// (e.g., during pointer event hit-testing for text selection).
 /// </summary>
-public class DWriteTextMeasureContext : ITextMeasureContext
+public class DirectWriteContext : ITextMeasureContext
 {
     private readonly DWrite.Factory dwriteFactory;
 
     private DWrite.TextFormat.Ptr textFormat;
     private Core.Canvas.FontMetrics currentFontMetrics;
 
-    public DWriteTextMeasureContext(DWrite.Factory dwriteFactory)
+    public DirectWriteContext(DWrite.Factory dwriteFactory)
     {
         this.dwriteFactory = dwriteFactory;
         this.dwriteFactory.AddRef();

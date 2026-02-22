@@ -42,18 +42,9 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
     /// </summary>
     private NFloat extendedFrameTopOffset;
 
-    public nint CompositionFrameHandle
-    {
-        get
-        {
-            if (this.Renderer is D2DComp d2dComp)
-            {
-                return d2dComp.FrameLatencyHandle;
-            }
+    internal NFloat ExtendedFrameTopOffset => this.extendedFrameTopOffset;
 
-            return 0;
-        }
-    }
+    public nint CompositionFrameHandle => this.Renderer.FrameLatencyHandle;
 
     private static int OnMessageStatic(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
     {
@@ -106,8 +97,7 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
         };
         Marshal.FreeHGlobal(lpszClassNamePtr);
 
-        // this.Renderer = new D2D(this);
-        this.Renderer = new D2DComp(this);
+        this.Renderer = new DirectXContext(this);
 
         ushort classAtom = RegisterClassEx(w);
 
@@ -205,7 +195,7 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
     protected internal Xui.Core.Abstract.IWindow Abstract { get; }
 
-    public RenderTarget Renderer { get; }
+    public DirectXContext Renderer { get; }
 
     public string Title
     {
@@ -219,15 +209,15 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
     public bool RequireKeyboard { get; set; }
 
-    private DWriteTextMeasureContext? textMeasureContext;
+    private DirectWriteContext? textMeasureContext;
 
     public ITextMeasureContext? TextMeasureContext
     {
         get
         {
-            if (this.textMeasureContext == null && this.Renderer is D2DComp d2dComp && d2dComp.DWriteFactory is { } factory)
+            if (this.textMeasureContext == null && this.Renderer.DWriteFactory is { } factory)
             {
-                this.textMeasureContext = new DWriteTextMeasureContext(factory);
+                this.textMeasureContext = new DirectWriteContext(factory);
             }
 
             return this.textMeasureContext;
@@ -250,7 +240,7 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
                 uint clientH = (uint)(rc.Bottom - rc.Top);
                 if (clientW > 0 && clientH > 0)
                 {
-                    ((D2DComp)this.Renderer).ResizeBuffers(hWnd, clientW, clientH);
+                    this.Renderer.ResizeBuffers(hWnd, clientW, clientH);
                     this.invalid = true;
                     this.Render();
                     this.invalid = true;
@@ -630,10 +620,7 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
     private void EnsureRendererInitialized()
     {
-        if (this.Renderer is D2DComp d2dComp)
-        {
-            d2dComp.EnsureInitialized(this.Hwnd);
-        }
+        this.Renderer.EnsureInitialized(this.Hwnd);
     }
 
     public void Show()

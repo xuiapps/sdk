@@ -9,17 +9,13 @@ using static Xui.Runtime.Windows.DWrite;
 
 namespace Xui.Runtime.Windows.Actual;
 
-public partial class Direct2DContext : IDisposable, IContext, IBitmapContext, IImageDrawingContext
+public partial class Direct2DContext : IContext
 {
     private readonly RenderTarget RenderTarget;
 
     private readonly D2D1.Factory3 D2D1Factory;
 
     private readonly DWrite.Factory DWriteFactory;
-
-    private readonly D3D11.Device d3d11Device;
-
-    private readonly Dictionary<string, Win32Bitmap> bitmapCache = new();
 
     private PaintStruct stroke;
 
@@ -74,7 +70,7 @@ public partial class Direct2DContext : IDisposable, IContext, IBitmapContext, II
         public Core.Canvas.FontMetrics FontMetrics;
     }
 
-    public Direct2DContext(RenderTarget renderTarget, D2D1.Factory3 d2d1Factory, DWrite.Factory dWriteFactory, D3D11.Device d3d11Device)
+    public Direct2DContext(RenderTarget renderTarget, D2D1.Factory3 d2d1Factory, DWrite.Factory dWriteFactory)
     {
         this.RenderTarget = renderTarget;
         this.RenderTarget.AddRef();
@@ -84,9 +80,6 @@ public partial class Direct2DContext : IDisposable, IContext, IBitmapContext, II
 
         this.DWriteFactory = dWriteFactory;
         this.DWriteFactory.AddRef();
-
-        this.d3d11Device = d3d11Device;
-        this.d3d11Device.AddRef();
 
         this.stroke = new PaintStruct(this.RenderTarget, Colors.Black);
         this.fill = new PaintStruct(this.RenderTarget, Colors.White);
@@ -223,7 +216,7 @@ public partial class Direct2DContext : IDisposable, IContext, IBitmapContext, II
 
     void IPenContext.SetFill(Core.Canvas.Bitmap bitmap)
     {
-        if (bitmap is Win32Bitmap wb)
+        if (bitmap is DirectXBitmap wb)
             this.fill.SetBitmapBrush(wb, this.RenderTarget);
     }
 
@@ -785,120 +778,23 @@ public partial class Direct2DContext : IDisposable, IContext, IBitmapContext, II
         this.RenderTarget.SetTransform(m);
     }
 
-    unsafe Core.Canvas.Bitmap IBitmapContext.LoadBitmap(string uri)
-    {
-        if (this.bitmapCache.TryGetValue(uri, out var cached))
-            return cached;
-
-        // TODO: This probably needs to move in the window,
-        // images will be used in 3D as well
-        // factories are very expensive to create,
-        // construct them once on startup
-        using var factory = WIC.CreateImagingFactory();
-        using var decoder = factory.CreateDecoderFromFilename(uri);
-        using var frame   = decoder.GetFrame(0);
-        using var conv    = factory.CreateFormatConverter();
-
-        // Premultiplied bytes
-        conv.Initialize(frame, WIC.PixelFormats.Pbgra32);
-        conv.GetSize(out uint w, out uint h);
-
-        uint stride  = w * 4;
-        uint bufSize = stride * h;
-
-        byte* pixels = (byte*)NativeMemory.Alloc(bufSize);
-        try
-        {
-            conv.CopyPixels(stride, bufSize, pixels);
-
-            var desc = new D3D11.Texture2DDesc
-            {
-                Width          = w,
-                Height         = h,
-                MipLevels      = 1,
-                ArraySize      = 1,
-                Format         = DXGI.Format.B8G8R8A8_UNORM,
-                SampleDesc     = new DXGI.SampleDesc { Count = 1, Quality = 0 },
-                Usage          = 0, // D3D11_USAGE_DEFAULT
-                // BindFlags      = (uint)(D3D11.BindFlags.ShaderResource | D3D11.BindFlags.RenderTarget),
-                BindFlags      = (uint)D3D11.BindFlags.ShaderResource,
-                CPUAccessFlags = 0,
-                MiscFlags      = 0,
-            };
-
-            var sub = new D3D11.SubresourceData
-            {
-                pSysMem     = pixels,
-                SysMemPitch = stride,
-            };
-
-            var texture = this.d3d11Device.CreateTexture2D(desc, sub);
-
-            void* surfacePtr = texture.QueryInterface(in DXGI.Surface.IID);
-            using var surface = new DXGI.Surface(surfacePtr);
-
-            var bitmapProps = new BitmapProperties1
-            {
-                PixelFormat = new PixelFormat
-                {
-                    Format    = DXGI.Format.B8G8R8A8_UNORM,
-                    AlphaMode = AlphaMode.Premultiplied,
-                },
-                BitmapOptions = BitmapOptions.None,
-                DpiX = 96.0f,
-                DpiY = 96.0f,
-            };
-
-            var d2dBitmap = ((DeviceContext)this.RenderTarget).CreateBitmapFromDxgiSurface(surface, bitmapProps);
-
-            var result = new Win32Bitmap(texture, d2dBitmap, w, h);
-            this.bitmapCache[uri] = result;
-            return result;
-        }
-        finally
-        {
-            NativeMemory.Free(pixels);
-        }
-    }
-
-    // Simpler version that doesn't create direct 3d texture
-    // Core.Canvas.Bitmap IBitmapContext.LoadBitmap(string uri)
-    // {
-    //     if (this.bitmapCache.TryGetValue(uri, out var cached))
-    //         return cached;
-
-    //     using var factory = WIC.CreateImagingFactory();
-    //     using var decoder = factory.CreateDecoderFromFilename(uri);
-    //     using var frame   = decoder.GetFrame(0);
-    //     using var conv    = factory.CreateFormatConverter();
-    //     conv.Initialize(frame, WIC.PixelFormats.Pbgra32);
-    //     conv.GetSize(out uint w, out uint h);
-
-    //     // Pass the Pbgra32-converted IWICBitmapSource — D2D1 uploads it directly to the GPU.
-    //     var d2dBitmap = ((DeviceContext)this.RenderTarget).CreateBitmapFromWicBitmap(conv);
-
-    //     var result = new Win32Bitmap(null, d2dBitmap, w, h);
-    //     this.bitmapCache[uri] = result;
-    //     return result;
-    // }
-
     void IImageDrawingContext.DrawImage(Core.Canvas.Bitmap image, Rect dest)
     {
-        if (image is not Win32Bitmap wb) return;
+        if (image is not DirectXBitmap wb) return;
         RectF d = dest;
         this.RenderTarget.DrawBitmap(wb.D2D1Bitmap, d, 1f);
     }
 
     void IImageDrawingContext.DrawImage(Core.Canvas.Bitmap image, Rect dest, NFloat opacity)
     {
-        if (image is not Win32Bitmap wb) return;
+        if (image is not DirectXBitmap wb) return;
         RectF d = dest;
         this.RenderTarget.DrawBitmap(wb.D2D1Bitmap, d, (float)opacity);
     }
 
     void IImageDrawingContext.DrawImage(Core.Canvas.Bitmap image, Rect source, Rect dest, NFloat opacity)
     {
-        if (image is not Win32Bitmap wb) return;
+        if (image is not DirectXBitmap wb) return;
         RectF s = source;
         RectF d = dest;
         this.RenderTarget.DrawBitmap(wb.D2D1Bitmap, d, (float)opacity, s);
@@ -1044,7 +940,7 @@ public partial class Direct2DContext : IDisposable, IContext, IBitmapContext, II
             this.PaintStyle = PaintStyle.LinearGradient;
         }
 
-        public void SetBitmapBrush(Win32Bitmap bitmap, RenderTarget renderTarget)
+        public void SetBitmapBrush(DirectXBitmap bitmap, RenderTarget renderTarget)
         {
             this.Brush.Dispose();
             // Wrap (Tile) in both axes + Linear interpolation — matches createPattern("repeat") semantics
