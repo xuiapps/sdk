@@ -328,6 +328,18 @@ public partial class Direct2DContext : IDisposable, IContext, IBitmapContext, II
         this.ResetBrushAlpha(this.fill.Brush);
     }
 
+    void IImageDrawingContext.DrawImage(IImage image, Rect destination)
+    {
+        if (image is Win32Bitmap wb)
+            this.RenderTarget.DrawBitmap(wb.D2D1Bitmap, destination, this.globalAlpha);
+    }
+
+    void IImageDrawingContext.DrawImage(IImage image, Rect source, Rect destination)
+    {
+        if (image is Win32Bitmap wb)
+            this.RenderTarget.DrawBitmap(wb.D2D1Bitmap, destination, source, this.globalAlpha);
+    }
+
     void ITextDrawingContext.FillText(string text, Point pos)
     {
         if (this.textFormat.IsNull)

@@ -40,4 +40,10 @@ public interface IWindow
     /// during pointer events. Returns null on platforms that do not support it.
     /// </summary>
     ITextMeasureContext? TextMeasureContext => null;
+
+    /// <summary>
+    /// Gets the image factory for this window, used to load and cache GPU-resident images.
+    /// Returns null on platforms that do not support it.
+    /// </summary>
+    IImageFactory? ImageFactory => null;
 }

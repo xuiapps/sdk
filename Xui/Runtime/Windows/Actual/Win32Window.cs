@@ -234,6 +234,13 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
         }
     }
 
+    public IImageFactory? ImageFactory => this.Renderer switch
+    {
+        D2DComp d2dComp => d2dComp.ImageFactory,
+        D2D d2d => d2d.ImageFactory,
+        _ => null,
+    };
+
     public int OnMessage(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
     {
         var msg = (WindowMessage)uMsg;

@@ -43,6 +43,12 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     /// </summary>
     public virtual ITextMeasureContext? TextMeasureContext => this.Actual.TextMeasureContext;
 
+    /// <summary>
+    /// Gets the image factory for this window, used by <see cref="Xui.Core.UI.ImageView"/>
+    /// to load and cache GPU-resident images.
+    /// </summary>
+    public virtual IImageFactory? ImageFactory => this.Actual.ImageFactory;
+
     public RootView RootView { get; }
 
     public View Content { init => this.RootView.Content = value; }

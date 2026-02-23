@@ -48,6 +48,8 @@ public partial class Win32Window
         internal DWrite.Factory? DWriteFactory { get; private set; }
         protected Direct2DContext? Direct2DContext { get; private set; }
 
+        public Win32ImageFactory? ImageFactory { get; private set; }
+
         /// <summary>
         /// IDXGISwapChain2::GetFrameLatencyWaitableObject() handle.
         /// </summary>
@@ -125,6 +127,8 @@ public partial class Win32Window
 
                 this.DWriteFactory = new DWrite.Factory();
                 this.Direct2DContext = new Direct2DContext(this.D2D1DeviceContext, D2D1Factory3, DWriteFactory, this.D3D11Device);
+
+                this.ImageFactory = new Win32ImageFactory(this.D3D11Device, this.D2D1DeviceContext);
 
                 // DComposition
                 this.DCompDevice = DComp.Device.Create(this.DXGIDevice);

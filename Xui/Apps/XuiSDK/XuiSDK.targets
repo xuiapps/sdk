@@ -16,4 +16,8 @@
     <!-- Add your PackageReferences here -->
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

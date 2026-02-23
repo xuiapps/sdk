@@ -7,6 +7,7 @@ namespace Xui.Apps.XuiSDK.Pages;
 public class HomePage : ViewCollection
 {
     private readonly FeatureCard[] cards;
+    private readonly ImageView banner;
 
     public HomePage()
     {
@@ -22,6 +23,9 @@ public class HomePage : ViewCollection
 
         foreach (var card in cards)
             Add(card);
+
+        banner = new ImageView { Source = "Assets/test.png" };
+        Add(banner);
     }
 
     protected override Size MeasureCore(Size availableBorderEdgeSize, IMeasureContext context)
@@ -29,6 +33,8 @@ public class HomePage : ViewCollection
         var cardSize = new Size(180, 120);
         foreach (var card in cards)
             card.Measure(cardSize, context);
+
+        banner.Measure(new Size(200, 80), context);
 
         return availableBorderEdgeSize;
     }
@@ -50,6 +56,9 @@ public class HomePage : ViewCollection
             nfloat y = startY + row * (cardH + gapY);
             cards[i].Arrange(new Rect(x, y, cardW, cardH), context);
         }
+
+        // Banner image: fixed 200x80 slot in the top-right corner
+        banner.Arrange(new Rect(rect.Right - 240, rect.Y + 40, 200, 80), context);
     }
 
     protected override void RenderCore(IContext context)

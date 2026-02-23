@@ -38,8 +38,10 @@ public partial class Win32Window
         protected Direct2DContext Direct2DContext { get; private set; }
 
         protected D2D1.Bitmap1? D2DTargetBitmap { get; private set; }
-    
+
         public DComp.Device? DCompDevice { get; private set; }
+
+        public Win32ImageFactory? ImageFactory { get; private set; }
 
         private TimeSpan LastFrameTime = TimeSpan.Zero;
         private TimeSpan LastNextEstimatedFrameTime = TimeSpan.Zero;
@@ -126,6 +128,12 @@ public partial class Win32Window
             {
                 this.D2D1DeviceContext = this.D2D1Device.CreateDeviceContext(DeviceContextOptions.None);
                 this.Direct2DContext = new Direct2DContext(D2D1DeviceContext, D2D1Factory3, DWriteFactory, this.DeviceAndSwapChain.D3D11Device);
+
+                if (this.DeviceAndSwapChain.D3D11Device != null)
+                {
+                    this.ImageFactory?.InvalidateAll();
+                    this.ImageFactory = new Win32ImageFactory(this.DeviceAndSwapChain.D3D11Device, this.D2D1DeviceContext);
+                }
             }
         }
 
@@ -205,13 +213,16 @@ public partial class Win32Window
 
         public void Dispose()
         {
+            this.ImageFactory?.Dispose();
+            this.ImageFactory = null;
+
             this.DeviceAndSwapChain.Dispose();
             if (this.DCompDevice != null)
             {
                 this.DCompDevice.Dispose();
                 this.DCompDevice = null;
             }
-    
+
             GC.SuppressFinalize(this);
         }
 

@@ -26,4 +26,10 @@ public interface IImageDrawingContext
     /// Mirrors the 9-argument form of <c>drawImage</c> in the HTML5 Canvas API.
     /// </summary>
     void DrawImage(Bitmap image, Rect source, Rect dest, nfloat opacity);
+
+    /// <summary>Draws the entire image into the destination rectangle.</summary>
+    void DrawImage(IImage image, Rect destination);
+
+    /// <summary>Draws a cropped region of the image into the destination rectangle.</summary>
+    void DrawImage(IImage image, Rect source, Rect destination);
 }
