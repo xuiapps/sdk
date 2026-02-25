@@ -1,5 +1,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
+using Xui.Core;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
@@ -19,16 +20,21 @@ public class BitmapFillTest : View
     private static string ImagePath =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "test.png");
 
+    protected override void OnAttach(ref AttachEventRef e)
+    {
+        this.TryFindParent<RootView>(out var root);
+        this.bitmap = root?.Window?.BitmapContext?.LoadBitmap(ImagePath);
+    }
+
+    protected override void OnDetach(ref DetachEventRef e)
+    {
+        this.bitmap = null;
+    }
+
     protected override void RenderCore(IContext context)
     {
         context.SetFill(White);
         context.FillRect(this.Frame);
-
-        // Lazy load the bitmap on first render
-        if (this.bitmap is null && context is IBitmapContext bitmapContext)
-        {
-            this.bitmap = bitmapContext.LoadBitmap(ImagePath);
-        }
 
         if (this.bitmap is null)
         {

@@ -55,9 +55,11 @@
 
   <ItemGroup>
     <!-- Add your PackageReferences here -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
 
     <!-- Core -->
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
+    <ProjectReference Include="../../Core/DI/Xui.Core.DI.csproj" />
 
     <!-- Middleware -->
     <ProjectReference

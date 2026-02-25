@@ -167,6 +167,10 @@ public class RootView : View, IContent
             FindFocusNeighbors(view[i], current, ref first, ref last, ref prev, ref next, ref foundCurrent);
     }
 
+    /// <inheritdoc/>
+    public override object? GetService(Type serviceType) =>
+        this.Window.GetService(serviceType);
+
     protected override void OnChildRenderChanged(View child)
     {
         base.OnChildRenderChanged(child);

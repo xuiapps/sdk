@@ -40,4 +40,11 @@ public interface IWindow
     /// during pointer events. Returns null on platforms that do not support it.
     /// </summary>
     ITextMeasureContext? TextMeasureContext => null;
+
+    /// <summary>
+    /// Gets the platform bitmap context for loading GPU-resident images.
+    /// Available after the window is initialized. Returns null on platforms
+    /// that do not support it.
+    /// </summary>
+    IBitmapContext? BitmapContext => null;
 }

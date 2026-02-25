@@ -189,6 +189,9 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
         // Make black color in layered window transparent
         SetLayeredWindowAttributes(this.Hwnd, new COLORREF(0), 255, LayeredWindowAttribute.LWA_COLORKEY);
+
+        // Initialize GPU resources now so they are available during OnAttach.
+        this.Renderer.EnsureInitialized(this.Hwnd);
     }
 
     public HWND Hwnd { get; private set; }
@@ -223,6 +226,8 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
             return this.textMeasureContext;
         }
     }
+
+    public IBitmapContext? BitmapContext => this.Renderer.ImageContext;
 
     public int OnMessage(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
     {
@@ -618,21 +623,12 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
     protected virtual void OnScrollWheel(ScrollWheelEventRef scrollWheelEventRef) =>
         this.Abstract.OnScrollWheel(ref scrollWheelEventRef);
 
-    private void EnsureRendererInitialized()
-    {
-        this.Renderer.EnsureInitialized(this.Hwnd);
-    }
-
     public void Show()
     {
         CoreRuntime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
             $"Win32Window.Show hwnd={this.Hwnd} dpiScale={this.dpiScale:F2}");
         this.Hwnd.ShowWindow();
         this.Hwnd.UpdateWindow();
-
-        // Initialize swapchain/DComp outside WM_PAINT so the run loop can
-        // use the frame latency handle to pace frames.
-        this.EnsureRendererInitialized();
     }
 
     public virtual void Invalidate() => this.invalid = true;
