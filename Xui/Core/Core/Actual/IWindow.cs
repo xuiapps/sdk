@@ -49,9 +49,8 @@ public interface IWindow
     ITextMeasureContext? TextMeasureContext => null;
 
     /// <summary>
-    /// Gets the platform bitmap context for loading GPU-resident images.
-    /// Available after the window is initialized. Returns null on platforms
-    /// that do not support it.
+    /// Gets the image factory for this window, used to load and cache GPU-resident images.
+    /// Returns null on platforms that do not support it.
     /// </summary>
-    IBitmapContext? BitmapContext => null;
+    IImageFactory? ImageFactory => null;
 }

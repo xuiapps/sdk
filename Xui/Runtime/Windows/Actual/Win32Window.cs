@@ -227,7 +227,7 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
         }
     }
 
-    public IBitmapContext? BitmapContext => this.Renderer.ImageContext;
+    public IImageFactory? ImageFactory => this.Renderer.ImageFactory;
 
     public int OnMessage(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
     {

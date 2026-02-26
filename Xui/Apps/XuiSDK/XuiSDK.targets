@@ -17,4 +17,8 @@
     <ProjectReference Include="../../Core/Core.DI/Xui.Core.DI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

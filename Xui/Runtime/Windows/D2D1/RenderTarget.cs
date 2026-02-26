@@ -306,12 +306,34 @@ public static partial class D2D1
 
         public void BeginDraw() =>
             ((delegate* unmanaged[MemberFunction]<void*, void> )this[48])(this);
-        
+
         public void EndDraw()
         {
             ulong tag1;
             ulong tag2;
             Marshal.ThrowExceptionForHR(((delegate* unmanaged[MemberFunction]<void*, ulong*, ulong*, int>)this[49])(this, &tag1, &tag2));
+        }
+
+        /// <summary>
+        /// Draws a bitmap into the given destination rectangle (vtable slot 26).
+        /// Sits between FillOpacityMask (25) and DrawText (27) in the ID2D1RenderTarget vtable.
+        /// interpolationMode: 0 = NearestNeighbor, 1 = Linear.
+        /// </summary>
+        public void DrawBitmap(Bitmap1 bitmap, in RectF destRect, float opacity = 1.0f, uint interpolationMode = 1)
+        {
+            fixed (RectF* destPtr = &destRect)
+                ((delegate* unmanaged[MemberFunction]<void*, void*, RectF*, float, uint, RectF*, void>)this[26])
+                    (this, bitmap, destPtr, opacity, interpolationMode, null);
+        }
+
+        /// <summary>
+        /// Draws a cropped region of a bitmap (vtable slot 26 with source rect).
+        /// </summary>
+        public void DrawBitmap(Bitmap1 bitmap, in RectF destRect, in RectF srcRect, float opacity = 1.0f, uint interpolationMode = 1)
+        {
+            fixed (RectF* destPtr = &destRect, srcPtr = &srcRect)
+                ((delegate* unmanaged[MemberFunction]<void*, void*, RectF*, float, uint, RectF*, void>)this[26])
+                    (this, bitmap, destPtr, opacity, interpolationMode, srcPtr);
         }
     }
 }

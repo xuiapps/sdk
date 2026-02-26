@@ -325,16 +325,13 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         defsWriter.WriteLine("    </radialGradient>");
     }
 
-    void IPenContext.SetFill(Bitmap bitmap) =>
-        throw new NotImplementedException("SVG context does not support bitmap fill patterns.");
-
-    void IImageDrawingContext.DrawImage(Bitmap image, Rect dest) =>
+    void IImageDrawingContext.DrawImage(IImage image, Rect dest) =>
         throw new NotImplementedException("SVG context does not support DrawImage.");
 
-    void IImageDrawingContext.DrawImage(Bitmap image, Rect dest, nfloat opacity) =>
+    void IImageDrawingContext.DrawImage(IImage image, Rect dest, nfloat opacity) =>
         throw new NotImplementedException("SVG context does not support DrawImage.");
 
-    void IImageDrawingContext.DrawImage(Bitmap image, Rect source, Rect dest, nfloat opacity) =>
+    void IImageDrawingContext.DrawImage(IImage image, Rect source, Rect dest, nfloat opacity) =>
         throw new NotImplementedException("SVG context does not support DrawImage.");
 
     void IPathBuilder.BeginPath()

@@ -62,10 +62,10 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     public virtual ITextMeasureContext? TextMeasureContext => this.Actual.TextMeasureContext;
 
     /// <summary>
-    /// Gets the bitmap context for this window, used for loading GPU-resident images.
-    /// Null on platforms that do not support it.
+    /// Gets the image factory for this window, used by <see cref="Xui.Core.UI.ImageView"/>
+    /// to load and cache GPU-resident images.
     /// </summary>
-    public virtual IBitmapContext? BitmapContext => this.Actual.BitmapContext;
+    public virtual IImageFactory? ImageFactory => this.Actual.ImageFactory;
 
     public RootView RootView { get; }
 

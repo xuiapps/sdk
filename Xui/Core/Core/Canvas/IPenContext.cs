@@ -81,10 +81,4 @@ public interface IPenContext
     /// <param name="radialGradient">The gradient to use for filling shapes.</param>
     void SetFill(RadialGradient radialGradient);
 
-    /// <summary>
-    /// Sets the fill style to a repeating bitmap pattern.
-    /// Mirrors <c>createPattern(image, "repeat")</c> from the HTML5 Canvas API.
-    /// </summary>
-    /// <param name="bitmap">The bitmap to tile across filled shapes.</param>
-    void SetFill(Bitmap bitmap);
 }

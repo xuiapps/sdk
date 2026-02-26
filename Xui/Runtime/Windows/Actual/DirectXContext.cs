@@ -47,7 +47,7 @@ public sealed class DirectXContext
 
     internal DWrite.Factory? DWriteFactory { get; private set; }
     private Direct2DContext? Direct2DContext { get; set; }
-    public DirectXBitmapContext? ImageContext { get; private set; }
+    internal DirectXImageFactory? ImageFactory { get; private set; }
 
     /// <summary>
     /// IDXGISwapChain2::GetFrameLatencyWaitableObject() handle.
@@ -126,7 +126,7 @@ public sealed class DirectXContext
 
             this.DWriteFactory = new DWrite.Factory();
             this.Direct2DContext = new Direct2DContext(this.D2D1DeviceContext, D2D1Factory3, DWriteFactory);
-            this.ImageContext = new DirectXBitmapContext(this.D3D11Device, this.D2D1DeviceContext);
+            this.ImageFactory = new DirectXImageFactory(this.D3D11Device, this.D2D1DeviceContext);
 
             // DComposition
             this.DCompDevice = DComp.Device.Create(this.DXGIDevice);

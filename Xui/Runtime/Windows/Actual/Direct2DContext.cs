@@ -214,12 +214,6 @@ public partial class Direct2DContext : IContext
     void IPenContext.SetFill(RadialGradient radialGradient) =>
         this.fill.SetRadialGradient(radialGradient);
 
-    void IPenContext.SetFill(Core.Canvas.Bitmap bitmap)
-    {
-        if (bitmap is DirectXBitmap wb)
-            this.fill.SetBitmapBrush(wb, this.RenderTarget);
-    }
-
     void IPathBuilder.BeginPath() =>
         this.path2d.BeginPath();
 
@@ -778,26 +772,26 @@ public partial class Direct2DContext : IContext
         this.RenderTarget.SetTransform(m);
     }
 
-    void IImageDrawingContext.DrawImage(Core.Canvas.Bitmap image, Rect dest)
+    void IImageDrawingContext.DrawImage(IImage image, Rect dest)
     {
-        if (image is not DirectXBitmap wb) return;
+        if (image is not DirectXImage img) return;
         RectF d = dest;
-        this.RenderTarget.DrawBitmap(wb.D2D1Bitmap, d, 1f);
+        this.RenderTarget.DrawBitmap(img.D2D1Bitmap, d, 1f);
     }
 
-    void IImageDrawingContext.DrawImage(Core.Canvas.Bitmap image, Rect dest, NFloat opacity)
+    void IImageDrawingContext.DrawImage(IImage image, Rect dest, NFloat opacity)
     {
-        if (image is not DirectXBitmap wb) return;
+        if (image is not DirectXImage img) return;
         RectF d = dest;
-        this.RenderTarget.DrawBitmap(wb.D2D1Bitmap, d, (float)opacity);
+        this.RenderTarget.DrawBitmap(img.D2D1Bitmap, d, (float)opacity);
     }
 
-    void IImageDrawingContext.DrawImage(Core.Canvas.Bitmap image, Rect source, Rect dest, NFloat opacity)
+    void IImageDrawingContext.DrawImage(IImage image, Rect source, Rect dest, NFloat opacity)
     {
-        if (image is not DirectXBitmap wb) return;
+        if (image is not DirectXImage img) return;
         RectF s = source;
         RectF d = dest;
-        this.RenderTarget.DrawBitmap(wb.D2D1Bitmap, d, (float)opacity, s);
+        this.RenderTarget.DrawBitmap(img.D2D1Bitmap, d, (float)opacity, s);
     }
 
     public void Dispose()
@@ -940,19 +934,6 @@ public partial class Direct2DContext : IContext
             this.PaintStyle = PaintStyle.LinearGradient;
         }
 
-        public void SetBitmapBrush(DirectXBitmap bitmap, RenderTarget renderTarget)
-        {
-            this.Brush.Dispose();
-            // Wrap (Tile) in both axes + Linear interpolation — matches createPattern("repeat") semantics
-            var bbProps = new BitmapBrushProperties { ExtendModeX = 1, ExtendModeY = 1, InterpolationMode = 1 };
-            var brushProps = new BrushProperties
-            {
-                Opacity = 1f,
-                Transform = new() { _11 = 1f, _12 = 0f, _21 = 0f, _22 = 1f, _31 = 0f, _32 = 0f }
-            };
-            this.Brush = renderTarget.CreateBitmapBrushPtr(bitmap.D2D1Bitmap, bbProps, brushProps);
-            this.PaintStyle = PaintStyle.BitmapBrush;
-        }
     }
 
     private struct StrokeStyleStruct
