@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240" viewBox="0 0 480 240">
+  <defs>
+    <clipPath id="clip0">
+      <path d="M 240 120 A 100 100 0 0 1 40 120 A 100 100 0 0 1 240 120 " clip-rule="nonzero" />
+    </clipPath>
+    <clipPath id="clip1">
+      <path d="M 314 20 H 436 A 24 24 0 0 1 460 44 V 196 A 24 24 0 0 1 436 220 H 314 A 24 24 0 0 1 290 196 V 44 A 24 24 0 0 1 314 20 Z " clip-rule="nonzero" />
+    </clipPath>
+    <linearGradient id="grad1" x1="290" y1="20" x2="290" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E0F0FF" />
+      <stop offset="100%" stop-color="#A0C0FF" />
+    </linearGradient>
+    <clipPath id="clip2">
+      <path d="M 435 120 A 60 60 0 0 1 315 120 A 60 60 0 0 1 435 120 " clip-rule="nonzero" />
+    </clipPath>
+  </defs>
+  <rect x="0" y="0" width="480" height="240" fill="#F5F5F5" />
+  <g clip-path="url(#clip0)">
+    <rect x="40" y="20" width="40" height="200" fill="#D642CD" />
+    <rect x="80" y="20" width="40" height="200" fill="#8A05FF" />
+    <rect x="120" y="20" width="40" height="200" fill="#4196D0" />
+    <rect x="160" y="20" width="40" height="200" fill="#59B35C" />
+    <rect x="200" y="20" width="40" height="200" fill="#E05555" />
+  </g>
+  <path d="M 240 120 A 100 100 0 0 1 40 120 A 100 100 0 0 1 240 120 " fill="none" stroke="#404040" stroke-width="2" />
+  <g clip-path="url(#clip1)">
+    <rect x="290" y="20" width="170" height="200" fill="url(#grad1)" />
+    <g clip-path="url(#clip2)">
+      <rect x="290" y="20" width="170" height="200" fill="#8A05FF" fill-opacity="0.75" />
+    </g>
+  </g>
+  <path d="M 314 20 H 436 A 24 24 0 0 1 460 44 V 196 A 24 24 0 0 1 436 220 H 314 A 24 24 0 0 1 290 196 V 44 A 24 24 0 0 1 314 20 Z " fill="none" stroke="#404080" stroke-width="2" />
+</svg>

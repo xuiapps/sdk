@@ -29,8 +29,6 @@
     <meta name="twitter:image" content="https://xuiapps.com/preview.800x418.jpg" />
     <meta name="twitter:image:alt" content="Xui delivers Canvas based apps to Window, macOS, iOS and Android" />
 
-    <!-- PWA -->
-    <link rel="manifest" href="./pwa/manifest.json" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -85,11 +83,12 @@
                 margin: 32px 0 0 0;
             }
             .navigation a {
-                font-weight: 500;
+                font-weight: 700;
                 margin: 0px 0px 0px 24px;
             }
             .navigation a, .navigation a:visited, .navigation a:hover {
                 color: #75F;
+                text-decoration: none;
             }
 
             .highlights-bg {
@@ -114,6 +113,18 @@
 
             .header {
                 background: #333;
+            }
+
+            .navigation {
+                margin: 32px 0 0 0;
+            }
+            .navigation a {
+                font-weight: 700;
+                margin: 0px 0px 0px 24px;
+            }
+            .navigation a, .navigation a:visited, .navigation a:hover {
+                color: #AA77FF;
+                text-decoration: none;
             }
 
             .highlights-bg {
@@ -255,12 +266,11 @@
                     <circle cx="49" cy="18" r="3" fill="white" />
                 
                 </svg>
-                XUI APPS
+                Xui Apps
             </p>
             <p class="navigation" style="text-align: right;">
-                <a href="/docs/introduction.html">DOCS</a>
-                <a href="/api/Xui.html">API</a>
-                <a href="/ai/gigi.html">AI</a>
+                <a href="/docs/">DOCS</a>
+                <a href="/api/">API</a>
             </p>
         </div>
     </div>
