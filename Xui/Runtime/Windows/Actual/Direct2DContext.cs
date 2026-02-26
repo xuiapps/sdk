@@ -774,24 +774,24 @@ public partial class Direct2DContext : IContext
 
     void IImageDrawingContext.DrawImage(IImage image, Rect dest)
     {
-        if (image is not DirectXImage img) return;
+        if (image is not DirectXImage img || img.D2D1Bitmap is not { } bitmap) return;
         RectF d = dest;
-        this.RenderTarget.DrawBitmap(img.D2D1Bitmap, d, 1f);
+        this.RenderTarget.DrawBitmap(bitmap, d, 1f);
     }
 
     void IImageDrawingContext.DrawImage(IImage image, Rect dest, NFloat opacity)
     {
-        if (image is not DirectXImage img) return;
+        if (image is not DirectXImage img || img.D2D1Bitmap is not { } bitmap) return;
         RectF d = dest;
-        this.RenderTarget.DrawBitmap(img.D2D1Bitmap, d, (float)opacity);
+        this.RenderTarget.DrawBitmap(bitmap, d, (float)opacity);
     }
 
     void IImageDrawingContext.DrawImage(IImage image, Rect source, Rect dest, NFloat opacity)
     {
-        if (image is not DirectXImage img) return;
+        if (image is not DirectXImage img || img.D2D1Bitmap is not { } bitmap) return;
         RectF s = source;
         RectF d = dest;
-        this.RenderTarget.DrawBitmap(img.D2D1Bitmap, d, (float)opacity, s);
+        this.RenderTarget.DrawBitmap(bitmap, d, (float)opacity, s);
     }
 
     public void Dispose()

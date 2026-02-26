@@ -2,23 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Xui.Core.Actual;
 using Xui.Core.Canvas;
 using static Xui.Runtime.Windows.D2D1;
 
 namespace Xui.Runtime.Windows.Actual;
 
 /// <summary>
-/// Window-level image factory: decodes images via WIC, uploads to a D3D11 texture,
-/// wraps as a D2D1 Bitmap1, and caches results by path.
-/// On device-lost recovery, call <see cref="Rehydrate"/> to re-upload all cached images
-/// transparently — callers hold the same <see cref="DirectXImage"/> references throughout.
+/// Window-level image catalog: decodes via WIC, uploads to D3D11/D2D1, caches by URI.
+/// Implements <see cref="IImagePipeline"/> so the service chain can vend <see cref="IImage"/>
+/// handles to views without exposing platform types.
+/// On device-lost, call <see cref="Rehydrate"/> to re-upload all cached resources
+/// transparently — existing <see cref="DirectXImage"/> handles remain valid.
 /// </summary>
-internal sealed class DirectXImageFactory : IImageFactory, IDisposable
+internal sealed class DirectXImageFactory : IImagePipeline, IDisposable
 {
     private readonly WIC.ImagingFactory wicFactory;
     private D3D11.Device d3d11Device;
     private DeviceContext d2d1DeviceContext;
-    private readonly Dictionary<string, DirectXImage> cache = new();
+    private readonly Dictionary<string, DirectXImageResource> cache = new();
 
     internal DirectXImageFactory(D3D11.Device d3d11Device, DeviceContext d2d1DeviceContext)
     {
@@ -31,61 +33,24 @@ internal sealed class DirectXImageFactory : IImageFactory, IDisposable
         this.wicFactory = WIC.CreateImagingFactory();
     }
 
-    public IImage? Load(string path)
+    // ── IImagePipeline ───────────────────────────────────────────────────────
+
+    public IImage CreateImage() => new DirectXImage(this);
+
+    // ── Internal catalog ─────────────────────────────────────────────────────
+
+    internal DirectXImageResource? GetOrLoad(string uri)
     {
-        if (this.cache.TryGetValue(path, out var cached))
+        if (this.cache.TryGetValue(uri, out var cached))
             return cached;
 
-        return this.Decode(path);
-    }
-
-    public Task<IImage?> LoadAsync(string path) =>
-        Task.Run(() => this.Load(path));
-
-    /// <summary>
-    /// Re-uploads all cached images to the new device after a device-lost recovery.
-    /// Existing <see cref="DirectXImage"/> references remain valid.
-    /// </summary>
-    internal void Rehydrate(D3D11.Device newD3D11Device, DeviceContext newD2D1DeviceContext)
-    {
-        this.d3d11Device.Dispose();
-        this.d2d1DeviceContext.Dispose();
-
-        this.d3d11Device = newD3D11Device;
-        this.d3d11Device.AddRef();
-
-        this.d2d1DeviceContext = newD2D1DeviceContext;
-        this.d2d1DeviceContext.AddRef();
-
-        foreach (var (path, image) in this.cache)
-        {
-            string resolved = System.IO.Path.IsPathRooted(path)
-                ? path
-                : System.IO.Path.Combine(AppContext.BaseDirectory, path);
-            try
-            {
-                var (newBitmap, newTexture, _, _) = this.Upload(resolved);
-                image.Update(newBitmap, newTexture);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"DirectXImageFactory: rehydrate failed for '{path}': {ex.Message}");
-            }
-        }
-    }
-
-    private DirectXImage? Decode(string path)
-    {
-        string resolved = System.IO.Path.IsPathRooted(path)
-            ? path
-            : System.IO.Path.Combine(AppContext.BaseDirectory, path);
-
+        string resolved = Resolve(uri);
         try
         {
-            var (d2dBitmap, texture, w, h) = this.Upload(resolved);
-            var result = new DirectXImage(texture, d2dBitmap, w, h);
-            this.cache[path] = result;
-            return result;
+            var (bitmap, texture, w, h) = this.Upload(resolved);
+            var resource = new DirectXImageResource(texture, bitmap, w, h);
+            this.cache[uri] = resource;
+            return resource;
         }
         catch (Exception ex)
         {
@@ -93,6 +58,48 @@ internal sealed class DirectXImageFactory : IImageFactory, IDisposable
             return null;
         }
     }
+
+    internal Task<DirectXImageResource?> GetOrLoadAsync(string uri) =>
+        Task.Run(() => GetOrLoad(uri));
+
+    // ── Device-lost recovery ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Re-uploads all cached images to the new device after device-lost recovery.
+    /// Existing <see cref="DirectXImage"/> handles remain valid — their resource objects
+    /// are updated in-place.
+    /// </summary>
+    internal void Rehydrate(D3D11.Device newDevice, DeviceContext newContext)
+    {
+        this.d3d11Device.Dispose();
+        this.d2d1DeviceContext.Dispose();
+
+        this.d3d11Device = newDevice;
+        this.d3d11Device.AddRef();
+
+        this.d2d1DeviceContext = newContext;
+        this.d2d1DeviceContext.AddRef();
+
+        foreach (var (uri, resource) in this.cache)
+        {
+            try
+            {
+                var (newBitmap, newTexture, _, _) = this.Upload(Resolve(uri));
+                resource.Update(newBitmap, newTexture);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"DirectXImageFactory: rehydrate failed for '{uri}': {ex.Message}");
+            }
+        }
+    }
+
+    // ── Internals ─────────────────────────────────────────────────────────────
+
+    private static string Resolve(string uri) =>
+        System.IO.Path.IsPathRooted(uri)
+            ? uri
+            : System.IO.Path.Combine(AppContext.BaseDirectory, uri);
 
     private unsafe (D2D1.Bitmap1 bitmap, D3D11.Texture2D? texture, uint w, uint h) Upload(string resolvedPath)
     {
@@ -125,12 +132,7 @@ internal sealed class DirectXImageFactory : IImageFactory, IDisposable
                 MiscFlags      = 0,
             };
 
-            var sub = new D3D11.SubresourceData
-            {
-                pSysMem     = pixels,
-                SysMemPitch = stride,
-            };
-
+            var sub = new D3D11.SubresourceData { pSysMem = pixels, SysMemPitch = stride };
             var texture = this.d3d11Device.CreateTexture2D(desc, sub);
 
             void* surfacePtr = texture.QueryInterface(in DXGI.Surface.IID);
@@ -159,8 +161,8 @@ internal sealed class DirectXImageFactory : IImageFactory, IDisposable
 
     public void Dispose()
     {
-        foreach (var image in this.cache.Values)
-            image.Dispose();
+        foreach (var resource in this.cache.Values)
+            resource.Dispose();
         this.cache.Clear();
 
         this.wicFactory.Dispose();

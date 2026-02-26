@@ -4,9 +4,10 @@ using Xui.Core.Math2D;
 namespace Xui.Core.UI;
 
 /// <summary>
-/// A view that displays an image loaded from a file path via the window's <see cref="IImageFactory"/>.
-/// The factory caches images and handles device-lost rehydration transparently — this view
-/// holds its <see cref="IImage"/> reference for the lifetime of the activation.
+/// A view that displays an image. Works like <c>HTMLImageElement</c>: it holds an
+/// <see cref="IImage"/> handle (acquired from the service chain) and sets its source
+/// via <see cref="IImage.Load"/>. The platform catalog handles caching and device-lost
+/// rehydration transparently.
 /// </summary>
 public class ImageView : View
 {
@@ -14,8 +15,8 @@ public class ImageView : View
     private IImage? image;
 
     /// <summary>
-    /// Gets or sets the file path of the image to display.
-    /// Setting this property triggers an immediate load if the view is already active.
+    /// Gets or sets the URI of the image to display.
+    /// Setting this property triggers a load if the view is already active.
     /// </summary>
     public string? Source
     {
@@ -23,13 +24,24 @@ public class ImageView : View
         set
         {
             source = value;
-            LoadImage();
+            if (image != null && source != null)
+            {
+                image.Load(source);
+                InvalidateRender();
+                InvalidateMeasure();
+            }
         }
     }
 
     protected override void OnActivate()
     {
-        LoadImage();
+        image = this.GetService(typeof(IImage)) as IImage;
+        if (source != null)
+        {
+            image?.Load(source);
+            InvalidateRender();
+            InvalidateMeasure();
+        }
     }
 
     protected override void OnDeactivate()
@@ -37,32 +49,15 @@ public class ImageView : View
         image = null;
     }
 
-    private void LoadImage()
-    {
-        if (source == null || (this.Flags & ViewFlags.Active) == 0)
-            return;
-
-        if (!this.TryFindParent<RootView>(out var root))
-            return;
-
-        var factory = root.Window.ImageFactory;
-        if (factory == null)
-            return;
-
-        image = factory.Load(source);
-        InvalidateRender();
-        InvalidateMeasure();
-    }
-
     protected override Size MeasureCore(Size availableBorderEdgeSize, IMeasureContext context)
     {
-        if (image == null)
-            LoadImage();
-
         if (image == null)
             return Size.Empty;
 
         var intrinsic = image.Size;
+        if (intrinsic == Size.Empty)
+            return Size.Empty;
+
         if (availableBorderEdgeSize.Width <= 0 || availableBorderEdgeSize.Height <= 0)
             return intrinsic;
 
@@ -74,7 +69,7 @@ public class ImageView : View
 
     protected override void RenderCore(IContext context)
     {
-        if (image != null)
+        if (image != null && image.Size != Size.Empty)
             context.DrawImage(image, this.Frame);
 
         base.RenderCore(context);

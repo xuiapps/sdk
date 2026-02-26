@@ -24,7 +24,10 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     public IServiceProvider Context { get; }
 
     /// <inheritdoc/>
-    public virtual object? GetService(Type serviceType) => this.Context.GetService(serviceType);
+    /// Checks the window's DI service provider first; if not found, falls back to the
+    /// platform window's own services (e.g. <see cref="Xui.Core.Actual.IImagePipeline"/> from Win32).
+    public virtual object? GetService(Type serviceType) =>
+        this.Context.GetService(serviceType) ?? this.Actual.GetService(serviceType);
 
     public List<IDisposable> DisposeQueue { get; } = [];
 
@@ -60,12 +63,6 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     /// positions during pointer events. Null on platforms that do not provide one.
     /// </summary>
     public virtual ITextMeasureContext? TextMeasureContext => this.Actual.TextMeasureContext;
-
-    /// <summary>
-    /// Gets the image factory for this window, used by <see cref="Xui.Core.UI.ImageView"/>
-    /// to load and cache GPU-resident images.
-    /// </summary>
-    public virtual IImageFactory? ImageFactory => this.Actual.ImageFactory;
 
     public RootView RootView { get; }
 

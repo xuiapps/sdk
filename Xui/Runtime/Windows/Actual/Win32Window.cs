@@ -227,7 +227,12 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
         }
     }
 
-    public IImageFactory? ImageFactory => this.Renderer.ImageFactory;
+    public object? GetService(Type serviceType)
+    {
+        if (serviceType == typeof(IImage)) return this.Renderer.ImageFactory?.CreateImage();
+        if (serviceType == typeof(ITextMeasureContext)) return this.TextMeasureContext;
+        return null;
+    }
 
     public int OnMessage(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
     {

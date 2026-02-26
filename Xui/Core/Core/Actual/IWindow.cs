@@ -1,3 +1,4 @@
+using System;
 using Xui.Core.Canvas;
 
 namespace Xui.Core.Actual;
@@ -19,7 +20,7 @@ public interface IWindow
 
     /// <summary>
     /// Displays the window to the user. This may include making it visible, entering the main loop,
-    /// or attaching it to the application’s view hierarchy, depending on the platform.
+    /// or attaching it to the application's view hierarchy, depending on the platform.
     /// </summary>
     void Show();
 
@@ -49,8 +50,9 @@ public interface IWindow
     ITextMeasureContext? TextMeasureContext => null;
 
     /// <summary>
-    /// Gets the image factory for this window, used to load and cache GPU-resident images.
-    /// Returns null on platforms that do not support it.
+    /// Returns platform-provided services for this window (e.g. <see cref="IImagePipeline"/>).
+    /// Called by the abstract <see cref="Xui.Core.Abstract.Window"/> after exhausting its own
+    /// DI service provider. Implementations must never call back into the abstract window.
     /// </summary>
-    IImageFactory? ImageFactory => null;
+    object? GetService(Type serviceType) => null;
 }
