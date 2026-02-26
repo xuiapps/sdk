@@ -541,9 +541,153 @@ new ScrollView
 
 ---
 
+## Step 8 — Хоризонтален scroll (`ScrollDirection`)
+
+### `ScrollDirection` enum
+
+```csharp
+public enum ScrollDirection { Vertical, Horizontal, Both }
+```
+
+### Нови полета в `ScrollView`
+
+```csharp
+private nfloat scrollOffsetX;
+private nfloat viewportWidth;           // captured in ArrangeCore
+private nfloat dragVelocityX;           // pts/sec, positive = scroll right
+private ExponentialDecayCurve? flingCurveX;
+private nfloat? pendingFlingVelocityX;
+
+public ScrollDirection Direction { get; set; } = ScrollDirection.Vertical;
+```
+
+Съществуващите `dragVelocity`, `flingCurve`, `pendingFlingVelocity` се преименуват на `dragVelocityY`, `flingCurveY`, `pendingFlingVelocityY`.
+
+### `MeasureCore` — съобразен с посоката
+
+| Direction | Available за content |
+|-----------|----------------------|
+| Vertical   | `(available.Width, ∞)` |
+| Horizontal | `(∞, available.Height)` |
+| Both       | `(∞, ∞)` |
+
+```csharp
+var measureSize = Direction switch
+{
+    ScrollDirection.Horizontal => new Size(nfloat.PositiveInfinity, available.Height),
+    ScrollDirection.Both       => new Size(nfloat.PositiveInfinity, nfloat.PositiveInfinity),
+    _                          => new Size(available.Width, nfloat.PositiveInfinity)
+};
+```
+
+### `ArrangeCore`
+
+```csharp
+viewportWidth = rect.Width;
+// contentRect offsets both axes
+var contentRect = new Rect(rect.X - scrollOffsetX, rect.Y - scrollOffsetY, contentWidth, contentHeight);
+```
+
+### `ClampScrollOffset`
+
+```csharp
+private nfloat MaxScrollOffsetY => nfloat.Max(0, contentHeight - viewportHeight);
+private nfloat MaxScrollOffsetX => nfloat.Max(0, contentWidth - viewportWidth);
+
+private void ClampScrollOffset()
+{
+    scrollOffsetY = nfloat.Clamp(scrollOffsetY, 0, MaxScrollOffsetY);
+    scrollOffsetX = nfloat.Clamp(scrollOffsetX, 0, MaxScrollOffsetX);
+}
+```
+
+### Scrollbars
+
+- Вертикален индикатор (вдясно) — само когато `Direction != Horizontal`
+- Хоризонтален индикатор (отдолу) — само когато `Direction != Vertical`
+
+```csharp
+private void DrawScrollbarIndicatorH(IContext context)
+{
+    if (Direction == ScrollDirection.Vertical) return;
+    if (MaxScrollOffsetX <= 0) return;
+
+    nfloat trackW = viewportWidth - ScrollbarEndInset * 2;
+    nfloat ratio = viewportWidth / contentWidth;
+    nfloat barW = nfloat.Max(trackW * ratio, 20f);
+    nfloat scrollProgress = scrollOffsetX / MaxScrollOffsetX;
+    nfloat barLeft = this.Frame.X + ScrollbarEndInset + (trackW - barW) * scrollProgress;
+    nfloat barY = this.Frame.Bottom - ScrollbarWidth - 2f;
+
+    context.SetFill(new Color(0f, 0f, 0f, 0.35f));
+    context.BeginPath();
+    context.RoundRect(new Rect(barLeft, barY, barW, ScrollbarWidth), ScrollbarWidth / 2);
+    context.Fill(FillRule.NonZero);
+}
+```
+
+### `OnPointerEvent` — и двете оси при `Direction == Both`
+
+При `Direction == Both` се scrollва и по X, и по Y едновременно (map-panning). Gesture se lock-ва към доминиращата ос само при `Vertical` и `Horizontal` режим (не се налага — само една ос е активна).
+
+```csharp
+// Down: reset both velocities
+dragVelocityY = 0; dragVelocityX = 0;
+
+// Move threshold: Max(|totalDx|, |totalDy|) > ScrollThreshold
+if (!isScrollGesture && nfloat.Max(nfloat.Abs(totalDx), nfloat.Abs(totalDy)) > ScrollThreshold)
+    isScrollGesture = true;
+
+// Apply per-axis (guarded by Direction)
+if (Direction != ScrollDirection.Horizontal)
+    scrollOffsetY = nfloat.Clamp(scrollOffsetY - dy, 0, MaxScrollOffsetY);
+if (Direction != ScrollDirection.Vertical)
+    scrollOffsetX = nfloat.Clamp(scrollOffsetX - dx, 0, MaxScrollOffsetX);
+```
+
+### `OnScrollWheel` — trackpad хоризонтален scroll
+
+`Delta.X` носи хоризонтална стойност от trackpad (WM_MOUSEHWHEEL / pan gesture). Само ако нещо е обработено се слага `Handled = true`.
+
+```csharp
+public override void OnScrollWheel(ref ScrollWheelEventRef e)
+{
+    if (e.Handled) return;
+    bool changed = false;
+
+    if (Direction != ScrollDirection.Horizontal && e.Delta.Y != 0)
+    { scrollOffsetY = nfloat.Clamp(scrollOffsetY - (nfloat)e.Delta.Y / 120f * 80f, 0, MaxScrollOffsetY); changed = true; }
+    if (Direction != ScrollDirection.Vertical && e.Delta.X != 0)
+    { scrollOffsetX = nfloat.Clamp(scrollOffsetX - (nfloat)e.Delta.X / 120f * 80f, 0, MaxScrollOffsetX); changed = true; }
+
+    if (!changed) return;
+    flingCurveY = null; flingCurveX = null;
+    pendingFlingVelocityY = null; pendingFlingVelocityX = null;
+    e.Handled = true;
+    InvalidateArrange(); InvalidateRender();
+}
+```
+
+### `AnimateCore` — независими fling криви за X и Y
+
+```csharp
+// Initialize pending curves
+if (pendingFlingVelocityY.HasValue) { flingCurveY = new ExponentialDecayCurve(...); pendingFlingVelocityY = null; }
+if (pendingFlingVelocityX.HasValue) { flingCurveX = new ExponentialDecayCurve(...); pendingFlingVelocityX = null; }
+
+// Advance each curve independently; request next frame if either is still running
+bool needsFrame = false;
+bool changed = false;
+// ... advance Y, advance X, check boundaries ...
+if (needsFrame) RequestAnimationFrame();
+if (changed) { InvalidateArrange(); InvalidateRender(); }
+```
+
+---
+
 ## Бележки и ограничения
 
-- **Само вертикален scroll** — хоризонталния е бъдеща работа
+- ~~**Само вертикален scroll**~~ — вече поддържа `Vertical`, `Horizontal`, `Both`
 - **Един content child** — не е ViewCollection
 - **Scrollbar винаги видим** — няма fade in/out
 - **Velocity знак**: positive = scroll down (scrollOffset расте = виждаш повече content надолу)
