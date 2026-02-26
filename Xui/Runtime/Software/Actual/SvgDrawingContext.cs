@@ -325,6 +325,18 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         defsWriter.WriteLine("    </radialGradient>");
     }
 
+    void IPenContext.SetFill(Bitmap bitmap) { }
+
+    void IImageDrawingContext.DrawImage(Bitmap image, Rect dest) { }
+
+    void IImageDrawingContext.DrawImage(Bitmap image, Rect dest, nfloat opacity) { }
+
+    void IImageDrawingContext.DrawImage(Bitmap image, Rect source, Rect dest, nfloat opacity) { }
+
+    void IImageDrawingContext.DrawImage(IImage image, Rect destination) { }
+
+    void IImageDrawingContext.DrawImage(IImage image, Rect source, Rect destination) { }
+
     void IPathBuilder.BeginPath()
     {
         currentPath.Clear();
