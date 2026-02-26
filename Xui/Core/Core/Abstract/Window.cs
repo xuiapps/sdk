@@ -58,6 +58,9 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     /// <inheritdoc/>
     public virtual Rect SafeArea { get; set; }
 
+    /// <inheritdoc/>
+    public virtual nfloat ScreenCornerRadius { get; set; }
+
     /// <summary>
     /// Gets the text measure context for this window, used for hit-testing text
     /// positions during pointer events. Null on platforms that do not provide one.
@@ -223,6 +226,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     /// <inheritdoc/>
     public virtual void OnScrollWheel(ref ScrollWheelEventRef e)
     {
+        ((IContent)this.RootView).OnScrollWheel(ref e);
     }
 
     /// <inheritdoc/>

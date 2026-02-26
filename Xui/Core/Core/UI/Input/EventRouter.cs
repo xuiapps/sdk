@@ -276,6 +276,31 @@ namespace Xui.Core.UI.Input
             }
         }
 
+        /// <summary>
+        /// Dispatches a scroll wheel event to the deepest view under <paramref name="position"/>
+        /// that handles it, bubbling up until <see cref="ScrollWheelEventRef.Handled"/> is set.
+        /// </summary>
+        public void Dispatch(ref ScrollWheelEventRef e, Point position)
+        {
+            DispatchScrollWheel(_rootView, ref e, position);
+        }
+
+        private static void DispatchScrollWheel(View view, ref ScrollWheelEventRef e, Point position)
+        {
+            if (e.Handled) return;
+            if (!view.Frame.Contains(position)) return;
+
+            // Depth-first: innermost child first
+            for (int i = view.Count - 1; i >= 0; i--)
+            {
+                DispatchScrollWheel(view[i], ref e, position);
+                if (e.Handled) return;
+            }
+
+            // Bubble to this view if no child handled it
+            view.OnScrollWheel(ref e);
+        }
+
         private View? HitTest(View view, Point position)
         {
             for (int i = view.Count - 1; i >= 0; i--)

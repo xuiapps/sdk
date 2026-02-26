@@ -16,11 +16,13 @@ public class NavigationShell : ViewCollection
     private readonly NavButton techButton;
     private readonly NavButton archButton;
     private readonly NavButton contactButton;
+    private readonly NavButton scrollButton;
 
     private readonly HomePage homePage = new();
     private readonly TechPage techPage = new();
     private readonly ArchitecturePage archPage = new();
     private readonly ContactPage contactPage = new();
+    private readonly ScrollDemoPage scrollPage = new();
 
     private View activePage;
     private string activePageName = "Home";
@@ -38,11 +40,13 @@ public class NavigationShell : ViewCollection
         techButton = new NavButton { Text = "Tech", NavIcon = new SpyGlassIcon() };
         archButton = new NavButton { Text = "Architecture", NavIcon = new WalletIcon() };
         contactButton = new NavButton { Text = "Contact", NavIcon = new LocationPinIcon() };
+        scrollButton = new NavButton { Text = "Scroll Demo", NavIcon = new HomeIcon() };
 
         homeButton.OnClick = () => NavigateTo("Home");
         techButton.OnClick = () => NavigateTo("Tech");
         archButton.OnClick = () => NavigateTo("Architecture");
         contactButton.OnClick = () => NavigateTo("Contact");
+        scrollButton.OnClick = () => NavigateTo("Scroll");
 
         homeButton.IsSelected = true;
         activePage = homePage;
@@ -52,6 +56,7 @@ public class NavigationShell : ViewCollection
         Add(techButton);
         Add(archButton);
         Add(contactButton);
+        Add(scrollButton);
         Add(homePage);
     }
 
@@ -61,6 +66,7 @@ public class NavigationShell : ViewCollection
         1 => techButton,
         2 => archButton,
         3 => contactButton,
+        4 => scrollButton,
         _ => homeButton
     };
 
@@ -79,12 +85,14 @@ public class NavigationShell : ViewCollection
         techButton.IsSelected = page == "Tech";
         archButton.IsSelected = page == "Architecture";
         contactButton.IsSelected = page == "Contact";
+        scrollButton.IsSelected = page == "Scroll";
 
         int newIndex = page switch
         {
             "Tech" => 1,
             "Architecture" => 2,
             "Contact" => 3,
+            "Scroll" => 4,
             _ => 0
         };
 
@@ -100,6 +108,7 @@ public class NavigationShell : ViewCollection
             "Tech" => techPage,
             "Architecture" => archPage,
             "Contact" => contactPage,
+            "Scroll" => scrollPage,
             _ => homePage
         };
         activePageName = page;
@@ -142,6 +151,7 @@ public class NavigationShell : ViewCollection
         techButton.Measure(navButtonSize, context);
         archButton.Measure(navButtonSize, context);
         contactButton.Measure(navButtonSize, context);
+        scrollButton.Measure(navButtonSize, context);
 
         var contentSize = new Size(
             availableBorderEdgeSize.Width - NavWidth,
@@ -165,6 +175,8 @@ public class NavigationShell : ViewCollection
         archButton.Arrange(new Rect(navX, navY, NavWidth - 16, buttonHeight), context);
         navY += buttonHeight + buttonSpacing;
         contactButton.Arrange(new Rect(navX, navY, NavWidth - 16, buttonHeight), context);
+        navY += buttonHeight + buttonSpacing;
+        scrollButton.Arrange(new Rect(navX, navY, NavWidth - 16, buttonHeight), context);
 
         // Initialize indicator position on first arrange
         if (!indicatorAnimating && indicatorY == 0)

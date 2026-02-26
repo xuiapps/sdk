@@ -33,6 +33,13 @@ public partial interface IWindow
     public Rect SafeArea { get; set; }
 
     /// <summary>
+    /// Gets or sets the corner radius of the physical screen, in logical pixels.
+    /// Used to offset UI elements (such as scrollbar indicators) away from rounded screen edges.
+    /// Zero on desktop platforms where the window has sharp corners.
+    /// </summary>
+    public nfloat ScreenCornerRadius { get; set; }
+
+    /// <summary>
     /// Invoked when the window is closed and cleanup should occur.
     /// </summary>
     void Closed();
