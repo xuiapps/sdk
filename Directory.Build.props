@@ -1,0 +1,8 @@
+<Project>
+
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.*"
+                      PrivateAssets="all" BuildAction="None" />
+  </ItemGroup>
+
+</Project>

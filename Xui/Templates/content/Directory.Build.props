@@ -1,0 +1,5 @@
+<Project>
+  <!-- Template content: not built as part of this repo.
+       This file intentionally overrides the root Directory.Build.props
+       so NBGV and other repo-wide properties don't bleed into template files. -->
+</Project>

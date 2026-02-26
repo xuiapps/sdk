@@ -1,0 +1,85 @@
+<Project>
+
+  <PropertyGroup Condition="!($(TargetFramework.Contains('-'))) And '$(XuiDevEmulator)' == 'true' And $([MSBuild]::IsOSPlatform('OSX')) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
+    <DefineConstants>$(DefineConstants);EMULATOR;MACOS</DefineConstants>
+    <XuiEmulator>true</XuiEmulator>
+    <XuiMacOS>true</XuiMacOS>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="!($(TargetFramework.Contains('-'))) And '$(XuiDevEmulator)' == 'true' And $([MSBuild]::IsOSPlatform('Windows')) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
+    <DefineConstants>$(DefineConstants);EMULATOR;WINDOWS</DefineConstants>
+    <XuiEmulator>true</XuiEmulator>
+    <XuiWindows>true</XuiWindows>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="!($(TargetFramework.Contains('-'))) And !('$(XuiDevEmulator)' == 'true') And $([MSBuild]::IsOSPlatform('OSX')) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
+    <DefineConstants>$(DefineConstants);DESKTOP;MACOS</DefineConstants>
+    <XuiDesktop>true</XuiDesktop>
+    <XuiMacOS>true</XuiMacOS>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="!($(TargetFramework.Contains('-'))) And !('$(XuiDevEmulator)' == 'true') And $([MSBuild]::IsOSPlatform('Windows')) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
+    <DefineConstants>$(DefineConstants);DESKTOP;WINDOWS</DefineConstants>
+    <XuiDesktop>true</XuiDesktop>
+    <XuiWindows>true</XuiWindows>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' ">
+    <XuiIOS>true</XuiIOS>
+    <XuiMobile>true</XuiMobile>
+    <DefineConstants>$(DefineConstants);IOS;MOBILE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' ">
+    <XuiAndroid>true</XuiAndroid>
+    <XuiMobile>true</XuiMobile>
+    <DefineConstants>$(DefineConstants);ANDROID;MOBILE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" ($(UsingMicrosoftNETSdkWebAssembly) == 'true') And ('$(XuiDevEmulator)' == 'true') ">
+    <XuiEmulator>true</XuiEmulator>
+    <XuiBrowser>true</XuiBrowser>
+    <DefineConstants>$(DefineConstants);BROWSER;EMULATOR</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" ($(UsingMicrosoftNETSdkWebAssembly) == 'true') And !('$(XuiDevEmulator)' == 'true') ">
+    <XuiBrowser>true</XuiBrowser>
+    <DefineConstants>$(DefineConstants);BROWSER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == '' And !($(UsingMicrosoftNETSdkWebAssembly) == 'true') ">
+    <Compile Remove="Platforms/**/*;Properties/**/*;wwwroot/**/*" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == '' And ($(UsingMicrosoftNETSdkWebAssembly) == 'true') ">
+    <Compile Remove="Platforms/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Xui.Core" Version="$(XuiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(XuiEmulator) == 'true' ">
+    <PackageReference Include="Xui.Middleware.Emulator" Version="$(XuiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(XuiWindows) == 'true' ">
+    <PackageReference Include="Xui.Runtime.Windows" Version="$(XuiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(XuiMacOS) == 'true' ">
+    <PackageReference Include="Xui.Runtime.MacOS" Version="$(XuiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(XuiIOS) == 'true' ">
+    <PackageReference Include="Xui.Runtime.IOS" Version="$(XuiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(XuiAndroid) == 'true' ">
+    <PackageReference Include="Xui.Runtime.Android" Version="$(XuiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(XuiBrowser) == 'true' ">
+    <PackageReference Include="Xui.Runtime.Browser" Version="$(XuiVersion)" />
+  </ItemGroup>
+
+</Project>
