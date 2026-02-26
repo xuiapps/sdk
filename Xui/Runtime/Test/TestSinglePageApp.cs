@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xui.Core.Abstract;
 using Xui.Core.Abstract.Events;
-using Xui.Core.DI;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.Runtime.Software.Actual;
