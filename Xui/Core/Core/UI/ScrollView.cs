@@ -223,7 +223,8 @@ public class ScrollView : View
     public override void OnScrollWheel(ref ScrollWheelEventRef e)
     {
         if (e.Handled) return;
-        scrollOffsetY = nfloat.Clamp(scrollOffsetY + (nfloat)e.Delta.Y * 30f, 0, MaxScrollOffset);
+        // Windows WHEEL_DELTA is 120 per notch. Negative because forward wheel = scroll up = offset decreases.
+        scrollOffsetY = nfloat.Clamp(scrollOffsetY - (nfloat)e.Delta.Y / 120f * 80f, 0, MaxScrollOffset);
         flingCurve = null;
         pendingFlingVelocity = null;
         e.Handled = true;
