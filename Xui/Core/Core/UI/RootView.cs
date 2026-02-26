@@ -12,6 +12,7 @@ public class RootView : View, IContent
 {
     private View? content;
     private View? focusedView;
+    private Point lastMousePosition;
 
     public EventRouter EventRouter { get; }
 
@@ -54,11 +55,13 @@ public class RootView : View, IContent
 
     void IContent.OnMouseDown(ref MouseDownEventRef e)
     {
+        lastMousePosition = e.Position;
         this.EventRouter.Dispatch(ref e);
     }
 
     void IContent.OnMouseMove(ref MouseMoveEventRef e)
     {
+        lastMousePosition = e.Position;
         this.EventRouter.Dispatch(ref e);
     }
 
@@ -86,6 +89,7 @@ public class RootView : View, IContent
 
     void IContent.OnScrollWheel(ref ScrollWheelEventRef e)
     {
+        this.EventRouter.Dispatch(ref e, lastMousePosition);
     }
 
     void IContent.OnTouch(ref TouchEventRef e)

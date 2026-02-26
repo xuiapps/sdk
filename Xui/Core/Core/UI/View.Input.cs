@@ -14,6 +14,15 @@ public partial class View
     }
 
     /// <summary>
+    /// Called when a scroll wheel or trackpad scroll event is dispatched to this view.
+    /// Override to handle scroll input. Set <see cref="ScrollWheelEventRef.Handled"/> to stop propagation.
+    /// </summary>
+    public virtual void OnScrollWheel(ref ScrollWheelEventRef e)
+    {
+        // override in subclasses (e.g. ScrollView)
+    }
+
+    /// <summary>
     /// Called when a key is pressed while this view has focus.
     /// </summary>
     public virtual void OnKeyDown(ref KeyEventRef e)
