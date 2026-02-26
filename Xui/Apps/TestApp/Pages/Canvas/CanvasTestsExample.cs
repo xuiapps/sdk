@@ -62,6 +62,7 @@ public class CanvasTestsExample : Example
             this.AddTest<StarTest>("Star");
             this.AddTest<GlobalAlphaTest>("GlobalAlpha");
             this.AddTest<BitmapFillTest>("BitmapFill");
+            this.AddTest<DrawImageTest>("DrawImage");
 
             // Select first test by default
             this.Canvas = new FillRectTest();

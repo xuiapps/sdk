@@ -1,4 +1,5 @@
 using Xui.Core.Canvas;
+using Xui.Core.DI;
 using Xui.Core.Math2D;
 
 namespace Xui.Core.UI;
@@ -35,7 +36,7 @@ public class ImageView : View
 
     protected override void OnActivate()
     {
-        image = this.GetService(typeof(IImage)) as IImage;
+        image = this.GetService<IImage>();
         if (source != null)
         {
             image?.Load(source);

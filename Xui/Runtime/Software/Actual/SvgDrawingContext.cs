@@ -325,6 +325,12 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         defsWriter.WriteLine("    </radialGradient>");
     }
 
+    void IPenContext.SetFill(ImagePattern pattern) =>
+        throw new NotImplementedException("SVG context does not support image pattern fill.");
+
+    void IPenContext.SetStroke(ImagePattern pattern) =>
+        throw new NotImplementedException("SVG context does not support image pattern stroke.");
+
     void IImageDrawingContext.DrawImage(IImage image, Rect dest) =>
         throw new NotImplementedException("SVG context does not support DrawImage.");
 

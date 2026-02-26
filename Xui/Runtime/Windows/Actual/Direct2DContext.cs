@@ -214,6 +214,12 @@ public partial class Direct2DContext : IContext
     void IPenContext.SetFill(RadialGradient radialGradient) =>
         this.fill.SetRadialGradient(radialGradient);
 
+    void IPenContext.SetFill(ImagePattern pattern) =>
+        this.fill.SetBitmapBrush(pattern);
+
+    void IPenContext.SetStroke(ImagePattern pattern) =>
+        this.stroke.SetBitmapBrush(pattern);
+
     void IPathBuilder.BeginPath() =>
         this.path2d.BeginPath();
 
@@ -932,6 +938,37 @@ public partial class Direct2DContext : IContext
 
             this.Brush = this.RenderTarget.CreateRadialGradientBrushPtr(radialGradientBrushProperties, brushProperties, gradientStops, Gamma.Gamma_2_2, ExtendMode.Clamp);
             this.PaintStyle = PaintStyle.LinearGradient;
+        }
+
+        public void SetBitmapBrush(ImagePattern pattern)
+        {
+            if (pattern.Image is not DirectXImage img || img.D2D1Bitmap is not { } bitmap)
+                return;
+
+            this.Brush.Dispose();
+
+            (uint x, uint y) = pattern.Repetition switch
+            {
+                PatternRepeat.RepeatX  => ((uint)ExtendMode.Wrap,  (uint)ExtendMode.Clamp),
+                PatternRepeat.RepeatY  => ((uint)ExtendMode.Clamp, (uint)ExtendMode.Wrap),
+                PatternRepeat.NoRepeat => ((uint)ExtendMode.Clamp, (uint)ExtendMode.Clamp),
+                _                      => ((uint)ExtendMode.Wrap,  (uint)ExtendMode.Wrap),
+            };
+
+            var bbProps = new BitmapBrushProperties
+            {
+                ExtendModeX       = x,
+                ExtendModeY       = y,
+                InterpolationMode = 1, // Linear
+            };
+            var brushProps = new BrushProperties
+            {
+                Opacity   = 1f,
+                Transform = new() { _11 = 1f, _12 = 0f, _21 = 0f, _22 = 1f, _31 = 0f, _32 = 0f }
+            };
+
+            this.Brush = this.RenderTarget.CreateBitmapBrushPtr(bitmap, in bbProps, in brushProps);
+            this.PaintStyle = PaintStyle.BitmapBrush;
         }
 
     }
