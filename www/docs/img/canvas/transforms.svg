@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240" viewBox="0 0 480 240">
+  <rect x="0" y="0" width="480" height="240" fill="#F5F5F5" />
+  <text x="80" y="20" fill="#606060" text-anchor="middle" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">identity</text>
+  <rect x="50" y="50" width="60" height="60" fill="#4196D0" />
+  <rect x="50" y="50" width="60" height="60" fill="none" stroke="#2060A0" stroke-width="2" />
+  <text x="240" y="20" fill="#606060" text-anchor="middle" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Translate(190,30)</text>
+  <g transform="translate(190,30)">
+    <rect x="50" y="50" width="60" height="60" fill="#E05555" />
+    <rect x="50" y="50" width="60" height="60" fill="none" stroke="#A02020" stroke-width="2" />
+  </g>
+  <text x="380" y="20" fill="#606060" text-anchor="middle" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Rotate(45°)</text>
+  <g transform="translate(410,120)">
+    <g transform="matrix(0.71,0.71,-0.71,0.71,0,0)">
+      <rect x="-30" y="-30" width="60" height="60" fill="#59B35C" />
+      <rect x="-30" y="-30" width="60" height="60" fill="none" stroke="#208030" stroke-width="2" />
+    </g>
+  </g>
+  <text x="370" y="140" fill="#606060" text-anchor="middle" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Scale(0.5)</text>
+  <g transform="translate(370,180)">
+    <g transform="scale(0.5,0.5)">
+      <rect x="-30" y="-30" width="60" height="60" fill="#A060FF" />
+      <rect x="-30" y="-30" width="60" height="60" fill="none" stroke="#6020CC" stroke-width="4" />
+    </g>
+  </g>
+</svg>

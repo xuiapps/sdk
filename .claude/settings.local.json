@@ -6,7 +6,8 @@
       "Bash(ls:*)",
       "Bash(dotnet sln:*)",
       "Bash(find:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(test:*)"
     ]
   }
 }

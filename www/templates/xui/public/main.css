@@ -1,0 +1,6 @@
+/* ── Navbar ─────────────────────────────────────────── */
+
+/* 16px gap between logo image and site name text */
+.navbar-brand {
+    gap: 16px;
+}

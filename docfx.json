@@ -6,79 +6,52 @@
         {
           "src": ".",
           "files": [
-            "Xui/Core/Core/Core.csproj",
-            "Xui/Middleware/Emulator/Emulator.csproj"
+            "Xui/Core/Core/Xui.Core.csproj",
+            "Xui/Core/Core.DI/Xui.Core.DI.csproj",
+            "Xui/Core/Fonts/Xui.Core.Fonts.csproj",
+            "Xui/Middleware/Emulator/Emulator.csproj",
+            "Xui/Runtime/Android/Android.csproj",
+            "Xui/Runtime/Browser/Browser.csproj",
+            "Xui/Runtime/IOS/IOS.csproj",
+            "Xui/Runtime/MacOS/MacOS.csproj",
+            "Xui/Runtime/Software/Xui.Runtime.Software.csproj",
+            "Xui/Runtime/Windows/Windows.csproj"
           ]
         }
       ],
       "output": "www/api",
-      "namespaceLayout": "nested"
+      "namespaceLayout": "nested",
+      "allowCompilationErrors": true
     }
   ],
   "build": {
     "content": [
       {
-        "files": [
-          "docs/**/*.{md,yml}",
-          "ai/**/*.{md,yml}"
-        ],
-        "exclude": [
-          "_site/**"
-        ],
+        "files": ["toc.yml", "docs/**/*.{md,yml}"],
         "src": "www"
       },
       {
-        "files": [
-          "api/**/*.{md,yml}"
-        ],
-        "exclude": [
-          "_site/**"
-        ],
+        "files": ["api/**/*.{md,yml}"],
         "src": "www"
       }
     ],
     "resource": [
       {
-        "files": [
-          "images/**"
-        ],
-        "src": "www"
-      },
-      {
-        "files": [
-          "**"
-        ],
+        "files": ["**"],
         "src": "www/index"
       },
       {
-        "files": [
-          "ai/ai-api-ref.md"
-        ],
+        "files": ["docs/**/*.svg"],
         "src": "www"
-      },
-      {
-        "files": [
-          "docs/**/*.svg"
-        ],
-        "src": "www"
-      },
-      {
-        "files": [
-          "*.ttf"
-        ],
-        "dest": "fonts",
-        "src": "Xui/Core/Fonts/Inter"
       }
     ],
     "output": "_site",
-    "template": [
-      "default",
-      "modern"
-    ],
+    "template": ["default", "modern", "www/templates/xui"],
     "globalMetadata": {
-      "_appName": "XUI APPS",
-      "_appTitle": "XUI APPS",
+      "_appName": "Xui Apps",
+      "_appTitle": "Xui Apps",
       "_enableSearch": true,
+      "_disableContribution": true,
       "pdf": false
     }
   }
