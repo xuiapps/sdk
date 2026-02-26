@@ -35,9 +35,6 @@ jobs:
       - name: Generate API metadata
         run: docfx metadata docfx.json
 
-      - name: Restore custom API TOC
-        run: git checkout -- www/api/toc.yml
-
       - name: Build site
         run: docfx build docfx.json
 
