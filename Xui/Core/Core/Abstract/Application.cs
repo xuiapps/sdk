@@ -20,7 +20,7 @@ public abstract class Application : IServiceProvider
 
     public IRuntime Runtime { get; }
 
-    public DisposeQueue DisposeQueue { get; set; }
+    public List<IDisposable> DisposeQueue { get; } = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Application"/> class.
@@ -37,14 +37,21 @@ public abstract class Application : IServiceProvider
     /// or may return immediately if the platform bootstraps a runtime loop before instantiating the app delegate.
     /// </summary>
     /// <returns>The application’s exit code.</returns>
+    private IRunLoop? runLoop;
+
     public virtual int Run()
     {
         // this.Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
         //     $"Application.Run {this.GetType().Name}");
-        return Runtime
-            .CreateRunloop(this)
-            .Run();
+        this.runLoop = Runtime.CreateRunloop(this);
+        return this.runLoop.Run();
     }
+
+    /// <summary>
+    /// Requests graceful shutdown of the application's run loop.
+    /// On platforms without a blocking run loop (iOS, Browser) this is a no-op.
+    /// </summary>
+    public virtual void Quit() => this.runLoop?.Quit();
 
     /// <summary>
     /// Called by the runtime after initialization.
@@ -66,6 +73,7 @@ public abstract class Application : IServiceProvider
     public virtual void OnExit()
     {
         Exit?.Invoke();
-        this.DisposeQueue.DisposeAll();
+        foreach (var item in DisposeQueue) item.Dispose();
+        DisposeQueue.Clear();
     }
 }

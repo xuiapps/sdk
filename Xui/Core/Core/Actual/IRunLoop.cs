@@ -17,4 +17,11 @@ public interface IRunLoop
     /// </summary>
     /// <returns>The application’s exit code.</returns>
     int Run();
+
+    /// <summary>
+    /// Requests that the run loop exit gracefully.
+    /// On platforms with a definite exit (Win32, macOS) this posts a quit message to the main thread.
+    /// On platforms without a run loop (iOS, Browser) this is a no-op.
+    /// </summary>
+    void Quit();
 }

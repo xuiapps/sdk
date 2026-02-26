@@ -16,4 +16,6 @@ public partial class BrowserRunLoop : Xui.Core.Actual.IRunLoop
         this.Abstract.Start();
         return 0;
     }
+
+    public void Quit() { }
 }

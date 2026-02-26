@@ -371,9 +371,17 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
                 break;
             }
 
+            case WindowMessage.WM_CLOSE:
+            {
+                if (!this.Abstract.Closing())
+                    return 0;
+                break;
+            }
+
             case WindowMessage.WM_DESTROY:
             {
                 Win32Platform.Instance.RemoveWindow(this);
+                this.Abstract.Closed();
                 break;
             }
 
@@ -630,6 +638,8 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
         this.Hwnd.ShowWindow();
         this.Hwnd.UpdateWindow();
     }
+
+    public void Close() => DestroyWindow(this.Hwnd);
 
     public virtual void Invalidate() => this.invalid = true;
 

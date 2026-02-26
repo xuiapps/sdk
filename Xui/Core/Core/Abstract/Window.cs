@@ -17,7 +17,7 @@ namespace Xui.Core.Abstract;
 /// acting as a root container for layout and visual composition. Subclasses may override
 /// specific input or rendering behaviors as needed.
 /// </remarks>
-public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IServiceProvider
+public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IServiceProvider, IDisposable
 {
     private static IList<Window> openWindows = new List<Window>();
 
@@ -26,10 +26,13 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     /// <inheritdoc/>
     public virtual object? GetService(Type serviceType) => this.Context.GetService(serviceType);
 
-    public DisposeQueue DisposeQueue { get; set; }
+    public List<IDisposable> DisposeQueue { get; } = [];
+
+    private bool disposed;
+    private bool platformClosed;
 
     /// <summary>
-    /// When <c>true</c> (the default), <see cref="Closed"/> drains <see cref="DisposeQueue"/>.
+    /// When <c>true</c> (the default), closing the window calls <see cref="Dispose"/>.
     /// Set to <c>false</c> for windows that survive being closed and reopened.
     /// </summary>
     public bool DestroyOnClose { get; set; } = true;
@@ -143,8 +146,38 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
         // Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
         //     $"Window.Closed {this.GetType().Name}");
         openWindows.Remove(this);
+        platformClosed = true;
         if (DestroyOnClose)
-            this.DisposeQueue.DisposeAll();
+            Dispose();
+    }
+
+    /// <summary>
+    /// Releases all managed resources owned by this window.
+    /// If the platform window is still open, it is closed first.
+    /// Items in <see cref="DisposeQueue"/> are disposed in order.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <param name="disposing">
+    /// <c>true</c> when called from <see cref="Dispose()"/>; <c>false</c> from a finalizer.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposed) return;
+        disposed = true;
+
+        if (disposing)
+        {
+            if (!platformClosed)
+                this.Actual.Close();
+
+            foreach (var item in DisposeQueue) item.Dispose();
+            DisposeQueue.Clear();
+        }
     }
 
     /// <summary>

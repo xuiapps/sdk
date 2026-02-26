@@ -24,6 +24,13 @@ public interface IWindow
     void Show();
 
     /// <summary>
+    /// Closes and destroys the platform window. Called when the abstract window is disposed
+    /// programmatically rather than through a user-initiated close gesture.
+    /// The default implementation is a no-op for platforms that do not support imperative close.
+    /// </summary>
+    void Close() { }
+
+    /// <summary>
     /// Requests a redraw of the window surface.
     /// The platform should trigger a paint or render callback as soon as possible.
     /// </summary>

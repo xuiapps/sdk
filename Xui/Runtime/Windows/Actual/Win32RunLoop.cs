@@ -73,8 +73,11 @@ public class Win32RunLoop : Xui.Core.Actual.IRunLoop, Xui.Core.Actual.IDispatche
         }
 
         instruments.Log(Scope.Application, LevelOfDetail.Essential, $"Win32RunLoop.Run exiting");
+        this.Application.OnExit();
         return 0;
     }
+
+    public void Quit() => PostQuitMessage(0);
 
     private static unsafe void WaitForNextFrame()
     {

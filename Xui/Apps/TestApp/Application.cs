@@ -9,5 +9,5 @@ public class Application : Xui.Core.Abstract.Application
     }
 
     public override void Start() =>
-        this.CreateAndShowOnce<MainWindow>();
+        this.CreateAndShowMainWindowOnce<MainWindow>();
 }
