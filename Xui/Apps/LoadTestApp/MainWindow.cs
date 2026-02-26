@@ -9,6 +9,11 @@ namespace Xui.Apps.LoadTestApp;
 
 public class MainWindow : Window
 {
+    public MainWindow(IServiceProvider context) : base(context)
+    {
+        this.Title = "Xui LoadTestApp";
+    }
+
     private NFloat CellWidth = 80;
     private NFloat CellHeight = 22;
     private NFloat ScrollY = 0;

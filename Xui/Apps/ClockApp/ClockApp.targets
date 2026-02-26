@@ -1,19 +1,20 @@
 <Project>
 
   <PropertyGroup>
-    <RootNamespace>Xui.Apps.BlankApp</RootNamespace>
+    <RootNamespace>Xui.Apps.ClockApp</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <ApplicationTitle>Xui BlankApp</ApplicationTitle>
-    <ApplicationId>com.xuiapps.BlankApp</ApplicationId>
+    <ApplicationTitle>Xui ClockApp</ApplicationTitle>
+    <ApplicationId>com.xuiapps.ClockApp</ApplicationId>
 
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 	  <ApplicationVersion>1</ApplicationVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Add your PackageReferences here -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
+    <ProjectReference Include="../../Core/Core.DI/Xui.Core.DI.csproj" />
   </ItemGroup>
 
 </Project>

@@ -91,7 +91,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XuiSDK.Emulator", "Xui\Apps
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XuiSDK.Mobile", "Xui\Apps\XuiSDK\XuiSDK.Mobile.csproj", "{8D56EB6C-825F-4BF5-9F4E-6E868B2B9B79}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xui.Core.DI", "Xui\Core\DI\Xui.Core.DI.csproj", "{C8175D7C-5888-43BF-A32B-9D26A743E509}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xui.Core.DI", "Xui\Core\Core.DI\Xui.Core.DI.csproj", "{C8175D7C-5888-43BF-A32B-9D26A743E509}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

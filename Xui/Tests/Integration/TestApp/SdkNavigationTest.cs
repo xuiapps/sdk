@@ -1,3 +1,4 @@
+using Xui.Apps.BlankApp;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.Runtime.Test;
@@ -15,14 +16,14 @@ public class SdkNavigationTest
     [Fact]
     public void HomePage_Renders()
     {
-        using var app = new TestSinglePageApp(new Xui.Apps.BlankApp.App(), WindowSize);
+        using var app = new TestSinglePageApp<Application, MainWindow>(WindowSize);
         app.Snapshot("HomePage");
     }
 
     [Fact]
     public void Navigate_To_TextMetrics()
     {
-        using var app = new TestSinglePageApp(new Xui.Apps.BlankApp.App(), WindowSize);
+        using var app = new TestSinglePageApp<Application, MainWindow>(WindowSize);
         app.Snapshot("HomePage");
 
         var button = app.Window.RootView.FindViewById("TextMetrics");
@@ -39,7 +40,7 @@ public class SdkNavigationTest
     [Fact]
     public void Navigate_Through_All()
     {
-        using var app = new TestSinglePageApp(new Xui.Apps.BlankApp.App(), WindowSize);
+        using var app = new TestSinglePageApp<Application, MainWindow>(WindowSize);
         app.Snapshot("HomePage");
 
         string[] pages = ["TextMetrics", "TextLayout", "NestedStacks", "ViewCollectionAlignment", "AnimatedHeart", "TextBox"];
@@ -71,7 +72,7 @@ public class SdkNavigationTest
     [Fact]
     public void Pending_Hover_After_Navigation()
     {
-        using var app = new TestSinglePageApp(new Xui.Apps.BlankApp.App(), WindowSize);
+        using var app = new TestSinglePageApp<Application, MainWindow>(WindowSize);
         app.Snapshot("HomePage");
 
         // Hover and click the NestedStacks button
@@ -109,7 +110,7 @@ public class SdkNavigationTest
     [Fact]
     public void Heartbeat_Stops_After_Mouse_Over_Back()
     {
-        using var app = new TestSinglePageApp(new Xui.Apps.BlankApp.App(), WindowSize);
+        using var app = new TestSinglePageApp<Application, MainWindow>(WindowSize);
 
         // Navigate to AnimatedHeart
         var button = app.Window.RootView.FindViewById("AnimatedHeart");

@@ -1,6 +1,6 @@
 using Xui.Core.DI;
 
-namespace Xui.Apps.XuiSDK;
+namespace Xui.Apps.ClockApp;
 
 public class Application : Xui.Core.Abstract.Application
 {

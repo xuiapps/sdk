@@ -10,7 +10,7 @@ public class MainWindow : Xui.Core.Abstract.Window, IWindow.IDesktopStyle
     Size? IWindow.IDesktopStyle.StartupSize => new Size(900, 600);
     WindowClientArea IWindow.IDesktopStyle.ClientArea => WindowClientArea.Extended;
 
-    public MainWindow()
+    public MainWindow(IServiceProvider context) : base(context)
     {
         Content = new NavigationShell();
     }

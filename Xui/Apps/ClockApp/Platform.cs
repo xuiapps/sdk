@@ -2,14 +2,13 @@ using Xui.Core.Actual;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Xui.Apps.BlankApp;
+namespace Xui.Apps.ClockApp;
 
-public static class Runtime
+public static class Platform
 {
     public static IHostBuilder UseRuntime(this IHostBuilder @this) =>
         @this.ConfigureServices(config =>
         {
-            // services.AddSingleton<IInstruments>(_ => Instruments.File("instruments.log"));
 #if MACOS && EMULATOR
             config.AddSingleton<IRuntime>(new Xui.Middleware.Emulator.Actual.EmulatorPlatform(
                 Xui.Runtime.MacOS.Actual.MacOSPlatform.Instance));

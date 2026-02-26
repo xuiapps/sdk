@@ -59,7 +59,7 @@
 
     <!-- Core -->
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
-    <ProjectReference Include="../../Core/DI/Xui.Core.DI.csproj" />
+    <ProjectReference Include="../../Core/Core.DI/Xui.Core.DI.csproj" />
 
     <!-- Middleware -->
     <ProjectReference
