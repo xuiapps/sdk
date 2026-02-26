@@ -33,4 +33,6 @@ public class IOSRunLoop : Xui.Core.Actual.IRunLoop, Xui.Core.Actual.IDispatcher
         using var nsAppDelegateName = new CFStringRef(IOSApplicationDelegate.Class.Name);
         return Xui.Runtime.IOS.UIKit.UIApplicationMain(0, 0, 0, nsAppDelegateName);
     }
+
+    public void Quit() { }
 }

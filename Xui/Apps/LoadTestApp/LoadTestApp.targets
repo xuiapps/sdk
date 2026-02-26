@@ -13,7 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Add your PackageReferences here -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
+    <ProjectReference Include="../../Core/Core.DI/Xui.Core.DI.csproj" />
   </ItemGroup>
 
 </Project>

@@ -80,4 +80,16 @@ public interface IPenContext
     /// </summary>
     /// <param name="radialGradient">The gradient to use for filling shapes.</param>
     void SetFill(RadialGradient radialGradient);
+
+    /// <summary>
+    /// Sets the fill style to a tiled image pattern, equivalent to
+    /// <c>ctx.fillStyle = ctx.createPattern(image, repetition)</c> in the browser.
+    /// </summary>
+    void SetFill(ImagePattern pattern);
+
+    /// <summary>
+    /// Sets the stroke style to a tiled image pattern.
+    /// </summary>
+    void SetStroke(ImagePattern pattern);
+
 }

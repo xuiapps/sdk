@@ -16,6 +16,23 @@ public static partial class D2D1
         {
         }
 
+        /// <summary>
+        /// Creates a bitmap brush that paints with a tiled or clamped bitmap.
+        /// Wraps <c>ID2D1RenderTarget::CreateBitmapBrush</c> (vtable [7]).
+        /// </summary>
+        public Brush.Ptr CreateBitmapBrushPtr(Bitmap1 bitmap, in BitmapBrushProperties bbProps, in BrushProperties brushProps)
+        {
+            void* brush;
+            fixed (BitmapBrushProperties* bbPtr = &bbProps)
+            fixed (BrushProperties* bpPtr = &brushProps)
+            {
+                Marshal.ThrowExceptionForHR(
+                    ((delegate* unmanaged[MemberFunction]<void*, void*, BitmapBrushProperties*, BrushProperties*, void**, int>)this[7])
+                    (this, bitmap, bbPtr, bpPtr, &brush));
+            }
+            return new Brush.Ptr(brush);
+        }
+
         public SolidColorBrush CreateSolidColorBrush(in ColorF color)
         {
             void* brush;
@@ -195,6 +212,35 @@ public static partial class D2D1
         public void FillGeometry(PathGeometry.Ptr geometry, Brush.Ptr brush) =>
             ((delegate* unmanaged[MemberFunction]<void*, void*, void*, void*, void> )this[23])(this, geometry, brush, null);
 
+        /// <summary>
+        /// Draws a bitmap with the given opacity onto the render target.
+        /// Wraps <c>ID2D1RenderTarget::DrawBitmap</c> (vtable [26]).
+        /// Interpolation mode is always Linear (1).
+        /// </summary>
+        public void DrawBitmap(Bitmap1 bitmap, in RectF dest, float opacity)
+        {
+            fixed (RectF* destPtr = &dest)
+            {
+                ((delegate* unmanaged[MemberFunction]<void*, void*, RectF*, float, uint, RectF*, void>)this[26])
+                    (this, bitmap, destPtr, opacity, 1u /* Linear */, null);
+            }
+        }
+
+        /// <summary>
+        /// Draws a sub-region of a bitmap with the given opacity onto the render target.
+        /// Wraps <c>ID2D1RenderTarget::DrawBitmap</c> (vtable [26]).
+        /// Interpolation mode is always Linear (1).
+        /// </summary>
+        public void DrawBitmap(Bitmap1 bitmap, in RectF dest, float opacity, in RectF source)
+        {
+            fixed (RectF* destPtr = &dest)
+            fixed (RectF* srcPtr = &source)
+            {
+                ((delegate* unmanaged[MemberFunction]<void*, void*, RectF*, float, uint, RectF*, void>)this[26])
+                    (this, bitmap, destPtr, opacity, 1u /* Linear */, srcPtr);
+            }
+        }
+
         public void DrawText(string text, TextFormat textFormat, in RectF layoutRect, Brush defaultFillBrush, DrawTextOptions options = DrawTextOptions.None, MeasuringMode measuringMode = MeasuringMode.Natural)
         {
             fixed (void* textPtr = &global::System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller.GetPinnableReference(text))
@@ -260,12 +306,34 @@ public static partial class D2D1
 
         public void BeginDraw() =>
             ((delegate* unmanaged[MemberFunction]<void*, void> )this[48])(this);
-        
+
         public void EndDraw()
         {
             ulong tag1;
             ulong tag2;
             Marshal.ThrowExceptionForHR(((delegate* unmanaged[MemberFunction]<void*, ulong*, ulong*, int>)this[49])(this, &tag1, &tag2));
+        }
+
+        /// <summary>
+        /// Draws a bitmap into the given destination rectangle (vtable slot 26).
+        /// Sits between FillOpacityMask (25) and DrawText (27) in the ID2D1RenderTarget vtable.
+        /// interpolationMode: 0 = NearestNeighbor, 1 = Linear.
+        /// </summary>
+        public void DrawBitmap(Bitmap1 bitmap, in RectF destRect, float opacity = 1.0f, uint interpolationMode = 1)
+        {
+            fixed (RectF* destPtr = &destRect)
+                ((delegate* unmanaged[MemberFunction]<void*, void*, RectF*, float, uint, RectF*, void>)this[26])
+                    (this, bitmap, destPtr, opacity, interpolationMode, null);
+        }
+
+        /// <summary>
+        /// Draws a cropped region of a bitmap (vtable slot 26 with source rect).
+        /// </summary>
+        public void DrawBitmap(Bitmap1 bitmap, in RectF destRect, in RectF srcRect, float opacity = 1.0f, uint interpolationMode = 1)
+        {
+            fixed (RectF* destPtr = &destRect, srcPtr = &srcRect)
+                ((delegate* unmanaged[MemberFunction]<void*, void*, RectF*, float, uint, RectF*, void>)this[26])
+                    (this, bitmap, destPtr, opacity, interpolationMode, srcPtr);
         }
     }
 }

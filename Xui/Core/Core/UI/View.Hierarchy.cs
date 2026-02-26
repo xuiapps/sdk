@@ -32,6 +32,12 @@ public partial class View
 
         child.Parent = this;
 
+        if ((this.Flags & ViewFlags.Attached) != 0)
+        {
+            var attachEvent = new AttachEventRef();
+            AttachSubtree(child, ref attachEvent);
+        }
+
         if ((this.Flags & ViewFlags.Active) != 0)
             ActivateSubtree(child);
 
@@ -53,6 +59,12 @@ public partial class View
 
         if ((child.Flags & ViewFlags.Active) != 0)
             DeactivateSubtree(child);
+
+        if ((child.Flags & ViewFlags.Attached) != 0)
+        {
+            var detachEvent = new DetachEventRef();
+            DetachSubtree(child, ref detachEvent);
+        }
 
         child.Parent = null;
 

@@ -13,6 +13,20 @@ public static partial class D2D1
         {
         }
 
+        /// <summary>
+        /// Creates a <c>ID2D1Bitmap1</c> by letting D2D1 decode and upload a <c>IWICBitmapSource</c> directly.
+        /// D2D1 handles format conversion internally — no manual pixel copy required.
+        /// vtable [58] — ID2D1DeviceContext::CreateBitmapFromWicBitmap
+        /// </summary>
+        public Bitmap1 CreateBitmapFromWicBitmap(COM.Unknown wicBitmapSource)
+        {
+            void* ppv;
+            Marshal.ThrowExceptionForHR(
+                ((delegate* unmanaged[MemberFunction]<void*, void*, void*, void**, int>)this[58])
+                (this, wicBitmapSource, null, &ppv));
+            return new Bitmap1(ppv);
+        }
+
         public Bitmap1 CreateBitmapFromDxgiSurface(DXGI.Surface surface, in BitmapProperties1 bitmapProperties1)
         {
             void* ppv;

@@ -6,7 +6,7 @@ using Window = Xui.Core.Abstract.Window;
 using static Xui.Core.Canvas.Colors;
 using System.Runtime.InteropServices;
 
-namespace Xui.Apps.BlankApp;
+namespace Xui.Apps.ClockApp;
 
 public enum MouseLocation
 {
@@ -28,6 +28,8 @@ public class MainWindow : Window, IWindow.IDesktopStyle
     private MouseLocation mouseLocation = MouseLocation.Elsewhere;
     private Rect runButtonRect;
     private bool running = false;
+
+    public MainWindow(IServiceProvider context) : base(context) { }
 
     IWindow.IDesktopStyle.WindowBackdrop IWindow.IDesktopStyle.Backdrop => IWindow.IDesktopStyle.WindowBackdrop.Chromeless;
 

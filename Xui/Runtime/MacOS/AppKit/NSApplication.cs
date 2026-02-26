@@ -20,6 +20,8 @@ public static partial class AppKit
 
         public static readonly Sel RunSel = new Sel("run");
 
+        public static readonly Sel TerminateSel = new Sel("terminate:");
+
         static NSApplication()
         {
             Marshalling.SetClassWrapper(Class, id => new NSApplication(CoreFoundation.CFRetain(id)));
@@ -53,6 +55,11 @@ public static partial class AppKit
         public void Run()
         {
             objc_msgSend(this, RunSel);
+        }
+
+        public void Terminate()
+        {
+            objc_msgSend(this, TerminateSel, (nint)0);
         }
 
         public override NSApplication Autorelease() => (NSApplication)base.Autorelease();

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Xui.Apps.BlankApp;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
@@ -14,11 +15,11 @@ public class TextBoxTest
 {
     private static Size WindowSize = (600, 400);
 
-    private static TestSinglePageApp NavigateToTextBox(
+    private static TestSinglePageApp<Application, MainWindow> NavigateToTextBox(
         [CallerFilePath] string callerPath = "",
         [CallerMemberName] string testName = "")
     {
-        var app = new TestSinglePageApp(new Xui.Apps.BlankApp.App(), WindowSize, callerPath, testName);
+        var app = new TestSinglePageApp<Application, MainWindow>(WindowSize, callerPath: callerPath, testName: testName);
 
         // Render first so all home page buttons have valid Frames for hit-testing.
         // Without this, all views have zero frames and the hit-test hits the last

@@ -94,4 +94,13 @@ public static partial class User32
 
     [LibraryImport(User32Lib, EntryPoint = "GetSystemMetrics")]
     public static partial int GetSystemMetrics(SystemMetric nIndex);
+
+    /// <summary>https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage</summary>
+    [LibraryImport(User32Lib)]
+    public static partial void PostQuitMessage(int nExitCode);
+
+    /// <summary>https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow</summary>
+    [LibraryImport(User32Lib)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool DestroyWindow(HWND hWnd);
 }

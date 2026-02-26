@@ -84,6 +84,13 @@ public partial class View
         /// cleared by <see cref="DeactivateSubtree"/>.
         /// </summary>
         Active = 1 << 9,
+
+        /// <summary>
+        /// This view is attached — it has been added to a visual tree that is itself
+        /// attached to the platform (e.g. a window). Set by <see cref="AttachSubtree"/>
+        /// and cleared by <see cref="DetachSubtree"/>.
+        /// </summary>
+        Attached = 1 << 10,
     }
 
     /// <summary>

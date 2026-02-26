@@ -18,4 +18,6 @@ public class TestRunLoop : IRunLoop
         this.application.Start();
         return 0;
     }
+
+    public void Quit() { }
 }

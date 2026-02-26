@@ -5,6 +5,7 @@ using Xui.Core.Abstract.Events;
 using Xui.Core.Animation;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
+using Xui.Middleware.Emulator.Devices;
 using static Xui.Core.Abstract.IWindow.IDesktopStyle;
 
 namespace Xui.Middleware.Emulator.Actual;
@@ -74,6 +75,18 @@ public partial class EmulatorWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actual
     /// The safe area that excludes OS bars, camera notches, etc.
     /// </summary>
     public Rect SafeArea { get; set; }
+
+    /// <summary>
+    /// The corner radius of the emulated device screen. Forwarded to the abstract window
+    /// so views (e.g. ScrollView) can inset UI elements away from rounded screen edges.
+    /// </summary>
+    public nfloat ScreenCornerRadius { get; set; }
+
+    /// <summary>
+    /// The device profile currently displayed in the emulator. Defaults to the first entry in
+    /// <see cref="DeviceCatalog.All"/> (iPhone 15 Pro).
+    /// </summary>
+    public DeviceProfile CurrentDevice { get; set; } = DeviceCatalog.All[0];
 #endregion
 
 #region Abstract.IWindow
@@ -189,7 +202,7 @@ public partial class EmulatorWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actual
 
         NFloat borderWidth = 8f;
         NFloat borderOutline = 2.5f; // Included in borderWidth
-        NFloat screenCornerRadius = 45f;
+        NFloat screenCornerRadius = (NFloat)CurrentDevice.ScreenCornerRadius;
 
         Rect titleRect = new(0, 0, render.Rect.Width, titleHeight);
         Rect emulatorRect = new(
@@ -219,6 +232,7 @@ public partial class EmulatorWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actual
 
             Abstract!.DisplayArea = emulatorRender.Rect;
             Abstract!.SafeArea = emulatorRender.Rect - new Frame(40, 0, 20, 0);
+            Abstract!.ScreenCornerRadius = CurrentDevice.ScreenCornerRadius;
 
             Abstract!.Render(ref emulatorRender);
         }
@@ -309,7 +323,7 @@ public partial class EmulatorWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actual
         NFloat titleHeight = 52f;
         NFloat gap = 8f;
         NFloat borderWidth = 8f;
-        NFloat screenCornerRadius = 45f;
+        NFloat screenCornerRadius = (NFloat)CurrentDevice.ScreenCornerRadius;
 
         var point = evRef.Point;
 

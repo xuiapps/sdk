@@ -1,17 +1,29 @@
+using Xui.Core.Math2D;
+
 namespace Xui.Core.Canvas;
 
 /// <summary>
-/// Defines methods for drawing image-like content onto the canvas,
-/// such as bitmaps, video frames, or decoded image buffers.
-/// 
-/// Mirrors the image drawing APIs from the HTML5 Canvas 2D context.
+/// Defines methods for drawing images onto the canvas.
+/// Mirrors the <c>drawImage</c> API from the HTML5 Canvas 2D context.
 /// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
 /// </summary>
 public interface IImageDrawingContext
 {
-    // Future members may include:
-    // void DrawImage(ImageSource image, nfloat dx, nfloat dy);
-    // void DrawImage(ImageSource image, nfloat dx, nfloat dy, nfloat dWidth, nfloat dHeight);
-    // void DrawImage(ImageSource image, nfloat sx, nfloat sy, nfloat sWidth, nfloat sHeight,
-    //                nfloat dx, nfloat dy, nfloat dWidth, nfloat dHeight);
+    /// <summary>
+    /// Draws the entire <paramref name="image"/> scaled to fit <paramref name="dest"/> at full opacity.
+    /// </summary>
+    void DrawImage(IImage image, Rect dest);
+
+    /// <summary>
+    /// Draws the entire <paramref name="image"/> scaled to fit <paramref name="dest"/>
+    /// at the given <paramref name="opacity"/>.
+    /// </summary>
+    void DrawImage(IImage image, Rect dest, nfloat opacity);
+
+    /// <summary>
+    /// Draws the sub-region <paramref name="source"/> of <paramref name="image"/>
+    /// scaled to fit <paramref name="dest"/> at the given <paramref name="opacity"/>.
+    /// Mirrors the 9-argument form of <c>drawImage</c> in the HTML5 Canvas API.
+    /// </summary>
+    void DrawImage(IImage image, Rect source, Rect dest, nfloat opacity);
 }

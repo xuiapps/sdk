@@ -1,3 +1,4 @@
+using System;
 using Xui.Core.Canvas;
 
 namespace Xui.Core.Actual;
@@ -19,9 +20,16 @@ public interface IWindow
 
     /// <summary>
     /// Displays the window to the user. This may include making it visible, entering the main loop,
-    /// or attaching it to the application’s view hierarchy, depending on the platform.
+    /// or attaching it to the application's view hierarchy, depending on the platform.
     /// </summary>
     void Show();
+
+    /// <summary>
+    /// Closes and destroys the platform window. Called when the abstract window is disposed
+    /// programmatically rather than through a user-initiated close gesture.
+    /// The default implementation is a no-op for platforms that do not support imperative close.
+    /// </summary>
+    void Close() { }
 
     /// <summary>
     /// Requests a redraw of the window surface.
@@ -40,4 +48,11 @@ public interface IWindow
     /// during pointer events. Returns null on platforms that do not support it.
     /// </summary>
     ITextMeasureContext? TextMeasureContext => null;
+
+    /// <summary>
+    /// Returns platform-provided services for this window (e.g. <see cref="IImagePipeline"/>).
+    /// Called by the abstract <see cref="Xui.Core.Abstract.Window"/> after exhausting its own
+    /// DI service provider. Implementations must never call back into the abstract window.
+    /// </summary>
+    object? GetService(Type serviceType) => null;
 }

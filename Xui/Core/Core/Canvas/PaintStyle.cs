@@ -19,5 +19,10 @@ public enum PaintStyle
     /// <summary>
     /// A radial gradient that transitions colors outward in a circular or elliptical shape.
     /// </summary>
-    RadialGradient = 2
+    RadialGradient = 2,
+
+    /// <summary>
+    /// A repeating bitmap pattern (equivalent to <c>createPattern(image, "repeat")</c>).
+    /// </summary>
+    BitmapBrush = 3
 }

@@ -30,8 +30,11 @@ public class MacOSRunLoop : Xui.Core.Actual.IRunLoop, Xui.Core.Actual.IDispatche
         nsAppRef.Activate();
 
         nsAppRef.Run();
+        this.Application.OnExit();
         return 0;
     }
+
+    public void Quit() => NSApplication.SharedApplication?.Terminate();
 
     public void Post(Action callback)
     {

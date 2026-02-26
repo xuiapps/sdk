@@ -8,4 +8,8 @@
   <Import Project="Xui.targets" />
   <Import Project="TestApp.targets" />
 
+  <ItemGroup>
+    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

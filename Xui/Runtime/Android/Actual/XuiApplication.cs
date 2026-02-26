@@ -46,4 +46,6 @@ public class XuiApplication : global::Android.App.Application, Xui.Core.Actual.I
         this.Abstract?.Start();
         return 0;
     }
+
+    public void Quit() { }
 }

@@ -19,4 +19,9 @@ public ref struct ScrollWheelEventRef
     /// Positive Y values usually indicate upward scrolling.
     /// </summary>
     public Vector Delta;
+
+    /// <summary>
+    /// Set to <c>true</c> by a handler to stop further propagation of this event.
+    /// </summary>
+    public bool Handled;
 }

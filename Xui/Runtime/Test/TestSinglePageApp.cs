@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Xui.Core.Abstract;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Math2D;
@@ -13,15 +15,18 @@ namespace Xui.Runtime.Test;
 
 /// <summary>
 /// A unit-test platform harness that boots a real <see cref="Application"/> subclass
-/// and exposes synchronous methods to drive input, animation, and rendering.
+/// via the host DI container and exposes synchronous methods to drive input, animation, and rendering.
 /// <para>
 /// Like the Browser platform, <c>Run()</c> calls <c>Start()</c> and returns immediately.
 /// The test then drives events manually — no OS event loop is involved.
 /// </para>
 /// </summary>
-public class TestSinglePageApp : IDisposable
+public class TestSinglePageApp<TApplication, TWindow> : IDisposable
+    where TApplication : Application
+    where TWindow : Window
 {
     private readonly TestPlatform platform;
+    private readonly IHost host;
     private readonly string snapshotsDir;
     private readonly List<SnapshotEntry> snapshots = new();
     private int snapshotCounter;
@@ -43,19 +48,34 @@ public class TestSinglePageApp : IDisposable
     public Size Size { get; }
 
     /// <summary>
-    /// Creates a test harness that boots the given application with a window of the specified size.
-    /// Snapshot artifacts are written to a <c>Snapshots/{testName}/</c> folder next to the calling test file.
+    /// Creates a test harness that boots <typeparamref name="TApplication"/> via a host with
+    /// <see cref="TestPlatform"/> registered as <see cref="Xui.Core.Actual.IRuntime"/>.
+    /// <typeparamref name="TApplication"/> and <typeparamref name="TWindow"/> are registered
+    /// automatically as scoped services.
+    /// Snapshot artifacts are written to a <c>Snapshots/{testName}/</c> folder next to the
+    /// calling test file.
     /// </summary>
     public TestSinglePageApp(
-        Application application,
         Size windowSize,
+        Action<IServiceCollection>? configure = null,
         [CallerFilePath] string callerPath = "",
         [CallerMemberName] string testName = "")
     {
         this.Size = windowSize;
         this.platform = new TestPlatform();
-        Xui.Core.Actual.Runtime.Current = this.platform;
 
+        this.host = new HostBuilder()
+            .ConfigureServices(services =>
+            {
+                services.AddSingleton<Xui.Core.Actual.IRuntime>(this.platform);
+                services.AddScoped<TApplication>();
+                services.AddScoped<TWindow>();
+                configure?.Invoke(services);
+            })
+            .Build();
+
+        this.host.Start();
+        var application = this.host.Services.GetRequiredService<TApplication>();
         application.Run();
 
         this.Window = Window.OpenWindows[Window.OpenWindows.Count - 1];
@@ -263,7 +283,7 @@ public class TestSinglePageApp : IDisposable
             var active = i == 0 ? " active" : "";
             html.AppendLine($"    <div class=\"step {cls}{active}\" onclick=\"selectStep({i})\">");
             html.AppendLine($"      <span class=\"badge\">{icon}</span>");
-            html.AppendLine($"      <span class=\"label\">{s.Index:D2}. {HtmlEncode(s.Name)}</span>");
+            html.AppendLine($"      <span class=\"label\">{HtmlEncode(s.Name)}</span>");
             html.AppendLine("    </div>");
         }
         html.AppendLine("  </div>");
@@ -439,6 +459,8 @@ public class TestSinglePageApp : IDisposable
             disposed = true;
             GenerateTestRunHtml();
             Quit();
+
+            this.host.Dispose();
 
             var failures = this.snapshots.Where(s => !s.Passed).ToList();
             if (failures.Count > 0)

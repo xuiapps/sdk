@@ -42,18 +42,9 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
     /// </summary>
     private NFloat extendedFrameTopOffset;
 
-    public nint CompositionFrameHandle
-    {
-        get
-        {
-            if (this.Renderer is D2DComp d2dComp)
-            {
-                return d2dComp.FrameLatencyHandle;
-            }
+    internal NFloat ExtendedFrameTopOffset => this.extendedFrameTopOffset;
 
-            return 0;
-        }
-    }
+    public nint CompositionFrameHandle => this.Renderer.FrameLatencyHandle;
 
     private static int OnMessageStatic(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
     {
@@ -106,8 +97,7 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
         };
         Marshal.FreeHGlobal(lpszClassNamePtr);
 
-        // this.Renderer = new D2D(this);
-        this.Renderer = new D2DComp(this);
+        this.Renderer = new DirectXContext(this);
 
         ushort classAtom = RegisterClassEx(w);
 
@@ -199,13 +189,16 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
         // Make black color in layered window transparent
         SetLayeredWindowAttributes(this.Hwnd, new COLORREF(0), 255, LayeredWindowAttribute.LWA_COLORKEY);
+
+        // Initialize GPU resources now so they are available during OnAttach.
+        this.Renderer.EnsureInitialized(this.Hwnd);
     }
 
     public HWND Hwnd { get; private set; }
 
     protected internal Xui.Core.Abstract.IWindow Abstract { get; }
 
-    public RenderTarget Renderer { get; }
+    public DirectXContext Renderer { get; }
 
     public string Title
     {
@@ -219,19 +212,26 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
     public bool RequireKeyboard { get; set; }
 
-    private DWriteTextMeasureContext? textMeasureContext;
+    private DirectWriteContext? textMeasureContext;
 
     public ITextMeasureContext? TextMeasureContext
     {
         get
         {
-            if (this.textMeasureContext == null && this.Renderer is D2DComp d2dComp && d2dComp.DWriteFactory is { } factory)
+            if (this.textMeasureContext == null && this.Renderer.DWriteFactory is { } factory)
             {
-                this.textMeasureContext = new DWriteTextMeasureContext(factory);
+                this.textMeasureContext = new DirectWriteContext(factory);
             }
 
             return this.textMeasureContext;
         }
+    }
+
+    public object? GetService(Type serviceType)
+    {
+        if (serviceType == typeof(IImage)) return this.Renderer.ImageFactory?.CreateImage();
+        if (serviceType == typeof(ITextMeasureContext)) return this.TextMeasureContext;
+        return null;
     }
 
     public int OnMessage(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
@@ -250,7 +250,7 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
                 uint clientH = (uint)(rc.Bottom - rc.Top);
                 if (clientW > 0 && clientH > 0)
                 {
-                    ((D2DComp)this.Renderer).ResizeBuffers(hWnd, clientW, clientH);
+                    this.Renderer.ResizeBuffers(hWnd, clientW, clientH);
                     this.invalid = true;
                     this.Render();
                     this.invalid = true;
@@ -376,9 +376,17 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
                 break;
             }
 
+            case WindowMessage.WM_CLOSE:
+            {
+                if (!this.Abstract.Closing())
+                    return 0;
+                break;
+            }
+
             case WindowMessage.WM_DESTROY:
             {
                 Win32Platform.Instance.RemoveWindow(this);
+                this.Abstract.Closed();
                 break;
             }
 
@@ -628,25 +636,15 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
     protected virtual void OnScrollWheel(ScrollWheelEventRef scrollWheelEventRef) =>
         this.Abstract.OnScrollWheel(ref scrollWheelEventRef);
 
-    private void EnsureRendererInitialized()
-    {
-        if (this.Renderer is D2DComp d2dComp)
-        {
-            d2dComp.EnsureInitialized(this.Hwnd);
-        }
-    }
-
     public void Show()
     {
         CoreRuntime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
             $"Win32Window.Show hwnd={this.Hwnd} dpiScale={this.dpiScale:F2}");
         this.Hwnd.ShowWindow();
         this.Hwnd.UpdateWindow();
-
-        // Initialize swapchain/DComp outside WM_PAINT so the run loop can
-        // use the frame latency handle to pace frames.
-        this.EnsureRendererInitialized();
     }
+
+    public void Close() => DestroyWindow(this.Hwnd);
 
     public virtual void Invalidate() => this.invalid = true;
 

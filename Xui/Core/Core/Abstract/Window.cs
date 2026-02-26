@@ -17,9 +17,30 @@ namespace Xui.Core.Abstract;
 /// acting as a root container for layout and visual composition. Subclasses may override
 /// specific input or rendering behaviors as needed.
 /// </remarks>
-public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
+public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IServiceProvider, IDisposable
 {
     private static IList<Window> openWindows = new List<Window>();
+
+    public IServiceProvider Context { get; }
+
+    /// <inheritdoc/>
+    /// Checks the window's DI service provider first; if not found, falls back to the
+    /// platform window's own services (e.g. <see cref="Xui.Core.Actual.IImagePipeline"/> from Win32).
+    public virtual object? GetService(Type serviceType) =>
+        this.Context.GetService(serviceType) ?? this.Actual.GetService(serviceType);
+
+    public List<IDisposable> DisposeQueue { get; } = [];
+
+    private bool disposed;
+    private bool platformClosed;
+
+    /// <summary>
+    /// When <c>true</c> (the default), closing the window calls <see cref="Dispose"/>.
+    /// Set to <c>false</c> for windows that survive being closed and reopened.
+    /// </summary>
+    public bool DestroyOnClose { get; set; } = true;
+
+    public IRuntime Runtime { get; }
 
     /// <summary>
     /// Gets a read-only list of all currently open Xui windows.
@@ -37,6 +58,9 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     /// <inheritdoc/>
     public virtual Rect SafeArea { get; set; }
 
+    /// <inheritdoc/>
+    public virtual nfloat ScreenCornerRadius { get; set; }
+
     /// <summary>
     /// Gets the text measure context for this window, used for hit-testing text
     /// positions during pointer events. Null on platforms that do not provide one.
@@ -51,8 +75,14 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     /// Initializes a new instance of the <see cref="Window"/> class.
     /// This creates the backing platform window.
     /// </summary>
-    public Window()
+    /// <param name="windowServices">
+    /// An optional scoped <see cref="IServiceProvider"/> for this window.
+    /// If it implements <see cref="IDisposable"/>, it will be disposed when the window closes.
+    /// </param>
+    public Window(IServiceProvider context)
     {
+        this.Context = context!;
+        this.Runtime = (IRuntime)this.Context.GetService(typeof(IRuntime))!;
         this.Actual = this.CreateActualWindow();
         this.RootView = new RootView(this);
     }
@@ -80,8 +110,8 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     /// </summary>
     public void Show()
     {
-        Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
-            $"Window.Show {this.GetType().Name}");
+        // Xui.Core.Actual.Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
+        //     $"Window.Show {this.GetType().Name}");
         this.Actual.Show();
         openWindows.Add(this);
     }
@@ -90,9 +120,9 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     public virtual void Render(ref RenderEventRef renderEventRef)
     {
         var rect = renderEventRef.Rect;
-        using var trace = Runtime.CurrentInstruments.Trace(Scope.Rendering, LevelOfDetail.Essential,
-            $"Window.Render Rect({rect.X:F1}, {rect.Y:F1}, {rect.Width:F1}, {rect.Height:F1})");
-        using var context = Runtime.Current.DrawingContext;
+        // using var trace = Runtime.CurrentInstruments.Trace(Scope.Rendering, LevelOfDetail.Essential,
+        //     $"Window.Render Rect({rect.X:F1}, {rect.Y:F1}, {rect.Width:F1}, {rect.Height:F1})");
+        using var context = this.Runtime.DrawingContext;
         ((IContent)this.RootView).Update(ref renderEventRef, context);
     }
 
@@ -105,40 +135,72 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     /// <inheritdoc/>
     public virtual bool Closing()
     {
-        Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
-            $"Window.Closing {this.GetType().Name}");
+        // Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
+        //     $"Window.Closing {this.GetType().Name}");
         return true;
     }
 
     /// <inheritdoc/>
     public virtual void Closed()
     {
-        Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
-            $"Window.Closed {this.GetType().Name}");
+        // Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
+        //     $"Window.Closed {this.GetType().Name}");
         openWindows.Remove(this);
+        platformClosed = true;
+        if (DestroyOnClose)
+            Dispose();
+    }
+
+    /// <summary>
+    /// Releases all managed resources owned by this window.
+    /// If the platform window is still open, it is closed first.
+    /// Items in <see cref="DisposeQueue"/> are disposed in order.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <param name="disposing">
+    /// <c>true</c> when called from <see cref="Dispose()"/>; <c>false</c> from a finalizer.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposed) return;
+        disposed = true;
+
+        if (disposing)
+        {
+            if (!platformClosed)
+                this.Actual.Close();
+
+            foreach (var item in DisposeQueue) item.Dispose();
+            DisposeQueue.Clear();
+        }
     }
 
     /// <summary>
     /// Creates the platform-specific window for this abstract window.
     /// </summary>
     /// <returns>The platform implementation of <see cref="Actual.IWindow"/>.</returns>
-    protected virtual Actual.IWindow CreateActualWindow() => Runtime.Current!.CreateWindow(this);
+    protected virtual Actual.IWindow CreateActualWindow() => this.Runtime.CreateWindow(this);
 
     /// <summary>
     /// Requests a visual invalidation/redraw of this window.
     /// </summary>
     public virtual void Invalidate()
     {
-        Runtime.CurrentInstruments.Log(Scope.ViewState, LevelOfDetail.Info,
-            $"Window.Invalidate");
+        // Runtime.CurrentInstruments.Log(Scope.ViewState, LevelOfDetail.Info,
+        //     $"Window.Invalidate");
         this.Actual.Invalidate();
     }
 
     /// <inheritdoc/>
     public virtual void OnMouseDown(ref MouseDownEventRef e)
     {
-        Runtime.CurrentInstruments.Log(Scope.Input, LevelOfDetail.Normal,
-            $"MouseDown ({e.Position.X:F1}, {e.Position.Y:F1}) Button={e.Button}");
+        // Runtime.CurrentInstruments.Log(Scope.Input, LevelOfDetail.Normal,
+        //     $"MouseDown ({e.Position.X:F1}, {e.Position.Y:F1}) Button={e.Button}");
         e.TextMeasure = this.TextMeasureContext;
         ((IContent)this.RootView).OnMouseDown(ref e);
     }
@@ -146,8 +208,8 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     /// <inheritdoc/>
     public virtual void OnMouseMove(ref MouseMoveEventRef e)
     {
-        Runtime.CurrentInstruments.Log(Scope.Input, LevelOfDetail.Diagnostic,
-            $"MouseMove ({e.Position.X:F1}, {e.Position.Y:F1})");
+        // Runtime.CurrentInstruments.Log(Scope.Input, LevelOfDetail.Diagnostic,
+        //     $"MouseMove ({e.Position.X:F1}, {e.Position.Y:F1})");
         e.TextMeasure = this.TextMeasureContext;
         ((IContent)this.RootView).OnMouseMove(ref e);
     }
@@ -155,8 +217,8 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     /// <inheritdoc/>
     public virtual void OnMouseUp(ref MouseUpEventRef e)
     {
-        Runtime.CurrentInstruments.Log(Scope.Input, LevelOfDetail.Normal,
-            $"MouseUp ({e.Position.X:F1}, {e.Position.Y:F1}) Button={e.Button}");
+        // Runtime.CurrentInstruments.Log(Scope.Input, LevelOfDetail.Normal,
+        //     $"MouseUp ({e.Position.X:F1}, {e.Position.Y:F1}) Button={e.Button}");
         e.TextMeasure = this.TextMeasureContext;
         ((IContent)this.RootView).OnMouseUp(ref e);
     }
@@ -164,6 +226,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard
     /// <inheritdoc/>
     public virtual void OnScrollWheel(ref ScrollWheelEventRef e)
     {
+        ((IContent)this.RootView).OnScrollWheel(ref e);
     }
 
     /// <inheritdoc/>

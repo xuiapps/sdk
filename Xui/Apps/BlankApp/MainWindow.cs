@@ -22,6 +22,11 @@ namespace Xui.Apps.BlankApp;
 
 public class MainWindow : Window
 {
+    public MainWindow(IServiceProvider context) : base(context)
+    {
+        this.Title = "Xui BlankApp";
+    }
+
     private Point mousePoint;
     private Point scrollPoint;
 
