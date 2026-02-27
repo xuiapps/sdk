@@ -69,3 +69,7 @@ jobs:
           name: nuget-${{ steps.branch.outputs.name }}-${{ github.run_number }}
           path: packages/*.nupkg
           retention-days: ${{ github.event_name == 'pull_request' && 7 || 30 }}
+
+      - name: Push to NuGet.org
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: dotnet nuget push "packages/*.nupkg" --api-key ${{ secrets.NUGET_ORG_PUSH }} --source https://api.nuget.org/v3/index.json --skip-duplicate
