@@ -71,6 +71,23 @@ jobs:
           path: packages/*.nupkg
           retention-days: ${{ github.event_name == 'pull_request' && 7 || 30 }}
 
+  publish:
+    needs: pack
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    environment: production
+
+    steps:
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-main-${{ github.run_number }}
+          path: packages
+
       - name: Push to NuGet.org
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: dotnet nuget push "packages/*.nupkg" --source https://api.nuget.org/v3/index.json --skip-duplicate
