@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # Required for NuGet Trusted Publishing (OIDC)
 
 concurrency:
   group: pack-${{ github.ref }}
@@ -76,6 +75,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: windows-latest
     environment: production
+    permissions:
+      id-token: write  # Required for NuGet Trusted Publishing (OIDC)
 
     steps:
       - name: Setup .NET 10
@@ -89,12 +90,11 @@ jobs:
           name: nuget-main-${{ github.run_number }}
           path: .  # artifact strips the packages/ prefix; .nupkg files land at repo root
 
+      - name: NuGet login (OIDC)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: nuget.xuiapps
+
       - name: Push to NuGet.org
-        run: |
-          $token = Invoke-RestMethod `
-            -Uri "$($env:ACTIONS_ID_TOKEN_REQUEST_URL)&audience=api://AzureADTokenExchange" `
-            -Headers @{Authorization = "bearer $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN"}
-          dotnet nuget push "*.nupkg" `
-            --source https://api.nuget.org/v3/index.json `
-            --api-key $token.value `
-            --skip-duplicate
+        run: dotnet nuget push "*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
