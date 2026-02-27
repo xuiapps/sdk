@@ -282,14 +282,13 @@ public partial class BrowserDrawingContext : IContext
 
     public void LineTo(Point to) => CanvasLineTo(to.X, to.Y);
 
-    public Vector MeasureText(string text)
+    public TextMetrics MeasureText(string text)
     {
         using var jObj = CanvasMeasureText(text);
-        var res = new Vector(
-            (NFloat)jObj.GetPropertyAsDouble("width"),
-            (NFloat)jObj.GetPropertyAsDouble("height")
-        );
-        return res;
+        var width = (NFloat)jObj.GetPropertyAsDouble("width");
+        var height = (NFloat)jObj.GetPropertyAsDouble("height");
+        var line = new LineMetrics(width, left: 0, right: width, ascent: height, descent: 0);
+        return new TextMetrics(line, default);
     }
 
     public void MoveTo(Point to) => CanvasMoveTo(to.X, to.Y);
@@ -456,4 +455,11 @@ public partial class BrowserDrawingContext : IContext
 
     public void Translate(Vector vector) =>
         CanvasTranslate(vector.X, vector.Y);
+
+    public void SetFill(ImagePattern pattern) => throw new NotImplementedException();
+    public void SetStroke(ImagePattern pattern) => throw new NotImplementedException();
+
+    public void DrawImage(IImage image, Rect dest) => throw new NotImplementedException();
+    public void DrawImage(IImage image, Rect dest, NFloat opacity) => throw new NotImplementedException();
+    public void DrawImage(IImage image, Rect source, Rect dest, NFloat opacity) => throw new NotImplementedException();
 }
