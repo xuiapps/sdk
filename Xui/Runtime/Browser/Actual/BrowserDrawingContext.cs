@@ -373,7 +373,7 @@ public partial class BrowserDrawingContext : IContext
             }
         }
 
-        f += $"{Math.Round(font.FontWeight)} {font.FontSize}px/{font.LineHeight}px ";
+        f += $"{Math.Round((double)font.FontWeight)} {font.FontSize}px/{font.LineHeight}px ";
         foreach(var fName in font.FontFamily)
         {
             // TODO: Escape " in font name...
