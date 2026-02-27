@@ -1,4 +1,4 @@
-name: Pack NuGet Packages
+name: CD
 
 on:
   push:
