@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # Required for NuGet Trusted Publishing (OIDC)
 
 concurrency:
   group: pack-${{ github.ref }}
@@ -72,4 +73,4 @@ jobs:
 
       - name: Push to NuGet.org
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: dotnet nuget push "packages/*.nupkg" --api-key ${{ secrets.NUGET_ORG_PUSH }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "packages/*.nupkg" --source https://api.nuget.org/v3/index.json --skip-duplicate
