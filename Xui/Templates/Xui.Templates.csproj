@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <Content Include="content/**/*" Exclude="content/**/bin/**;content/**/obj/**" />
+    <!-- Prevent the SDK's implicit *.cs glob from compiling template source files -->
+    <Compile Remove="content/**" />
   </ItemGroup>
 
   <!--
