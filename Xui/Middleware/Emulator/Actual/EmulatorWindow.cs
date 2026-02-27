@@ -80,7 +80,7 @@ public partial class EmulatorWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actual
     /// The corner radius of the emulated device screen. Forwarded to the abstract window
     /// so views (e.g. ScrollView) can inset UI elements away from rounded screen edges.
     /// </summary>
-    public nfloat ScreenCornerRadius { get; set; }
+    public NFloat ScreenCornerRadius { get; set; }
 
     /// <summary>
     /// The device profile currently displayed in the emulator. Defaults to the first entry in

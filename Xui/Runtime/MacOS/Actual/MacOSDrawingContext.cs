@@ -681,4 +681,11 @@ public class MacOSDrawingContext : IContext
     {
         throw new NotImplementedException();
     }
+
+    void IPenContext.SetFill(ImagePattern pattern) => throw new NotImplementedException();
+    void IPenContext.SetStroke(ImagePattern pattern) => throw new NotImplementedException();
+
+    void IImageDrawingContext.DrawImage(IImage image, Rect dest) => throw new NotImplementedException();
+    void IImageDrawingContext.DrawImage(IImage image, Rect dest, NFloat opacity) => throw new NotImplementedException();
+    void IImageDrawingContext.DrawImage(IImage image, Rect source, Rect dest, NFloat opacity) => throw new NotImplementedException();
 }

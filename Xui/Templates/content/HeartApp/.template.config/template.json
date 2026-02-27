@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "xuiapps",
+  "classifications": ["Xui", "Desktop", "Mobile", "Cross-platform"],
+  "identity": "Xui.Templates.NewBlankApp",
+  "name": "Xui New App",
+  "shortName": "xui",
+  "description": "A minimal Xui app with DI and cross-platform runtime support.",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "NewBlankApp",
+  "preferNameDirectory": true
+}

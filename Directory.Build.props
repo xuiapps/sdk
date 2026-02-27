@@ -1,0 +1,23 @@
+<Project>
+
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.*"
+                      PrivateAssets="all" BuildAction="None" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Authors>Xui Apps</Authors>
+    <Company>Xui Apps</Company>
+    <Copyright>Copyright 2025 Xui Apps</Copyright>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageProjectUrl>https://xuiapps.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/xuiapps/sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <!-- Include the repo-root LICENSE.md in every NuGet package -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)LICENSE.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>

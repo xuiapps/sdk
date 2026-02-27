@@ -14,5 +14,5 @@ public readonly struct DeviceProfile
     public Frame SafeAreaInsetsLandscape { get; init; }
     public NotchType NotchType { get; init; }
     public Rect NotchFrame { get; init; }
-    public nfloat ScreenCornerRadius { get; init; }
+    public NFloat ScreenCornerRadius { get; init; }
 }

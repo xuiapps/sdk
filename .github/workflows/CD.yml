@@ -1,0 +1,93 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write  # Required for NuGet Trusted Publishing (OIDC)
+
+concurrency:
+  group: pack-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pack:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for Nerdbank.GitVersioning commit height
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack Xui.Core
+        run: dotnet pack Xui/Core/Core/Xui.Core.csproj -c Release -o packages
+
+      - name: Pack Xui.Core.DI
+        run: dotnet pack Xui/Core/Core.DI/Xui.Core.DI.csproj -c Release -o packages
+
+      - name: Pack Xui.Core.Fonts
+        run: dotnet pack Xui/Core/Fonts/Xui.Core.Fonts.csproj -c Release -o packages
+
+      - name: Pack Xui.Runtime.Software
+        run: dotnet pack Xui/Runtime/Software/Xui.Runtime.Software.csproj -c Release -o packages
+
+      - name: Pack Xui.Runtime.Windows
+        run: dotnet pack Xui/Runtime/Windows/Windows.csproj -c Release -o packages
+
+      - name: Pack Xui.Runtime.MacOS
+        run: dotnet pack Xui/Runtime/MacOS/MacOS.csproj -c Release -o packages
+
+      - name: Pack Xui.Runtime.Browser
+        run: dotnet pack Xui/Runtime/Browser/Browser.csproj -c Release -o packages
+
+      - name: Pack Xui.Runtime.IOS
+        run: dotnet pack Xui/Runtime/IOS/IOS.csproj -c Release -o packages
+
+      - name: Pack Xui.Middleware.Emulator
+        run: dotnet pack Xui/Middleware/Emulator/Emulator.csproj -c Release -o packages
+
+      - name: Pack Xui.Templates
+        run: dotnet pack Xui/Templates/Xui.Templates.csproj -c Release -o packages
+
+      - name: Get branch name
+        id: branch
+        run: |
+          $branch = '${{ github.head_ref || github.ref_name }}' -replace '[/\\]', '-'
+          "name=$branch" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-${{ steps.branch.outputs.name }}-${{ github.run_number }}
+          path: packages/*.nupkg
+          retention-days: ${{ github.event_name == 'pull_request' && 7 || 30 }}
+
+  publish:
+    needs: pack
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    environment: production
+
+    steps:
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-main-${{ github.run_number }}
+          path: packages
+
+      - name: Push to NuGet.org
+        run: dotnet nuget push "packages/*.nupkg" --source https://api.nuget.org/v3/index.json --skip-duplicate
