@@ -87,7 +87,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: nuget-main-${{ github.run_number }}
-          path: packages
+          path: .  # artifact stores files as packages/*.nupkg; extract to repo root
 
       - name: Push to NuGet.org
         run: dotnet nuget push "packages/*.nupkg" --source https://api.nuget.org/v3/index.json --skip-duplicate
