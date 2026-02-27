@@ -90,4 +90,11 @@ jobs:
           path: .  # artifact strips the packages/ prefix; .nupkg files land at repo root
 
       - name: Push to NuGet.org
-        run: dotnet nuget push "*.nupkg" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: |
+          $token = Invoke-RestMethod `
+            -Uri "$($env:ACTIONS_ID_TOKEN_REQUEST_URL)&audience=api://AzureADTokenExchange" `
+            -Headers @{Authorization = "bearer $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN"}
+          dotnet nuget push "*.nupkg" `
+            --source https://api.nuget.org/v3/index.json `
+            --api-key $token.value `
+            --skip-duplicate
