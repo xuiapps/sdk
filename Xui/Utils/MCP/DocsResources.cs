@@ -1,7 +1,6 @@
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
-using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Xui.MCP;
@@ -9,10 +8,7 @@ namespace Xui.MCP;
 [McpServerResourceType]
 public static class DocsResources
 {
-    private static readonly Assembly Assembly = typeof(DocsResources).Assembly;
-
-    private static readonly IReadOnlyList<string> DocNames = Assembly
-        .GetManifestResourceNames()
+    private static readonly IReadOnlyList<string> DocNames = KnowledgeBase.Paths
         .Where(n => n.StartsWith("docs/") && n.EndsWith(".md"))
         .Select(n => n["docs/".Length..^".md".Length])
         .OrderBy(n => n)
@@ -28,16 +24,13 @@ public static class DocsResources
     [Description("Returns the content of a Xui documentation page by name (e.g. getting-started, canvas, views). SVG images are inlined.")]
     public static TextResourceContents GetDoc(RequestContext<ReadResourceRequestParams> ctx, string name)
     {
-        var resourceName = $"docs/{name}.md";
-        using var stream = Assembly.GetManifestResourceStream(resourceName)
-            ?? throw new KeyNotFoundException($"No doc found: {name}. Available: {string.Join(", ", DocNames)}");
-        using var reader = new StreamReader(stream);
-        var markdown = InlineSvgs(reader.ReadToEnd(), baseDir: System.IO.Path.GetDirectoryName(name) ?? "");
+        var markdown = KnowledgeBase.Read($"docs/{name}.md");
+        var inlined = InlineSvgs(markdown, baseDir: Path.GetDirectoryName(name) ?? "");
         return new TextResourceContents
         {
             Uri = ctx.Params?.Uri ?? $"xui://docs/{name}",
             MimeType = "text/markdown",
-            Text = markdown,
+            Text = inlined,
         };
     }
 
@@ -50,14 +43,10 @@ public static class DocsResources
         {
             var alt = match.Groups[1].Value;
             var path = match.Groups[2].Value;
-            var resourceName = "docs/" + (baseDir.Length > 0 ? $"{baseDir}/{path}" : path).Replace('\\', '/');
-
-            using var stream = Assembly.GetManifestResourceStream(resourceName);
-            if (stream is null)
-                return match.Value; // not bundled — leave as-is
-
-            using var reader = new StreamReader(stream);
-            return $"<!-- {alt} -->\n{reader.ReadToEnd()}";
+            var key = "docs/" + (baseDir.Length > 0 ? $"{baseDir}/{path}" : path).Replace('\\', '/');
+            return KnowledgeBase.TryRead(key, out var svg)
+                ? $"<!-- {alt} -->\n{svg}"
+                : match.Value; // not bundled — leave as-is
         });
     }
 }
