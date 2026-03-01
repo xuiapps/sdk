@@ -370,11 +370,10 @@ public partial class View
 
         for (var i = 0; i < this.Count; i++)
         {
-            // Should we spend some resources on store/restore context to isolate child rendering?
-            // context.Save();
-            // context.BeginPath();
+            context.Save();
+            context.BeginPath();
             this[i].Render(context);
-            // context.Restore();
+            context.Restore();
         }
     }
 }

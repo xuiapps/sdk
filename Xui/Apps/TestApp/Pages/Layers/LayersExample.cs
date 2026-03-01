@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Xui.Apps.TestApp.Examples.Canvas;
+using Xui.Apps.TestApp.Examples.Layers;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
@@ -7,109 +7,90 @@ using Xui.Core.UI.Input;
 using static Xui.Core.Canvas.Colors;
 using static Xui.Core.Canvas.FontWeight;
 
-namespace Xui.Apps.TestApp.Pages.Canvas;
+namespace Xui.Apps.TestApp.Pages.Layers;
 
-public class CanvasTestsExample : Example
+public class LayersExample : Example
 {
-    public CanvasTestsExample()
+    public LayersExample()
     {
-        this.Title = "Canvas Tests";
-        this.Content = new CanvasTestPanel();
+        this.Title = "Layers";
+        this.Content = new LayersPanel();
     }
 
-    public class CanvasTestPanel : View
+    public class LayersPanel : View
     {
         private VerticalStack list;
-        private View? canvas;
+        private View? demo;
 
         public override int Count =>
-            (this.list is not null ? 1 : 0) + (this.canvas is not null ? 1 : 0);
+            (this.list is not null ? 1 : 0) + (this.demo is not null ? 1 : 0);
 
         public override View this[int index] => index switch
         {
             0 => this.list,
-            1 when this.canvas is not null => this.canvas,
+            1 when this.demo is not null => this.demo,
             _ => throw new IndexOutOfRangeException()
         };
 
-        public View? Canvas
+        public View? Demo
         {
-            get => this.canvas;
-            set => this.SetProtectedChild(ref this.canvas, value);
+            get => this.demo;
+            set => this.SetProtectedChild(ref this.demo, value);
         }
 
-        public CanvasTestPanel()
+        public LayersPanel()
         {
             this.list = new VerticalStack();
             this.AddProtectedChild(this.list);
 
-            this.AddTest<FillRectTest>("FillRect");
-            this.AddTest<QuadraticCurveTest>("QuadraticCurve");
-            this.AddTest<CubicCurveTest>("CubicCurve");
-            this.AddTest<HeartCurveTest>("HeartCurve");
-            this.AddTest<ArcTest>("Arc");
-            this.AddTest<ArcFlowerTest>("ArcFlower");
-            this.AddTest<EllipseTest>("Ellipse");
-            this.AddTest<ArcToTest>("ArcTo");
-            this.AddTest<ArcToFlowerTest>("ArcToFlower");
-            this.AddTest<RoundRectTest>("RoundRect");
-            this.AddTest<LineCapJoinTest>("LineCapJoin");
-            this.AddTest<DashPatternTest>("DashPattern");
-            this.AddTest<FillRuleTest>("FillRule");
-            this.AddTest<PathContinuationTest>("PathContinuation");
-            this.AddTest<ClipTest>("Clip");
-            this.AddTest<TransformTest>("Transform");
-            this.AddTest<StarTest>("Star");
-            this.AddTest<GlobalAlphaTest>("GlobalAlpha");
-            this.AddTest<BitmapFillTest>("BitmapFill");
-            this.AddTest<DrawImageTest>("DrawImage");
+            this.AddDemo<BorderDemo>("Border");
+            this.AddDemo<BorderWithPaddingDemo>("Border + Padding");
+            this.AddDemo<CheckboxDemo>("Checkbox");
+            this.AddDemo<VerticalStackDemo>("Vertical Mono Stack");
+            this.AddDemo<VerticalPolyStackDemo>("Vertical Poly Stack");
+            this.AddDemo<NumPadDemo>("Numpad");
 
-            // Select first test by default
-            this.Canvas = new FillRectTest();
+            // Select first demo by default
+            this.Demo = new BorderDemo();
         }
 
-        public void AddTest<T>(string name) where T : View, new()
+        public void AddDemo<T>(string name) where T : View, new()
         {
-            this.list.Add(new CanvasTestButton(() =>
+            this.list.Add(new LayersDemoButton(() =>
             {
-                this.Canvas = new T();
+                this.Demo = new T();
             })
             {
                 Id = name,
                 Margin = 3,
                 Text = name,
-                FontFamily = ["Inter"],
+                FontFamily = ["Inter"]
             });
         }
 
         protected override Size MeasureCore(Size availableBorderEdgeSize, IMeasureContext context)
         {
-            NFloat listWidth = 250;
-            var canvasSize = new Size(300, 300);
+            NFloat listWidth = 200;
 
             this.list.Measure(new Size(listWidth, availableBorderEdgeSize.Height), context);
-            this.canvas?.Measure(canvasSize, context);
+            this.demo?.Measure(new Size(availableBorderEdgeSize.Width - listWidth, availableBorderEdgeSize.Height), context);
 
             return availableBorderEdgeSize;
         }
 
         protected override void ArrangeCore(Rect rect, IMeasureContext context)
         {
-            NFloat listWidth = 250;
-            NFloat canvasPadding = 20;
+            NFloat listWidth = 200;
 
             this.list.Arrange(new Rect(rect.X, rect.Y, listWidth, rect.Height), context);
-            this.canvas?.Arrange(new Rect(
-                rect.X + listWidth + canvasPadding,
-                rect.Y + canvasPadding,
-                300, 300), context);
+            this.demo?.Arrange(new Rect(rect.X + listWidth, rect.Y, rect.Width - listWidth, rect.Height), context);
         }
 
         protected override void RenderCore(IContext context)
         {
-            NFloat listWidth = 250;
+            NFloat listWidth = 200;
 
-            // Gray background for the canvas area (matches HTML body #f0f0f0)
+            // Light gray background for the demo panel area
             context.SetFill(new Color(0xF0, 0xF0, 0xF0, 0xFF));
             context.FillRect(new Rect(
                 this.Frame.X + listWidth,
@@ -123,13 +104,13 @@ public class CanvasTestsExample : Example
         }
     }
 
-    public class CanvasTestButton : Label
+    public class LayersDemoButton : Label
     {
         private readonly Action onClick;
         private bool hover;
         private bool pressed;
 
-        public CanvasTestButton(Action onClick)
+        public LayersDemoButton(Action onClick)
         {
             this.onClick = onClick;
         }

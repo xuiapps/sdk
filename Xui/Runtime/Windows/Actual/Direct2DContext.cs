@@ -647,7 +647,10 @@ public partial class Direct2DContext : IContext
         // Use system default
         FontCollection? fontCollection = null;
 
-        DWrite.FontWeight fontWeight = (DWrite.FontWeight)(uint)font.FontWeight;
+        uint fontWeightValue = (uint)font.FontWeight;
+        DWrite.FontWeight fontWeight = fontWeightValue != 0
+            ? (DWrite.FontWeight)fontWeightValue
+            : DWrite.FontWeight.Normal;
         DWrite.FontStyle fontStyle =
             font.FontStyle.IsItalic ? DWrite.FontStyle.Italic :
             (font.FontStyle.IsOblique ? DWrite.FontStyle.Oblique : DWrite.FontStyle.Normal);
