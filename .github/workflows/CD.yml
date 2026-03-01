@@ -55,7 +55,7 @@ jobs:
         run: dotnet pack Xui/Middleware/Emulator/Emulator.csproj -c Release -o packages
 
       - name: Pack Xui.Templates
-        run: dotnet pack Xui/Templates/Xui.Templates.csproj -c Release -o packages
+        run: dotnet pack Xui/Utils/Templates/Xui.Templates.csproj -c Release -o packages
 
       - name: Get branch name
         id: branch

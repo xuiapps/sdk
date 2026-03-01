@@ -6,6 +6,10 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <Authors>Xui Apps</Authors>
     <Company>Xui Apps</Company>
     <Copyright>Copyright 2025 Xui Apps</Copyright>

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "xui": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["run", "--project", "Xui/Utils/MCP/Xui.MCP.csproj"]
+    }
+  }
+}

@@ -1,0 +1,52 @@
+root = true
+
+[*]
+indent_style = space
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+indent_size = 4
+end_of_line = crlf
+
+# ----------------------------------------------------------------
+# Naming: private fields are camelCase with no underscore prefix.
+# Good: private int count;   Bad: private int _count;
+# ----------------------------------------------------------------
+dotnet_naming_rule.private_fields_camel_case.symbols   = private_fields
+dotnet_naming_rule.private_fields_camel_case.style     = camel_case_style
+dotnet_naming_rule.private_fields_camel_case.severity  = warning
+
+dotnet_naming_symbols.private_fields.applicable_kinds          = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.camel_case_style.capitalization = camel_case
+
+# ----------------------------------------------------------------
+# this. qualification — always qualify field and member access.
+# Good: this.count = value;   Bad: count = value;
+# ----------------------------------------------------------------
+dotnet_style_qualification_for_field    = true : suggestion
+dotnet_style_qualification_for_property = true : suggestion
+dotnet_style_qualification_for_method   = true : suggestion
+dotnet_style_qualification_for_event    = true : suggestion
+
+# ----------------------------------------------------------------
+# Formatting — keep in sync with existing codebase conventions.
+# ----------------------------------------------------------------
+csharp_new_line_before_open_brace                          = all
+csharp_new_line_before_else                                = true
+csharp_new_line_before_catch                               = true
+csharp_new_line_before_finally                             = true
+csharp_indent_case_contents                                = true
+csharp_indent_switch_labels                                = true
+csharp_space_after_cast                                    = false
+csharp_space_before_colon_in_inheritance_clause            = true
+csharp_space_after_colon_in_inheritance_clause             = true
+csharp_preserve_single_line_statements                     = false
+csharp_preserve_single_line_blocks                         = true
+
+[*.{csproj,props,targets}]
+indent_size = 2
+end_of_line = crlf

@@ -122,7 +122,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
         var rect = renderEventRef.Rect;
         // using var trace = Runtime.CurrentInstruments.Trace(Scope.Rendering, LevelOfDetail.Essential,
         //     $"Window.Render Rect({rect.X:F1}, {rect.Y:F1}, {rect.Width:F1}, {rect.Height:F1})");
-        using var context = this.Runtime.DrawingContext;
+        using var context = (this.GetService(typeof(IContext)) as IContext) ?? this.Runtime.DrawingContext;
         ((IContent)this.RootView).Update(ref renderEventRef, context);
     }
 

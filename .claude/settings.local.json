@@ -7,7 +7,12 @@
       "Bash(dotnet sln:*)",
       "Bash(find:*)",
       "Bash(wc:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(handle.exe /d/git/xuiapps/code/Xui/Templates)",
+      "Bash(tasklist /fi \"IMAGENAME eq devenv.exe\")",
+      "Bash(dotnet add package ModelContextProtocol --prerelease)",
+      "Bash(dotnet add package Microsoft.Extensions.Hosting --prerelease)",
+      "Bash(git add Xui/Utils/ Xui.sln .github/workflows/CD.yml)"
     ]
   }
 }

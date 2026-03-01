@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>xui-mcp</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-preview.1.26104.118" />
+  </ItemGroup>
+
+  <!-- Copy docs + generate API into obj\resources, then embed everything from there -->
+  <Target Name="GenerateXuiResources" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <_ResDir>$(MSBuildThisFileDirectory)obj\resources</_ResDir>
+      <_DocsDir>$(MSBuildThisFileDirectory)..\..\..\www\docs</_DocsDir>
+    </PropertyGroup>
+
+    <!-- Collect docs files and copy to obj\resources\docs preserving structure -->
+    <ItemGroup>
+      <_DocFiles Include="$(_DocsDir)\**\*.md;$(_DocsDir)\**\*.svg" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_DocFiles)"
+          DestinationFiles="@(_DocFiles->'$(_ResDir)\docs\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Copy static guide files (index, assembly summaries) into obj\resources -->
+    <ItemGroup>
+      <_StaticFiles Include="$(MSBuildThisFileDirectory)resources\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_StaticFiles)"
+          DestinationFiles="@(_StaticFiles->'$(_ResDir)\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Generate stripped API .cs files into obj\resources\api -->
+    <Exec Command="dotnet run --project tools\XuiApiExport\XuiApiExport.csproj -- . &quot;$(_ResDir)\api&quot;"
+          WorkingDirectory="$(MSBuildThisFileDirectory)..\..\.." />
+
+    <!-- Pack everything into a single zip and embed it -->
+    <ZipDirectory SourceDirectory="$(_ResDir)"
+                  DestinationFile="$(MSBuildThisFileDirectory)obj\xui-knowledge.zip"
+                  Overwrite="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(MSBuildThisFileDirectory)obj\xui-knowledge.zip"
+                        LogicalName="xui-knowledge.zip" />
+    </ItemGroup>
+  </Target>
+
+</Project>
+
