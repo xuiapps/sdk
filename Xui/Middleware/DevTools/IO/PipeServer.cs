@@ -11,7 +11,7 @@ public sealed class PipeServer
 {
     private static readonly JsonSerializerOptions _opts = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
     };
 
@@ -70,14 +70,14 @@ public sealed class PipeServer
             {
                 object? result = req.Method switch
                 {
-                    Methods.UiInspect     => await _handler.HandleInspect().ConfigureAwait(false),
-                    Methods.UiScreenshot  => await _handler.HandleScreenshot().ConfigureAwait(false),
-                    Methods.InputTap      => await HandleTap(req, _handler).ConfigureAwait(false),
-                    Methods.InputPointer  => await HandlePointer(req, _handler).ConfigureAwait(false),
-                    Methods.InputClick    => await HandleClick(req, _handler).ConfigureAwait(false),
+                    Methods.UiInspect => await _handler.HandleInspect().ConfigureAwait(false),
+                    Methods.UiScreenshot => await _handler.HandleScreenshot().ConfigureAwait(false),
+                    Methods.InputTap => await HandleTap(req, _handler).ConfigureAwait(false),
+                    Methods.InputPointer => await HandlePointer(req, _handler).ConfigureAwait(false),
+                    Methods.InputClick => await HandleClick(req, _handler).ConfigureAwait(false),
                     Methods.AppInvalidate => await HandleInvalidate(_handler).ConfigureAwait(false),
-                    Methods.AppIdentify   => await HandleIdentify(req, _handler).ConfigureAwait(false),
-                    _                     => null,
+                    Methods.AppIdentify => await HandleIdentify(req, _handler).ConfigureAwait(false),
+                    _ => null,
                 };
                 response = new RpcResponse(req.Id, result);
             }
@@ -128,11 +128,11 @@ public sealed class PipeServer
 /// <summary>Implemented by <see cref="Xui.Middleware.DevTools.Actual.DevToolsWindow"/>.</summary>
 public interface IDevToolsHandler
 {
-    Task<InspectResult>    HandleInspect();
+    Task<InspectResult> HandleInspect();
     Task<ScreenshotResult> HandleScreenshot();
-    Task                   HandleTap(TapParams p);
-    Task                   HandlePointer(PointerParams p);
-    Task                   HandleClick(ClickParams p);
-    Task                   HandleInvalidate();
-    Task                   HandleIdentify(IdentifyParams p);
+    Task HandleTap(TapParams p);
+    Task HandlePointer(PointerParams p);
+    Task HandleClick(ClickParams p);
+    Task HandleInvalidate();
+    Task HandleIdentify(IdentifyParams p);
 }

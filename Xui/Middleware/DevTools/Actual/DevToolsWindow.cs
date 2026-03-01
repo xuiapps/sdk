@@ -33,17 +33,15 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
 
     public DevToolsWindow(DevToolsPlatform platform) => _platform = platform;
 
-    // ── Actual.IWindow ────────────────────────────────────────────────────────
-
     string Xui.Core.Actual.IWindow.Title
     {
         get => Platform!.Title;
         set => Platform!.Title = value;
     }
 
-    void Xui.Core.Actual.IWindow.Show()       => Platform!.Show();
+    void Xui.Core.Actual.IWindow.Show() => Platform!.Show();
     void Xui.Core.Actual.IWindow.Invalidate() => Platform!.Invalidate();
-    void Xui.Core.Actual.IWindow.Close()      => Platform!.Close();
+    void Xui.Core.Actual.IWindow.Close() => Platform!.Close();
 
     bool Xui.Core.Actual.IWindow.RequireKeyboard
     {
@@ -67,7 +65,7 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
         if (_pendingScreenshot != null && _svgStream != null)
         {
             var realCtx = _platform.Base.DrawingContext;
-            var svgCtx  = new SvgDrawingContext(
+            var svgCtx = new SvgDrawingContext(
                 new Size(_pendingRect.Width, _pendingRect.Height),
                 _svgStream,
                 keepOpen: true);
@@ -84,8 +82,6 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
 
         return ctx;
     }
-
-    // ── Abstract.IWindow ──────────────────────────────────────────────────────
 
     Rect Xui.Core.Abstract.IWindow.DisplayArea
     {
@@ -105,18 +101,18 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
         set => Abstract!.ScreenCornerRadius = value;
     }
 
-    void Xui.Core.Abstract.IWindow.Closed()  => Abstract!.Closed();
+    void Xui.Core.Abstract.IWindow.Closed() => Abstract!.Closed();
     bool Xui.Core.Abstract.IWindow.Closing() => Abstract!.Closing();
 
-    void Xui.Core.Abstract.IWindow.OnAnimationFrame(ref FrameEventRef e)   => Abstract!.OnAnimationFrame(ref e);
-    void Xui.Core.Abstract.IWindow.OnMouseDown(ref MouseDownEventRef e)    => Abstract!.OnMouseDown(ref e);
-    void Xui.Core.Abstract.IWindow.OnMouseMove(ref MouseMoveEventRef e)    => Abstract!.OnMouseMove(ref e);
-    void Xui.Core.Abstract.IWindow.OnMouseUp(ref MouseUpEventRef e)        => Abstract!.OnMouseUp(ref e);
+    void Xui.Core.Abstract.IWindow.OnAnimationFrame(ref FrameEventRef e) => Abstract!.OnAnimationFrame(ref e);
+    void Xui.Core.Abstract.IWindow.OnMouseDown(ref MouseDownEventRef e) => Abstract!.OnMouseDown(ref e);
+    void Xui.Core.Abstract.IWindow.OnMouseMove(ref MouseMoveEventRef e) => Abstract!.OnMouseMove(ref e);
+    void Xui.Core.Abstract.IWindow.OnMouseUp(ref MouseUpEventRef e) => Abstract!.OnMouseUp(ref e);
     void Xui.Core.Abstract.IWindow.OnScrollWheel(ref ScrollWheelEventRef e) => Abstract!.OnScrollWheel(ref e);
-    void Xui.Core.Abstract.IWindow.OnTouch(ref TouchEventRef e)            => Abstract!.OnTouch(ref e);
+    void Xui.Core.Abstract.IWindow.OnTouch(ref TouchEventRef e) => Abstract!.OnTouch(ref e);
     void Xui.Core.Abstract.IWindow.WindowHitTest(ref WindowHitTestEventRef e) => Abstract!.WindowHitTest(ref e);
     void Xui.Core.Abstract.IWindow.OnKeyDown(ref KeyEventRef e) => Abstract!.OnKeyDown(ref e);
-    void Xui.Core.Abstract.IWindow.OnChar(ref KeyEventRef e)    => Abstract!.OnChar(ref e);
+    void Xui.Core.Abstract.IWindow.OnChar(ref KeyEventRef e) => Abstract!.OnChar(ref e);
 
     /// <summary>
     /// Intercepts the render call: if a screenshot is pending, allocates the capture stream
@@ -143,8 +139,6 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
             tcs.SetResult(svg);
         }
     }
-
-    // ── DevTools handler methods (called via DevToolsHandler in DevToolsPlatform) ──
 
     internal Task<InspectResult> HandleInspect()
     {
@@ -215,10 +209,10 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
         {
             var phase = p.Phase switch
             {
-                "start"  => TouchPhase.Start,
-                "move"   => TouchPhase.Move,
-                "end"    => TouchPhase.End,
-                _        => TouchPhase.End,
+                "start" => TouchPhase.Start,
+                "move" => TouchPhase.Move,
+                "end" => TouchPhase.End,
+                _ => TouchPhase.End,
             };
             var pos = new Point(p.X, p.Y);
             _lastInputOverlay = (pos, isTouch: true);
@@ -246,8 +240,6 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
         });
         return Task.CompletedTask;
     }
-
-    // ── View tree walk ────────────────────────────────────────────────────────
 
     private static ViewNode WalkView(Xui.Core.UI.View view)
     {
