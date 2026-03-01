@@ -46,6 +46,12 @@
     <DefineConstants>$(DefineConstants);BROWSER;</DefineConstants>
   </PropertyGroup>
 
+  <!-- Debug builds on desktop get DevTools (named-pipe inspection + screenshot) -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' And !($(TargetFramework.Contains('-'))) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
+    <XuiDevTools>true</XuiDevTools>
+    <DefineConstants>$(DefineConstants);DEVTOOLS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == '' And !($(UsingMicrosoftNETSdkWebAssembly) == 'true') ">
     <Compile Remove="Platforms/**/*;Properties/**/*;wwwroot/**/*" />
   </ItemGroup>
@@ -64,7 +70,10 @@
     <!-- Middleware -->
     <ProjectReference
         Condition=" $(XuiEmulator) == 'true' "
-        Include="../../Middleware/Emulator/Emulator.csproj" />
+        Include="../../Middleware/Emulator/Xui.Middleware.Emulator.csproj" />
+    <ProjectReference
+        Condition=" $(XuiDevTools) == 'true' "
+        Include="../../Middleware/DevTools/Xui.Middleware.DevTools.csproj" />
 
     <!-- Runtimes -->
     <ProjectReference
