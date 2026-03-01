@@ -17,6 +17,11 @@ public static class AppTools
     private static Process? _process;
     private static DevToolsClient? _client;
 
+    // Rolling log of stdout/stderr lines captured from the running process.
+    private static readonly List<string> _appLog = new();
+    private static readonly object _logLock = new();
+    private const int MaxLogLines = 200;
+
     [McpServerTool]
     [Description("Start a Xui app in Debug mode with DevTools enabled. projectPath is relative to the solution root (e.g. Xui/Apps/BlankApp/BlankApp.Desktop.csproj).")]
     public static async Task<string> StartApp(string projectPath)
@@ -26,6 +31,7 @@ public static class AppTools
 
         _process?.Dispose();
         _process = null;
+        ClearLog();
 
         var fullPath = Path.IsPathRooted(projectPath)
             ? projectPath
@@ -37,12 +43,15 @@ public static class AppTools
             Arguments = $"run --project \"{fullPath}\" -c Debug",
             UseShellExecute = false,
             RedirectStandardOutput = true,
-            RedirectStandardError = false,
+            RedirectStandardError = true,
             CreateNoWindow = true,
         };
 
         _process = new Process { StartInfo = psi };
         _process.Start();
+
+        // Drain stderr from the start so crash output is always captured.
+        _ = DrainStreamAsync(_process.StandardError);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         string? pipeName = null;
@@ -52,6 +61,7 @@ public static class AppTools
             {
                 var line = await _process.StandardOutput.ReadLineAsync(cts.Token);
                 if (line == null) break;
+                AppendLog(line);
                 if (line.StartsWith("DEVTOOLS_READY:"))
                 {
                     pipeName = line["DEVTOOLS_READY:".Length..];
@@ -63,10 +73,11 @@ public static class AppTools
 
         if (pipeName == null)
         {
+            var exitInfo = _process.HasExited ? $" Process exited with code {_process.ExitCode}." : "";
             try { _process.Kill(entireProcessTree: true); } catch { }
             _process.Dispose();
             _process = null;
-            return "Timed out waiting for DEVTOOLS_READY. Ensure the project is built with Debug configuration and DevTools support is enabled.";
+            return $"Timed out waiting for DEVTOOLS_READY.{exitInfo}\n\n{RecentLog()}";
         }
 
         try
@@ -82,6 +93,9 @@ public static class AppTools
             _client = null;
             return $"App started but could not connect to DevTools pipe '{pipeName}': {ex.Message}";
         }
+
+        // Continue draining stdout after DEVTOOLS_READY.
+        _ = DrainStreamAsync(_process.StandardOutput);
 
         return $"Connected to {pipeName}";
     }
@@ -125,9 +139,22 @@ public static class AppTools
     }
 
     [McpServerTool]
+    [Description("Get the recent stdout/stderr output from the running Xui app. Useful for diagnosing crashes or reading app logs.")]
+    public static Task<string> GetAppLog()
+    {
+        var crash = CrashReport();
+        var log = RecentLog();
+        if (crash != null)
+            return Task.FromResult($"{crash}\n\n{log}");
+        return Task.FromResult(log.Length > 0 ? log : "No log output captured.");
+    }
+
+    [McpServerTool]
     [Description("Inspect the visual UI tree of the running Xui app. Returns a JSON view tree.")]
     public static async Task<string> InspectUi()
     {
+        var crash = CrashReport();
+        if (crash != null) return crash;
         if (_client == null) return "No app connected. Call StartApp first.";
         var result = await _client.SendAsync("ui.inspect");
         return result?.ToString() ?? "null";
@@ -137,6 +164,8 @@ public static class AppTools
     [Description("Take an SVG screenshot of the running Xui app. Returns the SVG markup.")]
     public static async Task<string> Screenshot()
     {
+        var crash = CrashReport();
+        if (crash != null) return crash;
         if (_client == null) return "No app connected. Call StartApp first.";
         var result = await _client.SendAsync("ui.screenshot");
         if (result is JsonElement el && el.TryGetProperty("svg", out var svg))
@@ -148,6 +177,8 @@ public static class AppTools
     [Description("Click (mouse down + up) at coordinates (x, y) in the running Xui app.")]
     public static async Task<string> Click(float x, float y)
     {
+        var crash = CrashReport();
+        if (crash != null) return crash;
         if (_client == null) return "No app connected. Call StartApp first.";
         await _client.SendAsync("input.click", new { x, y });
         return $"Clicked ({x}, {y})";
@@ -157,6 +188,8 @@ public static class AppTools
     [Description("Tap at coordinates (x, y) in the running Xui app.")]
     public static async Task<string> Tap(float x, float y)
     {
+        var crash = CrashReport();
+        if (crash != null) return crash;
         if (_client == null) return "No app connected. Call StartApp first.";
         await _client.SendAsync("input.tap", new { x, y });
         return $"Tapped ({x}, {y})";
@@ -166,6 +199,8 @@ public static class AppTools
     [Description("Send a synthetic pointer event. phase: start | move | end | cancel. index: touch index for multi-touch.")]
     public static async Task<string> Pointer(string phase, float x, float y, int index = 0)
     {
+        var crash = CrashReport();
+        if (crash != null) return crash;
         if (_client == null) return "No app connected. Call StartApp first.";
         await _client.SendAsync("input.pointer", new { phase, x, y, index });
         return $"Pointer {phase} ({x}, {y}) index={index}";
@@ -184,9 +219,57 @@ public static class AppTools
     [Description("Force a redraw of the running Xui app.")]
     public static async Task<string> Invalidate()
     {
+        var crash = CrashReport();
+        if (crash != null) return crash;
         if (_client == null) return "No app connected. Call StartApp first.";
         await _client.SendAsync("app.invalidate");
         return "Invalidated.";
+    }
+
+    private static void AppendLog(string line)
+    {
+        lock (_logLock)
+        {
+            _appLog.Add(line);
+            while (_appLog.Count > MaxLogLines)
+                _appLog.RemoveAt(0);
+        }
+    }
+
+    private static void ClearLog()
+    {
+        lock (_logLock)
+            _appLog.Clear();
+    }
+
+    private static string RecentLog()
+    {
+        lock (_logLock)
+            return _appLog.Count > 0 ? string.Join("\n", _appLog) : "";
+    }
+
+    /// <summary>
+    /// Returns a crash description if the managed process has exited unexpectedly, otherwise null.
+    /// Each interactive tool calls this first so the AI sees the crash on the very next call.
+    /// </summary>
+    private static string? CrashReport()
+    {
+        if (_process == null || !_process.HasExited) return null;
+        return $"App has exited (code {_process.ExitCode}).\n\n{RecentLog()}";
+    }
+
+    private static async Task DrainStreamAsync(StreamReader reader)
+    {
+        try
+        {
+            while (true)
+            {
+                var line = await reader.ReadLineAsync();
+                if (line == null) break;
+                AppendLog(line);
+            }
+        }
+        catch { }
     }
 }
 
