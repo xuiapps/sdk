@@ -14,16 +14,16 @@ namespace Xui.Middleware.DevTools.Actual;
 /// </summary>
 internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actual.IWindow
 {
-    private readonly DevToolsPlatform _platform;
+    private readonly DevToolsPlatform platform;
 
     // Screenshot state — written and read exclusively on the UI thread.
-    private TaskCompletionSource<string>? _pendingScreenshot;
-    private MemoryStream? _svgStream;
-    private Rect _pendingRect;
+    private TaskCompletionSource<string>? pendingScreenshot;
+    private MemoryStream? svgStream;
+    private Rect pendingRect;
 
     // Overlay state: last interaction point and identity label, shown on every frame until replaced.
-    private (Point pos, bool isTouch)? _lastInputOverlay;
-    private string? _overlayLabel;
+    private (Point pos, bool isTouch)? lastInputOverlay;
+    private string? overlayLabel;
 
     /// <summary>The abstract application window (app layer).</summary>
     public Xui.Core.Abstract.IWindow? Abstract { get; set; }
@@ -31,7 +31,7 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
     /// <summary>The underlying real platform window.</summary>
     public Xui.Core.Actual.IWindow? Platform { get; set; }
 
-    public DevToolsWindow(DevToolsPlatform platform) => _platform = platform;
+    public DevToolsWindow(DevToolsPlatform platform) => this.platform = platform;
 
     string Xui.Core.Actual.IWindow.Title
     {
@@ -62,23 +62,23 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
             return Platform!.GetService(t);
 
         IContext ctx;
-        if (_pendingScreenshot != null && _svgStream != null)
+        if (pendingScreenshot != null && svgStream != null)
         {
-            var realCtx = _platform.Base.DrawingContext;
+            var realCtx = platform.Base.DrawingContext;
             var svgCtx = new SvgDrawingContext(
-                new Size(_pendingRect.Width, _pendingRect.Height),
-                _svgStream,
+                new Size(pendingRect.Width, pendingRect.Height),
+                svgStream,
                 keepOpen: true);
             ctx = new SplicingContext(realCtx, svgCtx);
         }
         else
         {
-            ctx = (Platform!.GetService(t) as IContext) ?? _platform.Base.DrawingContext;
+            ctx = (Platform!.GetService(t) as IContext) ?? platform.Base.DrawingContext;
         }
 
         // Wrap with OverlayContext to draw the last interaction point on every frame.
-        if (_lastInputOverlay is { } overlay)
-            return new OverlayContext(ctx, overlay.pos, overlay.isTouch, _overlayLabel);
+        if (lastInputOverlay is { } overlay)
+            return new OverlayContext(ctx, overlay.pos, overlay.isTouch, overlayLabel);
 
         return ctx;
     }
@@ -120,22 +120,22 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
     /// </summary>
     void Xui.Core.Abstract.IWindow.Render(ref RenderEventRef render)
     {
-        if (_pendingScreenshot != null)
+        if (pendingScreenshot != null)
         {
-            _svgStream   = new MemoryStream();
-            _pendingRect = render.Rect;
+            svgStream = new MemoryStream();
+            pendingRect = render.Rect;
         }
 
         Abstract!.Render(ref render);
 
         // At this point the render is done and the SplicingContext (if any) has been
         // disposed — SvgDrawingContext.Dispose() writes the closing SVG tags.
-        if (_pendingScreenshot != null && _svgStream != null)
+        if (pendingScreenshot != null && svgStream != null)
         {
-            var tcs = _pendingScreenshot;
-            _pendingScreenshot = null;
-            var svg = System.Text.Encoding.UTF8.GetString(_svgStream.ToArray());
-            _svgStream = null;
+            var tcs = pendingScreenshot;
+            pendingScreenshot = null;
+            var svg = System.Text.Encoding.UTF8.GetString(svgStream.ToArray());
+            svgStream = null;
             tcs.SetResult(svg);
         }
     }
@@ -143,7 +143,7 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
     internal Task<InspectResult> HandleInspect()
     {
         var tcs = new TaskCompletionSource<InspectResult>();
-        _platform.MainDispatcher.Post(() =>
+        platform.MainDispatcher.Post(() =>
         {
             try
             {
@@ -160,9 +160,9 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
     internal Task<ScreenshotResult> HandleScreenshot()
     {
         var tcs = new TaskCompletionSource<string>();
-        _platform.MainDispatcher.Post(() =>
+        platform.MainDispatcher.Post(() =>
         {
-            _pendingScreenshot = tcs;
+            pendingScreenshot = tcs;
             Platform!.Invalidate();
         });
         return tcs.Task.ContinueWith(
@@ -172,10 +172,10 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
 
     internal Task HandleClick(ClickParams p)
     {
-        _platform.MainDispatcher.Post(() =>
+        platform.MainDispatcher.Post(() =>
         {
             var pos = new Point(p.X, p.Y);
-            _lastInputOverlay = (pos, isTouch: false);
+            lastInputOverlay = (pos, isTouch: false);
             var down = new MouseDownEventRef { Position = pos, Button = MouseButton.Left };
             Abstract!.OnMouseDown(ref down);
             var up = new MouseUpEventRef { Position = pos, Button = MouseButton.Left };
@@ -187,10 +187,10 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
 
     internal Task HandleTap(TapParams p)
     {
-        _platform.MainDispatcher.Post(() =>
+        platform.MainDispatcher.Post(() =>
         {
             var pos = new Point(p.X, p.Y);
-            _lastInputOverlay = (pos, isTouch: true);
+            lastInputOverlay = (pos, isTouch: true);
             var touch = new Touch { Index = 0, Phase = TouchPhase.Start, Position = pos, Radius = 0.5f };
             var te = new TouchEventRef([touch]);
             Abstract!.OnTouch(ref te);
@@ -205,7 +205,7 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
 
     internal Task HandlePointer(PointerParams p)
     {
-        _platform.MainDispatcher.Post(() =>
+        platform.MainDispatcher.Post(() =>
         {
             var phase = p.Phase switch
             {
@@ -215,7 +215,7 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
                 _ => TouchPhase.End,
             };
             var pos = new Point(p.X, p.Y);
-            _lastInputOverlay = (pos, isTouch: true);
+            lastInputOverlay = (pos, isTouch: true);
             var touch = new Touch { Index = p.Index, Phase = phase, Position = pos, Radius = 0.5f };
             var te = new TouchEventRef([touch]);
             Abstract!.OnTouch(ref te);
@@ -226,16 +226,16 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
 
     internal Task HandleInvalidate()
     {
-        _platform.MainDispatcher.Post(() => Platform!.Invalidate());
+        platform.MainDispatcher.Post(() => Platform!.Invalidate());
         return Task.CompletedTask;
     }
 
     internal Task HandleIdentify(IdentifyParams p)
     {
-        _platform.MainDispatcher.Post(() =>
+        platform.MainDispatcher.Post(() =>
         {
-            _overlayLabel = string.IsNullOrWhiteSpace(p.Label) ? null : p.Label;
-            if (_lastInputOverlay.HasValue)
+            overlayLabel = string.IsNullOrWhiteSpace(p.Label) ? null : p.Label;
+            if (lastInputOverlay.HasValue)
                 Platform!.Invalidate();
         });
         return Task.CompletedTask;

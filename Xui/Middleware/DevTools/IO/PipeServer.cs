@@ -9,31 +9,31 @@ namespace Xui.Middleware.DevTools.IO;
 /// </summary>
 public sealed class PipeServer
 {
-    private static readonly JsonSerializerOptions _opts = new()
+    private static readonly JsonSerializerOptions opts = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
     };
 
-    private readonly string _pipeName;
-    private readonly IDevToolsHandler _handler;
-    private CancellationTokenSource? _cts;
+    private readonly string pipeName;
+    private readonly IDevToolsHandler handler;
+    private CancellationTokenSource? cts;
 
     public PipeServer(string pipeName, IDevToolsHandler handler)
     {
-        _pipeName = pipeName;
-        _handler = handler;
+        this.pipeName = pipeName;
+        this.handler = handler;
     }
 
     public void Start()
     {
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
+        cts = new CancellationTokenSource();
+        var ct = cts.Token;
         Thread t = new(() => AcceptLoop(ct)) { IsBackground = true, Name = "DevTools.PipeServer" };
         t.Start();
     }
 
-    public void Stop() => _cts?.Cancel();
+    public void Stop() => cts?.Cancel();
 
     private void AcceptLoop(CancellationToken ct)
     {
@@ -42,7 +42,7 @@ public sealed class PipeServer
             try
             {
                 using var pipe = new NamedPipeServerStream(
-                    _pipeName,
+                    pipeName,
                     PipeDirection.InOut,
                     maxNumberOfServerInstances: 1,
                     PipeTransmissionMode.Byte,
@@ -70,13 +70,13 @@ public sealed class PipeServer
             {
                 object? result = req.Method switch
                 {
-                    Methods.UiInspect => await _handler.HandleInspect().ConfigureAwait(false),
-                    Methods.UiScreenshot => await _handler.HandleScreenshot().ConfigureAwait(false),
-                    Methods.InputTap => await HandleTap(req, _handler).ConfigureAwait(false),
-                    Methods.InputPointer => await HandlePointer(req, _handler).ConfigureAwait(false),
-                    Methods.InputClick => await HandleClick(req, _handler).ConfigureAwait(false),
-                    Methods.AppInvalidate => await HandleInvalidate(_handler).ConfigureAwait(false),
-                    Methods.AppIdentify => await HandleIdentify(req, _handler).ConfigureAwait(false),
+                    Methods.UiInspect => await handler.HandleInspect().ConfigureAwait(false),
+                    Methods.UiScreenshot => await handler.HandleScreenshot().ConfigureAwait(false),
+                    Methods.InputTap => await HandleTap(req, handler).ConfigureAwait(false),
+                    Methods.InputPointer => await HandlePointer(req, handler).ConfigureAwait(false),
+                    Methods.InputClick => await HandleClick(req, handler).ConfigureAwait(false),
+                    Methods.AppInvalidate => await HandleInvalidate(handler).ConfigureAwait(false),
+                    Methods.AppIdentify => await HandleIdentify(req, handler).ConfigureAwait(false),
                     _ => null,
                 };
                 response = new RpcResponse(req.Id, result);
@@ -92,21 +92,21 @@ public sealed class PipeServer
 
     private static async Task<object?> HandleTap(RpcRequest req, IDevToolsHandler handler)
     {
-        var p = req.Params?.Deserialize<TapParams>(_opts) ?? new TapParams(0, 0);
+        var p = req.Params?.Deserialize<TapParams>(opts) ?? new TapParams(0, 0);
         await handler.HandleTap(p).ConfigureAwait(false);
         return null;
     }
 
     private static async Task<object?> HandlePointer(RpcRequest req, IDevToolsHandler handler)
     {
-        var p = req.Params?.Deserialize<PointerParams>(_opts) ?? new PointerParams("start", 0, 0);
+        var p = req.Params?.Deserialize<PointerParams>(opts) ?? new PointerParams("start", 0, 0);
         await handler.HandlePointer(p).ConfigureAwait(false);
         return null;
     }
 
     private static async Task<object?> HandleClick(RpcRequest req, IDevToolsHandler handler)
     {
-        var p = req.Params?.Deserialize<ClickParams>(_opts) ?? new ClickParams(0, 0);
+        var p = req.Params?.Deserialize<ClickParams>(opts) ?? new ClickParams(0, 0);
         await handler.HandleClick(p).ConfigureAwait(false);
         return null;
     }
@@ -119,7 +119,7 @@ public sealed class PipeServer
 
     private static async Task<object?> HandleIdentify(RpcRequest req, IDevToolsHandler handler)
     {
-        var p = req.Params?.Deserialize<IdentifyParams>(_opts) ?? new IdentifyParams("");
+        var p = req.Params?.Deserialize<IdentifyParams>(opts) ?? new IdentifyParams("");
         await handler.HandleIdentify(p).ConfigureAwait(false);
         return null;
     }
