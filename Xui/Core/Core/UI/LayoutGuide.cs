@@ -113,6 +113,12 @@ public struct LayoutGuide
     public bool IsRender => (this.Pass & LayoutPass.Render) == LayoutPass.Render;
 
     /// <summary>
+    /// Returns true if all four passes are requested (Animate, Measure, Arrange, Render),
+    /// meaning the view can process the full pipeline in a single DFS walk via <see cref="View.ForkUpdate"/>.
+    /// </summary>
+    public bool IsLuminarFlow => this.Pass == LayoutPass.LuminarFlow;
+
+    /// <summary>
     /// Flags indicating which type of layout pass is being performed.
     /// Multiple passes may be combined (e.g., Measure | Render).
     /// </summary>
@@ -139,6 +145,13 @@ public struct LayoutGuide
         /// Indicates a Render pass to draw the view's content.
         /// </summary>
         Render = 1 << 3,
+
+        /// <summary>
+        /// All four passes combined: Animate, Measure, Arrange, and Render.
+        /// When a guide carries this value, <see cref="View.ForkUpdate"/> is eligible for
+        /// a single-pass DFS traversal instead of four separate child walks.
+        /// </summary>
+        LuminarFlow = Animate | Measure | Arrange | Render,
     }
 
     /// <summary>

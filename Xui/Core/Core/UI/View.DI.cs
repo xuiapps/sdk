@@ -4,7 +4,7 @@ namespace Xui.Core.UI;
 /// Base class for all UI elements in the Xui layout engine.
 /// A view participates in layout, rendering, and input hit testing, and may contain child views.
 /// </summary>
-public partial class View : IServiceProvider
+public partial class View : IServiceProvider, Layer.ILayerHost
 {
     public virtual object? GetService(Type serviceType) =>
         this.Parent?.GetService(serviceType);

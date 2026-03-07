@@ -115,7 +115,7 @@ public partial class View
     /// <see cref="OnChildRequestedAnimationFrame(View)"/>) so they carry
     /// <see cref="ViewFlags.DescendantAnimated"/>.
     /// </summary>
-    protected void RequestAnimationFrame()
+    public void RequestAnimationFrame()
     {
         if ((this.Flags & ViewFlags.Animated) != 0)
             return;
@@ -146,7 +146,7 @@ public partial class View
     /// Marks this view as having changed in a way that may affect its measured size.
     /// Causes <see cref="OnChildMeasureChanged"/> to be invoked on the parent.
     /// </summary>
-    protected void InvalidateMeasure()
+    public void InvalidateMeasure()
     {
         if ((this.Flags & ViewFlags.MeasureChanged) != 0)
             return;
@@ -173,7 +173,7 @@ public partial class View
     /// Marks this view as having changed visually in a way that requires re-rendering.
     /// Causes <see cref="OnChildRenderChanged"/> to be invoked on the parent.
     /// </summary>
-    protected void InvalidateRender()
+    public void InvalidateRender()
     {
         if ((this.Flags & ViewFlags.RenderChanged) != 0)
             return;

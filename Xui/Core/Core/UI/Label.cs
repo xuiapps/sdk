@@ -21,7 +21,7 @@ namespace Xui.Core.UI
         /// <summary>
         /// Gets or sets the font family used for rendering the text.
         /// </summary>
-        public string[] FontFamily { get; set; } = ["Verdana"];
+        public string[] FontFamily { get; set; } = ["Inter"];
 
         /// <summary>
         /// Gets or sets the font size in points.

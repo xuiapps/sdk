@@ -101,6 +101,6 @@ dotnet run
 
 - [Architecture](architecture.md) — understand how the window connects to the platform.
 - [Canvas API](canvas.md) — everything you can draw.
-- [View System](views.md) — layout, lifecycle, and built-in views.
+- [View System](views/index.md) — layout, lifecycle, and built-in views.
 - [Service Resolution](services.md) — accessing platform and DI services from views.
 - [Input Handling](input.md) — pointer events, keyboard, and scroll.

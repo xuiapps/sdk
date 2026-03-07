@@ -8,7 +8,7 @@ using Xui.Core.UI.Input;
 
 namespace Xui.Core.UI;
 
-public class RootView : View, IContent
+public class RootView : View, IContent, IFocus
 {
     private View? content;
     private View? focusedView;
@@ -171,9 +171,15 @@ public class RootView : View, IContent
             FindFocusNeighbors(view[i], current, ref first, ref last, ref prev, ref next, ref foundCurrent);
     }
 
+    void IFocus.Next() => MoveFocus(+1);
+    void IFocus.Previous() => MoveFocus(-1);
+
     /// <inheritdoc/>
-    public override object? GetService(Type serviceType) =>
-        this.Window.GetService(serviceType);
+    public override object? GetService(Type serviceType)
+    {
+        if (serviceType == typeof(IFocus)) return this;
+        return this.Window.GetService(serviceType);
+    }
 
     protected override void OnChildRenderChanged(View child)
     {
