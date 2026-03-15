@@ -74,6 +74,9 @@ public static partial class ObjC
     public static unsafe partial NSRect objc_msgSend_retNSRect(nint obj, nint sel);
 
     [LibraryImport(LibObjCLib, EntryPoint = "objc_msgSend")]
+    public static unsafe partial NSRect objc_msgSend_retNSRect(nint obj, nint sel, NSRect rect);
+
+    [LibraryImport(LibObjCLib, EntryPoint = "objc_msgSend")]
     public static partial void objc_msgSend(nint obj, nint sel);
 
     [LibraryImport(LibObjCLib, EntryPoint = "objc_msgSend")]

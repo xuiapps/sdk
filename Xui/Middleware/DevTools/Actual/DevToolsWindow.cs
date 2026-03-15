@@ -56,7 +56,7 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
     /// Returns a <see cref="SplicingContext"/> when a screenshot is pending so the next
     /// render pass writes simultaneously to the real display and an SVG capture stream.
     /// </summary>
-    object? Xui.Core.Actual.IWindow.GetService(Type t)
+    object? IServiceProvider.GetService(Type t)
     {
         if (t != typeof(IContext))
             return Platform!.GetService(t);
@@ -64,7 +64,7 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
         IContext ctx;
         if (pendingScreenshot != null && svgStream != null)
         {
-            var realCtx = platform.Base.DrawingContext;
+            var realCtx = (Platform!.GetService(t) as IContext)!;
             var svgCtx = new SvgDrawingContext(
                 new Size(pendingRect.Width, pendingRect.Height),
                 svgStream,
@@ -73,7 +73,7 @@ internal sealed class DevToolsWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actua
         }
         else
         {
-            ctx = (Platform!.GetService(t) as IContext) ?? platform.Base.DrawingContext;
+            ctx = (Platform!.GetService(t) as IContext)!;
         }
 
         // Wrap with OverlayContext to draw the last interaction point on every frame.

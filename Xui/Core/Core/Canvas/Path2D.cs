@@ -185,7 +185,7 @@ public class Path2D : IPathBuilder
 
     /// <summary>Replays all recorded path commands into the given <see cref="IPathBuilder"/>.</summary>
     /// <param name="sink">The path builder to receive the commands.</param>
-    public void Visit(IPathBuilder sink)
+    public void Visit<T>(T sink) where T : IPathBuilder
     {
         int pos = 0;
         while (pos < _length)

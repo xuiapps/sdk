@@ -13,23 +13,23 @@ public static class Platform
             IRuntime runtime =
 #if MACOS && EMULATOR
                 new Xui.Middleware.Emulator.Actual.EmulatorPlatform(
-                    Xui.Runtime.MacOS.Actual.MacOSPlatform.Instance);
+                    new Xui.Runtime.MacOS.Actual.MacOSPlatform());
 #elif WINDOWS && EMULATOR
                 new Xui.Middleware.Emulator.Actual.EmulatorPlatform(
-                    Xui.Runtime.Windows.Actual.Win32Platform.Instance);
+                    new Xui.Runtime.Windows.Actual.Win32Platform());
 #elif BROWSER && EMULATOR
                 new Xui.Middleware.Emulator.Actual.EmulatorPlatform(
-                    Xui.Runtime.Browser.Actual.BrowserPlatform.Instance);
+                    new Xui.Runtime.Browser.Actual.BrowserPlatform());
 #elif IOS
-                Xui.Runtime.IOS.Actual.IOSPlatform.Instance;
+                new Xui.Runtime.IOS.Actual.IOSPlatform();
 #elif ANDROID
-                Xui.Runtime.Android.Actual.AndroidPlatform.Instance;
+                new Xui.Runtime.Android.Actual.AndroidPlatform();
 #elif MACOS
-                Xui.Runtime.MacOS.Actual.MacOSPlatform.Instance;
+                new Xui.Runtime.MacOS.Actual.MacOSPlatform();
 #elif WINDOWS
-                Xui.Runtime.Windows.Actual.Win32Platform.Instance;
+                new Xui.Runtime.Windows.Actual.Win32Platform();
 #elif BROWSER
-                Xui.Runtime.Browser.Actual.BrowserPlatform.Instance;
+                new Xui.Runtime.Browser.Actual.BrowserPlatform();
 #else
                 throw new PlatformNotSupportedException();
 #endif

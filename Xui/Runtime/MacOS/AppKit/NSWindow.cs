@@ -59,6 +59,12 @@ public static partial class AppKit
         private static readonly Prop.NInt LevelProp = new Prop.NInt("level", "setLevel:");
         private static readonly Sel StandardWindowButtonSel = new Sel("standardWindowButton:");
 
+        private static readonly Sel AddChildWindowOrderedSel = new Sel("addChildWindow:ordered:");
+        private static readonly Sel RemoveChildWindowSel = new Sel("removeChildWindow:");
+        private static readonly Sel OrderOutSel = new Sel("orderOut:");
+        private static readonly Sel ConvertRectToScreenSel = new Sel("convertRectToScreen:");
+        private static readonly Prop.Bool HasShadowProp = new Prop.Bool("hasShadow", "setHasShadow:");
+
         public NSWindow(nint id) : base(id)
         {
         }
@@ -213,6 +219,33 @@ public static partial class AppKit
         public void OrderFrontRegardless() => objc_msgSend(this, OrderFrontRegardlessSel);
 
         public void AddTitlebarAccessoryViewController(NSTitlebarAccessoryViewController controller) => objc_msgSend(this, AddTitlebarAccessoryViewControllerSel, controller);
+
+        /// <summary>
+        /// Adds a child window that moves with the parent and stays above it.
+        /// NSWindowOrderingMode: .above = 1
+        /// </summary>
+        public void AddChildWindow(NSWindow child, nint ordered = 1) =>
+            objc_msgSend(this, AddChildWindowOrderedSel, child, ordered);
+
+        /// <summary>Removes a previously added child window.</summary>
+        public void RemoveChildWindow(NSWindow child) =>
+            objc_msgSend(this, RemoveChildWindowSel, (nint)child);
+
+        /// <summary>Hides the window without closing it.</summary>
+        public void OrderOut(nint sender = 0) =>
+            objc_msgSend(this, OrderOutSel, sender);
+
+        /// <summary>
+        /// Converts a rect from the window's coordinate space to screen coordinates.
+        /// </summary>
+        public NSRect ConvertRectToScreen(NSRect rect) =>
+            ObjC.objc_msgSend_retNSRect(this, ConvertRectToScreenSel, rect);
+
+        public bool HasShadow
+        {
+            get => HasShadowProp.Get(this);
+            set => HasShadowProp.Set(this, value);
+        }
 
         [LibraryImport(FoundationLib, EntryPoint = "objc_msgSend")]
         private static partial IntPtr objc_msgSend_retIntPtr(nint obj, nint sel, NSRect rect, nuint nswindowstylemask, nuint nsbackingstoretype, [MarshalAs(UnmanagedType.I1)] bool defer);

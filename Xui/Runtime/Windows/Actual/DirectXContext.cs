@@ -1,7 +1,6 @@
 using System;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Debug;
-using CoreRuntime = Xui.Core.Actual.Runtime;
 using Xui.Core.Math2D;
 using Xui.Runtime.Windows.Win32;
 using static Xui.Runtime.Windows.D2D1;
@@ -196,7 +195,7 @@ public sealed class DirectXContext
             var dipW = logicalW / this.DpiScale;
             var dipH = (logicalH - topOffset) / this.DpiScale;
 
-            CoreRuntime.CurrentInstruments.Log(Scope.Rendering, LevelOfDetail.Diagnostic,
+            this.win32Window.instruments.Log(Scope.Rendering, LevelOfDetail.Diagnostic,
                 $"DirectXContext.Render client=({logicalW}, {logicalH}) dpi={this.DpiScale:F2} dip=({dipW:F1}, {dipH:F1}) topOffset={topOffset}");
 
             var frame = new FrameEventRef(this.LastNextEstimatedFrameTime, this.NextEstimatedFrameTime);

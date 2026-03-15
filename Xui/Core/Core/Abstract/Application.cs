@@ -47,6 +47,7 @@ public abstract class Application : IServiceProvider
         // this.Runtime.CurrentInstruments.Log(Scope.Application, LevelOfDetail.Essential,
         //     $"Application.Run {this.GetType().Name}");
         this.runLoop = Runtime.CreateRunloop(this);
+        HotReload.Dispatcher = Runtime.MainDispatcher;
         return this.runLoop.Run();
     }
 

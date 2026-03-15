@@ -9,10 +9,6 @@ public class TestPlatform : IRuntime, IDispatcher
     internal readonly Queue<Action> PostQueue = new();
     internal IContext? CurrentDrawingContext;
 
-    public IContext DrawingContext =>
-        CurrentDrawingContext ?? throw new InvalidOperationException(
-            "DrawingContext is only available during a Render() call on TestApp.");
-
     public IDispatcher MainDispatcher => this;
 
     public IRunLoop CreateRunloop(Xui.Core.Abstract.Application applicationAbstract) =>
@@ -20,7 +16,7 @@ public class TestPlatform : IRuntime, IDispatcher
 
     public IWindow CreateWindow(Xui.Core.Abstract.IWindow windowAbstract)
     {
-        var window = new TestWindow(windowAbstract);
+        var window = new TestWindow(this, windowAbstract);
         Windows.Add(window);
         return window;
     }

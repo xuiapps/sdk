@@ -7,7 +7,7 @@ namespace Xui.Runtime.MacOS.Actual;
 
 public partial class MacOSDrawingContext
 {
-    private readonly Path2D path2d = new Path2D();
+    private readonly Path2D path2d = new Path2D(1024);
 
     /// <summary>
     /// Replays the recorded path commands into the CG context so that Fill, Stroke,

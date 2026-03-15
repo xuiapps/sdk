@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Threading;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Debug;
-using CoreRuntime = Xui.Core.Actual.Runtime;
 using static Xui.Runtime.Windows.Win32.User32;
 
 namespace Xui.Runtime.Windows.Actual;
@@ -16,18 +15,24 @@ public class Win32RunLoop : Xui.Core.Actual.IRunLoop, Xui.Core.Actual.IDispatche
     private readonly SynchronizationContext synchronizationContext;
     private readonly ConcurrentQueue<Action> postQueue = new();
 
+    protected Win32Platform Platform { get; }
     protected Xui.Core.Abstract.Application Application { get; }
+
+    private readonly InstrumentsAccessor instruments;
 
     // Devices (app lifetime)
     private DXGI.Device? dxgiDevice;
     private DComp.Device? dCompDevice;
 
-    public Win32RunLoop(Xui.Core.Abstract.Application application)
+    public Win32RunLoop(Win32Platform platform, Xui.Core.Abstract.Application application)
     {
         this.synchronizationContext = new Win32SynchronizationContext(this);
         SynchronizationContext.SetSynchronizationContext(this.synchronizationContext);
 
+        this.Platform = platform;
         this.Application = application;
+        var factory = application.GetService(typeof(IInstruments)) as IInstruments;
+        this.instruments = new InstrumentsAccessor(factory?.CreateSink());
     }
 
     public void Post(Action callback)
@@ -42,7 +47,7 @@ public class Win32RunLoop : Xui.Core.Actual.IRunLoop, Xui.Core.Actual.IDispatche
 
     public int Run()
     {
-        var instruments = CoreRuntime.CurrentInstruments;
+        var instruments = this.instruments;
         instruments.Log(Scope.Application, LevelOfDetail.Essential, $"Win32RunLoop.Run starting");
 
         this.Application.Start();
@@ -80,7 +85,7 @@ public class Win32RunLoop : Xui.Core.Actual.IRunLoop, Xui.Core.Actual.IDispatche
     {
         DComp.DCompositionWaitForCompositorClock(0, 0, 32);
 
-        // var windows = Win32Platform.Instance.Windows;
+        // var windows = this.Platform.Windows;
         // int count = 0;
 
         // Span<nint> handles = stackalloc nint[windows.Count];
@@ -106,9 +111,9 @@ public class Win32RunLoop : Xui.Core.Actual.IRunLoop, Xui.Core.Actual.IDispatche
         var next = stats.NextEstimatedFrameTimeSpan;
 
         FrameEventRef @event = new FrameEventRef(previous, next);
-        for (int i = 0; i < Win32Platform.Instance.Windows.Count; i++)
+        for (int i = 0; i < this.Platform.Windows.Count; i++)
         {
-            var w = Win32Platform.Instance.Windows[i];
+            var w = this.Platform.Windows[i];
             w.OnAnimationFrame(ref @event);
             w.Render();
         }

@@ -5,3 +5,5 @@ packages/
 _site/
 api/
 *.user
+
+.claude/settings.local.json

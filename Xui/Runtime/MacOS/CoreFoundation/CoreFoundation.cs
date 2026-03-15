@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 using static Xui.Runtime.MacOS.ObjC;
 
@@ -66,6 +67,27 @@ public static partial class CoreFoundation
 
     [LibraryImport(CoreFoundationLib)]
     private static partial nint CFStringCreateWithCString(nint allocator, [MarshalAs(UnmanagedType.LPUTF8Str)] string value, uint encoding);
+
+    [LibraryImport(CoreFoundationLib)]
+    private static unsafe partial nint CFStringCreateWithCharacters(nint allocator, char* chars, nint numChars);
+
+    public static unsafe nint CFString(ReadOnlySpan<char> str)
+    {
+        if (str.IsEmpty)
+        {
+            char dummy = '\0';
+            nint cfStr = CFStringCreateWithCharacters(nint.Zero, &dummy, 0);
+            if (cfStr == 0) throw new ObjCException("Failed to create new CFString.");
+            return cfStr;
+        }
+
+        fixed (char* ptr = str)
+        {
+            nint cfStr = CFStringCreateWithCharacters(nint.Zero, ptr, str.Length);
+            if (cfStr == 0) throw new ObjCException("Failed to create new CFString.");
+            return cfStr;
+        }
+    }
 
     private const uint kCFStringEncodingUTF8 = 0x08000100;
 }

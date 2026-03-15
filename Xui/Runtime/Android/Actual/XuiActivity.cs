@@ -57,6 +57,8 @@ public class XuiActivity : global::Android.App.Activity, Xui.Core.Actual.IWindow
     {
     }
 
+    object? IServiceProvider.GetService(Type serviceType) => null;
+
     public override bool OnTouchEvent(MotionEvent? e)
     {
         if (e != null)
@@ -105,7 +107,6 @@ public class XuiActivity : global::Android.App.Activity, Xui.Core.Actual.IWindow
     internal void OnDraw(Core.Math2D.Vector size, Canvas canvas)
     {
         this.Context.Canvas = canvas;
-        AndroidPlatform.Instance.AndroidDrawingContext.Canvas = canvas;
 
         var density = this.Resources?.DisplayMetrics?.Density ?? 1;
         RenderEventRef render = new RenderEventRef()

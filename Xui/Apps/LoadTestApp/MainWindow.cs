@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Canvas;
+using Xui.Core.DI;
 using Xui.Core.Math2D;
 using Window = Xui.Core.Abstract.Window;
 
@@ -106,7 +107,7 @@ public class MainWindow : Window
         this.previousFrameMemory = memNow;
         this.hasPreviousFrameMemory = true;
 
-        var ctx = this.Runtime.DrawingContext;
+        var ctx = this.GetRequiredService<IContext>();
 
         // Clear background
         ctx.SetFill(Colors.Black);

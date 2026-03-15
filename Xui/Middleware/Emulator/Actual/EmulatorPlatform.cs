@@ -1,7 +1,5 @@
 using Xui.Core.Abstract;
 using Xui.Core.Actual;
-using Xui.Core.Canvas;
-
 namespace Xui.Middleware.Emulator.Actual;
 
 /// <summary>
@@ -13,11 +11,6 @@ namespace Xui.Middleware.Emulator.Actual;
 public class EmulatorPlatform : IRuntime
 {
     internal IRuntime BasePlatform;
-
-    /// <summary>
-    /// Gets the drawing context from the base platform.
-    /// </summary>
-    public IContext DrawingContext => this.BasePlatform.DrawingContext;
 
     /// <summary>
     /// Gets the main thread dispatcher from the base platform.

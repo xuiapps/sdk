@@ -6,9 +6,11 @@ public class TestWindow : Xui.Core.Actual.IWindow
 {
     internal Xui.Core.Abstract.IWindow Abstract { get; }
     internal bool Invalid { get; set; }
+    private readonly TestPlatform platform;
 
-    public TestWindow(Xui.Core.Abstract.IWindow abstractWindow)
+    public TestWindow(TestPlatform platform, Xui.Core.Abstract.IWindow abstractWindow)
     {
+        this.platform = platform;
         this.Abstract = abstractWindow;
     }
 
@@ -25,5 +27,11 @@ public class TestWindow : Xui.Core.Actual.IWindow
     public void Invalidate()
     {
         Invalid = true;
+    }
+
+    public object? GetService(Type serviceType)
+    {
+        if (serviceType == typeof(IContext)) return this.platform.CurrentDrawingContext;
+        return null;
     }
 }

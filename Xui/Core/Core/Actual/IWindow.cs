@@ -11,7 +11,7 @@ namespace Xui.Core.Actual;
 /// This interface is typically paired with an abstract window in the Xui framework,
 /// and is not used directly by application developers.
 /// </summary>
-public interface IWindow
+public interface IWindow : IServiceProvider
 {
     /// <summary>
     /// Gets or sets the window title, where supported by the platform (e.g., desktop).
@@ -48,11 +48,4 @@ public interface IWindow
     /// during pointer events. Returns null on platforms that do not support it.
     /// </summary>
     ITextMeasureContext? TextMeasureContext => null;
-
-    /// <summary>
-    /// Returns platform-provided services for this window (e.g. <see cref="IImagePipeline"/>).
-    /// Called by the abstract <see cref="Xui.Core.Abstract.Window"/> after exhausting its own
-    /// DI service provider. Implementations must never call back into the abstract window.
-    /// </summary>
-    object? GetService(Type serviceType) => null;
 }

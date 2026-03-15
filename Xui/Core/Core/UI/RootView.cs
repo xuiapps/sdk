@@ -1,6 +1,5 @@
 using Xui.Core.Abstract;
 using Xui.Core.Abstract.Events;
-using Xui.Core.Actual;
 using Xui.Core.Canvas;
 using Xui.Core.Debug;
 using Xui.Core.Math2D;
@@ -120,7 +119,7 @@ public class RootView : View, IContent, IFocus
 
     void IContent.Update(ref RenderEventRef @event, IContext context)
     {
-        var instruments = Runtime.CurrentInstruments;
+        var instruments = this.Instruments;
         var rect = @event.Rect;
         using var _ = instruments.Trace(Scope.Rendering, LevelOfDetail.Essential,
             $"RootView.Update Rect({rect.X:F1}, {rect.Y:F1}, {rect.Width:F1}, {rect.Height:F1})");

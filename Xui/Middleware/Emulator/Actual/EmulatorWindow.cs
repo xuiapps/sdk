@@ -5,6 +5,7 @@ using Xui.Core.Abstract.Events;
 using Xui.Core.Animation;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
+using Xui.Core.DI;
 using Xui.Middleware.Emulator.Devices;
 using static Xui.Core.Abstract.IWindow.IDesktopStyle;
 
@@ -68,7 +69,7 @@ public partial class EmulatorWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actual
 
     void Xui.Core.Actual.IWindow.Show() => Platform!.Show();
 
-    object? Xui.Core.Actual.IWindow.GetService(Type serviceType) =>
+    public object? GetService(Type serviceType) =>
         Platform!.GetService(serviceType);
 
     /// <summary>
@@ -216,111 +217,107 @@ public partial class EmulatorWindow : Xui.Core.Abstract.IWindow, Xui.Core.Actual
             width: render.Rect.Width - borderWidth - borderWidth,
             height: render.Rect.Height - titleHeight - gap - borderWidth - borderWidth);
 
-        using (var ctx = platform.BasePlatform.DrawingContext)
+        var ctx = this.GetRequiredService<IContext>();
+
+        ctx.Save();
+
+        ctx.BeginPath();
+        ctx.RoundRect(emulatorRect, screenCornerRadius);
+        ctx.Clip();
+
+        ctx.BeginPath();
+        ctx.Translate((borderWidth, titleHeight + gap + borderWidth));
+
+        RenderEventRef emulatorRender = new RenderEventRef(
+            rect: new Rect(0, 0, emulatorRect.Width, emulatorRect.Height),
+            frame: render.Frame
+        );
+
+        ctx.SetFill(Colors.White);
+        ctx.FillRect(emulatorRender.Rect);
+
+        Abstract!.DisplayArea = emulatorRender.Rect;
+        Abstract!.SafeArea = emulatorRender.Rect - new Frame(40, 0, 20, 0);
+        Abstract!.ScreenCornerRadius = CurrentDevice.ScreenCornerRadius;
+
+        Abstract!.Render(ref emulatorRender);
+
+        ctx.Restore();
+
+        if (this.leftMouseButtonTouch.HasValue)
         {
             ctx.Save();
-
             ctx.BeginPath();
             ctx.RoundRect(emulatorRect, screenCornerRadius);
             ctx.Clip();
 
-            ctx.BeginPath();
             ctx.Translate((borderWidth, titleHeight + gap + borderWidth));
 
-            RenderEventRef emulatorRender = new RenderEventRef(
-                rect: new Rect(0, 0, emulatorRect.Width, emulatorRect.Height),
-                frame: render.Frame
-            );
-
-            ctx.SetFill(Colors.White);
-            ctx.FillRect(emulatorRender.Rect);
-
-            Abstract!.DisplayArea = emulatorRender.Rect;
-            Abstract!.SafeArea = emulatorRender.Rect - new Frame(40, 0, 20, 0);
-            Abstract!.ScreenCornerRadius = CurrentDevice.ScreenCornerRadius;
-
-            Abstract!.Render(ref emulatorRender);
-        }
-
-        using (var ctx = platform.BasePlatform.DrawingContext)
-        {
-            ctx.Restore();
-
-            if (this.leftMouseButtonTouch.HasValue)
-            {
-                ctx.Save();
-                ctx.BeginPath();
-                ctx.RoundRect(emulatorRect, screenCornerRadius);
-                ctx.Clip();
-
-                ctx.Translate((borderWidth, titleHeight + gap + borderWidth));
-
-                ctx.BeginPath();
-                ctx.Ellipse(this.leftMouseButtonTouch.Value, 15f, 15f, 0, 0, NFloat.Pi * 2, Winding.ClockWise);
-                ctx.SetFill(0x66888888);
-                ctx.Fill();
-
-                ctx.BeginPath();
-                ctx.Ellipse(this.leftMouseButtonTouch.Value, 15f, 15f, 0, 0, NFloat.Pi * 2, Winding.ClockWise);
-                ctx.LineWidth = 3f;
-                ctx.SetStroke(0x88AAAAAA);
-                ctx.Stroke();
-
-                ctx.Restore();
-            }
-
-            // Outer device frame stroke
             ctx.BeginPath();
-            ctx.RoundRect(
-                rect: emulatorRect.Expand(borderWidth * 0.5f),
-                radius: screenCornerRadius + borderWidth * 0.5f);
-            ctx.SetStroke(new Color(0x111111FF));
-            ctx.LineWidth = borderWidth;
-            ctx.Stroke();
-
-            ctx.BeginPath();
-            ctx.RoundRect(
-                rect: emulatorRect.Expand(borderWidth - borderOutline * 0.5f),
-                radius: screenCornerRadius + borderWidth * 0.5f + 0.25f * borderOutline);
-            ctx.SetStroke(new Color(0x444444FF));
-            ctx.LineWidth = borderOutline;
-            ctx.Stroke();
-
-            NFloat phoneToTabletT = Easing.Normalize(render.Rect.Width, 500, 575);
-
-            // Icons (refactored)
-            PinholeCutout.Instance.Render(ctx, (
-                render.Rect.Width / 2f - 45f,
-                titleHeight + gap + borderWidth + 12f
-            ));
-
-            NFloat clockX = NFloat.Lerp(
-                (render.Rect.Width / 2f - 22f) / 2,
-                (300 / 2f - 22f) / 2,
-                Easing.EaseInOutSine(phoneToTabletT));
-            ClockIcon.Instance.Render(ctx, (clockX, titleHeight + gap + borderWidth + 18));
-
-            NFloat instrumentsX = NFloat.Lerp(
-                render.Rect.Width / 2f + 45f + (render.Rect.Width / 2f - 45f - 22f) / 2f,
-                render.Rect.Width - 80f,
-                Easing.EaseInOutSine(phoneToTabletT));
-
-            SignalStrengthIcon.Instance.Render(ctx, (instrumentsX - 12f - 8f, titleHeight + gap + borderWidth + 18 + 13.5f));
-            BatteryIcon.Instance.Render(ctx, (instrumentsX - 8f, titleHeight + gap + borderWidth + 18 + 2.5f));
-            FiveGIcon.Instance.Render(ctx, (instrumentsX + 36f - 8f, titleHeight + gap + borderWidth + 18));
-
-            // Menu Handle
-            MenuHandle.Instance.Render(ctx, (
-                render.Rect.Width / 2f,
-                render.Rect.Height - borderWidth - 3f
-            ));
-
-            // Title background
-            ctx.BeginPath();
-            ctx.RoundRect(titleRect, 10f);
-            ctx.SetFill(new Color(0x333333FF));
+            ctx.Ellipse(this.leftMouseButtonTouch.Value, 15f, 15f, 0, 0, NFloat.Pi * 2, Winding.ClockWise);
+            ctx.SetFill(0x66888888);
             ctx.Fill();
+
+            ctx.BeginPath();
+            ctx.Ellipse(this.leftMouseButtonTouch.Value, 15f, 15f, 0, 0, NFloat.Pi * 2, Winding.ClockWise);
+            ctx.LineWidth = 3f;
+            ctx.SetStroke(0x88AAAAAA);
+            ctx.Stroke();
+
+            ctx.Restore();
         }
+
+        // Outer device frame stroke
+        ctx.BeginPath();
+        ctx.RoundRect(
+            rect: emulatorRect.Expand(borderWidth * 0.5f),
+            radius: screenCornerRadius + borderWidth * 0.5f);
+        ctx.SetStroke(new Color(0x111111FF));
+        ctx.LineWidth = borderWidth;
+        ctx.Stroke();
+
+        ctx.BeginPath();
+        ctx.RoundRect(
+            rect: emulatorRect.Expand(borderWidth - borderOutline * 0.5f),
+            radius: screenCornerRadius + borderWidth * 0.5f + 0.25f * borderOutline);
+        ctx.SetStroke(new Color(0x444444FF));
+        ctx.LineWidth = borderOutline;
+        ctx.Stroke();
+
+        NFloat phoneToTabletT = Easing.Normalize(render.Rect.Width, 500, 575);
+
+        // Icons (refactored)
+        PinholeCutout.Instance.Render(ctx, (
+            render.Rect.Width / 2f - 45f,
+            titleHeight + gap + borderWidth + 12f
+        ));
+
+        NFloat clockX = NFloat.Lerp(
+            (render.Rect.Width / 2f - 22f) / 2,
+            (300 / 2f - 22f) / 2,
+            Easing.EaseInOutSine(phoneToTabletT));
+        ClockIcon.Instance.Render(ctx, (clockX, titleHeight + gap + borderWidth + 18));
+
+        NFloat instrumentsX = NFloat.Lerp(
+            render.Rect.Width / 2f + 45f + (render.Rect.Width / 2f - 45f - 22f) / 2f,
+            render.Rect.Width - 80f,
+            Easing.EaseInOutSine(phoneToTabletT));
+
+        SignalStrengthIcon.Instance.Render(ctx, (instrumentsX - 12f - 8f, titleHeight + gap + borderWidth + 18 + 13.5f));
+        BatteryIcon.Instance.Render(ctx, (instrumentsX - 8f, titleHeight + gap + borderWidth + 18 + 2.5f));
+        FiveGIcon.Instance.Render(ctx, (instrumentsX + 36f - 8f, titleHeight + gap + borderWidth + 18));
+
+        // Menu Handle
+        MenuHandle.Instance.Render(ctx, (
+            render.Rect.Width / 2f,
+            render.Rect.Height - borderWidth - 3f
+        ));
+
+        // Title background
+        ctx.BeginPath();
+        ctx.RoundRect(titleRect, 10f);
+        ctx.SetFill(new Color(0x333333FF));
+        ctx.Fill();
     }
 
     void Xui.Core.Abstract.IWindow.WindowHitTest(ref WindowHitTestEventRef evRef)

@@ -103,4 +103,12 @@ public static partial class User32
     [LibraryImport(User32Lib)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool DestroyWindow(HWND hWnd);
+
+    [LibraryImport(User32Lib)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool ClientToScreen(HWND hWnd, ref POINT lpPoint);
+
+    [LibraryImport(User32Lib)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetCursorPos(out POINT lpPoint);
 }

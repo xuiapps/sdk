@@ -22,6 +22,10 @@ public static partial class CoreFoundation
         {
         }
 
+        public CFStringRef(ReadOnlySpan<char> str) : this(CFString(str))
+        {
+        }
+
         internal static string? Marshal(nint cfStringRef) =>
             System.Runtime.InteropServices.Marshal.PtrToStringUTF8(
                 ObjC.objc_msgSend_retIntPtr(cfStringRef, UTF8StringSel));

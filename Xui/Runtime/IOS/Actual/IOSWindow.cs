@@ -190,6 +190,8 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow
 
     void Xui.Core.Actual.IWindow.Show() => this.MakeKeyAndVisible();
 
+    object? IServiceProvider.GetService(Type serviceType) => null;
+
     internal void Render(CGRect rect)
     {
         FrameEventRef frame = new (this.previousFrameTime, this.nextFrameTime);

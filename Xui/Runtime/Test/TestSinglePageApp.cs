@@ -78,7 +78,7 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
         var application = this.host.Services.GetRequiredService<TApplication>();
         application.Run();
 
-        this.Window = Window.OpenWindows[Window.OpenWindows.Count - 1];
+        this.Window = (Window)this.platform.Windows[this.platform.Windows.Count - 1].Abstract;
         this.Window.DisplayArea = new Rect(0, 0, windowSize.Width, windowSize.Height);
         this.Window.SafeArea = this.Window.DisplayArea;
 
@@ -180,16 +180,18 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
     {
         using var stream = new MemoryStream();
 
-        var context = new SvgDrawingContext(
-            this.Size, stream, Xui.Core.Fonts.Inter.URIs, keepOpen: true);
-        this.platform.CurrentDrawingContext = context;
+        using (var context = new SvgDrawingContext(
+            this.Size, stream, Xui.Core.Fonts.Inter.URIs, keepOpen: true))
+        {
+            this.platform.CurrentDrawingContext = context;
 
-        var frame = new FrameEventRef(this.lastFramePrevious, this.lastFrameNext);
-        var rect = new Rect(0, 0, this.Size.Width, this.Size.Height);
-        var render = new RenderEventRef(rect, frame);
-        ((Xui.Core.Abstract.IWindow)this.Window).Render(ref render);
+            var frame = new FrameEventRef(this.lastFramePrevious, this.lastFrameNext);
+            var rect = new Rect(0, 0, this.Size.Width, this.Size.Height);
+            var render = new RenderEventRef(rect, frame);
+            ((Xui.Core.Abstract.IWindow)this.Window).Render(ref render);
 
-        this.platform.CurrentDrawingContext = null;
+            this.platform.CurrentDrawingContext = null;
+        } // Dispose flushes SVG footer before we read the stream
 
         stream.Position = 0;
         return new StreamReader(stream).ReadToEnd();

@@ -11,23 +11,23 @@ public static class Platform
         {
 #if MACOS && EMULATOR
             config.AddSingleton<IRuntime>(new Xui.Middleware.Emulator.Actual.EmulatorPlatform(
-                Xui.Runtime.MacOS.Actual.MacOSPlatform.Instance));
+                new Xui.Runtime.MacOS.Actual.MacOSPlatform()));
 #elif WINDOWS && EMULATOR
             config.AddSingleton<IRuntime>(new Xui.Middleware.Emulator.Actual.EmulatorPlatform(
-                Xui.Runtime.Windows.Actual.Win32Platform.Instance));
+                new Xui.Runtime.Windows.Actual.Win32Platform()));
 #elif BROWSER && EMULATOR
             config.AddSingleton<IRuntime>(new Xui.Middleware.Emulator.Actual.EmulatorPlatform(
-                Xui.Runtime.Browser.Actual.BrowserPlatform.Instance));
+                new Xui.Runtime.Browser.Actual.BrowserPlatform()));
 #elif IOS
-            config.AddSingleton<IRuntime>(Xui.Runtime.IOS.Actual.IOSPlatform.Instance);
+            config.AddSingleton<IRuntime>(new Xui.Runtime.IOS.Actual.IOSPlatform());
 #elif ANDROID
-            config.AddSingleton<IRuntime>(Xui.Runtime.Android.Actual.AndroidPlatform.Instance);
+            config.AddSingleton<IRuntime>(new Xui.Runtime.Android.Actual.AndroidPlatform());
 #elif MACOS
-            config.AddSingleton<IRuntime>(Xui.Runtime.MacOS.Actual.MacOSPlatform.Instance);
+            config.AddSingleton<IRuntime>(new Xui.Runtime.MacOS.Actual.MacOSPlatform());
 #elif WINDOWS
-            config.AddSingleton<IRuntime>(Xui.Runtime.Windows.Actual.Win32Platform.Instance);
+            config.AddSingleton<IRuntime>(new Xui.Runtime.Windows.Actual.Win32Platform());
 #elif BROWSER
-            config.AddSingleton<IRuntime>(Xui.Runtime.Browser.Actual.BrowserPlatform.Instance);
+            config.AddSingleton<IRuntime>(new Xui.Runtime.Browser.Actual.BrowserPlatform());
 #endif
         });
 }

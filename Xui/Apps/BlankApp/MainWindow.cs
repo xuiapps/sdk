@@ -3,11 +3,10 @@ using System.Runtime.InteropServices;
 using Xui.Core.Abstract;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Canvas;
+using Xui.Core.DI;
 using static Xui.Core.Canvas.Colors;
 using static Xui.Core.Animation.Easing;
 using Xui.Core.Math2D;
-using Xui.Core.Actual;
-
 using Window = Xui.Core.Abstract.Window;
 using Point = Xui.Core.Math2D.Point;
 using Rect = Xui.Core.Math2D.Rect;
@@ -216,7 +215,7 @@ public class MainWindow : Window
 
     public override void Render(ref RenderEventRef render)
     {
-        using var ctx = Xui.Core.Actual.Runtime.DrawingContext!;
+        var ctx = this.GetRequiredService<IContext>();
 
         var centerGuide = render.Rect.Width / 2f;
 

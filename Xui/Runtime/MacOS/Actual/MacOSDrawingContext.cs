@@ -58,6 +58,7 @@ public partial class MacOSDrawingContext : IContext
         this.fill.Reset();
         this.stroke.Reset();
         this.baseTransform = null;
+        this.path2d.BeginPath();
 
         return this;
     }
@@ -427,7 +428,69 @@ public partial class MacOSDrawingContext : IContext
         NSString.objc_msgSend(nsStringRef, NSString.DrawAtPointWithAttributesSel, pos + offset, attributes);
     }
 
+    void ITextDrawingContext.FillText(ReadOnlySpan<char> text, Point pos)
+    {
+        using var nsStringRef = new CFStringRef(text);
+        using var attributes = new CFMutableDictionaryRef();
+
+        using var foreground = new NSColorRef(this.fill.color);
+        attributes.SetValue(NSAttributedString.Key.ForegroundColor, foreground);
+
+        if (textMeasure.nsFont != 0)
+        {
+            attributes.SetValue(NSAttributedString.Key.Font, textMeasure.nsFont);
+        }
+
+        // === Horizontal alignment ===
+        Vector offset = (0, 0);
+        if (this.TextAlign != TextAlign.Left && this.TextAlign != TextAlign.Start)
+        {
+            var size = ObjC.objc_msgSend_retCGSize(nsStringRef, NSString.SizeWithAttributesSel, attributes);
+
+            switch (this.TextAlign)
+            {
+                case TextAlign.Center: offset.X -= size.Width * 0.5f; break;
+
+                case TextAlign.End: offset.X -= size.Width; break;
+                case TextAlign.Right: offset.X -= size.Width; break;
+
+                case TextAlign.Left: break;
+                case TextAlign.Start: break;
+            }
+        }
+
+        // === Vertical alignment ===
+        if (this.TextBaseline != TextBaseline.Top)
+        {
+            if (textMeasure.nsFont != 0)
+            {
+                var ctFont = new CTFontRef(textMeasure.nsFont);
+
+                var ascent = ctFont.Ascent;
+                var descent = ctFont.Descent;
+                var leading = ctFont.Leading;
+                var lineHeight = ascent + descent + leading;
+
+                offset.Y -= this.TextBaseline switch
+                {
+                    TextBaseline.Top         => 0f, // Top already matches
+                    TextBaseline.Middle      => ascent * 0.5f + descent * 0.5f,
+                    TextBaseline.Alphabetic  => ascent,
+                    TextBaseline.Hanging     => ascent - ctFont.CapHeight, // Cap height below top
+                    TextBaseline.Ideographic => ascent - ctFont.XHeight * 1.25f,
+                    TextBaseline.Bottom      => ascent + descent,
+                    _                        => ascent
+                };
+            }
+        }
+
+        // === Final draw ===
+        NSString.objc_msgSend(nsStringRef, NSString.DrawAtPointWithAttributesSel, pos + offset, attributes);
+    }
+
     TextMetrics ITextMeasureContext.MeasureText(string text) => textMeasure.MeasureText(text);
+
+    TextMetrics ITextMeasureContext.MeasureText(ReadOnlySpan<char> text) => textMeasure.MeasureText(text);
 
     void ITextMeasureContext.SetFont(Font font) => textMeasure.SetFont(font);
 

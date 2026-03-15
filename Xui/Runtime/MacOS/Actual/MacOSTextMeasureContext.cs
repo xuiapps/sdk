@@ -27,6 +27,17 @@ internal sealed class MacOSTextMeasureContext : ITextMeasureContext
     public TextMetrics MeasureText(string text)
     {
         using var nsStringRef = new CFStringRef(text);
+        return MeasureTextCore(nsStringRef);
+    }
+
+    public TextMetrics MeasureText(ReadOnlySpan<char> text)
+    {
+        using var nsStringRef = new CFStringRef(text);
+        return MeasureTextCore(nsStringRef);
+    }
+
+    private TextMetrics MeasureTextCore(CFStringRef nsStringRef)
+    {
         using var attributes = new CFMutableDictionaryRef();
 
         if (nsFont != 0)

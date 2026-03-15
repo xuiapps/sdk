@@ -1,5 +1,3 @@
-using Xui.Core.Canvas;
-
 namespace Xui.Core.Actual;
 
 /// <summary>
@@ -11,13 +9,6 @@ namespace Xui.Core.Actual;
 /// </summary>
 public interface IRuntime
 {
-    /// <summary>
-    /// Gets the global drawing context for the current platform.
-    /// This typically wraps a native graphics context such as Direct2D (Windows) or CGContext (macOS),
-    /// and serves as the entry point for rendering operations.
-    /// </summary>
-    IContext DrawingContext { get; }
-
     /// <summary>
     /// Gets the main thread dispatcher for scheduling UI work.
     /// Used to marshal execution onto the main thread for layout, input, and rendering.

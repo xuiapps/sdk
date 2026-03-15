@@ -1,6 +1,5 @@
 using Xui.Core.Abstract;
 using Xui.Core.Actual;
-using Xui.Core.Canvas;
 using Xui.Middleware.DevTools.Actual;
 using Xui.Middleware.DevTools.IO;
 
@@ -20,9 +19,6 @@ public class DevToolsPlatform : IRuntime
     internal DevToolsWindow? Window;
 
     public DevToolsPlatform(IRuntime @base) => Base = @base;
-
-    /// <inheritdoc/>
-    public IContext DrawingContext => Base.DrawingContext;
 
     /// <inheritdoc/>
     public IDispatcher MainDispatcher => Base.MainDispatcher;

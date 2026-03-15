@@ -2,15 +2,10 @@ using System;
 using System.Runtime.InteropServices.JavaScript;
 using Xui.Core.Abstract;
 using Xui.Core.Actual;
-using Xui.Core.Canvas;
-
 namespace Xui.Runtime.Browser.Actual;
 
 public partial class BrowserPlatform : Xui.Core.Actual.IRuntime
 {
-    public static readonly BrowserPlatform Instance = new BrowserPlatform();
-
-    public IContext DrawingContext => BrowserDrawingContext.Instance;
 
     public IDispatcher MainDispatcher => throw new System.NotImplementedException();
 

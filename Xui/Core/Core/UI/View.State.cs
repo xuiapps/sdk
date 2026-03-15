@@ -1,10 +1,15 @@
-using Xui.Core.Actual;
 using Xui.Core.Debug;
 
 namespace Xui.Core.UI;
 
 public partial class View
 {
+    /// <summary>
+    /// Instrumentation accessor for diagnostics. Defaults to a no-op when no
+    /// <see cref="IInstruments"/> is registered in the DI container.
+    /// </summary>
+    internal InstrumentsAccessor Instruments;
+
     /// <summary>
     /// Flags used internally by a <see cref="View"/> to track invalidation state across
     /// measure, arrangement, rendering, and hit testing phases.
@@ -121,7 +126,7 @@ public partial class View
             return;
 
         this.Flags |= ViewFlags.Animated;
-        Runtime.CurrentInstruments.Log(Scope.ViewAnimation, LevelOfDetail.Info,
+        this.Instruments.Log(Scope.ViewAnimation, LevelOfDetail.Info,
             $"RequestAnimationFrame {this.GetType().Name}");
         this.Parent?.OnChildRequestedAnimationFrame(this);
     }
@@ -179,7 +184,7 @@ public partial class View
             return;
 
         this.Flags |= ViewFlags.RenderChanged;
-        Runtime.CurrentInstruments.Log(Scope.ViewState, LevelOfDetail.Info,
+        this.Instruments.Log(Scope.ViewState, LevelOfDetail.Info,
             $"InvalidateRender {this.GetType().Name} Flags={this.Flags}");
         this.Parent?.OnChildRenderChanged(this);
     }
@@ -228,7 +233,7 @@ public partial class View
     {
         if ((this.Flags & (ViewFlags.RenderChanged | ViewFlags.DescendantRenderChanged)) != 0)
         {
-            Runtime.CurrentInstruments.Log(Scope.ViewState, LevelOfDetail.Diagnostic,
+            this.Instruments.Log(Scope.ViewState, LevelOfDetail.Diagnostic,
                 $"ValidateRender {this.GetType().Name} clearing Flags={this.Flags & (ViewFlags.RenderChanged | ViewFlags.DescendantRenderChanged)}");
         }
         this.Flags &= ~ViewFlags.RenderChanged;
@@ -281,13 +286,13 @@ public partial class View
     {
         if ((this.Flags & ViewFlags.DescendantRenderChanged) != 0)
         {
-            Runtime.CurrentInstruments.Log(Scope.ViewState, LevelOfDetail.Info,
+            this.Instruments.Log(Scope.ViewState, LevelOfDetail.Info,
                 $"OnChildRenderChanged {this.GetType().Name} <- {child.GetType().Name} (propagation stopped, DescendantRenderChanged already set)");
             return;
         }
 
         this.Flags |= ViewFlags.DescendantRenderChanged;
-        Runtime.CurrentInstruments.Log(Scope.ViewState, LevelOfDetail.Info,
+        this.Instruments.Log(Scope.ViewState, LevelOfDetail.Info,
             $"OnChildRenderChanged {this.GetType().Name} <- {child.GetType().Name}");
         this.Parent?.OnChildRenderChanged(this);
     }

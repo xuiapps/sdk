@@ -66,6 +66,8 @@ public partial class BrowserWindow : Xui.Core.Actual.IWindow
     {
     }
 
+    public object? GetService(Type serviceType) => null;
+
     private void SendAnimationFrameEvent(double width, double height, double timestamp, double pixelRatio)
     {
         var previous = TimeSpan.FromMilliseconds(timestamp);

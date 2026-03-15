@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Canvas;
+using Xui.Core.DI;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.Core.UI.Input;
@@ -184,6 +185,7 @@ public class DockLayerTest : View
         : LayerView<ComboInput, FocusBorderLayer<ComboInput, DockLayer.Dock2<ComboInput, TextInputLayer, ButtonLayer<ComboInput, ComboInput.DropdownAction>>>>
     {
         public override bool Focusable => true;
+        private IPopup? activePopup;
 
         public ComboInput()
         {
@@ -227,9 +229,86 @@ public class DockLayerTest : View
             };
         }
 
+        internal void OpenDropdown()
+        {
+            if (activePopup is { IsVisible: true })
+            {
+                activePopup.Close();
+                return;
+            }
+
+            activePopup = this.GetService<IPopup>();
+            if (activePopup == null) return;
+
+            var content = new DropdownContent();
+            activePopup.Show(content, this.Frame, PopupPlacement.Below,
+                new Size(this.Frame.Width, 80), PopupEffect.Translucent);
+        }
+
         internal struct DropdownAction : IButtonAction<ComboInput>
         {
-            public void Execute(ComboInput host) { /* open dropdown */ }
+            public void Execute(ComboInput host) => host.OpenDropdown();
+        }
+    }
+
+    /// <summary>
+    /// Simple dropdown content view with a few label items.
+    /// </summary>
+    private class DropdownContent : View
+    {
+        private readonly Label item1, item2, item3;
+
+        public override int Count => 3;
+        public override View this[int index] => index switch
+        {
+            0 => item1,
+            1 => item2,
+            2 => item3,
+            _ => throw new IndexOutOfRangeException(),
+        };
+
+        public DropdownContent()
+        {
+            item1 = MakeItem("Option A");
+            item2 = MakeItem("Option B");
+            item3 = MakeItem("Option C");
+            AddProtectedChild(item1);
+            AddProtectedChild(item2);
+            AddProtectedChild(item3);
+        }
+
+        private static Label MakeItem(string text) => new Label
+        {
+            Text       = text,
+            FontFamily = ["Inter"],
+            FontSize   = 14,
+            FontWeight = FontWeight.Normal,
+        };
+
+        protected override Size MeasureCore(Size availableSize, IMeasureContext context)
+        {
+            NFloat h = 0;
+            for (int i = 0; i < Count; i++)
+            {
+                this[i].Measure(new Size(availableSize.Width, availableSize.Height), context);
+                h += 24;
+            }
+            return new Size(availableSize.Width, h + 8);
+        }
+
+        protected override void ArrangeCore(Rect rect, IMeasureContext context)
+        {
+            NFloat y = rect.Y + 4;
+            for (int i = 0; i < Count; i++)
+            {
+                this[i].Arrange(new Rect(rect.X + 8, y, rect.Width - 16, 20), context);
+                y += 24;
+            }
+        }
+
+        protected override void RenderCore(IContext context)
+        {
+            base.RenderCore(context);
         }
     }
 
