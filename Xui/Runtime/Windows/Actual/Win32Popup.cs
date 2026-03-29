@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using static Xui.Runtime.Windows.Win32.Types;
@@ -10,8 +9,10 @@ using static Xui.Runtime.Windows.Win32.User32.Types;
 namespace Xui.Runtime.Windows.Actual;
 
 /// <summary>
-/// Win32 popup implementation using a borderless, non-activating owned window.
-/// The popup auto-dismisses when the user clicks outside it.
+/// Win32 native popup window — borderless, non-activating, owned by the parent HWND.
+/// Reserved for future use: native-level popups that must extend outside the app window
+/// (e.g. system-level dropdowns, tooltips anchored to the taskbar).
+/// The cross-platform in-window overlay is handled by <c>PopupOverlay</c> in Xui.Core.
 /// </summary>
 internal sealed class Win32Popup : IPopup
 {
@@ -20,7 +21,6 @@ internal sealed class Win32Popup : IPopup
 
     private readonly Win32Window parentWindow;
     private HWND popupHwnd;
-    private View? content;
 
     public bool IsVisible => popupHwnd.value != 0;
     public event Action? Closed;
@@ -35,12 +35,7 @@ internal sealed class Win32Popup : IPopup
         if (IsVisible)
             Close();
 
-        this.content = content;
-
-        // Determine popup size
         var popupSize = size ?? new Size(anchorRect.Width, 120);
-
-        // Convert anchor rect from DIP client coordinates to screen pixels.
         var dpiScale = parentWindow.Hwnd.DPIScale;
 
         var clientTopLeft = new POINT
@@ -65,7 +60,6 @@ internal sealed class Win32Popup : IPopup
         int popupW = (int)(popupSize.Width * dpiScale);
         int popupH = (int)(popupSize.Height * dpiScale);
 
-        // Position popup based on placement
         int popupX, popupY;
         switch (placement)
         {
@@ -102,11 +96,11 @@ internal sealed class Win32Popup : IPopup
             hWndParent: parentWindow.Hwnd,
             hMenu: 0, hInstance: 0, lpParam: 0);
 
-        // TODO: Initialize rendering pipeline (DirectXContext or D2D render target)
-        // for the popup HWND so content can be rendered via View.Update(LayoutGuide).
+        // TODO: Initialize rendering pipeline (DirectXContext) for this HWND
+        // so View content can be rendered into a native floating window that
+        // can extend beyond the parent window bounds.
 
-        // Show without activating
-        HWND.ShowWindow(popupHwnd, 8); // SW_SHOWNA = 8
+        HWND.ShowWindow(popupHwnd, 8); // SW_SHOWNA
     }
 
     public void Close()
@@ -115,35 +109,11 @@ internal sealed class Win32Popup : IPopup
 
         DestroyWindow(popupHwnd);
         popupHwnd = default;
-        content = null;
 
         Closed?.Invoke();
     }
 
-    /// <summary>
-    /// Called by the parent window's WM_LBUTTONDOWN handler to check if a
-    /// mouse-down should dismiss this popup. Returns true if the popup was dismissed.
-    /// </summary>
-    internal bool TryDismissOnMouseDown(POINT screenPoint)
-    {
-        if (popupHwnd.value == 0) return false;
-
-        HWND.GetWindowRect(popupHwnd, out var rect);
-        if (screenPoint.X < rect.Left ||
-            screenPoint.X > rect.Right ||
-            screenPoint.Y < rect.Top ||
-            screenPoint.Y > rect.Bottom)
-        {
-            Close();
-            return true;
-        }
-        return false;
-    }
-
-    public void Dispose()
-    {
-        Close();
-    }
+    public void Dispose() => Close();
 
     private static void EnsureWindowClassRegistered()
     {
@@ -174,8 +144,5 @@ internal sealed class Win32Popup : IPopup
     }
 
     private static int PopupWndProc(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
-    {
-        // TODO: Handle WM_PAINT for rendering popup content.
-        return HWND.DefWindowProc(hWnd, uMsg, wParam, lParam);
-    }
+        => HWND.DefWindowProc(hWnd, uMsg, wParam, lParam);
 }

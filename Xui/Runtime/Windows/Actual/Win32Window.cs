@@ -15,7 +15,7 @@ using static Xui.Runtime.Windows.Win32.User32.Types;
 
 namespace Xui.Runtime.Windows.Actual;
 
-public partial class Win32Window : Xui.Core.Actual.IWindow
+public partial class Win32Window : Xui.Core.Actual.IWindow, IDirectXHost
 {
     public const uint WM_ANIMATION_FRAME_MSG = 0x0401;
 
@@ -23,8 +23,6 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
     private static Win32Window? constructedInstanceOnStack;
 
     private static Dictionary<HWND, Win32Window> HwndToWindow = new Dictionary<HWND, Win32Window>();
-
-    private readonly List<Win32Popup> activePopups = new();
 
     private volatile bool invalid = true;
 
@@ -102,7 +100,7 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
             hIconSm = 0
         };
 
-        this.Renderer = new DirectXContext(this);
+        this.Renderer = new DirectXContext((IDirectXHost)this);
 
         ushort classAtom = RegisterClassEx(w);
         Marshal.FreeHGlobal(lpszClassNamePtr);
@@ -202,6 +200,12 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
     public HWND Hwnd { get; private set; }
 
+    // IDirectXHost — expose fields used by DirectXContext
+    HWND IDirectXHost.Hwnd => this.Hwnd;
+    NFloat IDirectXHost.ExtendedFrameTopOffset => this.extendedFrameTopOffset;
+    InstrumentsAccessor IDirectXHost.Instruments => this.instruments;
+    void IDirectXHost.Render(RenderEventRef render) => this.Abstract.Render(ref render);
+
     protected internal Xui.Core.Abstract.IWindow Abstract { get; }
 
     public DirectXContext Renderer { get; }
@@ -256,33 +260,9 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
         if (serviceType == typeof(IImage)) return this.Renderer.ImageFactory?.CreateImage();
         if (serviceType == typeof(ITextMeasureContext)) return this.TextMeasureContext;
         if (serviceType == typeof(IDeviceInfo)) return Win32DeviceInfo.Instance;
-        if (serviceType == typeof(IPopup)) return CreatePopup();
         if (serviceType == typeof(Xui.GPU.Hardware.IGpuDevice)) return GpuDevice;
         if (serviceType == typeof(Xui.GPU.Backends.IShaderBackend)) return new Xui.GPU.Backends.Hlsl.HlslCodeGenerator();
         return null;
-    }
-
-    private Win32Popup CreatePopup()
-    {
-        var popup = new Win32Popup(this);
-        activePopups.Add(popup);
-        popup.Closed += () => activePopups.Remove(popup);
-        return popup;
-    }
-
-    private void DismissPopups()
-    {
-        for (int i = activePopups.Count - 1; i >= 0; i--)
-            activePopups[i].Close();
-    }
-
-    private void TryDismissPopupsOnMouseDown()
-    {
-        if (activePopups.Count == 0) return;
-
-        GetCursorPos(out var screenPoint);
-        for (int i = activePopups.Count - 1; i >= 0; i--)
-            activePopups[i].TryDismissOnMouseDown(screenPoint);
     }
 
     public int OnMessage(HWND hWnd, WindowMessage uMsg, WPARAM wParam, LPARAM lParam)
@@ -436,7 +416,6 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
             case WindowMessage.WM_DESTROY:
             {
-                DismissPopups();
                 this.platform.RemoveWindow(this);
                 this.Abstract.Closed();
                 break;
@@ -565,8 +544,6 @@ public partial class Win32Window : Xui.Core.Actual.IWindow
 
             case WindowMessage.WM_LBUTTONDOWN:
             {
-                TryDismissPopupsOnMouseDown();
-
                 // Capture so we continue to get mouse up even if the cursor leaves the window while pressed.
                 this.Hwnd.CaptureMouse();
 

@@ -12,15 +12,15 @@ namespace Xui.Runtime.Windows.Actual;
 
 public sealed class DirectXContext
 {
-    private readonly Win32Window win32Window;
+    private readonly IDirectXHost host;
 
     /** 1.0 @ 100%, 2.0 @ 200% */
     private float DpiScale = 1.0f;
     private float InverseDpiScale = 1.0f;
 
-    public DirectXContext(Win32Window win32Window)
+    internal DirectXContext(IDirectXHost host)
     {
-        this.win32Window = win32Window;
+        this.host = host;
     }
 
     // Composition SwapChain
@@ -185,17 +185,17 @@ public sealed class DirectXContext
                 return;
             }
 
-            var hWnd = this.win32Window.Hwnd;
+            var hWnd = this.host.Hwnd;
             hWnd.GetClientRect(out var rc);
 
             uint logicalW = (uint)Math.Max(1, rc.Right - rc.Left);
             uint logicalH = (uint)Math.Max(1, rc.Bottom - rc.Top);
 
-            var topOffset = this.win32Window.ExtendedFrameTopOffset;
+            var topOffset = this.host.ExtendedFrameTopOffset;
             var dipW = logicalW / this.DpiScale;
             var dipH = (logicalH - topOffset) / this.DpiScale;
 
-            this.win32Window.instruments.Log(Scope.Rendering, LevelOfDetail.Diagnostic,
+            this.host.Instruments.Log(Scope.Rendering, LevelOfDetail.Diagnostic,
                 $"DirectXContext.Render client=({logicalW}, {logicalH}) dpi={this.DpiScale:F2} dip=({dipW:F1}, {dipH:F1}) topOffset={topOffset}");
 
             var frame = new FrameEventRef(this.LastNextEstimatedFrameTime, this.NextEstimatedFrameTime);
@@ -221,7 +221,7 @@ public sealed class DirectXContext
             Win32Platform.DisplayContextStack.Push(this.Direct2DContext);
             try
             {
-                this.win32Window.Render(render);
+                this.host.Render(render);
                 this.Direct2DContext.EndDraw();
             }
             finally
