@@ -67,6 +67,9 @@
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
     <ProjectReference Include="../../Core/Core.DI/Xui.Core.DI.csproj" />
 
+    <!-- DevKit -->
+    <ProjectReference Include="../../DevKit/UI/Xui.DevKit.UI.csproj" />
+
     <!-- GPU -->
     <ProjectReference Include="../../Runtime/Software/Xui.Runtime.Software.csproj" />
     <ProjectReference Include="../../CompileTime/Xui.CompileTime.csproj"

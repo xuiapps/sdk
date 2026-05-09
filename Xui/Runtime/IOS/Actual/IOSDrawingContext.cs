@@ -234,6 +234,7 @@ public class IOSDrawingContext : IContext
 
     void IPathBuilder.RoundRect(Rect rect, NFloat radius)
     {
+        radius = RoundedRect.Clamp(rect.Size, radius);
         using var cgPathRef = CGPathRef.CreateWithRoundedRect(rect, radius);
         CGContextRef.CGContextAddPath(this.cgContextRef, cgPathRef);
     }
@@ -241,8 +242,7 @@ public class IOSDrawingContext : IContext
     void IPathBuilder.RoundRect(Rect rect, CornerRadius radius)
     {
         var context = (IContext)this;
-
-        // TODO: Clap radius to available space in rect
+        radius = RoundedRect.Clamp(rect.Size, radius);
 
         if (radius.TopLeft == 0)
         {

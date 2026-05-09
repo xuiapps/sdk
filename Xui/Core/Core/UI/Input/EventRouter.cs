@@ -270,8 +270,16 @@ namespace Xui.Core.UI.Input
                 if (tracking.Captured == view)
                     return;
 
+                // Send LostCapture to previous holder before transferring
+                var previousCapture = tracking.Captured;
                 tracking.Captured = view;
                 _pointerTracking[pointerId] = tracking;
+
+                if (previousCapture != null)
+                {
+                    var lostEvt = new PointerEventRef(PointerEventType.LostCapture, pointerId, 0, true, tracking.LastState, ReadOnlySpan<PointerState>.Empty, ReadOnlySpan<PointerState>.Empty);
+                    previousCapture.OnPointerEvent(ref lostEvt, EventPhase.Bubble);
+                }
 
                 var evt = new PointerEventRef(PointerEventType.GotCapture, pointerId, 0, true, tracking.LastState, ReadOnlySpan<PointerState>.Empty, ReadOnlySpan<PointerState>.Empty);
                 view.OnPointerEvent(ref evt, EventPhase.Bubble);

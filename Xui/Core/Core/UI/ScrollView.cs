@@ -394,5 +394,8 @@ public class ScrollView : View
             InvalidateArrange();
             InvalidateRender();
         }
+
+        // Propagate animation to children (e.g. Expander inside ScrollView).
+        base.AnimateCore(previous, current);
     }
 }

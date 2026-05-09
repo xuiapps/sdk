@@ -1,11 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,11 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../Apps/TestApp/TestApp.Desktop.csproj" />
-    <ProjectReference Include="../../Core/Fonts/Xui.Core.Fonts.csproj" />
-    <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
-    <ProjectReference Include="../../Runtime/Software/Xui.Runtime.Software.csproj" />
-    <ProjectReference Include="../../DevKit/UI/Xui.DevKit.UI.csproj" />
+    <ProjectReference Include="../ThreeD/Xui.DevKit.ThreeD.csproj" />
   </ItemGroup>
 
 </Project>

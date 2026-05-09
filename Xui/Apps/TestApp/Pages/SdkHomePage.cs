@@ -1,4 +1,5 @@
 using Xui.Apps.TestApp.Examples;
+using Xui.Apps.TestApp.Examples.DesignSystem;
 using Xui.Apps.TestApp.Pages.Canvas;
 using Xui.Apps.TestApp.Pages.Grid;
 using Xui.Apps.TestApp.Pages.Layers;
@@ -67,6 +68,11 @@ public class SdkHomePage : VerticalStack
             Id = "3D",
             Margin = 3,
             Text = "3D GPU Rendering"
+        });
+        this.Add(new SdkExampleButton<DesignSystemExample>() {
+            Id = "DesignSystem",
+            Margin = 3,
+            Text = "Design System"
         });
     }
 }

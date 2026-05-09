@@ -245,9 +245,30 @@ Chroma, Hue — the same space used by CSS Color Level 4 and Material Design 3's
 - **Hue** (0–360 °) — perceptual hue angle on the color wheel
 
 Conversion to/from `Xui.Core.Canvas.Color` is implicit, so existing APIs are unaffected. The key
-addition is `Color.Oklch.Ramp` — a struct that **binds two `Color.Oklch` endpoints** and evaluates to
-any intermediate color via `[t]` indexing, exactly like how `Xui.Core.Curves2D` interpolates points
-along a Bezier curve.
+addition is `Color.Oklch.Ramp` — a struct that takes a **hue** and a **target chroma** and evaluates
+to any lightness via `[t]` indexing, exactly like how `Xui.Core.Curves2D` interpolates points along
+a Bezier curve. Unlike a naive two-endpoint lerp, the ramp is **gamut-aware**: at each lightness
+level it caps chroma to the maximum value representable in sRGB for that hue, so colors stay vivid
+where the gamut allows and gracefully desaturate only where it doesn't.
+
+#### Why gamut-aware chroma matters
+
+In OKLCH, the maximum chroma that fits inside sRGB varies dramatically by hue and lightness. For
+example, blue (H ≈ 265°) peaks around L = 0.4 with chroma ~0.31, while yellow (H ≈ 110°) peaks
+around L = 0.9 with chroma ~0.21. A linear interpolation from `(L=0, C=Cmax)` to `(L=1, C=0)`
+would request out-of-gamut chroma values at many lightness levels, producing clipped or distorted
+colors. The fix is to let the ramp *request* a target chroma but *clamp* it per-lightness to the
+sRGB gamut boundary:
+
+```
+Requested chroma ───────────────────── target C (constant)
+                    ╲
+sRGB gamut cap ──────╲──── peaks near L=0.4 for blue
+                      ╲
+Effective chroma ──── min(target C, maxSrgbChroma(L, H))
+```
+
+This is the same approach Material Design 3 uses internally (HCT's "chroma capping" step).
 
 ```csharp
 // In Xui.Core.Canvas (extends the existing Color struct):
@@ -279,25 +300,95 @@ public partial struct Color
         public static implicit operator Oklch(Color color) => new Oklch(color);
 
         /// <summary>
-        /// Creates a <see cref="Ramp"/> between two Oklch colors.
+        /// Returns the maximum chroma representable in sRGB for the given lightness and hue.
+        /// Uses a bisection search in Oklab: for a candidate chroma, convert OKLCH → sRGB and
+        /// check whether all channels are in [0, 1]. Binary search converges in ~16 iterations
+        /// to sub-0.001 precision. Results can be cached per (hue, lightness) pair.
+        /// </summary>
+        public static nfloat MaxSrgbChroma(nfloat lightness, nfloat hueDegrees)
+        {
+            // Edge cases: L=0 (black) and L=1 (white) have chroma 0.
+            // For all other L, bisect in [0, 0.5] to find the gamut boundary.
+            /* implementation: bisection or analytic Oklab → sRGB gamut mapping */
+        }
+
+        /// <summary>
+        /// Creates a gamut-aware <see cref="Ramp"/> for the given hue and target chroma.
+        /// The ramp maps t ∈ [0, 1] to lightness [0, 1], using the target chroma at each
+        /// lightness level — clamped to the sRGB gamut boundary via MaxSrgbChroma.
+        /// </summary>
+        public static Ramp TonalRamp(nfloat hueDegrees, nfloat targetChroma)
+            => new Ramp(hueDegrees, targetChroma);
+
+        /// <summary>
+        /// Creates a <see cref="Ramp"/> between two arbitrary Oklch colors.
         /// Hue interpolation follows the shortest arc on the color wheel.
+        /// Note: for tonal palettes, prefer <see cref="TonalRamp"/> which is gamut-aware.
         /// </summary>
         public static Ramp Between(Oklch from, Oklch to) => new Ramp(from, to);
 
         /// <summary>
-        /// A pair of Oklch endpoints that can be evaluated at any position t ∈ [0, 1].
+        /// A gamut-aware tonal ramp that maps t ∈ [0, 1] to a color at lightness t.
+        /// At each lightness, chroma is clamped to the sRGB gamut boundary for the hue,
+        /// ensuring every output color is representable without clipping.
+        ///
+        /// Can also be constructed from two arbitrary Oklch endpoints for general interpolation
+        /// (in that mode, gamut clamping is not applied — the caller is responsible).
+        ///
         /// Analogous to how <c>Xui.Core.Curves2D</c> evaluates a point on a Bezier curve.
-        /// t = 0 returns From; t = 1 returns To.
         /// </summary>
         public readonly struct Ramp
         {
-            public Oklch From { get; init; }
-            public Oklch To   { get; init; }
+            /// <summary>Hue angle for tonal ramp mode.</summary>
+            public nfloat Hue           { get; init; }
 
-            public Ramp(Oklch from, Oklch to) { From = from; To = to; }
+            /// <summary>Requested chroma (will be clamped to sRGB gamut at each lightness).</summary>
+            public nfloat TargetChroma   { get; init; }
 
-            /// <summary>Evaluates the ramp at position t, returning a sRGB Color.</summary>
-            public Color this[nfloat t] => Lerp(From, To, t).ToColor();
+            // -- Two-endpoint mode (for Between) --
+            internal Oklch? FromEndpoint { get; init; }
+            internal Oklch? ToEndpoint   { get; init; }
+
+            /// <summary>Tonal ramp constructor: hue + target chroma, gamut-aware.</summary>
+            public Ramp(nfloat hueDegrees, nfloat targetChroma)
+            {
+                Hue = hueDegrees;
+                TargetChroma = targetChroma;
+                FromEndpoint = null;
+                ToEndpoint = null;
+            }
+
+            /// <summary>Two-endpoint constructor: arbitrary Oklch interpolation.</summary>
+            public Ramp(Oklch from, Oklch to)
+            {
+                FromEndpoint = from;
+                ToEndpoint = to;
+                Hue = from.Hue;
+                TargetChroma = from.Chroma;
+            }
+
+            /// <summary>
+            /// Evaluates the ramp at position t ∈ [0, 1], returning an sRGB Color.
+            /// In tonal mode: t maps to lightness, chroma is gamut-clamped.
+            /// In two-endpoint mode: t linearly interpolates between From and To.
+            /// </summary>
+            public Color this[nfloat t]
+            {
+                get
+                {
+                    if (FromEndpoint is { } from && ToEndpoint is { } to)
+                        return Lerp(from, to, t).ToColor();
+
+                    // Tonal mode: t = lightness, chroma clamped to sRGB gamut.
+                    nfloat maxC = Oklch.MaxSrgbChroma(t, Hue);
+                    return new Oklch
+                    {
+                        Lightness = t,
+                        Chroma    = nfloat.Min(TargetChroma, maxC),
+                        Hue       = Hue,
+                    }.ToColor();
+                }
+            }
 
             /// <summary>Lerps two Oklch values along the shortest hue arc.</summary>
             public static Oklch Lerp(Oklch from, Oklch to, nfloat t)
@@ -320,16 +411,16 @@ public partial struct Color
 **Generating a tonal ramp** for any hue is then one expression:
 
 ```csharp
-// Full tonal ramp for hue 240 ° (blue), chroma 0.3:
-var blueRamp = Color.Oklch.Between(
-    new Color.Oklch { Lightness = 0.0f, Chroma = 0.3f, Hue = 240 },  // L=0 → near black
-    new Color.Oklch { Lightness = 1.0f, Chroma = 0.0f, Hue = 240 }   // L=1 → near white
-);
+// Full gamut-aware tonal ramp for hue 240° (blue), target chroma 0.3:
+// At each lightness, chroma is clamped to the sRGB boundary for hue 240°.
+// Blue peaks around L=0.4 (C≈0.31), so mid-tones stay vivid; near-white/black
+// tones gracefully desaturate as the gamut narrows.
+var blueRamp = Color.Oklch.TonalRamp(hueDegrees: 240, targetChroma: 0.3f);
 
-Color primary40 = blueRamp[0.40f];  // Filled button fill    (light mode)
-Color primary80 = blueRamp[0.80f];  // Filled button fill    (dark mode)
-Color primary90 = blueRamp[0.90f];  // Tonal button fill     (light mode)
-Color primary30 = blueRamp[0.30f];  // Tonal button fill     (dark mode)
+Color primary40 = blueRamp[0.40f];  // Filled button fill    (light mode) — near peak chroma
+Color primary80 = blueRamp[0.80f];  // Filled button fill    (dark mode)  — chroma auto-reduced
+Color primary90 = blueRamp[0.90f];  // Tonal button fill     (light mode) — gentle tint
+Color primary30 = blueRamp[0.30f];  // Tonal button fill     (dark mode)  — deep saturated
 ```
 
 `IColorSystem.GetTonalRamp(nfloat hueDegrees, nfloat chroma)` returns a pre-built `Color.Oklch.Ramp`
@@ -1100,7 +1191,44 @@ public override void Render(IContext context)
 }
 ```
 
-### 6.3 Theme Change Propagation
+### 6.3 Contextual Theming (Sub-Tree Override)
+
+Because `GetService<T>()` walks the parent chain, any view can intercept the resolution and provide
+its own `IDesignSystem` to its children. This enables **contextual theming** — a subtree that uses
+different tokens from the rest of the app — without any special framework support:
+
+```csharp
+// A dark card floating over a light app, or an error zone where buttons use Error colors.
+public class DarkSurface : View
+{
+    private IDesignSystem _darkTheme;
+
+    protected override void OnAttach()
+    {
+        // Get the parent theme and derive a dark variant:
+        var parentDs = base.GetService<IDesignSystem>()!;
+        _darkTheme = parentDs.WithColorScheme(ColorScheme.Dark);
+        base.OnAttach();
+    }
+
+    // Children calling GetService<IDesignSystem>() will hit this override
+    // before it reaches the parent chain — they see the dark theme.
+    public override T? GetService<T>() where T : class
+        => typeof(T) == typeof(IDesignSystem) ? (T)(object)_darkTheme : base.GetService<T>();
+}
+```
+
+Use cases:
+- **Dark card on light background** — wrap card content in a view that returns a dark `IDesignSystem`.
+- **Error zone** — swap `Primary` for `Error` so all buttons/inputs inside render in error colors.
+- **Branded section** — a partner area with a different primary hue, isolated from the rest of the app.
+
+Children are unaware of the override — they call `GetService<IDesignSystem>()` as usual and get
+whichever instance the parent chain resolves.
+
+---
+
+### 6.4 Theme Change Propagation
 
 When the system-level color scheme changes (e.g. dark mode toggle), the platform adapter fires a
 `IDesignSystem.Changed` event. The root window invalidates the entire view tree, causing every widget
@@ -1133,18 +1261,22 @@ Triadic             → Secondary = H + 120°, Tertiary  = H + 240°
 Tetradic / Square   → Secondary = H + 90°,  Tertiary  = H + 180°, Quaternary = H + 270°
 ```
 
-### 7.2 From Hue to Full Palette using `Color.Oklch.Ramp`
+### 7.2 From Hue to Full Palette using `Color.Oklch.TonalRamp`
 
 ```
 For each seed hue H:
-  1. Define a chroma level C (e.g. 0.2–0.35 in OKLCH — typical sRGB-safe range)
-  2. Build a Color.Oklch.Ramp from (L=0, C=C, H=H) to (L=1, C=0, H=H)
+  1. Define a target chroma C (e.g. 0.2–0.35 in OKLCH)
+  2. Build a gamut-aware ramp: Color.Oklch.TonalRamp(H, C)
+     The ramp maps t ∈ [0, 1] to lightness, clamping chroma to the sRGB
+     gamut boundary at each level — no manual "safe range" guessing needed.
      This single ramp covers all tonal stops via ramp[lightness]:
-       L=0.00 → ramp[0.00f]   (near black)
+       L=0.00 → ramp[0.00f]   (near black, chroma → 0)
        L=0.40 → ramp[0.40f]   → ColorGroup.Background (light mode)
        L=0.80 → ramp[0.80f]   → ColorGroup.Background (dark mode)
        L=0.90 → ramp[0.90f]   → ColorGroup.Container  (light mode)
-       L=1.00 → ramp[1.00f]   → ColorGroup.Foreground (light mode, near white)
+       L=1.00 → ramp[1.00f]   → ColorGroup.Foreground (light mode, near white, chroma → 0)
+     Chroma peaks wherever the sRGB gamut allows for that hue (e.g. L≈0.4 for
+     blue, L≈0.9 for yellow) and tapers naturally at the extremes.
   3. Map named color roles to ramp positions (see ColorGroup above)
 ```
 

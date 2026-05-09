@@ -58,12 +58,15 @@ public partial class MacOSDrawingContext
 
         public void RoundRect(Rect rect, NFloat radius)
         {
+            radius = RoundedRect.Clamp(rect.Size, radius);
             using var cgPath = CGPathRef.CreateWithRoundedRect(rect, radius);
             CGContextRef.CGContextAddPath(ctx, cgPath);
         }
 
         public void RoundRect(Rect rect, CornerRadius radius)
         {
+            radius = RoundedRect.Clamp(rect.Size, radius);
+
             if (radius.TopLeft == 0)
                 MoveTo(rect.TopLeft);
             else

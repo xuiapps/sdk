@@ -28,13 +28,23 @@ public static partial class AppKit
             this.Self = self;
         }
 
+        /// <summary>
+        /// Creates an NSColor from an sRGB color. The autoreleased object returned by
+        /// colorWithCalibratedRed:green:blue:alpha: is retained so that Dispose's
+        /// CFRelease produces a balanced release.
+        /// </summary>
         public NSColorRef(Color color)
-            : this(objc_msgSend_retIntPtr(Class, ColorWithCalibratedRedGreenBlueAlpha, color.Red, color.Green, color.Blue, color.Alpha))
+            : this(CoreFoundation.CFRetain(
+                objc_msgSend_retIntPtr(Class, ColorWithCalibratedRedGreenBlueAlpha, color.Red, color.Green, color.Blue, color.Alpha)))
         {
         }
 
+        /// <summary>
+        /// Creates an NSColor from explicit RGBA components. Retained for balanced ownership.
+        /// </summary>
         public NSColorRef(NFloat red, NFloat green, NFloat blue, NFloat alpha)
-            : this(objc_msgSend_retIntPtr(Class, ColorWithCalibratedRedGreenBlueAlpha, red, green, blue, alpha))
+            : this(CoreFoundation.CFRetain(
+                objc_msgSend_retIntPtr(Class, ColorWithCalibratedRedGreenBlueAlpha, red, green, blue, alpha)))
         {
         }
 

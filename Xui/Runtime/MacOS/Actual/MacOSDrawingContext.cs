@@ -374,6 +374,7 @@ public partial class MacOSDrawingContext : IContext
         using var attributes = new CFMutableDictionaryRef();
 
         using var foreground = new NSColorRef(this.fill.color);
+
         attributes.SetValue(NSAttributedString.Key.ForegroundColor, foreground);
 
         if (textMeasure.nsFont != 0)
