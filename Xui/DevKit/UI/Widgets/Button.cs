@@ -229,7 +229,7 @@ public class Button : View
         }
         else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
         {
-            this.CapturePointer(e.PointerId);
+            this.CapturePointer(e.PointerId, PointerGestures.Tap);
             pressed = true;
             this.InvalidateRender();
         }

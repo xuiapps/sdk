@@ -262,7 +262,8 @@ public struct TextInputLayer : ILayer<View>
                 anchor = cursorPos.Value;
                 selection = new Interval<uint>.ClosedOpen(cursorPos.Value, cursorPos.Value);
                 isMouseSelecting = true;
-                view.CapturePointer(e.PointerId);
+                // Text selection is an ongoing drag — ancestor scroll views must not steal capture.
+                view.CapturePointer(e.PointerId, PointerGestures.Drag);
             }
             else if (!wasFocused && SelectAllOnFocus)
             {

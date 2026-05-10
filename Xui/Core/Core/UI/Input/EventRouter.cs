@@ -263,16 +263,26 @@ namespace Xui.Core.UI.Input
         /// <summary>Captures all subsequent pointer events for the given pointer ID to <paramref name="view"/>.</summary>
         /// <param name="view">The view that will exclusively receive events for this pointer.</param>
         /// <param name="pointerId">The pointer identifier to capture.</param>
-        public void CapturePointer(View view, int pointerId)
+        /// <param name="gesture">
+        /// Optional marker describing what kind of gesture the view is tracking
+        /// (<see cref="ITap"/>, <see cref="IDrag"/>, …). Ancestor views can read this
+        /// via <see cref="GetCapturedGesture(int)"/> to decide whether to steal capture.
+        /// </param>
+        public void CapturePointer(View view, int pointerId, IPointerGesture? gesture = null)
         {
             if (_pointerTracking.TryGetValue(pointerId, out var tracking))
             {
                 if (tracking.Captured == view)
+                {
+                    tracking.CapturedGesture = gesture;
+                    _pointerTracking[pointerId] = tracking;
                     return;
+                }
 
                 // Send LostCapture to previous holder before transferring
                 var previousCapture = tracking.Captured;
                 tracking.Captured = view;
+                tracking.CapturedGesture = gesture;
                 _pointerTracking[pointerId] = tracking;
 
                 if (previousCapture != null)
@@ -294,11 +304,35 @@ namespace Xui.Core.UI.Input
             if (_pointerTracking.TryGetValue(pointerId, out var tracking) && tracking.Captured == view)
             {
                 tracking.Captured = null;
+                tracking.CapturedGesture = null;
                 _pointerTracking[pointerId] = tracking;
 
                 var evt = new PointerEventRef(PointerEventType.LostCapture, pointerId, 0, true, tracking.LastState, ReadOnlySpan<PointerState>.Empty, ReadOnlySpan<PointerState>.Empty);
                 view.OnPointerEvent(ref evt, EventPhase.Bubble);
             }
+        }
+
+        /// <summary>
+        /// Returns the gesture marker associated with the current capture for
+        /// <paramref name="pointerId"/>, or <c>null</c> if the pointer is not
+        /// captured or was captured without a gesture marker.
+        /// </summary>
+        public IPointerGesture? GetCapturedGesture(int pointerId)
+        {
+            return _pointerTracking.TryGetValue(pointerId, out var tracking)
+                ? tracking.CapturedGesture
+                : null;
+        }
+
+        /// <summary>
+        /// Returns the view currently holding pointer capture for
+        /// <paramref name="pointerId"/>, or <c>null</c> if the pointer is not captured.
+        /// </summary>
+        public View? GetCapturedView(int pointerId)
+        {
+            return _pointerTracking.TryGetValue(pointerId, out var tracking)
+                ? tracking.Captured
+                : null;
         }
 
         /// <summary>
@@ -347,6 +381,7 @@ namespace Xui.Core.UI.Input
         private struct PointerTracking
         {
             public View? Captured;
+            public IPointerGesture? CapturedGesture;
             public View? PreviousTarget;
             public View? OverTarget;
             public Point LastPosition;

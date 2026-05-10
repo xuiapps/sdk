@@ -281,7 +281,7 @@ public class ButtonGroupItem : View
         }
         else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
         {
-            CapturePointer(e.PointerId);
+            CapturePointer(e.PointerId, PointerGestures.Tap);
             pressed = true;
             IsPressed = true;
             this.Parent?.InvalidateRender();

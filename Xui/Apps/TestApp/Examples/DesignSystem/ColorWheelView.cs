@@ -61,7 +61,7 @@ internal class ColorWheelView : View
             {
                 UpdateHue(dx, dy);
                 dragging = true;
-                this.CapturePointer(e.PointerId);
+                this.CapturePointer(e.PointerId, PointerGestures.Drag);
             }
         }
         else if (e.Type == PointerEventType.Move && dragging)

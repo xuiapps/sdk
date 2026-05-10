@@ -1,4 +1,5 @@
 using Xui.Core.Math2D;
+using Xui.Core.UI.Input;
 
 namespace Xui.Core.UI.Layer;
 
@@ -28,7 +29,9 @@ public interface ILayerHost : IServiceProvider
     void RequestAnimationFrame();
 
     /// <summary>Routes all subsequent pointer events for <paramref name="pointerId"/> to this view.</summary>
-    void CapturePointer(int pointerId);
+    /// <param name="pointerId">The platform-assigned pointer identifier.</param>
+    /// <param name="gesture">Optional gesture marker (see <see cref="PointerGestures"/>) so ancestor containers can negotiate handover.</param>
+    void CapturePointer(int pointerId, IPointerGesture? gesture = null);
 
     /// <summary>Releases a previously captured pointer.</summary>
     void ReleasePointer(int pointerId);

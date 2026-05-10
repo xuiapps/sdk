@@ -317,11 +317,18 @@ public partial class View
     /// receive pointer events even if the pointer moves outside its bounds.
     /// </summary>
     /// <param name="pointerId">The platform-assigned pointer identifier.</param>
-    public void CapturePointer(int pointerId)
+    /// <param name="gesture">
+    /// Optional marker describing what kind of gesture this view is tracking
+    /// (e.g. <see cref="Xui.Core.UI.Input.PointerGestures.Tap"/> for a button,
+    /// <see cref="Xui.Core.UI.Input.PointerGestures.Drag"/> for a slider). Ancestor
+    /// containers (e.g. <c>ScrollView</c>) inspect this via
+    /// <c>EventRouter.GetCapturedGesture</c> to decide whether they may steal capture.
+    /// </param>
+    public void CapturePointer(int pointerId, Xui.Core.UI.Input.IPointerGesture? gesture = null)
     {
         if (this.TryFindParent<RootView>(out var rootView))
         {
-            rootView.EventRouter.CapturePointer(this, pointerId);
+            rootView.EventRouter.CapturePointer(this, pointerId, gesture);
         }
     }
 
@@ -336,5 +343,19 @@ public partial class View
         {
             rootView.EventRouter.ReleasePointer(this, pointerId);
         }
+    }
+
+    /// <summary>
+    /// Returns the gesture marker for the view currently capturing
+    /// <paramref name="pointerId"/>, or <c>null</c> if the pointer is not captured
+    /// or was captured without a gesture marker.
+    /// </summary>
+    public Xui.Core.UI.Input.IPointerGesture? GetCapturedGesture(int pointerId)
+    {
+        if (this.TryFindParent<RootView>(out var rootView))
+        {
+            return rootView.EventRouter.GetCapturedGesture(pointerId);
+        }
+        return null;
     }
 }

@@ -119,7 +119,7 @@ public class Toggle : View
         else if (e.Type == PointerEventType.Leave) { hover = false; InvalidateRender(); }
         else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
         {
-            CapturePointer(e.PointerId);
+            CapturePointer(e.PointerId, PointerGestures.Tap);
             pressed = true;
             InvalidateRender();
         }
