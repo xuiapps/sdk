@@ -21,6 +21,10 @@ namespace Xui.Core.UI.Input
         /// </summary>
         public static IDragHorizontalTentative DragHorizontalTentative { get; } = new DragHorizontalTentativeGesture();
 
+        /// <summary>A vertical drag that can yield to a horizontal ancestor before committing.</summary>
+        public static IDragVerticalTentative DragVerticalTentative { get; } = new DragVerticalTentativeGesture();
+
+        private sealed class DragVerticalTentativeGesture : IDragVerticalTentative { }
         private sealed class TapGesture : ITap { }
         private sealed class DragGesture : IDrag { }
         private sealed class DragHorizontalTentativeGesture : IDragHorizontalTentative { }

@@ -10,7 +10,7 @@ public static partial class CoreGraphics
         private static partial nint CGColorSpaceCreateDeviceRGB();
 
         [LibraryImport(CoreGraphicsLib)]
-        private static partial void CGColorRelease(nint self);
+        private static partial void CGColorSpaceRelease(nint self);
 
         public readonly nint Self;
 
@@ -30,7 +30,7 @@ public static partial class CoreGraphics
         {
             if (this.Self != 0)
             {
-                CGColorRelease(this.Self);
+                CGColorSpaceRelease(this.Self);
             }
         }
 

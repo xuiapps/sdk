@@ -87,11 +87,4 @@ public class AutoFlowTest : View
             rect.Width - padding * 2,
             rect.Height - padding * 2), context);
     }
-
-    protected override void RenderCore(IContext context)
-    {
-        context.SetFill(new Color(0xF5, 0xF5, 0xF5, 0xFF));
-        context.FillRect(Frame);
-        base.RenderCore(context);
-    }
 }

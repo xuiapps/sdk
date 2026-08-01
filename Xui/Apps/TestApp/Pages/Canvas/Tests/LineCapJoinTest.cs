@@ -6,13 +6,12 @@ using static Xui.Core.Canvas.Colors;
 
 namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 
-public class LineCapJoinTest : View
+public class LineCapJoinTest : View, ICanvasDrawingExample
 {
+    Rect ICanvasDrawingExample.GetArtworkBounds(IMeasureContext context) => new(10, 14, 280, 272);
+
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(White);
-        context.FillRect(this.Frame);
-
         NFloat x = this.Frame.X;
         NFloat y = this.Frame.Y;
 

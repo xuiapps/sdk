@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Core/Xui.Core.csproj" />
     <EmbeddedResource Include="**/*.ttf" />
   </ItemGroup>
 

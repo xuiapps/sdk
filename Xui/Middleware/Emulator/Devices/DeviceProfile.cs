@@ -1,15 +1,13 @@
-using System.Runtime.InteropServices;
 using Xui.Core.Math2D;
+using NFloat = System.Runtime.InteropServices.NFloat;
 
 namespace Xui.Middleware.Emulator.Devices;
 
-public readonly struct DeviceProfile
+/// <summary>Logical display and hardware-cutout data for an emulated device.</summary>
+internal readonly struct DeviceProfile
 {
-    public Brand Brand { get; init; }
-    public DeviceType DeviceType { get; init; }
     public string Model { get; init; }
     public Size LogicalResolution { get; init; }
-    public NFloat ScaleFactor { get; init; }
     public Frame SafeAreaInsetsPortrait { get; init; }
     public Frame SafeAreaInsetsLandscape { get; init; }
     public NotchType NotchType { get; init; }

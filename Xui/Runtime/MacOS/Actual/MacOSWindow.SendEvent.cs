@@ -104,7 +104,7 @@ public partial class MacOSWindow
         this.Abstract.OnKeyDown(ref keyEvent);
 
         var characters = e.Characters;
-        if (characters is { Length: > 0 } && characters[0] >= ' ')
+        if (!keyEvent.Handled && characters is { Length: > 0 } && characters[0] >= ' ')
         {
             var charEvent = new KeyEventRef { Character = characters[0], Shift = shift, IsRepeat = isRepeat };
             this.Abstract.OnChar(ref charEvent);

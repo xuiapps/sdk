@@ -6,13 +6,12 @@ using static Xui.Core.Canvas.Colors;
 
 namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 
-public class GlobalAlphaTest : View
+public class GlobalAlphaTest : View, ICanvasDrawingExample
 {
+    Rect ICanvasDrawingExample.GetArtworkBounds(IMeasureContext context) => new(20, 20, 260, 254);
+
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(White);
-        context.FillRect(this.Frame);
-
         NFloat x = this.Frame.X;
         NFloat y = this.Frame.Y;
 

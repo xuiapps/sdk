@@ -79,11 +79,4 @@ public class NamedAreasTest : View
             rect.Width - padding * 2,
             rect.Height - padding * 2), context);
     }
-
-    protected override void RenderCore(IContext context)
-    {
-        context.SetFill(new Color(0xEC, 0xEC, 0xEC, 0xFF));
-        context.FillRect(Frame);
-        base.RenderCore(context);
-    }
 }

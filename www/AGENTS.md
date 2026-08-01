@@ -51,8 +51,7 @@ Before relying on API metadata generation, resolve these current repository
 inconsistencies as part of a deliberate docs-tooling change:
 
 - `docfx.json` still references the removed
-  `Xui/Middleware/Emulator/Emulator.csproj`; the current project is
-  `Xui/Middleware/Emulator/Xui.Middleware.Emulator.csproj`.
+  `Xui/Middleware/EmulatorLegacy/Xui.Middleware.EmulatorLegacy.csproj`.
 - `CONTRIBUTING.md` describes committed `www/api` YAML and a hand-maintained
   `www/api/toc.yml`, while `www/api` is currently absent and the repository
   ignores `api/`.

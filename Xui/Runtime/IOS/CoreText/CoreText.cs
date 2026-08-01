@@ -15,4 +15,8 @@ public static partial class CoreText
 
     [LibraryImport(CoreTextLib)]
     public static partial nint NSSelectorFromString(nint selector);
+
+    [LibraryImport(CoreTextLib)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static partial bool CTFontManagerRegisterFontsForURL(nint fontUrl, uint scope, out nint error);
 }

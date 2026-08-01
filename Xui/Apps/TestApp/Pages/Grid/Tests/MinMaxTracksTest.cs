@@ -55,14 +55,7 @@ public class MinMaxTracksTest : View
         BorderThickness = 1,
         BorderColor = new Color(0x00, 0x00, 0x00, 0x25),
         Padding = 6,
-        Content = new Label
-        {
-            Text = text,
-            FontFamily = "Inter",
-            FontSize = 10,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Middle,
-        }
+        Content = new GridCellLabel(text, 10)
     };
 
     protected override Size MeasureCore(Size availableSize, IMeasureContext context)
@@ -79,12 +72,5 @@ public class MinMaxTracksTest : View
             rect.Y + padding,
             rect.Width - padding * 2,
             rect.Height - padding * 2), context);
-    }
-
-    protected override void RenderCore(IContext context)
-    {
-        context.SetFill(new Color(0xF5, 0xF5, 0xF5, 0xFF));
-        context.FillRect(Frame);
-        base.RenderCore(context);
     }
 }

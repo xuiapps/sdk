@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
 using Xui.Core.Curves2D;
 using Xui.Core.Math2D;
 using Xui.Runtime.Software.Font;
@@ -15,6 +16,10 @@ namespace Xui.Runtime.Software.Actual;
 
 public sealed class SvgDrawingContext : IContext, IDisposable
 {
+    private FilterState filter;
+    public void SetFilter() => filter = default;
+    public void SetFilter(Brightness brightness) => filter = new(brightness);
+
     private readonly Stream stream;
 
     private readonly MemoryStream styleBuffer;
@@ -81,6 +86,12 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     public SvgDrawingContext(Size canvasSize, Stream output, IEnumerable<Uri> fontUris, SvgFontResolver? resolver = null, NumericFormat? numericFormat = null, bool keepOpen = false)
         : this(canvasSize, output, new Catalog(fontUris), resolver, numericFormat, keepOpen)
+    {
+    }
+
+    /// <summary>Creates an SVG context with lazily loaded application font resources.</summary>
+    public SvgDrawingContext(Size canvasSize, Stream output, IFontSource fontSource, SvgFontResolver? resolver = null, NumericFormat? numericFormat = null, bool keepOpen = false)
+        : this(canvasSize, output, new Catalog(fontSource), resolver, numericFormat, keepOpen)
     {
     }
 
@@ -174,6 +185,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
     {
         stateStack.Push(new DrawingState
         {
+            Filter = filter,
             FillColor = currentFillColor,
             FillGradientId = currentFillGradientId,
             StrokeColor = currentStrokeColor,
@@ -201,6 +213,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         this.PopGroupsUntilDepth(state.GroupDepth);
 
+        filter = state.Filter;
         currentFillColor = state.FillColor;
         currentFillGradientId = state.FillGradientId;
         currentStrokeColor = state.StrokeColor;
@@ -235,7 +248,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetStroke(Color color)
     {
-        currentStrokeColor = color;
+        currentStrokeColor = filter.Apply(color);
         currentStrokeGradientId = null; // clear gradient
     }
 
@@ -249,11 +262,11 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         foreach (var stop in gradient.GradientStops)
         {
-            var color = ToSvgColor(stop.Color, out var opacity);
-            var offset = $"{stop.Offset * 100:0.#}%";
+            var color = ToSvgColor(filter.Apply(stop.Color), out var opacity);
+            var offset = FormattableString.Invariant($"{stop.Offset * 100:0.#}%");
 
             defsWriter.Write($"      <stop offset=\"{offset}\" stop-color=\"{color}\"");
-            if (opacity.HasValue && opacity.Value > 0f && opacity.Value < 1f)
+            if (opacity.HasValue)
                 defsWriter.Write($" stop-opacity=\"{F(opacity.Value)}\"");
             defsWriter.WriteLine(" />");
         }
@@ -271,11 +284,11 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         foreach (var stop in radial.GradientStops)
         {
-            var color = ToSvgColor(stop.Color, out var opacity);
-            var offset = $"{stop.Offset * 100:0.#}%";
+            var color = ToSvgColor(filter.Apply(stop.Color), out var opacity);
+            var offset = FormattableString.Invariant($"{stop.Offset * 100:0.#}%");
 
             defsWriter.Write($"      <stop offset=\"{offset}\" stop-color=\"{color}\"");
-            if (opacity.HasValue && opacity.Value > 0f && opacity.Value < 1f)
+            if (opacity.HasValue)
                 defsWriter.Write($" stop-opacity=\"{F(opacity.Value)}\"");
             defsWriter.WriteLine(" />");
         }
@@ -285,7 +298,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetFill(Color color)
     {
-        currentFillColor = color;
+        currentFillColor = filter.Apply(color);
         currentFillGradientId = null; // clear previous gradient
     }
 
@@ -299,11 +312,11 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         foreach (var stop in gradient.GradientStops)
         {
-            var color = ToSvgColor(stop.Color, out var opacity);
-            var offset = $"{stop.Offset * 100:0.#}%";
+            var color = ToSvgColor(filter.Apply(stop.Color), out var opacity);
+            var offset = FormattableString.Invariant($"{stop.Offset * 100:0.#}%");
 
             defsWriter.Write($"      <stop offset=\"{offset}\" stop-color=\"{color}\"");
-            if (opacity.HasValue && opacity.Value > 0f && opacity.Value < 1f)
+            if (opacity.HasValue)
                 defsWriter.Write($" stop-opacity=\"{F(opacity.Value)}\"");
             defsWriter.WriteLine(" />");
         }
@@ -321,11 +334,11 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         foreach (var stop in radial.GradientStops)
         {
-            var color = ToSvgColor(stop.Color, out var opacity);
-            var offset = $"{stop.Offset * 100:0.#}%";
+            var color = ToSvgColor(filter.Apply(stop.Color), out var opacity);
+            var offset = FormattableString.Invariant($"{stop.Offset * 100:0.#}%");
 
             defsWriter.Write($"      <stop offset=\"{offset}\" stop-color=\"{color}\"");
-            if (opacity.HasValue && opacity.Value > 0f && opacity.Value < 1f)
+            if (opacity.HasValue)
                 defsWriter.Write($" stop-opacity=\"{F(opacity.Value)}\"");
             defsWriter.WriteLine(" />");
         }
@@ -969,6 +982,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     private struct DrawingState
     {
+        public FilterState Filter;
         public Color? FillColor;
         public string? FillGradientId;
 

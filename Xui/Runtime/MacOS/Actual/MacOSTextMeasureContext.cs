@@ -14,10 +14,13 @@ internal sealed class MacOSTextMeasureContext : ITextMeasureContext
     internal nint nsFont;
     private readonly FontMetricsCache fontMetrics = new();
     private readonly CoreTextFontCache coreTextFonts = new();
+    private readonly MacOSFontRegistrar fontRegistrar;
     private Font currentFont;
     private bool hasCurrentFont;
 
     public TextAlign TextAlign { get; set; }
+
+    public MacOSTextMeasureContext(IFontSource? fontSource = null) => fontRegistrar = new MacOSFontRegistrar(fontSource);
 
     public void Dispose()
     {
@@ -96,6 +99,8 @@ internal sealed class MacOSTextMeasureContext : ITextMeasureContext
 
         if (coreTextFonts.TryGet(font, out nsFont))
             return;
+
+        fontRegistrar.EnsureRegistered(in font);
 
         nsFont = 0;
 

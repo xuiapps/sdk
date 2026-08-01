@@ -15,6 +15,8 @@ public static partial class UIKit
 
         public static readonly Prop.NInt BackgroundColorProp = new Prop.NInt("backgroundColor", "setBackgroundColor:");
 
+        public static readonly Prop.NInt ScreenProp = new Prop.NInt("screen", "setScreen:");
+
         public UIWindow() : base(Class.New())
         {
         }
@@ -28,6 +30,9 @@ public static partial class UIKit
             get => Marshalling.Get<UIViewController>(RootViewControllerProp.Get(this));
             set => RootViewControllerProp.Set(this, value);
         }
+
+        /// <summary>Borrowed UIScreen associated with this window.</summary>
+        public nint Screen => ScreenProp.Get(this);
 
         public void MakeKeyAndVisible() => ObjC.objc_msgSend(this, MakeKeyAndVisibleSel);
     }

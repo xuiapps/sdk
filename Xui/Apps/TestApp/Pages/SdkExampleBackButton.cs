@@ -20,42 +20,36 @@ public class SdkExampleBackButton : Label
 
     private void NavigateBack()
     {
-        if (this.TryFindParent<SdkNavigation>(out var navigation))
-        {
-            navigation.PopExample();
-        }
+        this.TryFindExampleNavigation(out var navigation);
+        navigation?.PopExample();
     }
 
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
-        if (e.State.PointerType == PointerType.Mouse)
+        if (e.State.PointerType == PointerType.Mouse && e.Type == PointerEventType.Enter)
         {
-            if (e.Type == PointerEventType.Enter)
-            {
-                hover = true;
-                this.InvalidateRender();
-            }
-            else if (e.Type == PointerEventType.Leave)
-            {
-                hover = false;
-                this.InvalidateRender();
-            }
-            else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
-            {
-                this.CapturePointer(e.PointerId);
-
-                pressed = true;
-                this.InvalidateRender();
-            }
-            else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
-            {
-                this.ReleasePointer(e.PointerId);
-
+            hover = true;
+            this.InvalidateRender();
+        }
+        else if (e.State.PointerType == PointerType.Mouse && e.Type == PointerEventType.Leave)
+        {
+            hover = false;
+            this.InvalidateRender();
+        }
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
+        {
+            this.CapturePointer(e.PointerId, PointerGestures.Tap);
+            pressed = true;
+            this.InvalidateRender();
+        }
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
+        {
+            var wasPressed = pressed;
+            pressed = false;
+            this.ReleasePointer(e.PointerId);
+            if (wasPressed)
                 this.NavigateBack();
-
-                pressed = false;
-                this.InvalidateRender();
-            }
+            this.InvalidateRender();
         }
 
         base.OnPointerEvent(ref e, phase);

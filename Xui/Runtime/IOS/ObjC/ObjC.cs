@@ -127,7 +127,7 @@ public static partial class ObjC
     public static partial bool objc_msgSend_retBool(nint obj, nint sel, nint int1);
 
     [LibraryImport(LibObjCLib)]
-    public static partial nint objc_allocateClassPair(nint superclass, nint name, int extrabytes);
+    public static partial nint objc_allocateClassPair(nint superclass, nint name, nuint extrabytes);
 
     [LibraryImport(LibObjCLib)]
     public static partial void objc_registerClassPair(nint @class);

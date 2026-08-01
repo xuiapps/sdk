@@ -54,6 +54,9 @@ public class Button : View, IDesignSystemChangeNotifications
     /// <summary>Visual weight of the button. Default is Filled.</summary>
     public ButtonVariant Variant { get; set; } = ButtonVariant.Filled;
 
+    /// <summary>Horizontal alignment of the button label. Default is centered.</summary>
+    public TextAlign LabelTextAlign { get; set; } = TextAlign.Center;
+
     /// <summary>Invoked when the button is clicked.</summary>
     public Action? Clicked { get; set; }
 
@@ -107,7 +110,7 @@ public class Button : View, IDesignSystemChangeNotifications
         }
         else if (Variant == ButtonVariant.Text)
         {
-            textColor = group.Background;
+            textColor = group.OnContainer;
         }
 
         cornerRadius = ds.Shape.Full;
@@ -227,7 +230,12 @@ public class Button : View, IDesignSystemChangeNotifications
         context.SetFill(textColor);
 
         var textMeasure = context.MeasureText(Text);
-        var tx = this.Frame.X + (this.Frame.Width - textMeasure.Size.Width) / 2;
+        var tx = LabelTextAlign switch
+        {
+            TextAlign.Left or TextAlign.Start => this.Frame.X + paddingH,
+            TextAlign.Right or TextAlign.End => this.Frame.Right - paddingH - textMeasure.Size.Width,
+            _ => this.Frame.X + (this.Frame.Width - textMeasure.Size.Width) / 2,
+        };
         var ty = this.Frame.Y + (this.Frame.Height - textMeasure.Size.Height) / 2;
         context.FillText(Text, new Point(tx, ty));
     }
@@ -258,7 +266,7 @@ public class Button : View, IDesignSystemChangeNotifications
             var wasPressed = pressed;
             pressed = false;
             this.ReleasePointer(e.PointerId);
-            if (wasPressed && this.Frame.Contains(e.State.Position))
+            if (wasPressed)
                 Clicked?.Invoke();
             this.InvalidateRender();
         }

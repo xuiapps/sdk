@@ -86,11 +86,4 @@ public class FixedContainerTest : View
         NFloat y = rect.Y + (rect.Height - h) / 2;
         container.Arrange(new Rect(x, y, w, h), context);
     }
-
-    protected override void RenderCore(IContext context)
-    {
-        context.SetFill(new Color(0xF0, 0xF0, 0xF0, 0xFF));
-        context.FillRect(Frame);
-        base.RenderCore(context);
-    }
 }

@@ -8,27 +8,42 @@ using System.Diagnostics;
 using System;
 using Xui.Core.Math2D;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
+using System.Collections.Generic;
 
 namespace Xui.Runtime.MacOS.Actual;
 
 public partial class MacOSDrawingContext : IContext
 {
     private nint cgContextRef;
+    private FilterState filter;
+    private readonly Stack<(Paint Fill, Paint Stroke, FilterState Filter)> paintStates = new();
+
+    public void SetFilter() => filter = default;
+    public void SetFilter(Brightness brightness) => filter = new(brightness);
+
+    private void ResetPaintStates()
+    {
+        while (paintStates.TryPop(out var state))
+        {
+            state.Fill.Reset();
+            state.Stroke.Reset();
+        }
+        filter = default;
+    }
 
     private Paint fill;
 
     private Paint stroke;
 
-    internal readonly MacOSTextMeasureContext textMeasure = new();
+    internal readonly MacOSTextMeasureContext textMeasure;
 
     private AffineTransform? baseTransform;
 
     private NFloat lineDashOffset = 0f;
     private NFloat[] lineDashSegments = [];
 
-    public MacOSDrawingContext()
-    {
-    }
+    public MacOSDrawingContext(IFontSource? fontSource = null) => textMeasure = new MacOSTextMeasureContext(fontSource);
 
     NFloat IPenContext.GlobalAlpha { set => CGContextRef.CGContextSetAlpha(this.cgContextRef, value); }
 
@@ -59,16 +74,30 @@ public partial class MacOSDrawingContext : IContext
         this.fill.Reset();
         this.stroke.Reset();
         this.baseTransform = null;
+        ResetPaintStates();
         this.path2d.BeginPath();
 
         return this;
     }
 
-    void IStateContext.Restore() =>
+    void IStateContext.Restore()
+    {
+        if (!paintStates.TryPop(out var state))
+            return;
+        fill.Reset();
+        stroke.Reset();
+        (fill, stroke, filter) = state;
         CGContextRef.CGContextRestoreGState(this.cgContextRef);
+    }
 
-    void IStateContext.Save() =>
+    void IStateContext.Save()
+    {
+        // The native state saves solid paints; retain our gradient handles and text paint too.
+        paintStates.Push((fill, stroke, filter));
+        if (fill.cgGradientRef != 0) CFRetain(fill.cgGradientRef);
+        if (stroke.cgGradientRef != 0) CFRetain(stroke.cgGradientRef);
         CGContextRef.CGContextSaveGState(this.cgContextRef);
+    }
 
     void IPenContext.SetLineDash(ReadOnlySpan<NFloat> segments)
     {
@@ -133,6 +162,7 @@ public partial class MacOSDrawingContext : IContext
         this.stroke.Reset();
 
         this.baseTransform = null;
+        ResetPaintStates();
 
         textMeasure.Dispose();
     }
@@ -219,9 +249,9 @@ public partial class MacOSDrawingContext : IContext
             CGContextRef.CGContextClipToRect(this.cgContextRef, rect);
             CGContextRef.CGContextDrawLinearGradient(
                 this.cgContextRef,
-                this.stroke.cgGradientRef,
-                this.stroke.startPoint,
-                this.stroke.endPoint);
+                this.fill.cgGradientRef,
+                this.fill.startPoint,
+                this.fill.endPoint);
             CGContextRef.CGContextRestoreGState(this.cgContextRef);
         }
         else if (this.fill.style == PaintStyle.RadialGradient)
@@ -230,11 +260,11 @@ public partial class MacOSDrawingContext : IContext
             CGContextRef.CGContextClipToRect(this.cgContextRef, rect);
             CGContextRef.CGContextDrawRadialGradient(
                 this.cgContextRef,
-                this.stroke.cgGradientRef,
-                this.stroke.startPoint,
-                this.stroke.startRadius,
-                this.stroke.endPoint,
-                this.stroke.endRadius);
+                this.fill.cgGradientRef,
+                this.fill.startPoint,
+                this.fill.startRadius,
+                this.fill.endPoint,
+                this.fill.endRadius);
             CGContextRef.CGContextRestoreGState(this.cgContextRef);
         }
         else if (this.fill.style == PaintStyle.BitmapBrush)
@@ -275,27 +305,29 @@ public partial class MacOSDrawingContext : IContext
 
     void IPenContext.SetFill(Color color)
     {
+        color = filter.Apply(color);
         this.fill.Set(color);
         CGContextRef.CGContextSetRGBFillColor(this.cgContextRef, color.Red, color.Green, color.Blue, color.Alpha);
     }
 
     void IPenContext.SetFill(LinearGradient linearGradient) =>
-        this.fill.Set(linearGradient);
+        this.fill.Set(linearGradient, filter);
 
     void IPenContext.SetFill(RadialGradient radialGradient) =>
-        this.fill.Set(radialGradient);
+        this.fill.Set(radialGradient, filter);
 
     void IPenContext.SetStroke(Color color)
     {
+        color = filter.Apply(color);
         this.stroke.Set(color);
         CGContextRef.CGContextSetRGBStrokeColor(this.cgContextRef, color.Red, color.Green, color.Blue, color.Alpha);
     }
 
     void IPenContext.SetStroke(LinearGradient linearGradient) =>
-        this.stroke.Set(linearGradient);
+        this.stroke.Set(linearGradient, filter);
 
     void IPenContext.SetStroke(RadialGradient radialGradient) =>
-        this.stroke.Set(radialGradient);
+        this.stroke.Set(radialGradient, filter);
 
     void ITransformContext.SetTransform(AffineTransform transform)
     {
@@ -609,18 +641,18 @@ public partial class MacOSDrawingContext : IContext
             this.color = color;
         }
 
-        public void Set(LinearGradient linearGradient)
+        public void Set(LinearGradient linearGradient, FilterState filter)
         {
             this.Reset(PaintStyle.LinearGradient);
-            this.cgGradientRef = new CGGradientRef(linearGradient.GradientStops);
+            this.cgGradientRef = new CGGradientRef(linearGradient.GradientStops, filter);
             this.startPoint = linearGradient.StartPoint;
             this.endPoint = linearGradient.EndPoint;
         }
 
-        public void Set(RadialGradient radialGradient)
+        public void Set(RadialGradient radialGradient, FilterState filter)
         {
             this.Reset(PaintStyle.RadialGradient);
-            this.cgGradientRef = new CGGradientRef(radialGradient.GradientStops);
+            this.cgGradientRef = new CGGradientRef(radialGradient.GradientStops, filter);
             this.startPoint = radialGradient.StartCenter;
             this.startRadius = radialGradient.StartRadius;
             this.endPoint = radialGradient.EndCenter;

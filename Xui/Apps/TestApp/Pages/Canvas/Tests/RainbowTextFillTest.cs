@@ -6,13 +6,25 @@ using static Xui.Core.Canvas.Colors;
 namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 
 /// <summary>Demonstrates a horizontal linear gradient used as text fill.</summary>
-public sealed class RainbowTextFillTest : View
+public sealed class RainbowTextFillTest : View, ICanvasDrawingExample
 {
+    Rect ICanvasDrawingExample.GetArtworkBounds(IMeasureContext context)
+    {
+        if (context is ITextDrawingContext text)
+        {
+            text.TextAlign = TextAlign.Left;
+            text.TextBaseline = TextBaseline.Alphabetic;
+        }
+        context.SetFont(new Font(112, "Inter", FontWeight.Bold));
+        var metrics = context.MeasureText("Rainbow").Line;
+        return new Rect(300 - metrics.Width / 2 - metrics.ActualBoundingBoxLeft,
+            190 - metrics.ActualBoundingBoxAscent,
+            metrics.ActualBoundingBoxLeft + metrics.ActualBoundingBoxRight,
+            metrics.ActualHeight);
+    }
+
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(White);
-        context.FillRect(this.Frame);
-
         context.SetFill(new LinearGradient(
             new Point(this.Frame.X + 50, this.Frame.Center.Y),
             new Point(this.Frame.Right - 50, this.Frame.Center.Y),

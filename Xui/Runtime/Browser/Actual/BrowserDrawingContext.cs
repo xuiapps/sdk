@@ -2,12 +2,27 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
+using System.Collections.Generic;
 using Xui.Core.Math2D;
 
 namespace Xui.Runtime.Browser.Actual;
 
 public partial class BrowserDrawingContext : IContext
 {
+    private FilterState filter;
+    private readonly Stack<FilterState> filters = new();
+
+    public void SetFilter() => filter = default;
+    public void SetFilter(Brightness brightness) => filter = new(brightness);
+
+    internal void Reset()
+    {
+        filter = default;
+        filters.Clear();
+        CanvasReset();
+    }
+
     [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.reset", "main.js")]
     internal static partial void CanvasReset();
 
@@ -310,7 +325,14 @@ public partial class BrowserDrawingContext : IContext
 
     public void Rect(Rect rect) => CanvasRect(rect.X, rect.Y, rect.Width, rect.Height);
 
-    public void Restore() => CanvasRestore();
+    public void Restore()
+    {
+        if (filters.TryPop(out var saved))
+        {
+            filter = saved;
+            CanvasRestore();
+        }
+    }
 
     public void Rotate(NFloat angle) => CanvasRotate(angle);
 
@@ -320,12 +342,19 @@ public partial class BrowserDrawingContext : IContext
     public void RoundRect(Rect rect, CornerRadius radius) =>
         CanvasRoundRect4(rect.X, rect.Y, rect.Width, rect.Height, radius.TopLeft, radius.TopRight, radius.BottomRight, radius.BottomLeft);
 
-    public void Save() => CanvasSave();
+    public void Save()
+    {
+        filters.Push(filter);
+        CanvasSave();
+    }
 
     public void Scale(Vector vector) => CanvasScale(vector.X, vector.Y);
 
-    public void SetFill(Color color) =>
-        CanvasSetFillStyle($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
+    public void SetFill(Color color)
+    {
+        color = filter.Apply(color);
+        CanvasSetFillStyle(FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})"));
+    }
 
     public void SetFill(LinearGradient linearGradient)
     {
@@ -339,9 +368,9 @@ public partial class BrowserDrawingContext : IContext
         {
             var gradientStop = linearGradient.GradientStops[i];
             var offset = gradientStop.Offset;
-            var color = gradientStop.Color;
+            var color = filter.Apply(gradientStop.Color);
             offsets[i] = offset;
-            colors[i] = $"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})";
+            colors[i] = FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
         }
 
         CanvasSetLinearGradientFillStyle(start.X, start.Y, end.X, end.Y, offsets, colors);
@@ -356,9 +385,9 @@ public partial class BrowserDrawingContext : IContext
         {
             var gradientStop = radialGradient.GradientStops[i];
             var offset = gradientStop.Offset;
-            var color = gradientStop.Color;
+            var color = filter.Apply(gradientStop.Color);
             offsets[i] = offset;
-            colors[i] = $"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})";
+            colors[i] = FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
         }
 
         CanvasSetRadialGradientFillStyle(
@@ -408,8 +437,11 @@ public partial class BrowserDrawingContext : IContext
         CanvasSetLineDash(s);
     }
 
-    public void SetStroke(Color color) =>
-        CanvasSetStrokeStyle($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
+    public void SetStroke(Color color)
+    {
+        color = filter.Apply(color);
+        CanvasSetStrokeStyle(FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})"));
+    }
 
     public void SetStroke(LinearGradient linearGradient)
     {
@@ -423,9 +455,9 @@ public partial class BrowserDrawingContext : IContext
         {
             var gradientStop = linearGradient.GradientStops[i];
             var offset = gradientStop.Offset;
-            var color = gradientStop.Color;
+            var color = filter.Apply(gradientStop.Color);
             offsets[i] = offset;
-            colors[i] = $"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})";
+            colors[i] = FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
         }
 
         CanvasSetLinearGradientStrokeStyle(start.X, start.Y, end.X, end.Y, offsets, colors);
@@ -440,9 +472,9 @@ public partial class BrowserDrawingContext : IContext
         {
             var gradientStop = radialGradient.GradientStops[i];
             var offset = gradientStop.Offset;
-            var color = gradientStop.Color;
+            var color = filter.Apply(gradientStop.Color);
             offsets[i] = offset;
-            colors[i] = $"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})";
+            colors[i] = FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
         }
 
         CanvasSetRadialGradientStrokeStyle(

@@ -69,7 +69,7 @@ Middleware sits between abstract and actual and swaps out the platform implement
 
 | Middleware | Purpose |
 |---|---|
-| `Xui.Middleware.Emulator` | Renders the app inside a device frame inside another app (dev tool) |
+| `Xui.Middleware.EmulatorLegacy` | Renders the app inside a device frame inside another app (dev tool) |
 | `Xui.Runtime.Software` | CPU-side SVG renderer (`SvgDrawingContext`) used for snapshot testing |
 
 ## DI integration (`Xui.Core.DI`)

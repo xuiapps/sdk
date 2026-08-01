@@ -108,7 +108,7 @@ Supporting runtimes:
 
 ### Middleware and developer tooling
 
-- `Xui/Middleware/Emulator/Xui.Middleware.Emulator.csproj` — wraps a desktop
+- `Xui/Middleware/EmulatorLegacy/Xui.Middleware.EmulatorLegacy.csproj` — wraps a desktop
   runtime, draws mobile device chrome/safe areas, and translates desktop input
   into emulated mobile input.
 - `Xui/Middleware/DevTools/Xui.Middleware.DevTools.csproj` — runtime middleware

@@ -9,6 +9,7 @@ namespace Xui.Runtime.Software.Font;
 public class Catalog
 {
     private readonly IReadOnlyList<Uri> fontUris;
+    private readonly IFontSource? fontSource;
 
     private readonly Dictionary<FontFace, TrueTypeFont?> faceToFont = new (32, FontFace.Comparer);
 
@@ -25,6 +26,13 @@ public class Catalog
         }
 
         fontUris = list.AsReadOnly();
+    }
+
+    /// <summary>Creates a catalog backed by descriptor-first, lazily loaded font resources.</summary>
+    public Catalog(IFontSource fontSource)
+    {
+        this.fontSource = fontSource;
+        fontUris = fontSource.Resources.Select(resource => resource.Uri).ToArray();
     }
 
     public virtual IEnumerable<Uri> Fonts() => this.fontUris;
@@ -47,23 +55,7 @@ public class Catalog
     /// <exception cref="InvalidOperationException">Thrown when the resource or assembly cannot be found.</exception>
     public static ReadOnlyMemory<byte> LoadEmbedded(Uri uri)
     {
-        var assemblyName = uri.Authority;
-        var resourcePath = uri.AbsolutePath.TrimStart('/').Replace('/', '.');
-
-        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-        var assembly = assemblies.FirstOrDefault(a => string.Compare(a.GetName().Name, assemblyName, StringComparison.InvariantCultureIgnoreCase) == 0);
-
-        if (assembly == null)
-            throw new InvalidOperationException($"Assembly '{assemblyName}' not found in AppDomain.");
-
-        var fullResourceName = $"{assembly.GetName().Name}.{resourcePath}";
-        using var stream = assembly.GetManifestResourceStream(fullResourceName)
-            ?? throw new InvalidOperationException($"Embedded resource '{fullResourceName}' not found in assembly '{assemblyName}'.");
-
-        using var ms = new MemoryStream();
-        stream.CopyTo(ms);
-        // safe as span; can optimize later with array pool if needed
-        return ms.ToArray();
+        return Xui.Core.Canvas.FontSource.LoadEmbedded(uri);
     }
 
     public IEnumerable<Uri> AStar(FontFace font)
@@ -148,7 +140,19 @@ public class Catalog
             return cachedTtf;
         }
         
-        // Go through font URIs sorted by how likely they are to represent this font
+        if (fontSource is not null)
+        {
+            var request = new Xui.Core.Canvas.Font(1, face.Family, face.Weight, face.Style, face.Stretch);
+            if (fontSource.TryGet(in request, out var resource))
+            {
+                var data = fontSource.Load(in resource);
+                var ttf = new TrueTypeFont(data, resource.Uri);
+                faceToFont[face] = ttf;
+                return ttf;
+            }
+        }
+
+        // Go through font URIs sorted by how likely they are to represent this font.
         foreach(var uri in AStar(face))
         {
             FontFace? uriFace;

@@ -12,7 +12,7 @@ public partial class ObjC
         private string name;
         private nint self;
 
-        public Builder(Class super, string name, int extraBytes = 0)
+        public Builder(Class super, string name, nuint extraBytes = 0)
         {
             this.name = name;
             var nameAnsiCStrPtr = Marshal.StringToHGlobalAnsi(name);

@@ -253,7 +253,7 @@ public class Expander : View, IDesignSystemChangeNotifications
             context.Rect(new Rect(this.Frame.X, clipY, this.Frame.Width, nfloat.Max(0, clipH)));
             context.Clip();
 
-            content.Render(context);
+            this.RenderChild(context, content);
 
             context.Restore();
         }

@@ -14,6 +14,7 @@ public class ViewCollectionAlignmentExample : Example
 
         this.Content = new ViewCollection
         {
+            Margin = 8,
             Content =
             [
                 Aligned("Left", Left, VerticalAlignment.Stretch, 0),

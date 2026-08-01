@@ -42,6 +42,11 @@ public class RootView : View, IContent, IFocus
             previous?.OnBlur();
             value?.OnFocus();
 
+            (this.Window.GetService(typeof(Xui.Core.Actual.ITextInputSession)) as Xui.Core.Actual.ITextInputSession)
+                ?.SetClient(value as ITextEditingClient);
+
+            this.Window.RequireKeyboard = this.focusedView?.RequiresKeyboard ?? false;
+
             this.Window.Invalidate();
         }
     }
@@ -138,7 +143,7 @@ public class RootView : View, IContent, IFocus
 
     void IContent.OnScrollWheel(ref ScrollWheelEventRef e)
     {
-        this.EventRouter.Dispatch(ref e, lastMousePosition);
+        this.EventRouter.Dispatch(ref e, e.HasPosition ? e.Position : lastMousePosition);
     }
 
     void IContent.OnTouch(ref TouchEventRef e)
@@ -200,16 +205,20 @@ public class RootView : View, IContent, IFocus
 
     private void MoveFocus(int direction)
     {
+        if (FindFocusNeighbor(direction, wrap: true) is { } next)
+            this.FocusedView = next;
+    }
+
+    private View? FindFocusNeighbor(int direction, bool wrap)
+    {
         View? first = null, last = null, prev = null, next = null;
         bool foundCurrent = false;
         FindFocusNeighbors(this, this.focusedView, ref first, ref last, ref prev, ref next, ref foundCurrent);
 
-        if (first == null)
-            return;
-
-        this.FocusedView = direction > 0
-            ? next ?? first   // forward: next, or wrap to first
-            : prev ?? last;   // backward: prev, or wrap to last
+        if (this.focusedView is null) return direction > 0 ? first : last;
+        return direction > 0
+            ? next ?? (wrap ? first : null)
+            : prev ?? (wrap ? last : null);
     }
 
     private static void FindFocusNeighbors(
@@ -235,6 +244,8 @@ public class RootView : View, IContent, IFocus
 
     void IFocus.Next() => MoveFocus(+1);
     void IFocus.Previous() => MoveFocus(-1);
+    View? IFocus.GetNext(bool wrap) => FindFocusNeighbor(+1, wrap);
+    View? IFocus.GetPrevious(bool wrap) => FindFocusNeighbor(-1, wrap);
 
     internal void AddOverlay(PopupOverlay overlay)
     {

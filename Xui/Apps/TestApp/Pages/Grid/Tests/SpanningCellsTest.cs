@@ -33,14 +33,7 @@ public class SpanningCellsTest : View
             BorderThickness = 1,
             BorderColor = new Color(0x00, 0x00, 0x00, 0x30),
             Padding = 8,
-            Content = new Label
-            {
-                Text = "col-span 3  (cols 1–3, row 1)",
-                FontFamily = "Inter",
-                FontSize = 12,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Middle,
-            }
+            Content = new GridCellLabel("col-span 3  (cols 1–3, row 1)", 12)
         };
 
         var tall = new Border
@@ -53,14 +46,7 @@ public class SpanningCellsTest : View
             BorderThickness = 1,
             BorderColor = new Color(0x00, 0x00, 0x00, 0x30),
             Padding = 8,
-            Content = new Label
-            {
-                Text = "row\nspan\n4\n(col 4)",
-                FontFamily = "Inter",
-                FontSize = 12,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Middle,
-            }
+            Content = new GridCellLabel("row\nspan\n4\n(col 4)", 12)
         };
 
         var big = new Border
@@ -74,14 +60,7 @@ public class SpanningCellsTest : View
             BorderThickness = 1,
             BorderColor = new Color(0x00, 0x00, 0x00, 0x30),
             Padding = 8,
-            Content = new Label
-            {
-                Text = "2×2 span\n(rows 2–3, cols 1–2)",
-                FontFamily = "Inter",
-                FontSize = 12,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Middle,
-            }
+            Content = new GridCellLabel("2×2 span\nrows 2–3\ncols 1–2", 12)
         };
 
         grid = new global::Xui.Core.UI.Layout.Grid
@@ -114,14 +93,7 @@ public class SpanningCellsTest : View
         BorderThickness = 1,
         BorderColor = new Color(0x00, 0x00, 0x00, 0x30),
         Padding = 6,
-        Content = new Label
-        {
-            Text = text,
-            FontFamily = "Inter",
-            FontSize = 11,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Middle,
-        }
+        Content = new GridCellLabel(text, 11)
     };
 
     protected override Size MeasureCore(Size availableSize, IMeasureContext context)
@@ -138,12 +110,5 @@ public class SpanningCellsTest : View
             rect.Y + padding,
             rect.Width - padding * 2,
             rect.Height - padding * 2), context);
-    }
-
-    protected override void RenderCore(IContext context)
-    {
-        context.SetFill(new Color(0xF5, 0xF5, 0xF5, 0xFF));
-        context.FillRect(Frame);
-        base.RenderCore(context);
     }
 }

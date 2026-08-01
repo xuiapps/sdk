@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 using static Xui.Runtime.IOS.CoreFoundation;
 using static Xui.Runtime.IOS.CoreGraphics;
@@ -12,10 +13,28 @@ public partial class ObjC
         private string name;
         private nint self;
 
-        public Builder(Class super, string name, int extraBytes = 0)
+        public Builder(Class super, string name, nuint extraBytes = 0)
         {
             this.name = name;
+
+            nint existingClass = objc_getClass(name);
+            if (existingClass != 0)
+            {
+                var message =
+                    $"Objective-C class allocation collision: cannot derive '{name}' from " +
+                    $"'{super.Name}' because registered class '{class_getName(existingClass)}' already exists.";
+
+                // Debug.WriteLine is not connected to the device debugger by default. More
+                // importantly, objc_allocateClassPair can crash instead of returning nil for a
+                // duplicate class on iOS, so never make the native call after this check.
+                Console.Error.WriteLine(message);
+                throw new ObjCException(message);
+            }
+
             var nameAnsiCStrPtr = Marshal.StringToHGlobalAnsi(name);
+#if DEBUG
+            Console.Error.WriteLine($"Objective-C allocating class '{name}' derived from '{super.Name}'.");
+#endif
             this.self = objc_allocateClassPair(super, nameAnsiCStrPtr, extraBytes);
             if (this.self == 0)
             {
@@ -190,8 +209,38 @@ public partial class ObjC
             return this;
         }
 
+        // Explicit encodings are needed for UITextInput's mixed structs, offsets and objects.
+        public Builder AddMethod(string selector, Delegate method, string encoding)
+        {
+            var root = GCHandle.Alloc(method);
+            if (!AddMethodPointer(this, sel_registerName(selector), Marshal.GetFunctionPointerForDelegate(method), encoding))
+            {
+                root.Free();
+                throw new ObjCException($"Cannot register {name}.{selector}.");
+            }
+            return this;
+        }
+
+        public Builder AddValueStorage(string name, nuint size)
+        {
+            if (!AddIvar(this, name, size, 3, $"[{size}C]"))
+                throw new ObjCException($"Cannot register {this.name}.{name}.");
+            return this;
+        }
+
+        [DllImport(LibObjCLib, EntryPoint = "class_addMethod")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private static extern bool AddMethodPointer(nint cls, nint selector, nint implementation, string encoding);
+
+        [DllImport(LibObjCLib, EntryPoint = "class_addIvar")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private static extern bool AddIvar(nint cls, string name, nuint size, byte alignment, string encoding);
+
         public Class Register()
         {
+#if DEBUG
+            Console.Error.WriteLine($"Objective-C registering class '{this.name}'.");
+#endif
             objc_registerClassPair(this.self);
             return new Class(this.name, this.self);
         }
