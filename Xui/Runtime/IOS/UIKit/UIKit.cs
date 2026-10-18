@@ -35,6 +35,14 @@ public static partial class UIKit
     [LibraryImport(UIKitLib)]
     public static partial nint NSSelectorFromString(nint selector);
 
+    [LibraryImport(UIKitLib)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static partial bool UIAccessibilityIsReduceMotionEnabled();
+
+    [LibraryImport(UIKitLib)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static partial bool UIAccessibilityDarkerSystemColorsEnabled();
+
     [LibraryImport(UIKitLib, EntryPoint="UIGraphicsGetCurrentContext")]
     public static partial nint UIGraphicsGetCurrentContext();
 }

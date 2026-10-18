@@ -12,23 +12,53 @@ namespace Xui.Apps.TestApp.Pages.ThreeD;
 /// <summary>
 /// Example page demonstrating 3D rendering with GPU shaders.
 /// </summary>
-public class ThreeDExample : Example
+public class ThreeDExample : Example, IExampleSectionNavigator, IMobileExamplePresentation
 {
+    private readonly ThreeDTestPanel panel;
+
+    public event Action? SectionChanged
+    {
+        add => panel.SectionChanged += value;
+        remove => panel.SectionChanged -= value;
+    }
+
+    public int SectionCount => panel.SectionCount;
+
+    public int SelectedSectionIndex => panel.SelectedSectionIndex;
+
     public ThreeDExample()
     {
-        this.Title = "3D GPU Rendering";
-        this.Content = new ThreeDTestPanel();
+        this.Title = "3D Texture";
+        this.Content = panel = new ThreeDTestPanel();
     }
+
+    public string GetSectionName(int index) => panel.GetSectionName(index);
+
+    public void SelectSection(int index) => panel.SelectSection(index);
+
+    public void UseMobilePresentation() => panel.UseMobilePresentation();
 
     public class ThreeDTestPanel : View
     {
         private VerticalStack list;
         private View? demo;
+        private readonly List<(string Name, Func<View> Create)> sections = [];
+        private int selectedSectionIndex;
+        private bool mobilePresentation;
 
-        public override int Count =>
-            (this.list is not null ? 1 : 0) + (this.demo is not null ? 1 : 0);
+        public event Action? SectionChanged;
 
-        public override View this[int index] => index switch
+        public int SectionCount => sections.Count;
+
+        public int SelectedSectionIndex => selectedSectionIndex;
+
+        public override int Count => mobilePresentation
+            ? this.demo is null ? 0 : 1
+            : (this.list is not null ? 1 : 0) + (this.demo is not null ? 1 : 0);
+
+        public override View this[int index] => mobilePresentation
+            ? index == 0 && this.demo is not null ? this.demo : throw new IndexOutOfRangeException()
+            : index switch
         {
             0 => this.list,
             1 when this.demo is not null => this.demo,
@@ -46,18 +76,19 @@ public class ThreeDExample : Example
             this.list = new VerticalStack();
             this.AddProtectedChild(this.list);
 
-            this.AddTest<RotatingCubeTest>("Rotating Cube");
-            this.AddTest<Tests.GpuHardwareCubeTest.GpuHardwareCubeTestView>("GPU Hardware Cube");
+            this.AddTest<RotatingCubeTest>("3D Software Texture");
+            this.AddTest<Tests.GpuHardwareCubeTest.GpuHardwareCubeTestView>("3D Hardware Texture");
 
-            // Select first test by default
-            this.Demo = new RotatingCubeTest();
+            SelectSection(0);
         }
 
         public void AddTest<T>(string name) where T : View, new()
         {
+            var sectionIndex = sections.Count;
+            sections.Add((name, static () => new T()));
             this.list.Add(new ThreeDTestButton(() =>
             {
-                this.Demo = new T();
+                SelectSection(sectionIndex);
             })
             {
                 Id = name.Replace(" ", ""),
@@ -67,8 +98,33 @@ public class ThreeDExample : Example
             });
         }
 
+        public string GetSectionName(int index) => sections[index].Name;
+
+        public void SelectSection(int index)
+        {
+            if ((uint)index >= (uint)sections.Count || selectedSectionIndex == index && Demo is not null)
+                return;
+
+            selectedSectionIndex = index;
+            Demo = sections[index].Create();
+            SectionChanged?.Invoke();
+            Invalidate();
+        }
+
+        public void UseMobilePresentation()
+        {
+            mobilePresentation = true;
+            Invalidate();
+        }
+
         protected override Size MeasureCore(Size availableBorderEdgeSize, IMeasureContext context)
         {
+            if (mobilePresentation)
+            {
+                demo?.Measure(new Size(300, 300), context);
+                return availableBorderEdgeSize;
+            }
+
             NFloat listWidth = 250;
             var demoSize = new Size(300, 300);
 
@@ -80,6 +136,16 @@ public class ThreeDExample : Example
 
         protected override void ArrangeCore(Rect rect, IMeasureContext context)
         {
+            if (mobilePresentation)
+            {
+                demo?.Arrange(new Rect(
+                    rect.X + (rect.Width - 300) / 2,
+                    rect.Y + (rect.Height - 300) / 2,
+                    300,
+                    300), context);
+                return;
+            }
+
             NFloat listWidth = 250;
             NFloat demoPadding = 20;
 
@@ -92,6 +158,12 @@ public class ThreeDExample : Example
 
         protected override void RenderCore(IContext context)
         {
+            if (mobilePresentation)
+            {
+                base.RenderCore(context);
+                return;
+            }
+
             NFloat listWidth = 250;
 
             // Gray background for the 3D demo area
@@ -121,31 +193,28 @@ public class ThreeDExample : Example
 
         public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
         {
-            if (e.State.PointerType == PointerType.Mouse)
+            if (e.State.PointerType == PointerType.Mouse && e.Type == PointerEventType.Enter)
             {
-                if (e.Type == PointerEventType.Enter)
-                {
-                    hover = true;
-                    this.InvalidateRender();
-                }
-                else if (e.Type == PointerEventType.Leave)
-                {
-                    hover = false;
-                    this.InvalidateRender();
-                }
-                else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
-                {
-                    this.CapturePointer(e.PointerId);
-                    pressed = true;
-                    this.InvalidateRender();
-                }
-                else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
-                {
-                    this.ReleasePointer(e.PointerId);
-                    this.onClick();
-                    pressed = false;
-                    this.InvalidateRender();
-                }
+                hover = true;
+                this.InvalidateRender();
+            }
+            else if (e.State.PointerType == PointerType.Mouse && e.Type == PointerEventType.Leave)
+            {
+                hover = false;
+                this.InvalidateRender();
+            }
+            else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
+            {
+                this.CapturePointer(e.PointerId);
+                pressed = true;
+                this.InvalidateRender();
+            }
+            else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
+            {
+                this.ReleasePointer(e.PointerId);
+                this.onClick();
+                pressed = false;
+                this.InvalidateRender();
             }
 
             base.OnPointerEvent(ref e, phase);

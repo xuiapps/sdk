@@ -21,6 +21,16 @@ public ref struct ScrollWheelEventRef
     public Vector Delta;
 
     /// <summary>
+    /// The position at which this gesture should be routed, when the input
+    /// source provides one. Wheel events from native desktop windows commonly
+    /// use the most recently observed pointer location instead.
+    /// </summary>
+    public Point Position;
+
+    /// <summary>Whether <see cref="Position"/> is populated.</summary>
+    public bool HasPosition;
+
+    /// <summary>
     /// Set to <c>true</c> by a handler to stop further propagation of this event.
     /// </summary>
     public bool Handled;

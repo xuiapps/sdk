@@ -6,8 +6,10 @@ using static Xui.Core.Canvas.Colors;
 
 namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 
-public class ArcToFlowerTest : View
+public class ArcToFlowerTest : View, ICanvasDrawingExample
 {
+    Rect ICanvasDrawingExample.GetArtworkBounds(IMeasureContext context) => new(61, 73, 178, 154);
+
     // Petal outline: asymmetric zigzag shape to exercise various arcTo corner angles.
     // Upper edge has a concave notch at P3, producing a CW turn (all others are CCW).
     // Corner angles range from ~54° (sharp) to ~173° (nearly straight).
@@ -38,9 +40,6 @@ public class ArcToFlowerTest : View
 
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(White);
-        context.FillRect(this.Frame);
-
         NFloat cx = this.Frame.X + 150;
         NFloat cy = this.Frame.Y + 150;
         NFloat r = 5;

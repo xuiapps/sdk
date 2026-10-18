@@ -1,5 +1,16 @@
 <Project>
 
+  <ItemGroup>
+      <!-- Removes some implicit MAUI global usings, that clash with Xui -->
+      <Using Remove="Microsoft.Maui" />
+      <Using Remove="Microsoft.Maui.Controls" />
+      <Using Remove="Microsoft.Maui.Controls.Hosting" />
+      <Using Remove="Microsoft.Maui.Devices" />
+      <Using Remove="Microsoft.Maui.Hosting" />
+      <Using Remove="Microsoft.Maui.Graphics" />
+      <Using Remove="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
   <PropertyGroup Condition="!($(TargetFramework.Contains('-'))) And '$(XuiDevEmulator)' == 'true' And $([MSBuild]::IsOSPlatform('OSX')) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
     <DefineConstants>$(DefineConstants);EMULATOR;MACOS</DefineConstants>
     <XuiEmulator>true</XuiEmulator>
@@ -64,11 +75,12 @@
 
     <!-- Core -->
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
+    <ProjectReference Include="../../Core/Fonts/Xui.Core.Fonts.csproj" />
 
     <!-- Middleware -->
     <ProjectReference
         Condition=" $(XuiEmulator) == 'true' "
-        Include="../../Middleware/Emulator/Xui.Middleware.Emulator.csproj" />
+        Include="../../Middleware/EmulatorLegacy/Xui.Middleware.EmulatorLegacy.csproj" />
     <ProjectReference
         Condition=" $(XuiDevTools) == 'true' "
         Include="../../Middleware/DevTools/Xui.Middleware.DevTools.csproj" />

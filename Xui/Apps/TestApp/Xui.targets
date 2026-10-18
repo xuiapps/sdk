@@ -1,5 +1,16 @@
 <Project>
 
+  <ItemGroup>
+      <!-- Removes some implicit MAUI global usings, that clash with Xui -->
+      <Using Remove="Microsoft.Maui" />
+      <Using Remove="Microsoft.Maui.Controls" />
+      <Using Remove="Microsoft.Maui.Controls.Hosting" />
+      <Using Remove="Microsoft.Maui.Devices" />
+      <Using Remove="Microsoft.Maui.Hosting" />
+      <Using Remove="Microsoft.Maui.Graphics" />
+      <Using Remove="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
   <PropertyGroup Condition="!($(TargetFramework.Contains('-'))) And '$(XuiDevEmulator)' == 'true' And $([MSBuild]::IsOSPlatform('OSX')) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
     <DefineConstants>$(DefineConstants);EMULATOR;MACOS</DefineConstants>
     <XuiEmulator>true</XuiEmulator>
@@ -27,7 +38,7 @@
   <PropertyGroup Condition=" $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' ">
     <XuiIOS>true</XuiIOS>
     <XuiMobile>true</XuiMobile>
-    <DefineConstants>$(DefineConstants);ANDROID;MOBILE</DefineConstants>
+    <DefineConstants>$(DefineConstants);IOS;MOBILE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' ">
@@ -66,6 +77,7 @@
     <!-- Core -->
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
     <ProjectReference Include="../../Core/Core.DI/Xui.Core.DI.csproj" />
+    <ProjectReference Include="../../Core/Fonts/Xui.Core.Fonts.csproj" />
 
     <!-- DevKit -->
     <ProjectReference Include="../../DevKit/UI/Xui.DevKit.UI.csproj" />

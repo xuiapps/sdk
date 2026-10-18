@@ -10,13 +10,12 @@ namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 /// Tests path continuation after stroke/fill - known Windows issue where
 /// geometry can't be added once closed for draw.
 /// </summary>
-public class PathContinuationTest : View
+public class PathContinuationTest : View, ICanvasDrawingExample
 {
+    Rect ICanvasDrawingExample.GetArtworkBounds(IMeasureContext context) => new(17, 18, 265, 245);
+
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(White);
-        context.FillRect(this.Frame);
-
         NFloat x = this.Frame.X;
         NFloat y = this.Frame.Y;
 

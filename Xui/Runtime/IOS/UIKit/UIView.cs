@@ -14,6 +14,7 @@ public static partial class UIKit
         public static readonly Sel SetNeedsDisplaySel = new Sel(Lib, "setNeedsDisplay");
 
         public static readonly Sel SafeAreaInsetsSel = new Sel(Lib, "safeAreaInsets");
+        public static readonly Sel TraitCollectionSel = new Sel(Lib, "traitCollection");
 
         public static readonly Sel FrameSel = new Sel(Lib, "frame");
         public static readonly Sel SetFrameSel = new Sel(Lib, "setFrame:");
@@ -35,9 +36,31 @@ public static partial class UIKit
         {
         }
 
+        private static readonly Prop.Bool ClearsContextBeforeDrawingProp =
+            new("clearsContextBeforeDrawing", "setClearsContextBeforeDrawing:");
+
+        public bool ClearsContextBeforeDrawing
+        {
+            get => ClearsContextBeforeDrawingProp.Get(this);
+            set => ClearsContextBeforeDrawingProp.Set(this, value);
+        }
+
+        private static readonly Prop.Bool MultipleTouchEnabledProp =
+            new("isMultipleTouchEnabled", "setMultipleTouchEnabled:");
+
+        /// <summary>Whether this view receives simultaneous touch contacts.</summary>
+        public bool MultipleTouchEnabled
+        {
+            get => MultipleTouchEnabledProp.Get(this);
+            set => MultipleTouchEnabledProp.Set(this, value);
+        }
+
         public void SetNeedsDisplay() => ObjC.objc_msgSend(this, SetNeedsDisplaySel);
 
         public UIEdgeInsets SafeAreaInsets => objc_msgSend_retUIEdgeInsets(this, SafeAreaInsetsSel);
+
+        /// <summary>Borrowed UITraitCollection for this view's current UIKit environment.</summary>
+        public nint TraitCollection => ObjC.objc_msgSend_retIntPtr(this, TraitCollectionSel);
 
         public CGRect Frame
         {

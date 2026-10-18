@@ -11,6 +11,7 @@
       "Xui\\Runtime\\Browser\\Browser.csproj",
       "Xui\\Runtime\\IOS\\IOS.csproj",
       "Xui\\Middleware\\Emulator\\Xui.Middleware.Emulator.csproj",
+      "Xui\\Middleware\\EmulatorLegacy\\Xui.Middleware.EmulatorLegacy.csproj",
       "Xui\\Utils\\Templates\\Xui.Templates.csproj",
       "Xui\\Utils\\MCP\\Xui.MCP.csproj"
     ]

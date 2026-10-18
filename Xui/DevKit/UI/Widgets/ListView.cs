@@ -38,6 +38,7 @@ public class ListView : View, IDesignSystemChangeNotifications
     /// <summary>Which color group to use for selection. Default is Primary.</summary>
     public ColorRole Role { get; set; } = ColorRole.Primary;
 
+    /// <summary>Initializes a list view with an internal scrollable content container.</summary>
     public ListView()
     {
         content = new ListViewContent(this);

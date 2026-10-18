@@ -13,6 +13,12 @@ public interface IFocus
     /// <summary>Moves focus to the previous focusable element (same order as Shift+Tab).</summary>
     void Previous();
 
+    /// <summary>Returns the next focusable view without moving focus. Does not wrap by default.</summary>
+    View? GetNext(bool wrap = false);
+
+    /// <summary>Returns the preceding focusable view without moving focus. Does not wrap by default.</summary>
+    View? GetPrevious(bool wrap = false);
+
     /// <summary>
     /// Gets or sets the view that currently holds keyboard focus.
     /// Setting to <c>null</c> clears focus. Setting fires <see cref="View.OnBlur"/> /

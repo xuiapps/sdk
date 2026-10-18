@@ -4,7 +4,6 @@ namespace Xui.Runtime.IOS.Actual;
 
 public class IOSPlatform : Xui.Core.Actual.IRuntime
 {
-    private IOSDrawingContext iOSDrawingContext = new IOSDrawingContext();
     private IOSRunLoop? iOSRunLoop;
 
     public IOSPlatform()

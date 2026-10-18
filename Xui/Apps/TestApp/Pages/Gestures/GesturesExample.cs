@@ -1,191 +1,47 @@
-using System.Runtime.InteropServices;
 using Xui.Apps.TestApp.Examples;
 using Xui.Apps.TestApp.Pages.Gestures.Tests;
-using Xui.Core.Canvas;
-using Xui.Core.DI;
-using Xui.Core.Math2D;
+using Xui.Apps.TestApp.Pages.Gestures.Widgets;
 using Xui.Core.UI;
-using Xui.Core.UI.Input;
-using Xui.DevKit.UI.Design;
-using static Xui.Core.Canvas.Colors;
 
 namespace Xui.Apps.TestApp.Pages.Gestures;
 
-public class GesturesExample : Example
+/// <summary>Hands-on input examples in retained, swipeable cards.</summary>
+public sealed class GesturesExample : Example, IExampleSectionNavigator
 {
-    private XuiDesignSystem? designSystem;
+    private static readonly (string Name, Func<View> Create)[] Sections =
+    [
+        ("Gestures", static () => new InputDemoCard("TOUCH / PLAY", "Every touch has a story.",
+            "Tap, drag, or use a few fingers at once.", "Release to send each bubble floating away.", new GestureVisualizer())),
+        ("Nested Scrolls", static () => new InputDemoCard("EXPLORE / SCROLL", "Find your next escape.",
+            "Browse places sideways. Scroll down for more.", "Two directions, one natural conversation.", new NestedScrollDemo(), edgeToEdge: true)),
+        ("Drag vs Tap", static () => new InputDemoCard("TOUCH / INTENT", "Make your mark.",
+            "Tap to save. Drag a button to scroll.", "Draw on the sketchpad to keep the page still.", new DragVsTapDemo(), edgeToEdge: true)),
+        ("Temperature", static () => new InputDemoCard("HOME / COMFORT", "Just right.",
+            "Roll the ruler to find your comfort zone.", "Flick to coast, then settle on a half degree.", new TemperatureDial())),
+        ("Floor Plan", static () => new InputDemoCard("SPACE / EXPLORE", "A place to call home.",
+            "Drag to explore. Pinch with two fingers to zoom.", "Tap a room to discover it.", new FloorPlan())),
+        ("Swipe Actions", static () => new InputDemoCard("INBOX / ORGANIZE", "A little less clutter.",
+            "Swipe a message left to reveal an action.", "Tap Archive, or swipe right to close it.", new SwipeActions(), edgeToEdge: true)),
+    ];
+    private readonly ExampleCardCarousel carousel;
 
     public GesturesExample()
     {
-        Title = "Gestures";
-        Content = new GesturesPanel();
-    }
-
-    public override object? GetService(Type serviceType)
-    {
-        if (serviceType == typeof(IDesignSystem) && designSystem != null)
-            return designSystem;
-        return base.GetService(serviceType);
-    }
-
-    protected override void OnActivate()
-    {
-        base.OnActivate();
-
-        var device = this.GetService(typeof(IDeviceInfo)) as IDeviceInfo;
-        if (device == null) return;
-
-        designSystem = new XuiDesignSystem(
-            new XuiDesignSystemOptions
-            {
-                PrimaryHue = 240,
-                Harmony = ColorHarmony.SplitComplementary,
-                Chroma = 0.15f,
-                Shape = ShapePreset.Soft,
-                Sizing = SizingPreset.Mobile,
-                NeutralStyle = NeutralStyle.Monochrome,
-                Motion = MotionPreset.Normal,
-            },
-            device);
-    }
-
-    public class GesturesPanel : View
-    {
-        private readonly VerticalStack list;
-        private View? preview;
-
-        public override int Count =>
-            1 + (preview is not null ? 1 : 0);
-
-        public override View this[int index] => index switch
+        Title = "Input";
+        Content = carousel = new ExampleCardCarousel(Sections, 0, cardPadding: 0, clipCardContent: true)
         {
-            0 => list,
-            1 when preview is not null => preview,
-            _ => throw new IndexOutOfRangeException(),
+            Id = "InputCarousel", MaximumCardHeight = 632, RespectChildGestures = true,
         };
-
-        public View? Preview
-        {
-            get => preview;
-            set => SetProtectedChild(ref preview, value);
-        }
-
-        public GesturesPanel()
-        {
-            list = new VerticalStack();
-            AddProtectedChild(list);
-
-            AddTest<NestedScrollDemo>("Nested scroll (H in V)");
-            AddTest<DragVsTapDemo>("Drag vs Tap");
-
-            Preview = new NestedScrollDemo();
-        }
-
-        public void AddTest<T>(string name) where T : View, new()
-        {
-            list.Add(new GestureTestButton(() => Preview = new T())
-            {
-                Id = name,
-                Margin = 3,
-                Text = name,
-                FontFamily = "Inter",
-            });
-        }
-
-        protected override Size MeasureCore(Size availableSize, IMeasureContext context)
-        {
-            NFloat listWidth = 220;
-
-            list.Measure(new Size(listWidth, availableSize.Height), context);
-            preview?.Measure(new Size(availableSize.Width - listWidth, availableSize.Height), context);
-
-            return availableSize;
-        }
-
-        protected override void ArrangeCore(Rect rect, IMeasureContext context)
-        {
-            NFloat listWidth = 220;
-
-            list.Arrange(new Rect(rect.X, rect.Y, listWidth, rect.Height), context);
-            preview?.Arrange(new Rect(rect.X + listWidth, rect.Y, rect.Width - listWidth, rect.Height), context);
-        }
-
-        protected override void RenderCore(IContext context)
-        {
-            NFloat listWidth = 220;
-
-            context.SetFill(new Color(0xE0, 0xE0, 0xE0, 0xFF));
-            context.FillRect(new Rect(Frame.X + listWidth, Frame.Y, 1, Frame.Height));
-
-            base.RenderCore(context);
-        }
     }
 
-    public class GestureTestButton : Label
+    public bool ShowsMobileSectionControls => false;
+    public int SectionCount => Sections.Length;
+    public int SelectedSectionIndex => carousel.SelectedIndex;
+    public string GetSectionName(int index) => Sections[index].Name;
+    public void SelectSection(int index) => carousel.Select(index);
+    public event Action? SectionChanged
     {
-        private readonly Action onClick;
-        private bool hover;
-        private bool pressed;
-
-        public GestureTestButton(Action onClick)
-        {
-            this.onClick = onClick;
-        }
-
-        public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
-        {
-            if (e.State.PointerType == PointerType.Mouse)
-            {
-                if (e.Type == PointerEventType.Enter)
-                {
-                    hover = true;
-                    InvalidateRender();
-                }
-                else if (e.Type == PointerEventType.Leave)
-                {
-                    hover = false;
-                    InvalidateRender();
-                }
-                else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
-                {
-                    CapturePointer(e.PointerId, PointerGestures.Tap);
-                    pressed = true;
-                    InvalidateRender();
-                }
-                else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
-                {
-                    // Snapshot before release: ReleasePointer fires LostCapture
-                    // synchronously, which clears `pressed` via the handler below.
-                    var wasPressed = pressed;
-                    pressed = false;
-                    ReleasePointer(e.PointerId);
-                    if (wasPressed) onClick();
-                    InvalidateRender();
-                }
-                else if (e.Type == PointerEventType.LostCapture)
-                {
-                    pressed = false;
-                    InvalidateRender();
-                }
-            }
-
-            base.OnPointerEvent(ref e, phase);
-        }
-
-        protected override void RenderCore(IContext context)
-        {
-            if (pressed)
-            {
-                context.SetFill(Yellow);
-                context.FillRect(Frame);
-            }
-            else if (hover)
-            {
-                context.SetFill(LightGray);
-                context.FillRect(Frame);
-            }
-
-            base.RenderCore(context);
-        }
+        add => carousel.SelectionChanged += value;
+        remove => carousel.SelectionChanged -= value;
     }
 }

@@ -128,7 +128,7 @@ public virtual object? GetService(Type serviceType) =>
 ### Middleware Window (Emulator, DevTools)
 
 **Files:**
-- `Xui/Middleware/Emulator/Actual/EmulatorWindow.cs`
+- `Xui/Middleware/EmulatorLegacy/Actual/EmulatorWindow.cs`
 - `Xui/Middleware/DevTools/Actual/DevToolsWindow.cs`
 
 ```csharp

@@ -2,6 +2,7 @@ using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.Core.UI.Layer;
+using Xui.Core.UI.Input;
 using Xui.DevKit.UI.Design;
 
 namespace Xui.DevKit.UI.Widgets;
@@ -11,12 +12,61 @@ namespace Xui.DevKit.UI.Widgets;
 /// + <see cref="TextInputLayer"/> layer stack as <see cref="TextBox"/>, but fills all visual
 /// properties from <see cref="IDesignSystem"/> tokens instead of exposing them individually.
 /// </summary>
-public class TextInput : LayerView<View, FocusBorderLayer<View, TextInputLayer>>, IDesignSystemChangeNotifications
+public class TextInput : LayerView<View, FocusBorderLayer<View, TextInputLayer>>, IDesignSystemChangeNotifications, ITextEditingClient
 {
+    /// <summary>Creates a text input with shared native editing state.</summary>
+    public TextInput() { Editor.Changed += EditingChanged; }
+
     private readonly DesignSystemCache designSystem = new();
     private bool appliedFallback;
     /// <inheritdoc/>
     public override bool Focusable => true;
+
+    /// <summary>Keyboard hints, applied when this field receives focus.</summary>
+    public TextInputOptions InputOptions { get; set; }
+
+    /// <inheritdoc/>
+    public bool CanPerformInputAction(TextInputAction action) => TextInputNavigation.CanPerform(this, action);
+
+    /// <inheritdoc/>
+    public void PerformInputAction(TextInputAction action) => TextInputNavigation.Perform(this, action);
+
+    /// <inheritdoc/>
+    public Xui.Core.UI.Input.TextEditingState Editor => Layer.Border.Child.Editor;
+
+    /// <inheritdoc/>
+    public bool NativeSelection
+    {
+        get => Layer.Border.Child.NativeSelection;
+        set { Layer.Border.Child.NativeSelection = value; InvalidateRender(); }
+    }
+
+    /// <inheritdoc/>
+    public Rect InputBounds
+    {
+        get
+        {
+            var rect = Frame;
+            for (View? ancestor = this; ancestor is not null; ancestor = ancestor.Parent)
+                rect = ancestor.InverseTransformRect(rect);
+            return rect;
+        }
+    }
+
+    /// <inheritdoc/>
+    public Rect GetCaretRect(int offset, ITextMeasureContext measure) => Layer.Border.Child.GetCaretRect(this, offset, measure);
+
+    /// <inheritdoc/>
+    public int GetTextPosition(Point point, ITextMeasureContext measure) => Layer.Border.Child.GetTextPosition(this, point, measure);
+
+    private void EditingChanged(Xui.Core.UI.Input.TextEditingChange change)
+    {
+        if ((change & Xui.Core.UI.Input.TextEditingChange.Text) != 0) InvalidateMeasure();
+        InvalidateRender();
+    }
+
+    /// <inheritdoc/>
+    public bool HasText => Layer.Border.Child.HasText;
 
     /// <summary>Gets or sets the text content.</summary>
     public string Text
@@ -104,6 +154,7 @@ public class TextInput : LayerView<View, FocusBorderLayer<View, TextInputLayer>>
     /// <inheritdoc/>
     protected override void OnDeactivate()
     {
+        Blur();
         designSystem.Deactivate(this);
         base.OnDeactivate();
     }

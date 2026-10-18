@@ -8,6 +8,7 @@ namespace Xui.Core.Canvas;
 public interface IContext :
     IMeasureContext,
     IStateContext,             // Handles save/restore state stack and global properties
+    IFilterContext,            // Adjusts source colors when selecting paints
     IPenContext,               // Controls stroke/fill styles, line width, caps, joins, etc.
     IPathDrawingContext,       // Handles path creation and stroking/filling
     IRectDrawingContext,       // Shortcut methods for drawing and clearing rectangles
