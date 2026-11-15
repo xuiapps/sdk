@@ -11,7 +11,9 @@ These projects implement or simulate the platform-facing contracts defined in
   CoreText, CoreAnimation, Dispatch, ImageIO, and Metal bindings.
 - `IOS` — UIKit windowing/input with Objective-C, CoreFoundation, CoreGraphics,
   CoreText, CoreAnimation, and Metal bindings.
-- `Android` — Android Activity/View lifecycle and Android Canvas rendering.
+- `Android` — binding-free managed composition, C/JNI transport, and Java View/Canvas playback.
+  GPU nodes present through a C Vulkan backend and TextureView-owned surfaces.
+  `Android/Host` contains the optional .NET Android startup and legacy haptic adapters.
 - `Browser` — browser lifecycle, DOM input, and Canvas rendering through
   JavaScript interop.
 - `Software` — deterministic SVG, font, rasterization, tessellation, bitmap, and
@@ -96,9 +98,10 @@ scale and coordinate-direction conversions.
   application-facing orchestration belongs in `Actual`. Keep equivalent Apple
   bindings structurally aligned when practical, but do not copy code without
   checking platform API differences.
-- Android is incomplete and uses managed Android Canvas bindings today. Preserve
-  the intended low-marshalling path and avoid per-command heap allocations in
-  hot drawing loops.
+- Android records through `RetainedCanvasContext` and sends versioned float32 wire
+  packets through a C ABI to Java-owned views. Keep the renderer independent of
+  managed Android bindings; those belong only in the optional host adapter.
+  Check `Android/README.md` for current gaps and native/emulator test commands.
 - Browser hot paths should minimize managed/JavaScript crossings and temporary
   string/object creation.
 - Software output must be deterministic across machines. Use bundled Inter fonts

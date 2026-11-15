@@ -86,8 +86,8 @@ public class HomePageRenderReferenceTest
             Assert.True(button.Frame.Y >= app.Window.SafeArea.Y);
             Assert.True(button.Frame.Y + button.Frame.Height <= app.Window.SafeArea.Y + app.Window.SafeArea.Height);
         }
-        Assert.Contains(document.Descendants(ns + "path"), p =>
-            (string?)p.Attribute("fill") == "#F8F8F8" && p.Attribute("fill-opacity") is null);
+        Assert.Contains(document.Descendants(ns + "rect"), p =>
+            (string?)p.Attribute("fill") == "#FDFDFD" && (string?)p.Attribute("fill-opacity") == "1");
         Assert.Single(FullScreenFills(document));
         // Only the emulator's physical display clip remains rounded at rest.
         Assert.Single(RoundedScreenClips(document));
@@ -105,8 +105,8 @@ public class HomePageRenderReferenceTest
 
         app.MarkdownHeading("Moving top page");
         app.MarkdownParagraph("Push and pop a simple probe page. Only the moving top page gets a rounded clip; " +
-            "one stationary background covers the display and back-page content is clipped to the exposed region. " +
-            "Settled navigation draws only its active page. Opaque navigation keeps host clearing disabled throughout. " +
+            "one stationary background covers the display, a translucent shade darkens the back page, and a native outline shadow follows the front page. " +
+            "Settled navigation draws only its active page. Full-screen fill counts exclude transparent surfaces and SVG shadow approximations. Opaque navigation keeps host clearing disabled throughout. " +
             "The probe uses linear easing so the midpoint snapshots show the top page halfway across the display.");
         navigation.TransitionEasing = new((0, 0), (1, 1));
         navigation.Push(new Label { Text = "Transition probe", FontFamily = "Inter", FontSize = 24 });
@@ -115,7 +115,7 @@ public class HomePageRenderReferenceTest
         Assert.True(navigation.IsTransitioning);
         Assert.True(navigation.DrawsOpaqueFullScreen);
         var push = XDocument.Parse(app.Snapshot("PushHalfway"));
-        Assert.Equal(2, FullScreenFills(push).Count());
+        Assert.Equal(3, FullScreenFills(push).Count());
         Assert.Equal(2, RoundedScreenClips(push).Count());
         app.AnimationFrame(TimeSpan.FromMilliseconds(175), TimeSpan.FromMilliseconds(350));
         Assert.False(navigation.IsTransitioning);
@@ -130,7 +130,7 @@ public class HomePageRenderReferenceTest
         app.AnimationFrame(TimeSpan.FromMilliseconds(350), TimeSpan.FromMilliseconds(525));
         var pop = XDocument.Parse(app.Snapshot("PopHalfway"));
         Assert.True(navigation.DrawsOpaqueFullScreen);
-        Assert.Equal(2, FullScreenFills(pop).Count());
+        Assert.Equal(3, FullScreenFills(pop).Count());
         Assert.Equal(2, RoundedScreenClips(pop).Count());
         app.AnimationFrame(TimeSpan.FromMilliseconds(525), TimeSpan.FromMilliseconds(700));
         Assert.False(navigation.IsTransitioning);
@@ -167,7 +167,7 @@ public class HomePageRenderReferenceTest
         // Popping exposes the translucent root again, so host clearing resumes.
         navigation.Pop();
         Assert.False(coverage.DrawsOpaqueFullScreen);
-        Assert.Equal(3, FullScreenFills(XDocument.Parse(app.Render())).Count());
+        Assert.Equal(4, FullScreenFills(XDocument.Parse(app.Render())).Count());
         app.AnimationFrame(TimeSpan.FromMilliseconds(350), TimeSpan.FromMilliseconds(350));
         app.AnimationFrame(TimeSpan.FromMilliseconds(350), TimeSpan.FromMilliseconds(700));
         Assert.False(coverage.DrawsOpaqueFullScreen);
@@ -185,7 +185,8 @@ public class HomePageRenderReferenceTest
 
     private static IEnumerable<XElement> FullScreenFills(XDocument document) =>
         document.Descendants(XName.Get("rect", "http://www.w3.org/2000/svg"))
-            .Where(r => r.Attribute("fill") is not null && (string?)r.Attribute("width") == "430" && (string?)r.Attribute("height") == "932");
+            .Where(r => r.Attribute("fill") is not null && r.Attribute("filter") is null &&
+                (string?)r.Attribute("fill-opacity") != "0" && (string?)r.Attribute("width") == "430" && (string?)r.Attribute("height") == "932");
 
     private static IEnumerable<XElement> RoundedScreenClips(XDocument document) =>
         document.Descendants(XName.Get("clipPath", "http://www.w3.org/2000/svg"))

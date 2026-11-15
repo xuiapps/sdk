@@ -9,7 +9,7 @@ namespace Xui.Apps.TestApp.Pages.ThreeD.Tests.GpuHardwareCubeTest;
 
 /// <summary>
 /// A 300x300 3D surface showing a rotating cube rendered via hardware GPU acceleration.
-/// Uses Direct3D 11 on Windows, Metal on macOS/iOS.
+/// Uses Direct3D 11 on Windows, Metal on macOS/iOS, and Vulkan on Android.
 /// Features click-and-drag rotation interaction.
 /// </summary>
 public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
@@ -25,6 +25,7 @@ public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
         if (context.GpuSurface(new GroupOptions
         { Key = this, Bounds = Frame, HasUpdates = IsLive && nativeVersion != SceneVersion }))
         {
+            EnsureDevice();
             using var overlay = context.Group(new GroupOptions
             { Key = labelKey, Bounds = Frame, ViewBacking = true });
             context.SetStroke(Colors.Black);
@@ -33,7 +34,7 @@ public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
             context.SetFont(new Font(11, "Inter"));
             context.TextBaseline = TextBaseline.Top;
             context.TextAlign = TextAlign.Left;
-            context.FillText("GPU: Metal · native surface", (Frame.X + 6, Frame.Y + 6));
+            context.FillText(_nativeLabel, (Frame.X + 6, Frame.Y + 6));
         }
         else base.RenderCore(context); // Explicit portable path for other runtimes and SVG capture.
     }
@@ -53,6 +54,7 @@ public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
     private IGpuRenderTarget? _renderTarget;
     private IGpuVertexShader? _vertexShader;
     private IGpuFragmentShader? _fragmentShader;
+    private string _nativeLabel = "GPU · native surface";
     private string _backendName = "Hardware rendering unavailable on this platform.";
 
     protected override string BackendLabel => _backendName;
@@ -64,6 +66,7 @@ public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
         var backend = GetService(typeof(Xui.GPU.Backends.IShaderBackend)) as Xui.GPU.Backends.IShaderBackend;
         if (_gpuDevice is null || backend is null) return false;
         _backendName = $"GPU: {_gpuDevice.BackendName}";
+        _nativeLabel = $"{_backendName} · native surface";
         var source = CubeShader.GenerateShaderSource(backend);
         _vertexShader = _gpuDevice.CompileVertexShader(source, CubeShader.GetVertexEntry(backend.Name));
         _fragmentShader = _gpuDevice.CompileFragmentShader(source, CubeShader.GetFragmentEntry(backend.Name));

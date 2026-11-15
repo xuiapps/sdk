@@ -5,7 +5,7 @@ namespace Xui.Core.UI;
 public partial class ScrollView
 {
     private nfloat DragOffset(nfloat offset, nfloat delta, nfloat maximum, nfloat viewport) => elastic
-        ? ElasticMotion.Resist(ElasticMotion.Unresist(offset, 0, maximum, viewport) + delta, 0, maximum, viewport)
+        ? ElasticMotion.Resist(ElasticMotion.Unresist(offset, 0, maximum, viewport, bounceResistance) + delta, 0, maximum, viewport, bounceResistance)
         : nfloat.Clamp(offset + delta, 0, maximum);
 
     private void QueueReturnToBounds()

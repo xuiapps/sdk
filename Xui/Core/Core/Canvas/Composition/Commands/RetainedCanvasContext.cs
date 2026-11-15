@@ -41,7 +41,7 @@ public sealed partial class RetainedCanvasContext : IContext
         this.scale=scale; frame++; recording=true; current=Root; saves.Clear(); groups.Clear();
         state=new PaintState { Matrix=AffineTransform.Identity, Font=new Font() };
         Root.Options=new GroupOptions { Key=Root, Bounds=bounds, ViewBacking=true };
-        Root.BeginUpdate(); Root.State.Clear(); Root.Inherited.Clear(); Root.RasterBounds=bounds;
+        Root.BeginUpdate(); Root.State.Clear(); Root.Inherited.Clear(); Root.RasterBounds=bounds; Root.Scale=scale;
         SetFont(state.Font);
         TextAlign=TextAlign.Start;
         TextBaseline=TextBaseline.Alphabetic;

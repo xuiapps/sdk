@@ -8,7 +8,7 @@ using static Xui.Core.Canvas.Colors;
 namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 
 /// <summary>
-/// Demonstrates <see cref="IImageDrawingContext.DrawImage"/> — draws a loaded image
+/// Demonstrates <see cref="IImageDrawingContext.DrawImage(IImage, Rect)"/> — draws a loaded image
 /// scaled to fit the canvas area with a small margin.
 /// </summary>
 public class DrawImageTest : View, ICanvasDrawingExample

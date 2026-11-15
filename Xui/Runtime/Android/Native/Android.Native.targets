@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <XuiAndroidNativeDir>$(MSBuildThisFileDirectory)</XuiAndroidNativeDir>
+    <XuiAndroidNativeOutput>$(MSBuildProjectDirectory)/obj/xui-native</XuiAndroidNativeOutput>
+  </PropertyGroup>
+  <Target Name="BuildXuiAndroidBridge" BeforeTargets="_BuildLibraryImportsCache;CoreCompile"
+          Inputs="$(XuiAndroidNativeDir)xui_vulkan.c;$(XuiAndroidNativeDir)xui_vulkan.h;$(XuiAndroidNativeDir)xui_android.c;$(XuiAndroidNativeDir)xui_android.h;$(XuiAndroidNativeDir)build.sh"
+          Outputs="$(XuiAndroidNativeOutput)/arm64-v8a/libxui_android.so;$(XuiAndroidNativeOutput)/x86_64/libxui_android.so">
+    <Error Condition="'$(AndroidNdkDirectory)' == ''" Text="Set AndroidNdkDirectory to an installed Android NDK for the Xui JNI bridge." />
+    <Exec Command="sh &quot;$(XuiAndroidNativeDir)build.sh&quot; &quot;$(AndroidNdkDirectory)&quot; &quot;$(XuiAndroidNativeOutput)&quot; arm64-v8a" />
+    <Exec Command="sh &quot;$(XuiAndroidNativeDir)build.sh&quot; &quot;$(AndroidNdkDirectory)&quot; &quot;$(XuiAndroidNativeOutput)&quot; x86_64" />
+  </Target>
+  <ItemGroup>
+    <AndroidNativeLibrary Include="$(XuiAndroidNativeOutput)/arm64-v8a/libxui_android.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Include="$(XuiAndroidNativeOutput)/x86_64/libxui_android.so" Abi="x86_64" />
+  </ItemGroup>
+</Project>

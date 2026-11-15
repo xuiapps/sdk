@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>29.0</SupportedOSPlatformVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Xui.Runtime.Android.Host</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Android.csproj" />
+    <ProguardConfiguration Include="proguard.cfg" />
+  </ItemGroup>
+  <Import Project="../Native/Android.Native.targets" />
+  <Import Project="../Java/Android.Java.targets" />
+</Project>

@@ -14,7 +14,7 @@ Rendered by the deterministic software SVG context with embedded Inter font subs
 
 ## Moving top page
 
-Push and pop a simple probe page. Only the moving top page gets a rounded clip; one stationary background covers the display and back-page content is clipped to the exposed region. Settled navigation draws only its active page. Opaque navigation keeps host clearing disabled throughout. The probe uses linear easing so the midpoint snapshots show the top page halfway across the display.
+Push and pop a simple probe page. Only the moving top page gets a rounded clip; one stationary background covers the display, a translucent shade darkens the back page, and a native outline shadow follows the front page. Settled navigation draws only its active page. Full-screen fill counts exclude transparent surfaces and SVG shadow approximations. Opaque navigation keeps host clearing disabled throughout. The probe uses linear easing so the midpoint snapshots show the top page halfway across the display.
 
 ### 02. PushHalfway
 

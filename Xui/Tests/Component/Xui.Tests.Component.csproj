@@ -21,6 +21,7 @@
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
     <ProjectReference Include="../../Runtime/Software/Xui.Runtime.Software.csproj" />
     <ProjectReference Include="../../Runtime/IOS/IOS.csproj" />
+    <ProjectReference Include="../../Runtime/Android/Android.csproj" />
     <ProjectReference Include="../../DevKit/UI/Xui.DevKit.UI.csproj" />
   </ItemGroup>
 

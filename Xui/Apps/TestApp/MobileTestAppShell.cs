@@ -15,15 +15,7 @@ public sealed class MobileTestAppShell : View, IFullScreenView
 
     public MobileTestAppShell(MobilePerformanceMetrics performanceMetrics)
     {
-        navigation = new MobileNavigation(new ScrollView
-        {
-            UseCompositionGroup = true,
-            Direction = ScrollDirection.Vertical,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Stretch,
-            ClipToViewport = false,
-            Content = new MobileHomePage(),
-        }, performanceMetrics);
+        navigation = new MobileNavigation(new MobileHomePage(), performanceMetrics);
         this.AddProtectedChild(navigation);
     }
 

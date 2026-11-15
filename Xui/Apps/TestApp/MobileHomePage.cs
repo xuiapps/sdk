@@ -1,41 +1,29 @@
-using Xui.Core.Canvas;
 using Xui.Core.UI;
+using Xui.DevKit.UI.Mobile.Navigation;
 
 namespace Xui.Apps.TestApp;
 
-/// <summary>The branded, scrollable starting page for the mobile TestApp.</summary>
-internal sealed class MobileHomePage : VerticalStack
+/// <summary>The mobile home menu, with a header outside the content's scroll transform.</summary>
+internal sealed class MobileHomePage : ScrollView, INavigationAware
 {
+    private readonly MobileHomeHeader header = new();
+
     public MobileHomePage()
     {
-        var hero = new VerticalStack
-        {
-            Margin = (30, 0, 30, 0),
-        };
-        hero.Add(new XuiLogoView
-        {
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Margin = (24, 0, 10, 0),
-        });
-        hero.Add(new Label
-        {
-            Text = "Xui SDK Examples",
-            FontFamily = "Inter",
-            FontSize = 24,
-            FontWeight = FontWeight.Bold,
-            TextColor = new Color(0x24, 0x25, 0x29, 0xFF),
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Margin = (0, 0, 24, 0),
-        });
-        Add(hero);
-        Add(new MobileSettingsButton
-        {
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Margin = (0, 0, 12, 16),
-        });
-        this.Add(new MobileDemoMenu
-        {
-            Margin = (0, 16),
-        });
+        Id = "HomeScroll";
+        UseCompositionGroup = true;
+        Direction = ScrollDirection.Vertical;
+        ClipToViewport = false;
+        var menu = new VerticalStack();
+        menu.Add(new View { MinimumHeight = MobileHomeHeader.ExpandedHeight, MaximumHeight = MobileHomeHeader.ExpandedHeight });
+        menu.Add(new MobileDemoMenu { Margin = (0, 16) });
+        Content = menu;
+        Overlay = header;
+        ScrollChanged += offset => header.SetScrollOffset(offset.Y);
+    }
+
+    public void OnNavigationStateChanged(in NavigationStateChange change)
+    {
+        if (change.Phase == NavigationPhase.WillDisappear) header.CloseRating();
     }
 }

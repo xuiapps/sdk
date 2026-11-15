@@ -100,7 +100,7 @@
         Include="../../Runtime/IOS/IOS.csproj" />
     <ProjectReference
         Condition=" $(XuiAndroid) == 'true' "
-        Include="../../Runtime/Android/Android.csproj" />
+        Include="../../Runtime/Android/Host/Android.Host.csproj" />
     <ProjectReference
         Condition=" $(XuiBrowser) == 'true' "
         Include="../../Runtime/Browser/Browser.csproj" />

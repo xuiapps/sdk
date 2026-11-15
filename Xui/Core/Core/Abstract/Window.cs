@@ -26,16 +26,9 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     /// Resolves platform and middleware services through the actual-window chain, then
     /// falls back to this window's DI scope. The chain is strictly forward: actual
     /// windows must never consult their abstract event receiver for services.
-    /// For <see cref="IOverlay"/>, falls back to the cross-platform in-window overlay
-    /// when neither DI nor the platform provide one.
+    /// <see cref="IOverlay"/> belongs to this window's root rather than a middleware host window.
     public virtual object? GetService(Type serviceType)
     {
-        var service = this.Actual.GetService(serviceType);
-
-        if (service is not null)
-            return service;
-
-        // Provide in-window overlay fallback when no platform implementation is registered.
         if (serviceType == typeof(IOverlay))
         {
             var overlay = new PopupOverlay(this.RootView);
@@ -43,7 +36,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
             return overlay;
         }
 
-        return null;
+        return this.Actual.GetService(serviceType);
     }
 
     /// <summary>A list of disposables disposed when the window closes.</summary>

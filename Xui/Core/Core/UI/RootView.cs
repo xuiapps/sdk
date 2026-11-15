@@ -59,11 +59,31 @@ public class RootView : View, IContent, IFocus
         set => this.SetProtectedChild(ref this.content, value);
     }
 
-    /// <summary>The number of child views (always 1 when Content is set, else 0).</summary>
-    public override int Count => this.Content is not null ? 1 : 0;
+    /// <summary>The content followed by visible in-window overlays, in render and hit-test order.</summary>
+    public override int Count => (this.Content is not null ? 1 : 0) + overlays.Count;
 
     /// <summary>Gets the child view at the given index.</summary>
-    public override View this[int index] => index == 0 && this.Content is not null ? this.Content : throw new IndexOutOfRangeException();
+    public override View this[int index]
+    {
+        get
+        {
+            if (Content is not null) { if (index == 0) return Content; index--; }
+            return (uint)index < (uint)overlays.Count ? overlays[index].Content! : throw new IndexOutOfRangeException();
+        }
+    }
+
+    // Popup layout is anchored to its own rectangle, not stretched with the root content.
+    /// <inheritdoc/>
+    protected override Size MeasureCore(Size available, IMeasureContext context) => Content?.Measure(available, context) ?? default;
+
+    /// <inheritdoc/>
+    protected override void ArrangeCore(Rect rect, IMeasureContext context) => Content?.Arrange(rect, context);
+
+    /// <inheritdoc/>
+    protected override void RenderCore(IContext context)
+    {
+        if (Content is not null) RenderChild(context, Content);
+    }
 
     /// <summary>Initializes a new RootView for the given window.</summary>
     /// <param name="window">The window that owns this root view.</param>
@@ -87,33 +107,10 @@ public class RootView : View, IContent, IFocus
     {
         lastMousePosition = e.Position;
 
-        // If the click is inside any visible overlay, prevent it from reaching the underlying UI.
-        if (overlays.Count > 0 && IsPointInsideAnyOverlay(e.Position))
-            return;
-
-        if (overlays.Count > 0)
-            DismissOverlaysOutside(e.Position);
-
+        DismissOverlaysOutside(e.Position);
         this.EventRouter.Dispatch(ref e);
     }
 
-    /// <summary>
-    /// Returns true if the given position is inside any visible popup overlay.
-    /// This prevents mouse events from "clicking through" overlays into underlying views.
-    /// </summary>
-    private bool IsPointInsideAnyOverlay(Point position)
-    {
-        foreach (var overlay in overlays)
-        {
-            if (!overlay.IsVisible)
-                continue;
-
-            if (overlay.Frame.Contains(position))
-                return true;
-        }
-
-        return false;
-    }
     void IContent.OnMouseMove(ref MouseMoveEventRef e)
     {
         lastMousePosition = e.Position;
@@ -149,6 +146,8 @@ public class RootView : View, IContent, IFocus
 
     void IContent.OnTouch(ref TouchEventRef e)
     {
+        foreach (ref readonly var touch in e.Touches)
+            if (touch.Phase == TouchPhase.Start) DismissOverlaysOutside(touch.Position);
         this.EventRouter.Dispatch(ref e);
     }
 
@@ -253,13 +252,16 @@ public class RootView : View, IContent, IFocus
 
     internal void AddOverlay(PopupOverlay overlay)
     {
+        AddProtectedChild(overlay.Content!);
         overlays.Add(overlay);
+        InvalidateHitTest();
         ((IContent)this).Invalidate();
     }
 
     internal void RemoveOverlay(PopupOverlay overlay)
     {
-        overlays.Remove(overlay);
+        if (overlays.Remove(overlay)) RemoveProtectedChild(overlay.Content!);
+        InvalidateHitTest();
         ((IContent)this).Invalidate();
     }
 

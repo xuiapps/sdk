@@ -1,0 +1,52 @@
+package xui.runtime;
+
+// Android wire protocol v1. Keep in sync with Composition/DrawOp.cs.
+final class DrawOp {
+    static final int Save = 0;
+    static final int Restore = 1;
+    static final int BeginPath = 2;
+    static final int ClosePath = 3;
+    static final int Stroke = 4;
+    static final int Clip = 5;
+    static final int GlobalAlpha = 6;
+    static final int LineWidth = 7;
+    static final int MiterLimit = 8;
+    static final int LineDashOffset = 9;
+    static final int LineCap = 10;
+    static final int LineJoin = 11;
+    static final int TextAlign = 12;
+    static final int TextBaseline = 13;
+    static final int Translate = 14;
+    static final int Scale = 15;
+    static final int Rotate = 16;
+    static final int Transform = 17;
+    static final int SetTransform = 18;
+    static final int FillRect = 19;
+    static final int StrokeRect = 20;
+    static final int Rect = 21;
+    static final int MoveTo = 22;
+    static final int LineTo = 23;
+    static final int Quadratic = 24;
+    static final int Cubic = 25;
+    static final int ArcTo = 26;
+    static final int Arc = 27;
+    static final int Ellipse = 28;
+    static final int RoundRect = 29;
+    static final int Fill = 30;
+    static final int FilterNone = 31;
+    static final int Brightness = 32;
+    static final int Font = 33;
+    static final int FillColor = 34;
+    static final int FillLinear = 35;
+    static final int FillRadial = 36;
+    static final int FillPattern = 37;
+    static final int StrokeColor = 38;
+    static final int StrokeLinear = 39;
+    static final int StrokeRadial = 40;
+    static final int StrokePattern = 41;
+    static final int Text = 42;
+    static final int Dashes = 43;
+    static final int Image = 44;
+    static final int ImageCrop = 45;
+    static final int TextResource = 46;
+}

@@ -7,15 +7,19 @@
       <path d="M 68 24 H 410 A 44 44 0 0 1 454 68 V 912 A 44 44 0 0 1 410 956 H 68 A 44 44 0 0 1 24 912 V 68 A 44 44 0 0 1 68 24 Z " clip-rule="nonzero" />
     </clipPath>
     <clipPath id="clip1">
-      <path d="M 0 0 H 430 V 932 H 0 Z " clip-rule="nonzero" />
+      <path d="M 0 0 H 430 A 0 0 0 0 1 430 0 V 932 A 0 0 0 0 1 430 932 H 0 A 0 0 0 0 1 0 932 V 0 A 0 0 0 0 1 0 0 Z " clip-rule="nonzero" />
     </clipPath>
   </defs>
   <g clip-path="url(#clip0)">
     <g transform="translate(24,24)">
-      <g clip-path="url(#clip1)">
-        <rect x="0" y="0" width="430" height="932" fill="#FFFFFF" />
-        <g>
-          <text x="0" y="59" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" xml:space="preserve">Transition probe</text>
+      <g>
+<rect x="0" y="0" width="430" height="932" rx="0" fill="#FFFFFF" fill-opacity="1"/>
+        <g clip-path="url(#clip1)">
+          <g>
+            <text x="0" y="59" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" xml:space="preserve">Transition probe</text>
+          </g>
+          <g>
+          </g>
         </g>
       </g>
     </g>

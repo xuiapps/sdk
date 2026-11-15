@@ -13,9 +13,9 @@ public class ScrollBounceTests
     [InlineData(DevicePlatform.iOS, true)]
     [InlineData(DevicePlatform.MacOS, true)]
     [InlineData(DevicePlatform.Windows, false)]
-    [InlineData(DevicePlatform.Android, false)]
+    [InlineData(DevicePlatform.Android, true)]
     [InlineData(DevicePlatform.Browser, false)]
-    public void PullResistsAndReturnsOnlyOnApplePlatforms(DevicePlatform platform, bool bounces)
+    public void PullResistsAndReturnsOnTouchPlatforms(DevicePlatform platform, bool bounces)
     {
         var view = Create(platform);
         Pointer(view, PointerEventType.Down, (100, 100));
@@ -35,19 +35,23 @@ public class ScrollBounceTests
         Assert.Equal((nfloat)0, Translation(view).Y);
     }
 
-    [Fact]
-    public void ReducedMotionUsesClampedEdges()
+    [Theory]
+    [InlineData(DevicePlatform.iOS)]
+    [InlineData(DevicePlatform.Android)]
+    public void ReducedMotionUsesClampedEdges(DevicePlatform platform)
     {
-        var view = Create(DevicePlatform.iOS, reducedMotion: true);
+        var view = Create(platform, reducedMotion: true);
         Pointer(view, PointerEventType.Down, (100, 100));
         Pointer(view, PointerEventType.Move, (100, 300));
         Assert.Equal((nfloat)0, Translation(view).Y);
     }
 
-    [Fact]
-    public void InterruptedReboundResumesWithoutJumpAndCancellationSettles()
+    [Theory]
+    [InlineData(DevicePlatform.iOS)]
+    [InlineData(DevicePlatform.Android)]
+    public void InterruptedReboundResumesWithoutJumpAndCancellationSettles(DevicePlatform platform)
     {
-        var view = Create(DevicePlatform.iOS);
+        var view = Create(platform);
         Pointer(view, PointerEventType.Down, (100, 100));
         Pointer(view, PointerEventType.Move, (100, 300));
         Pointer(view, PointerEventType.Up, (100, 300));
@@ -65,10 +69,12 @@ public class ScrollBounceTests
         Assert.Equal((nfloat)0, Translation(view).Y);
     }
 
-    [Fact]
-    public void HorizontalPullAndReversalHaveNoAccumulatedResistance()
+    [Theory]
+    [InlineData(DevicePlatform.iOS)]
+    [InlineData(DevicePlatform.Android)]
+    public void HorizontalPullAndReversalHaveNoAccumulatedResistance(DevicePlatform platform)
     {
-        var view = Create(DevicePlatform.iOS);
+        var view = Create(platform);
         view.Direction = ScrollDirection.Horizontal;
         view.Content = new FixedView((800, 400));
         view.Arrange((0, 0, 300, 400), null!);
@@ -86,10 +92,12 @@ public class ScrollBounceTests
         Assert.Equal((nfloat)(-500), Translation(view).X);
     }
 
-    [Fact]
-    public void FlingCrossesEdgeThenSettlesAtTheExactLimit()
+    [Theory]
+    [InlineData(DevicePlatform.iOS)]
+    [InlineData(DevicePlatform.Android)]
+    public void FlingCrossesEdgeThenSettlesAtTheExactLimit(DevicePlatform platform)
     {
-        var view = Create(DevicePlatform.iOS);
+        var view = Create(platform);
         Pointer(view, PointerEventType.Down, (100, 700));
         view.Clock.Milliseconds += 100;
         Pointer(view, PointerEventType.Move, (100, 200)); // 500px into a 600px range.
@@ -131,6 +139,29 @@ public class ScrollBounceTests
         for (var i = 0; i < 30; i++) _ = spring[start + TimeSpan.FromSeconds(i / 60.0)];
         Assert.Equal(at120, spring[start + TimeSpan.FromSeconds(0.5)]);
         Assert.True(spring.IsComplete(start + TimeSpan.FromSeconds(1)));
+    }
+
+    [Fact]
+    public void AndroidPullIsMoreRestrainedAndOverlayDoesNotScroll()
+    {
+        var android = Create(DevicePlatform.Android);
+        var apple = Create(DevicePlatform.iOS);
+        var overlay = new FixedView((300, 400));
+        android.Overlay = overlay;
+        android.Arrange((0, 0, 300, 400), null!);
+        var before = overlay.Frame;
+        Vector notified = default;
+        android.ScrollChanged += offset => notified = offset;
+        foreach (var view in new[] { android, apple })
+        {
+            Pointer(view, PointerEventType.Down, (100, 100));
+            Pointer(view, PointerEventType.Move, (100, 300));
+        }
+        Assert.True(Translation(android).Y < Translation(apple).Y);
+        Assert.Equal(android.ScrollOffset, notified);
+        Assert.Equal(before, overlay.Frame);
+        Assert.Same(overlay, android[1]);
+        Assert.Equal(2, android.Count);
     }
 
     private static TestScroll Create(DevicePlatform platform, bool reducedMotion = false)

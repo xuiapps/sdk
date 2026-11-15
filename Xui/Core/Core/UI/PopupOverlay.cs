@@ -29,7 +29,9 @@ internal sealed class PopupOverlay : IOverlay
 
         Content = content;
         var popupSize = size ?? new Size(anchorRect.Width, 120);
-        Frame = ComputeFrame(anchorRect, placement, popupSize, rootView.Frame);
+        var bounds = rootView.Window.DisplayArea;
+        popupSize = new Size(nfloat.Clamp(popupSize.Width, 0, bounds.Width), nfloat.Clamp(popupSize.Height, 0, bounds.Height));
+        Frame = ComputeFrame(anchorRect, placement, popupSize, bounds);
         IsVisible = true;
         rootView.AddOverlay(this);
     }

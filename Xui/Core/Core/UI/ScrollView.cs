@@ -31,6 +31,8 @@ public enum ScrollDirection
 public partial class ScrollView : View
 {
     private ScrollContent? scrollContent;
+    private View? overlay;
+    private Vector lastNotifiedOffset;
     private nfloat scrollOffsetY;
     private nfloat scrollOffsetX;
     private nfloat contentHeight;       // captured in MeasureCore
@@ -38,7 +40,19 @@ public partial class ScrollView : View
     private nfloat viewportHeight;      // captured in ArrangeCore
     private nfloat viewportWidth;       // captured in ArrangeCore
 
-    internal Vector ScrollOffset => new(scrollOffsetX, scrollOffsetY);
+    /// <summary>Current scroll displacement, including elastic overscroll.</summary>
+    public Vector ScrollOffset => new(scrollOffsetX, scrollOffsetY);
+
+    /// <summary>Raised after the content's scroll transform changes, including during inertia and rebound.</summary>
+    public event Action<Vector>? ScrollChanged;
+
+    /// <summary>A viewport-sized foreground view that stays outside the content's scroll transform.
+    /// Its input still participates in this scroll view's gesture negotiation.</summary>
+    public View? Overlay
+    {
+        get => overlay;
+        set => SetProtectedChild(ref overlay, value);
+    }
 
     // Drag tracking
     private ScrollGestureMode gestureMode;
@@ -75,7 +89,9 @@ public partial class ScrollView : View
     private TimeSpan? wheelReturnStart;
 
     private bool SupportsBounce => GetService(typeof(IDeviceInfo)) is IDeviceInfo
-        { Platform: DevicePlatform.iOS or DevicePlatform.MacOS, PrefersReducedMotion: false };
+        { Platform: DevicePlatform.iOS or DevicePlatform.MacOS or DevicePlatform.Android, PrefersReducedMotion: false };
+
+    private nfloat bounceResistance = 0.55f;
 
     // Scrollbar appearance
     /// <summary>Width of the scrollbar track in points.</summary>
@@ -132,11 +148,11 @@ public partial class ScrollView : View
     }
 
     /// <summary>Number of child views.</summary>
-    public override int Count => scrollContent is not null ? 1 : 0;
+    public override int Count => (scrollContent is not null ? 1 : 0) + (overlay is not null ? 1 : 0);
 
     /// <summary>Gets the child view at the given index.</summary>
-    public override View this[int index] => index == 0 && scrollContent is not null
-        ? scrollContent : throw new IndexOutOfRangeException();
+    public override View this[int index] => index == 0 && scrollContent is not null ? scrollContent :
+        index == (scrollContent is null ? 0 : 1) && overlay is not null ? overlay : throw new IndexOutOfRangeException();
 
     /// <inheritdoc/>
     protected override void OnActivate()
@@ -181,6 +197,7 @@ public partial class ScrollView : View
 
         nfloat w = nfloat.IsFinite(available.Width)  ? available.Width  : contentWidth;
         nfloat h = nfloat.IsFinite(available.Height) ? available.Height : contentHeight;
+        overlay?.Measure((w, h), context);
         return (w, h);
     }
 
@@ -199,6 +216,8 @@ public partial class ScrollView : View
             var contentRect = new Rect(0, 0, contentWidth, contentHeight);
             scrollContent.Arrange(contentRect, context, new Size(contentWidth, contentHeight));
         }
+        overlay?.Arrange((0, 0, rect.Width, rect.Height), context);
+        NotifyScrollChanged();
     }
 
     private void ClampScrollOffset()
@@ -299,6 +318,7 @@ public partial class ScrollView : View
             DrawScrollbarIndicatorH(context);
         }
 
+        if (overlay is not null) RenderChild(context, overlay);
         context.Restore();
         // base.RenderCore intentionally NOT called — would re-render content
     }
@@ -381,6 +401,7 @@ public partial class ScrollView : View
 
                 tentative = false;
                 elastic = SupportsBounce;
+                bounceResistance = GetService(typeof(IDeviceInfo)) is IDeviceInfo { Platform: DevicePlatform.Android } ? 0.35f : 0.55f;
                 clock = GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
                 springX = springY = null;
                 returnX = returnY = wheelReturn = false;
@@ -599,6 +620,7 @@ public partial class ScrollView : View
         if (e.Handled || (activePointer != -1 && gestureMode == ScrollGestureMode.Scrolling)) return;
         activePointer = -1;
         elastic = SupportsBounce;
+        bounceResistance = GetService(typeof(IDeviceInfo)) is IDeviceInfo { Platform: DevicePlatform.Android } ? 0.35f : 0.55f;
         var changed = false;
         if (Direction != ScrollDirection.Horizontal && e.Delta.Y != 0)
         {
@@ -668,7 +690,16 @@ public partial class ScrollView : View
     private void InvalidateScrollOffset()
     {
         scrollContent?.UpdateTransform();
+        NotifyScrollChanged();
         this.InvalidateHitTest();
         this.InvalidateRender();
+    }
+
+    private void NotifyScrollChanged()
+    {
+        var offset = ScrollOffset;
+        if (offset == lastNotifiedOffset) return;
+        lastNotifiedOffset = offset;
+        ScrollChanged?.Invoke(offset);
     }
 }

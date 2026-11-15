@@ -15,8 +15,8 @@ namespace Xui.Core.Canvas.Composition;
 /// <para>
 /// Immediate and export contexts can implement the same declarations without constructing this
 /// tree. SVG currently emits groups directly. iOS presents the retained tree using UIKit views,
-/// effect views and MTKView GPU surfaces. Windows currently draws groups immediately; Android
-/// composition is not implemented yet. Native visuals or offscreen GPU textures are possible
+/// effect views and MTKView GPU surfaces. Android presents backed graphics groups through Java
+/// views and hardware display lists, with Vulkan presentation for GPU leaves. Windows currently draws groups immediately. Native visuals or offscreen GPU textures are possible
 /// backend strategies, not capabilities guaranteed by this base class. GPU surface support and
 /// the need for a portable fallback are reported by ICompositionContext.GpuSurface.
 /// </para>

@@ -9,7 +9,7 @@ using static Xui.Runtime.IOS.Foundation;
 
 namespace Xui.Runtime.IOS.Actual;
 
-/// <summary>Resolves and retains a bounded set of CoreText fonts for an iOS drawing context.</summary>
+/// <summary>Retains bounded caches of CoreText fonts and string measurements for an iOS context.</summary>
 internal sealed class IOSTextMeasureContext : ITextMeasureContext, IDisposable
 {
     private const int FontCacheCapacity = 64;
@@ -29,6 +29,7 @@ internal sealed class IOSTextMeasureContext : ITextMeasureContext, IDisposable
 
     internal nint nsFont;
     private readonly FontMetricsCache fontMetrics = new();
+    private readonly TextMetricsCache measurements = new();
     private readonly CoreTextFontCache coreTextFonts = new();
     private readonly IOSFontRegistrar fontRegistrar;
     private Font currentFont;
@@ -41,13 +42,24 @@ internal sealed class IOSTextMeasureContext : ITextMeasureContext, IDisposable
     public void Dispose()
     {
         nsFont = 0;
+        measurements.Clear();
+        fontMetrics.Clear();
         coreTextFonts.Dispose();
     }
 
     public TextMetrics MeasureText(string text)
     {
+        // CoreText metrics here are alphabetic-baseline relative; drawing applies
+        // the requested baseline later. Check before creating any native objects.
+        if (hasCurrentFont && nsFont != 0 &&
+            measurements.TryGet(text, in currentFont, TextAlign, TextBaseline.Alphabetic, out var cached))
+            return cached;
+
         using var nsStringRef = new CFStringRef(text);
-        return MeasureTextCore(nsStringRef);
+        var measured = MeasureTextCore(nsStringRef);
+        if (hasCurrentFont && nsFont != 0)
+            measurements.Set(text, in currentFont, TextAlign, TextBaseline.Alphabetic, in measured);
+        return measured;
     }
 
     public TextMetrics MeasureText(ReadOnlySpan<char> text)

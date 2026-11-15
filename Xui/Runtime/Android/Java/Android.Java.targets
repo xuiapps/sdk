@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <XuiAndroidJavaDir>$(MSBuildThisFileDirectory)</XuiAndroidJavaDir>
+    <XuiAndroidJavaOutput>$(MSBuildProjectDirectory)/obj/xui-java</XuiAndroidJavaOutput>
+  </PropertyGroup>
+  <ItemGroup>
+    <XuiJavaSource Include="$(XuiAndroidJavaDir)xui/runtime/*.java" />
+    <AndroidLibrary Include="$(XuiAndroidJavaOutput)/xui-android.jar" Bind="false" />
+  </ItemGroup>
+  <Target Name="BuildXuiAndroidJava" BeforeTargets="_BuildLibraryImportsCache;CoreCompile"
+          DependsOnTargets="_ResolveAndroidTooling"
+          Inputs="@(XuiJavaSource);$(MSBuildThisFileFullPath)"
+          Outputs="$(XuiAndroidJavaOutput)/xui-android.jar">
+    <MakeDir Directories="$(XuiAndroidJavaOutput)/classes" />
+    <Exec Command="&quot;$(JavaSdkDirectory)/bin/javac&quot; --release 17 -cp &quot;$(AndroidSdkDirectory)/platforms/android-$(_AndroidApiLevel)/android.jar&quot; -d &quot;$(XuiAndroidJavaOutput)/classes&quot; @(XuiJavaSource->'&quot;%(Identity)&quot;', ' ')" />
+    <Exec Command="&quot;$(JavaSdkDirectory)/bin/jar&quot; cf &quot;$(XuiAndroidJavaOutput)/xui-android.jar&quot; -C &quot;$(XuiAndroidJavaOutput)/classes&quot; ." />
+  </Target>
+</Project>
