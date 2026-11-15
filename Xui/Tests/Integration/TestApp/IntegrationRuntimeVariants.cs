@@ -1,4 +1,5 @@
 using Xui.Core.Abstract;
+using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Middleware.EmulatorLegacy.Devices;
 using Xui.Runtime.Test;
@@ -33,7 +34,8 @@ public static class IntegrationRuntimeVariants
         Size desktopSize,
         TestRuntimeVariant runtimeVariant,
         string callerPath,
-        string testName)
+        string testName,
+        IFontSource? fontSource = null)
         where TApplication : Application
         where TWindow : Window
     {
@@ -59,7 +61,8 @@ public static class IntegrationRuntimeVariants
             emulatorDevice: emulatorDevice,
             snapshotSet: snapshotSet,
             callerPath: callerPath,
-            testName: testName);
+            testName: testName,
+            fontSource: fontSource);
     }
 
     private static string? ResolveSnapshotSet(TestRuntimeVariant runtimeVariant) =>
