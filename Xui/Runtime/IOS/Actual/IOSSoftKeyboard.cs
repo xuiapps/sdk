@@ -535,7 +535,11 @@ public sealed unsafe class IOSSoftKeyboard : UIView
     {
         var k = K(self);
         if (!k.ReadRange(range, out var r)) return default;
-        var start = k.NativeCaret(r.Start); var end = k.NativeCaret(r.End);
+        var start = k.NativeCaret(r.Start);
+        // Give UIKit a nonzero range anchor when selection collapses to a caret.
+        if (r.Length == 0)
+            return new(start.Origin.X + start.Size.Width / 2 - 3, start.Origin.Y, 6, start.Size.Height);
+        var end = k.NativeCaret(r.End);
         return new(start.Origin.X, start.Origin.Y, end.Origin.X - start.Origin.X, start.Size.Height);
     }
     private static nint SelectionRects(nint self, nint sel, nint range)
@@ -547,15 +551,15 @@ public sealed unsafe class IOSSoftKeyboard : UIView
     }
     private static nint Closest(nint self, nint sel, CGPoint point)
     {
-        var k = K(self); return k.Editor is null ? 0
-            : k.PositionAt(k.selectionDrag.ConstrainPosition(k.Editor, k.Hit(point)));
+        // UIKit also hit-tests the stationary endpoint while dragging. Geometry
+        // queries must stay independent of the drag; clamp only in SetSelected.
+        var k = K(self); return k.Editor is null ? 0 : k.PositionAt(k.Hit(point));
     }
     private static nint ClosestInRange(nint self, nint sel, CGPoint point, nint range)
     {
         var k = K(self);
         if (!k.ReadRange(range, out var r)) return 0;
-        int position = k.selectionDrag.ConstrainPosition(k.Editor!, Math.Clamp(k.Hit(point), r.Start, r.End));
-        return position >= r.Start && position <= r.End ? k.PositionAt(position) : 0;
+        return k.PositionAt(Math.Clamp(k.Hit(point), r.Start, r.End));
     }
     private static nint CharacterAtPoint(nint self, nint sel, CGPoint point)
     {

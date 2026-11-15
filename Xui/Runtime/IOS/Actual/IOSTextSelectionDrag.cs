@@ -18,7 +18,9 @@ internal struct IOSTextSelectionDrag
 
     internal void End() => active = false;
 
-    internal int ConstrainPosition(TextEditingState editor, int position)
+    // Applies only to the moving endpoint of a proposed selection, never to
+    // UITextInput geometry queries (which may ask about the stationary endpoint).
+    private int ConstrainPosition(TextEditingState editor, int position)
     {
         if (!active) return position;
         return leading ? Math.Min(position, editor.Previous(anchor))
