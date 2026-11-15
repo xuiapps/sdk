@@ -78,6 +78,7 @@ internal sealed class MobileDemoMenu : MobileSurfaceStack
     {
         var panel = AddPanel("Performance");
         panel.AddExample<Pages.Market.MarketExample>("MarketPulse", "Market Pulse · 5,000 rows", MobileDemoIcon.Market);
+        panel.AddExample<Pages.Floorplan.FloorplanExample>("OfficeFloorplan", "Office Floorplan · Vector map", MobileDemoIcon.Basics);
     }
 
     private MobileDemoCategoryPanel AddPanel(string heading)

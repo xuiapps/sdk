@@ -22,4 +22,7 @@
     <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Assets/Floorplan/Office.svg" LogicalName="TestApp.Floorplan.Office.svg" />
+  </ItemGroup>
 </Project>

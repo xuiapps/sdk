@@ -1,0 +1,23 @@
+Comprehensive Commercial Office Layout (c10145)
+Publisher: Open CAD Library
+Source: https://opencadlibrary.com/c10145-commercial-office-layout-cad-block/
+License checked: 2026-11-14
+
+The publisher labels this asset Creative Commons CC0 License.
+CC0 reference: https://creativecommons.org/publicdomain/zero/1.0/
+The source page permits copying, modification, distribution, and commercial use.
+No individual author is identified on the asset page.
+
+Used in Floorplan in a Nutshell as the source/reference for the semantic vector
+floorplan and reusable furniture models. Originally developed in Xui TestApp.
+
+floor-plan.dwg and preview.webp have shorter local filenames; their bytes
+are unchanged. See provenance.json for original filenames, URLs, and hashes.
+The explorer (index.html), editor (editor.html), SVGs and scripts were authored
+as part of Xui and moved into this repository. Retain LICENSE.md and NOTICE.
+The SVG paths are interpreted reconstructions, not extracted DWG geometry.
+The editor can display the unchanged WEBP as a reference overlay.
+
+TestApp uses Office.svg, assembled from the standalone repository for its
+Floorplan performance example. No DWG or raster is loaded at runtime.
+Source revision: 723c9b1264a74540f94150d5ec92034da5c6989a
