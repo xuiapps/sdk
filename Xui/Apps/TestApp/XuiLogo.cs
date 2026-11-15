@@ -7,6 +7,7 @@ namespace Xui.Apps.TestApp;
 internal sealed class XuiLogo
 {
     public static readonly XuiLogo Instance = new();
+    public static readonly Color AccentColor = new(0x8A05FFFF);
 
     public void Render(IContext context)
     {
@@ -24,7 +25,7 @@ internal sealed class XuiLogo
         context.SetFill(new LinearGradient(
             start: (10, 5),
             end: (54, 59),
-            gradient: [new(0, 0xD642CDFF), new(1, 0x8A05FFFF)]));
+            gradient: [new(0, 0xD642CDFF), new(1, AccentColor)]));
         context.FillRect((0, 0, 64, 64));
 
         context.SetFill(new LinearGradient(

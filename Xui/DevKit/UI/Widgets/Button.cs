@@ -178,6 +178,9 @@ public partial class Button : View, IDesignSystemChangeNotifications
         context.SetFill(color); context.Fill();
     }
 
+    /// <summary>The area available to the label, before applying the design system's padding.</summary>
+    protected virtual Rect LabelBounds => Frame;
+
     private void RenderLabel(IContext context)
     {
         context.SetFont(new Font(
@@ -189,14 +192,15 @@ public partial class Button : View, IDesignSystemChangeNotifications
         context.TextBaseline = TextBaseline.Top;
         context.SetFill(textColor);
 
+        var bounds = LabelBounds;
         var textMeasure = context.MeasureText(Text);
         var tx = LabelTextAlign switch
         {
-            TextAlign.Left or TextAlign.Start => this.Frame.X + paddingH,
-            TextAlign.Right or TextAlign.End => this.Frame.Right - paddingH - textMeasure.Size.Width,
-            _ => this.Frame.X + (this.Frame.Width - textMeasure.Size.Width) / 2,
+            TextAlign.Left or TextAlign.Start => bounds.X + paddingH,
+            TextAlign.Right or TextAlign.End => bounds.Right - paddingH - textMeasure.Size.Width,
+            _ => bounds.X + (bounds.Width - textMeasure.Size.Width) / 2,
         };
-        var ty = this.Frame.Y + (this.Frame.Height - textMeasure.Size.Height) / 2;
+        var ty = bounds.Y + (bounds.Height - textMeasure.Size.Height) / 2;
         context.FillText(Text, new Point(tx, ty));
     }
 

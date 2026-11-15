@@ -1,0 +1,10 @@
+<svg width="96" height="96" viewBox="-16 -16 96 96" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Match icon.square.svg in the central 64x64 visible area; extend the gradient into Android's overscan. -->
+    <linearGradient id="xui" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="64" y2="0" gradientTransform="rotate(64)">
+      <stop offset="0%" stop-color="#d642cd" />
+      <stop offset="100%" stop-color="#8a05FF" />
+    </linearGradient>
+  </defs>
+  <path d="M -16 -16 H 80 V 80 H -16 Z" fill="url(#xui)" />
+</svg>

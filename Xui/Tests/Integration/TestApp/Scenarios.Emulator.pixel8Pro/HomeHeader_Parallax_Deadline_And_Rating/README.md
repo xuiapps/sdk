@@ -4,7 +4,7 @@
 
 # Home header
 
-The header is an overlay inside the scroll gesture route. Pulling moves it at 60% of the content's displacement. After the first 20 points, it collapses into a toolbar; a partial collapse finishes with easing after 0.7 seconds. Heart, FPS and settings remain tappable in either layout.
+The header is an overlay inside the scroll gesture route. Pulling moves it at 60% of the content's displacement. From offset 75 to 225 it collapses into a toolbar; the 0.7-second deadline starts a 0.56-second eased finish. Returning keeps the toolbar pinned until offset 175, then expands fully by offset 25, with the same deadline and easing. Expanded elements can move above the viewport. Heart, FPS and settings remain tappable in either layout.
 
 ### 01. Expanded
 
@@ -26,6 +26,10 @@ The header is an overlay inside the scroll gesture route. Pulling moves it at 60
 
 <img src="./05.Rating.Render.svg" alt="05. Rating expected" />
 
-### 06. Returned
+### 06. PartlyExpanded
 
-<img src="./06.Returned.Render.svg" alt="06. Returned expected" />
+<img src="./06.PartlyExpanded.Render.svg" alt="06. PartlyExpanded expected" />
+
+### 07. Returned
+
+<img src="./07.Returned.Render.svg" alt="07. Returned expected" />

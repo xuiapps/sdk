@@ -16,8 +16,6 @@ public class XuiActivity : global::Android.App.Activity, IServiceProvider
         base.OnCreate(savedInstanceState);
         Window!.SetFlags(global::Android.Views.WindowManagerFlags.HardwareAccelerated,
             global::Android.Views.WindowManagerFlags.HardwareAccelerated);
-        if (OperatingSystem.IsAndroidVersionAtLeast(30) && !OperatingSystem.IsAndroidVersionAtLeast(35))
-            Window.SetDecorFitsSystemWindows(false);
         JniEnvironment.References.GetJavaVM(out var vm);
         window = new AndroidWindow(vm, Handle) { HostServices = this };
         haptics = new AndroidHapticFeedback(Window.DecorView);

@@ -11,9 +11,9 @@
     <clipPath id="clip1">
       <path d="M 0 0 H 393 A 0 0 0 0 1 393 0 V 852 A 0 0 0 0 1 393 852 H 0 A 0 0 0 0 1 0 852 V 0 A 0 0 0 0 1 0 0 Z " clip-rule="nonzero" />
     </clipPath>
-    <filter id="surfaceShadow1" filterUnits="userSpaceOnUse" x="-2" y="268.57" width="397" height="198" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="surfaceShadow2" filterUnits="userSpaceOnUse" x="-2" y="497.14" width="397" height="198" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="surfaceShadow3" filterUnits="userSpaceOnUse" x="-2" y="725.71" width="397" height="152" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="surfaceShadow1" filterUnits="userSpaceOnUse" x="-2" y="310.57" width="397" height="198" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="surfaceShadow2" filterUnits="userSpaceOnUse" x="-2" y="539.14" width="397" height="198" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="surfaceShadow3" filterUnits="userSpaceOnUse" x="-2" y="767.71" width="397" height="152" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
     <clipPath id="clip2">
       <path d="M 0 32 C 0 4.16, 4.16 0, 32 0 C 59.84 0, 64 4.16, 64 32 C 64 59.84, 59.84 64, 32 64 C 4.16 64, 0 59.84, 0 32 Z " clip-rule="nonzero" />
     </clipPath>
@@ -36,43 +36,122 @@
               <g transform="translate(0,59)">
                 <g>
                   <g>
-                    <text x="48" y="256" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Canvas</text>
+                    <text x="48" y="298" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Canvas</text>
                     <g>
-<rect x="16" y="286.57" width="361" height="162" rx="42" transform="translate(0 2)" fill="#000000" fill-opacity="0.06" filter="url(#surfaceShadow1)"/>
-<rect x="16" y="286.57" width="361" height="162" rx="42" fill="#FDFDFD" fill-opacity="1"/>
-<rect x="16.5" y="287.07" width="360" height="161" rx="41.5" fill="none" stroke="#BDBDBD" stroke-opacity="1" stroke-width="1"/>
-                      <text x="48" y="312.1" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Canvas Drawing</text>
-                      <text x="48" y="358.1" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Canvas Animations</text>
-                      <text x="48" y="404.1" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Text Metrics</text>
+<rect x="16" y="328.57" width="361" height="162" rx="42" transform="translate(0 2)" fill="#000000" fill-opacity="0.06" filter="url(#surfaceShadow1)"/>
+<rect x="16" y="328.57" width="361" height="162" rx="42" fill="#FDFDFD" fill-opacity="1"/>
+<rect x="16.5" y="329.07" width="360" height="161" rx="41.5" fill="none" stroke="#BDBDBD" stroke-opacity="1" stroke-width="1"/>
+                      <text x="92" y="354.1" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Canvas Drawing</text>
+                      <g transform="translate(48,346.57)">
+                        <g transform="translate(2,2)">
+                          <g transform="scale(1.4,1.4)">
+                            <path d="M 3 13 L 14 2 L 18 6 L 7 17 L 2 18 L 3 13 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 12 4 L 16 8 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                          </g>
+                        </g>
+                      </g>
+                      <path d="M 332 357.57 L 337 362.57 L 332 367.57 " fill="none" stroke="#8A05FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      <text x="92" y="400.1" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Canvas Animations</text>
+                      <g transform="translate(48,392.57)">
+                        <g transform="translate(2,2)">
+                          <g transform="scale(1.4,1.4)">
+                            <path d="M 10 17 C 7 14, 1 10, 2 6 C 3 1, 8 2, 10 5 C 12 2, 17 1, 18 6 C 19 10, 13 14, 10 17 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                          </g>
+                        </g>
+                      </g>
+                      <path d="M 332 403.57 L 337 408.57 L 332 413.57 " fill="none" stroke="#8A05FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      <text x="92" y="446.1" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Text Metrics</text>
+                      <g transform="translate(48,438.57)">
+                        <g transform="translate(2,2)">
+                          <g transform="scale(1.4,1.4)">
+                            <path d="M 4 13 L 9 2 L 14 13 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 6 9 L 12 9 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 2 16 L 2 18 L 18 18 L 18 16 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                          </g>
+                        </g>
+                      </g>
+                      <path d="M 332 449.57 L 337 454.57 L 332 459.57 " fill="none" stroke="#8A05FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </g>
                   </g>
                   <g>
-                    <text x="48" y="484.57" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Layout</text>
+                    <text x="48" y="526.57" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Layout</text>
                     <g>
-<rect x="16" y="515.14" width="361" height="162" rx="42" transform="translate(0 2)" fill="#000000" fill-opacity="0.06" filter="url(#surfaceShadow2)"/>
-<rect x="16" y="515.14" width="361" height="162" rx="42" fill="#FDFDFD" fill-opacity="1"/>
-<rect x="16.5" y="515.64" width="360" height="161" rx="41.5" fill="none" stroke="#BDBDBD" stroke-opacity="1" stroke-width="1"/>
-                      <text x="48" y="540.67" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Basics</text>
-                      <text x="48" y="586.67" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Grid Layout</text>
-                      <text x="48" y="632.67" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Flexbox Layout</text>
+<rect x="16" y="557.14" width="361" height="162" rx="42" transform="translate(0 2)" fill="#000000" fill-opacity="0.06" filter="url(#surfaceShadow2)"/>
+<rect x="16" y="557.14" width="361" height="162" rx="42" fill="#FDFDFD" fill-opacity="1"/>
+<rect x="16.5" y="557.64" width="360" height="161" rx="41.5" fill="none" stroke="#BDBDBD" stroke-opacity="1" stroke-width="1"/>
+                      <text x="92" y="582.67" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Basics</text>
+                      <g transform="translate(48,575.14)">
+                        <g transform="translate(2,2)">
+                          <g transform="scale(1.4,1.4)">
+                            <path d="M 3.5 2 H 16.5 A 1.5 1.5 0 0 1 18 3.5 V 16.5 A 1.5 1.5 0 0 1 16.5 18 H 3.5 A 1.5 1.5 0 0 1 2 16.5 V 3.5 A 1.5 1.5 0 0 1 3.5 2 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 2 7 L 18 7 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 8 7 L 8 18 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                          </g>
+                        </g>
+                      </g>
+                      <path d="M 332 586.14 L 337 591.14 L 332 596.14 " fill="none" stroke="#8A05FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      <text x="92" y="628.67" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Grid Layout</text>
+                      <g transform="translate(48,621.14)">
+                        <g transform="translate(2,2)">
+                          <g transform="scale(1.4,1.4)">
+                            <path d="M 3.5 2 H 6.5 A 1.5 1.5 0 0 1 8 3.5 V 6.5 A 1.5 1.5 0 0 1 6.5 8 H 3.5 A 1.5 1.5 0 0 1 2 6.5 V 3.5 A 1.5 1.5 0 0 1 3.5 2 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 13.5 2 H 16.5 A 1.5 1.5 0 0 1 18 3.5 V 6.5 A 1.5 1.5 0 0 1 16.5 8 H 13.5 A 1.5 1.5 0 0 1 12 6.5 V 3.5 A 1.5 1.5 0 0 1 13.5 2 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 3.5 12 H 6.5 A 1.5 1.5 0 0 1 8 13.5 V 16.5 A 1.5 1.5 0 0 1 6.5 18 H 3.5 A 1.5 1.5 0 0 1 2 16.5 V 13.5 A 1.5 1.5 0 0 1 3.5 12 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 13.5 12 H 16.5 A 1.5 1.5 0 0 1 18 13.5 V 16.5 A 1.5 1.5 0 0 1 16.5 18 H 13.5 A 1.5 1.5 0 0 1 12 16.5 V 13.5 A 1.5 1.5 0 0 1 13.5 12 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                          </g>
+                        </g>
+                      </g>
+                      <path d="M 332 632.14 L 337 637.14 L 332 642.14 " fill="none" stroke="#8A05FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      <text x="92" y="674.67" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Flexbox Layout</text>
+                      <g transform="translate(48,667.14)">
+                        <g transform="translate(2,2)">
+                          <g transform="scale(1.4,1.4)">
+                            <path d="M 3.5 3 H 4.5 A 1.5 1.5 0 0 1 6 4.5 V 15.5 A 1.5 1.5 0 0 1 4.5 17 H 3.5 A 1.5 1.5 0 0 1 2 15.5 V 4.5 A 1.5 1.5 0 0 1 3.5 3 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 10.5 3 H 16.5 A 1.5 1.5 0 0 1 18 4.5 V 7.5 A 1.5 1.5 0 0 1 16.5 9 H 10.5 A 1.5 1.5 0 0 1 9 7.5 V 4.5 A 1.5 1.5 0 0 1 10.5 3 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 10.5 12 H 16.5 A 1.5 1.5 0 0 1 18 13.5 V 15.5 A 1.5 1.5 0 0 1 16.5 17 H 10.5 A 1.5 1.5 0 0 1 9 15.5 V 13.5 A 1.5 1.5 0 0 1 10.5 12 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                          </g>
+                        </g>
+                      </g>
+                      <path d="M 332 678.14 L 337 683.14 L 332 688.14 " fill="none" stroke="#8A05FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </g>
                   </g>
                   <g>
-                    <text x="48" y="713.14" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Input</text>
+                    <text x="48" y="755.14" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Input</text>
                     <g>
-<rect x="16" y="743.71" width="361" height="116" rx="42" transform="translate(0 2)" fill="#000000" fill-opacity="0.06" filter="url(#surfaceShadow3)"/>
-<rect x="16" y="743.71" width="361" height="116" rx="42" fill="#FDFDFD" fill-opacity="1"/>
-<rect x="16.5" y="744.21" width="360" height="115" rx="41.5" fill="none" stroke="#BDBDBD" stroke-opacity="1" stroke-width="1"/>
-                      <text x="48" y="769.24" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Gestures</text>
-                      <text x="48" y="815.24" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Text Input</text>
+<rect x="16" y="785.71" width="361" height="116" rx="42" transform="translate(0 2)" fill="#000000" fill-opacity="0.06" filter="url(#surfaceShadow3)"/>
+<rect x="16" y="785.71" width="361" height="116" rx="42" fill="#FDFDFD" fill-opacity="1"/>
+<rect x="16.5" y="786.21" width="360" height="115" rx="41.5" fill="none" stroke="#BDBDBD" stroke-opacity="1" stroke-width="1"/>
+                      <text x="92" y="811.24" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Gestures</text>
+                      <g transform="translate(48,803.71)">
+                        <g transform="translate(2,2)">
+                          <g transform="scale(1.4,1.4)">
+                            <path d="M 4 12 L 8 16 L 8 6 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 8 6 C 8 3, 12 3, 12 6 L 12 10 L 16 11 L 15 18 L 8 18 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 2 6 L 2 2 L 6 2 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                          </g>
+                        </g>
+                      </g>
+                      <path d="M 332 814.71 L 337 819.71 L 332 824.71 " fill="none" stroke="#8A05FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      <text x="92" y="857.24" fill="#212121" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Text Input</text>
+                      <g transform="translate(48,849.71)">
+                        <g transform="translate(2,2)">
+                          <g transform="scale(1.4,1.4)">
+                            <path d="M 2.5 4 H 17.5 A 1.5 1.5 0 0 1 19 5.5 V 14.5 A 1.5 1.5 0 0 1 17.5 16 H 2.5 A 1.5 1.5 0 0 1 1 14.5 V 5.5 A 1.5 1.5 0 0 1 2.5 4 Z " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 5 8 L 10 8 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 5 12 L 9 12 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 14 7 L 14 13 " fill="none" stroke="#8A05FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                          </g>
+                        </g>
+                      </g>
+                      <path d="M 332 860.71 L 337 865.71 L 332 870.71 " fill="none" stroke="#8A05FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </g>
                   </g>
                 </g>
                 <g>
-                  <path d="M 389.5 4 H 389.5 A 1.5 1.5 0 0 1 391 5.5 V 376.04 A 1.5 1.5 0 0 1 389.5 377.54 H 389.5 A 1.5 1.5 0 0 1 388 376.04 V 5.5 A 1.5 1.5 0 0 1 389.5 4 Z " fill="#000000" fill-rule="nonzero" fill-opacity="0.35" />
+                  <path d="M 389.5 4 H 389.5 A 1.5 1.5 0 0 1 391 5.5 V 366.03 A 1.5 1.5 0 0 1 389.5 367.53 H 389.5 A 1.5 1.5 0 0 1 388 366.03 V 5.5 A 1.5 1.5 0 0 1 389.5 4 Z " fill="#000000" fill-rule="nonzero" fill-opacity="0.35" />
                 </g>
-                <g transform="translate(-24.56,-7) scale(1.13,1.13)">
-                  <g transform="translate(164.5,24)">
+                <g transform="translate(-24.56,-12.25) scale(1.13,1.13)">
+                  <g transform="translate(164.5,66)">
                     <g clip-path="url(#clip2)">
                       <rect x="0" y="0" width="64" height="64" fill="url(#grad1)" />
                       <path d="M 5 0 L 15 22 L 25 0 Z " fill="url(#grad2)" fill-rule="nonzero" />
@@ -85,33 +164,33 @@
                   </g>
                 </g>
                 <g>
-                  <text x="89.25" y="109.48" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" font-weight="700" xml:space="preserve">Xui SDK Examples</text>
+                  <text x="89.25" y="151.48" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" font-weight="700" xml:space="preserve">Xui SDK Examples</text>
                 </g>
                 <g>
-                  <path d="M 132.5 177 H 132.5 A 21 21 0 0 1 153.5 198 V 198 A 21 21 0 0 1 132.5 219 H 132.5 A 21 21 0 0 1 111.5 198 V 198 A 21 21 0 0 1 132.5 177 Z " fill="#EEF0F4" fill-rule="nonzero" />
-                  <g transform="translate(132.5,198)">
+                  <path d="M 132.5 219 H 132.5 A 21 21 0 0 1 153.5 240 V 240 A 21 21 0 0 1 132.5 261 H 132.5 A 21 21 0 0 1 111.5 240 V 240 A 21 21 0 0 1 132.5 219 Z " fill="#EEF0F4" fill-rule="nonzero" />
+                  <g transform="translate(132.5,240)">
                     <g transform="scale(0.82,0.82)">
                       <path d="M 0 10 C -22 -4, -8 -18, 0 -7 C 8 -18, 22 -4, 0 10 Z " fill="none" stroke="#242529" stroke-width="2" stroke-linejoin="round" />
                     </g>
                   </g>
                 </g>
                 <g>
-                  <path d="M 192.5 177 H 200.5 A 21 21 0 0 1 221.5 198 V 198 A 21 21 0 0 1 200.5 219 H 192.5 A 21 21 0 0 1 171.5 198 V 198 A 21 21 0 0 1 192.5 177 Z " fill="#EEF0F4" fill-rule="nonzero" />
-                  <text x="196.5" y="192" fill="#242529" text-anchor="middle" dominant-baseline="central" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">--</text>
-                  <text x="196.5" y="208" fill="#242529" text-anchor="middle" dominant-baseline="central" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">fps</text>
+                  <path d="M 192.5 219 H 200.5 A 21 21 0 0 1 221.5 240 V 240 A 21 21 0 0 1 200.5 261 H 192.5 A 21 21 0 0 1 171.5 240 V 240 A 21 21 0 0 1 192.5 219 Z " fill="#EEF0F4" fill-rule="nonzero" />
+                  <text x="196.5" y="234" fill="#242529" text-anchor="middle" dominant-baseline="central" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">--</text>
+                  <text x="196.5" y="250" fill="#242529" text-anchor="middle" dominant-baseline="central" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">fps</text>
                 </g>
                 <g>
-                  <path d="M 260.5 177 H 260.5 A 21 21 0 0 1 281.5 198 V 198 A 21 21 0 0 1 260.5 219 H 260.5 A 21 21 0 0 1 239.5 198 V 198 A 21 21 0 0 1 260.5 177 Z " fill="#EEF0F4" fill-rule="nonzero" />
-                  <path d="M 268.5 198 L 271.5 198 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 266.16 203.66 L 268.28 205.78 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 260.5 206 L 260.5 209 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 254.84 203.66 L 252.72 205.78 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 252.5 198 L 249.5 198 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 254.84 192.34 L 252.72 190.22 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 260.5 190 L 260.5 187 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 266.16 192.34 L 268.28 190.22 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 267.5 198 A 7 7 0 0 1 253.5 198 A 7 7 0 0 1 267.5 198 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
-                  <path d="M 263 198 A 2.5 2.5 0 0 1 258 198 A 2.5 2.5 0 0 1 263 198 " fill="#242529" fill-rule="nonzero" />
+                  <path d="M 260.5 219 H 260.5 A 21 21 0 0 1 281.5 240 V 240 A 21 21 0 0 1 260.5 261 H 260.5 A 21 21 0 0 1 239.5 240 V 240 A 21 21 0 0 1 260.5 219 Z " fill="#EEF0F4" fill-rule="nonzero" />
+                  <path d="M 268.5 240 L 271.5 240 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 266.16 245.66 L 268.28 247.78 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 260.5 248 L 260.5 251 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 254.84 245.66 L 252.72 247.78 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 252.5 240 L 249.5 240 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 254.84 234.34 L 252.72 232.22 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 260.5 232 L 260.5 229 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 266.16 234.34 L 268.28 232.22 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 267.5 240 A 7 7 0 0 1 253.5 240 A 7 7 0 0 1 267.5 240 " fill="none" stroke="#242529" stroke-width="2.5" stroke-linecap="round" />
+                  <path d="M 263 240 A 2.5 2.5 0 0 1 258 240 A 2.5 2.5 0 0 1 263 240 " fill="#242529" fill-rule="nonzero" />
                 </g>
               </g>
             </g>

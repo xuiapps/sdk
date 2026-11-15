@@ -69,6 +69,19 @@ public final class Host extends ViewGroup implements Choreographer.FrameCallback
             shadowAlphaScale=alpha>0?1/alpha:1;
         } finally {shadowTheme.recycle();}
         if(Build.VERSION.SDK_INT<29)throw new UnsupportedOperationException("Xui composition requires Android 10 (API 29)");
+        // Xui draws behind the status bar and handles the reported safe-area insets.
+        // Do not let icon appearance introduce a system contrast scrim or theme color.
+        Window window=activity.getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setStatusBarContrastEnforced(false);
+        if(Build.VERSION.SDK_INT>=30) window.setDecorFitsSystemWindows(false);
+        else {
+            View decor=window.getDecorView();
+            decor.setSystemUiVisibility(decor.getSystemUiVisibility() |
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        }
         setClipChildren(false);setClipToPadding(false);setFocusableInTouchMode(true);
         setOnApplyWindowInsetsListener((v,insets)->{
             if(Build.VERSION.SDK_INT>=30) {

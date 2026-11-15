@@ -47,7 +47,10 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" Condition="'$(TargetFramework)' != 'net10.0-android'" />
+		<!-- Android masks 108dp layers to a 72dp viewport. Keep the artwork at its original visible scale. -->
+		<MauiIcon Include="Resources\AppIcon\Android\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg"
+		          ForegroundScale="0.6666667" Condition="'$(TargetFramework)' == 'net10.0-android'" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />

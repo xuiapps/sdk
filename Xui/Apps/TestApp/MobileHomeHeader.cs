@@ -12,7 +12,7 @@ namespace Xui.Apps.TestApp;
 /// <summary>A viewport overlay whose retained children move without being measured again.</summary>
 internal sealed class MobileHomeHeader : ViewCollection
 {
-    public const int ExpandedHeight = 248;
+    public const int ExpandedHeight = 290;
     private readonly MobileFrameRate frameRate;
     private readonly MobileHomeHeaderMotion motion = new();
     private readonly object backdropKey = new();
@@ -85,11 +85,11 @@ internal sealed class MobileHomeHeader : ViewCollection
     protected override void ArrangeCore(Rect rect, IMeasureContext context)
     {
         var x = rect.Center.X;
-        logo.Arrange((x - 32, rect.Y + 24, 64, 64), context);
-        title.Arrange((rect.X, rect.Y + 104, rect.Width, 40), context);
-        heart.Arrange((x - 88, rect.Y + 174, 48, 48), context);
-        fps.Arrange((x - 28, rect.Y + 174, 56, 48), context);
-        settings.Arrange((x + 40, rect.Y + 174, 48, 48), context);
+        logo.Arrange((x - 32, rect.Y + 66, 64, 64), context);
+        title.Arrange((rect.X, rect.Y + 146, rect.Width, 40), context);
+        heart.Arrange((x - 88, rect.Y + 216, 48, 48), context);
+        fps.Arrange((x - 28, rect.Y + 216, 56, 48), context);
+        settings.Arrange((x + 40, rect.Y + 216, 48, 48), context);
         lastProgress = -1;
         UpdateTransforms();
     }
@@ -140,11 +140,14 @@ internal sealed class MobileHomeHeader : ViewCollection
             if (this.TryFindParent<RootView>(out var root))
                 top = GlobalToLocal(root.Window.DisplayArea.TopLeft).Y;
             var background = new Rect(Frame.X, top, Frame.Width, Frame.Y + 56 - top);
+            var nativeBlur = p >= 0.95f &&
+                GetService(typeof(IDeviceInfo)) is IDeviceInfo { Platform: DevicePlatform.iOS };
             using var surface = context.Group(new GroupOptions
             {
                 Key = backdropKey, ViewBacking = true, Bounds = background,
-                Backdrop = p >= 0.95f ? BackdropMaterial.Blur : BackdropMaterial.None,
-                Background = new Color(1, 1, 1, p * 0.85f), HasUpdates = true,
+                // Keep the native blur's backdrop clear; a background on this surface masks it.
+                Backdrop = nativeBlur ? BackdropMaterial.Blur : BackdropMaterial.None,
+                Background = nativeBlur ? null : new Color(1, 1, 1, p * 0.9f), HasUpdates = true,
             });
             if (surface.NeedsRedraw)
             {

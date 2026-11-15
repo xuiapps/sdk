@@ -31,6 +31,11 @@ public final class CompositionSmoke extends Activity {
         try {
             nativeHost=create(this);check(nativeHost!=0,"native host creation");
             host=(Host)((ViewGroup)findViewById(android.R.id.content)).getChildAt(0);
+            if(getIntent().getBooleanExtra("statusBarOnly",false)) {
+                handler.post(()->{try {statusBar();Log.i("XuiCompositionTest","PASS: status-bar foreground, transparency and contrast");}
+                    catch(Throwable failure){fail(failure);}});
+                return;
+            }
             ByteBuffer font=ByteBuffer.allocateDirect(128).order(ByteOrder.LITTLE_ENDIAN);
             font.putInt(1).putInt(10);for(char c:"sans-serif".toCharArray())font.putChar(c);
             font.putInt(400).putInt(0).putInt(0).flip();send(2,font);
@@ -53,6 +58,8 @@ public final class CompositionSmoke extends Activity {
                 android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS)!=0;
             else actual=(getWindow().getDecorView().getSystemUiVisibility() & android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR)!=0;
             check(actual==dark,"status-bar foreground appearance "+appearance);
+            check(getWindow().getStatusBarColor()==Color.TRANSPARENT,"status-bar stays transparent");
+            check(!getWindow().isStatusBarContrastEnforced(),"no system status-bar contrast scrim");
         }
     }
     private int attachAttempts;

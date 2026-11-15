@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 # Run component tests first to generate AndroidFixtures. Requires an ARM64 device/emulator.
-# Usage: sh run.sh SDK NDK JDK [fixtures-directory]
+# Usage: sh run.sh SDK NDK JDK [fixtures-directory] [status-bar-only: true|false]
 sdk=$1
 ndk=$2
 jdk=$3
@@ -32,7 +32,7 @@ JAVA_HOME="$jdk" "$buildtools/apksigner" sign --ks "$out/test.keystore" --ks-pas
 "$sdk/platform-tools/adb" install -r "$out/test.apk"
 "$sdk/platform-tools/adb" shell am force-stop xui.runtime.compositiontest
 "$sdk/platform-tools/adb" logcat -c
-"$sdk/platform-tools/adb" shell am start -W -n xui.runtime.compositiontest/xui.runtime.CompositionSmoke
+"$sdk/platform-tools/adb" shell am start -W -n xui.runtime.compositiontest/xui.runtime.CompositionSmoke --ez statusBarOnly "${5:-false}"
 # Bounded polling: failures include the complete Java stack in the log.
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
   "$sdk/platform-tools/adb" logcat -d -s XuiCompositionTest:I AndroidRuntime:E > "$out/result.log"

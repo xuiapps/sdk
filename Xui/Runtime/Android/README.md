@@ -75,7 +75,9 @@ Bridge operation 9 carries one int32 appearance (0 = Auto, 1 = Light, 2 = Dark).
 Android uses `WindowInsetsController` on API 30+ and the decor view's light-status-bar
 flag on API 29, preserving other system-bar flags. The host reapplies appearance
 when attached, focused, or reconfigured. The API leaves safe areas and backgrounds
-unchanged. iOS implements the same service through its root view controller;
+unchanged. The Java host configures edge-to-edge layout, a transparent status-bar
+background, and disables the system status-bar contrast scrim, including on API 29.
+iOS implements the same service through its root view controller;
 the emulator renders the selected foreground and desktop hosts omit the service.
 
 ## Vulkan GPU surfaces

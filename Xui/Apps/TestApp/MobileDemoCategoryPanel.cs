@@ -28,12 +28,13 @@ internal sealed class MobileDemoCategoryPanel : VerticalStack
         });
     }
 
-    public void AddExample<TExample>(string id, string text)
+    public void AddExample<TExample>(string id, string text, MobileDemoIcon icon)
         where TExample : Example, new() =>
         items.Add(new MobileDemoButton<TExample>
         {
             Id = id,
             Text = text,
+            Icon = icon,
             Margin = (0, 0, 2, 0),
         });
 }
