@@ -18,6 +18,9 @@ public static partial class UIKit
         {
         }
 
+        public void SetNeedsStatusBarAppearanceUpdate() =>
+            objc_msgSend(this, new Sel("setNeedsStatusBarAppearanceUpdate"));
+
         public UIView View
         {
             get => Marshalling.Get<UIView>(ViewProp.Get(this));

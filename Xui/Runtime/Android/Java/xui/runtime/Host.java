@@ -25,6 +25,24 @@ public final class Host extends ViewGroup implements Choreographer.FrameCallback
     @Override public boolean onKeyDown(int code,KeyEvent event){return input.key(event)||super.onKeyDown(code,event);}
     @Override public boolean onCheckIsTextEditor(){return input.active();}
     @Override public InputConnection onCreateInputConnection(EditorInfo info){return input.connect(info);}
+    private int statusBarAppearance;
+    private void applyStatusBarAppearance() {
+        boolean dark=statusBarAppearance==2 || (statusBarAppearance==0 &&
+            (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)!=Configuration.UI_MODE_NIGHT_YES);
+        Window window=((Activity)getContext()).getWindow();
+        if(Build.VERSION.SDK_INT>=30) {
+            WindowInsetsController controller=window.getInsetsController();
+            if(controller!=null)controller.setSystemBarsAppearance(dark?WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS:0,
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+        } else {
+            View decor=window.getDecorView();
+            int flags=decor.getSystemUiVisibility();
+            decor.setSystemUiVisibility(dark?flags|View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR:flags&~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
+    }
+    @Override protected void onAttachedToWindow() {super.onAttachedToWindow();applyStatusBarAppearance();}
+    @Override protected void onConfigurationChanged(Configuration config) {super.onConfigurationChanged(config);applyStatusBarAppearance();}
+    @Override public void onWindowFocusChanged(boolean focused) {super.onWindowFocusChanged(focused);if(focused)applyStatusBarAppearance();}
     private boolean active;
     private long frame;
     private final SparseArray<Surface> nodes=new SparseArray<>();
@@ -150,6 +168,7 @@ public final class Host extends ViewGroup implements Choreographer.FrameCallback
             case 6:active(b.getInt()!=0);break;
             case 7:input.sync(b);break;
             case 8:input.keyboard(b.getInt()!=0);break;
+            case 9:{int appearance=b.getInt();if(appearance<0||appearance>2)throw new IllegalArgumentException("Invalid status-bar appearance");statusBarAppearance=appearance;applyStatusBarAppearance();break;}
             default:throw new IllegalArgumentException("Unknown bridge operation "+operation);
         }
     }

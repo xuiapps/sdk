@@ -15,7 +15,7 @@ public sealed class MobileTestAppShell : View, IFullScreenView
 
     public MobileTestAppShell(MobilePerformanceMetrics performanceMetrics)
     {
-        navigation = new MobileNavigation(new MobileHomePage(), performanceMetrics);
+        navigation = new MobileNavigation(new MobileHomePage(performanceMetrics.FrameRate), performanceMetrics);
         this.AddProtectedChild(navigation);
     }
 

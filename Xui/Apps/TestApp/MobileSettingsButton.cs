@@ -12,6 +12,12 @@ internal sealed class MobileSettingsButton : View
     public MobileSettingsButton() => Id = "Settings";
 
     private bool pressed;
+    private NFloat backgroundOpacity = 1;
+    public NFloat BackgroundOpacity
+    {
+        get => backgroundOpacity;
+        set => SetViewRenderProperty(ref backgroundOpacity, value);
+    }
 
     protected override Size MeasureCore(Size available, IMeasureContext context) => (48, 48);
 
@@ -38,11 +44,16 @@ internal sealed class MobileSettingsButton : View
 
     protected override void RenderCore(IContext context)
     {
-        var frame = Frame.Expand(-3);
-        context.BeginPath();
-        context.RoundRect(frame, frame.Height / 2);
-        context.SetFill(pressed ? new Color(0xD9DCE3FF) : new Color(0xEEF0F4FF));
-        context.Fill();
+        if (backgroundOpacity > 0 || pressed)
+        {
+            var frame = Frame.Expand(-3);
+            context.BeginPath();
+            context.RoundRect(frame, frame.Height / 2);
+            var background = pressed ? new Color(0xD9DCE3FF) : new Color(0xEEF0F4FF);
+            if (!pressed) background.Alpha *= backgroundOpacity;
+            context.SetFill(background);
+            context.Fill();
+        }
 
         var center = Frame.Center;
         context.SetStroke(new Color(0x242529FF));

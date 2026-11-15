@@ -25,6 +25,9 @@ public sealed class MobilePerformanceMetrics
         this.layoutInstruments = layoutInstruments;
     }
 
+    /// <summary>Low-cost cadence for the home badge, independent of diagnostic instrumentation.</summary>
+    public MobileFrameRate FrameRate { get; } = new();
+
     public double FramesPerSecond { get; private set; }
     public double DisplayLinkFramesPerSecond { get; private set; }
     public double LastFrameMilliseconds { get; private set; }

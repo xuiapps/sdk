@@ -64,6 +64,20 @@ platform Choreographer supplies frame times and display refresh rate. Pointer
 packets preserve IDs and distinguish down/up for the changed pointer, moves for
 other pointers, and cancellation for all contacts.
 
+## Status-bar appearance
+
+Resolve the optional window service `Xui.Core.Actual.IStatusBar` and set
+`Appearance` to `StatusBarAppearance.Auto`, `Light`, or `Dark` on the UI thread.
+Light/Dark describe the foreground icons and text, not the background. Auto
+follows the system light/dark theme; it does not inspect canvas pixels.
+
+Bridge operation 9 carries one int32 appearance (0 = Auto, 1 = Light, 2 = Dark).
+Android uses `WindowInsetsController` on API 30+ and the decor view's light-status-bar
+flag on API 29, preserving other system-bar flags. The host reapplies appearance
+when attached, focused, or reconfigured. The API leaves safe areas and backgrounds
+unchanged. iOS implements the same service through its root view controller;
+the emulator renders the selected foreground and desktop hosts omit the service.
+
 ## Vulkan GPU surfaces
 
 `GpuSurface` uses a Java `TextureView` only for placement and an Android presentation

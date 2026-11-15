@@ -62,7 +62,7 @@ internal sealed class EmulatorChromeRenderer
             (geometry.EmulatorRect.Center.X - 22f) / 2,
             (300 / 2f - 22f) / 2,
             Easing.EaseInOutSine(phoneToTabletT));
-        EmulatorWindow.ClockIcon.Instance.Render(ctx, (clockX, iconTop + 6f), clock.Now);
+        EmulatorWindow.ClockIcon.Instance.Render(ctx, (clockX, iconTop + 6f), clock.Now, statusBarStyle.LightForeground);
 
         NFloat instrumentsX = NFloat.Lerp(
             geometry.EmulatorRect.Center.X + 45f + (geometry.EmulatorRect.Center.X - 45f - 22f) / 2f,
@@ -72,15 +72,15 @@ internal sealed class EmulatorChromeRenderer
         EmulatorWindow.SignalStrengthIcon.Instance.Render(
             ctx,
             (instrumentsX - 12f - 8f, iconTop + 19.5f),
-            statusBarStyle.SignalStrength ?? 0.67f);
+            statusBarStyle.SignalStrength ?? 0.67f, statusBarStyle.LightForeground);
         EmulatorWindow.BatteryIcon.Instance.Render(
             ctx,
             (instrumentsX - 8f, iconTop + 8.5f),
-            statusBarStyle.BatteryLevel ?? 0.65f);
+            statusBarStyle.BatteryLevel ?? 0.65f, statusBarStyle.LightForeground);
         EmulatorWindow.FiveGIcon.Instance.Render(
             ctx,
             (instrumentsX + 36f - 8f, iconTop + 6f),
-            statusBarStyle.NetworkText ?? "5G");
+            statusBarStyle.NetworkText ?? "5G", statusBarStyle.LightForeground);
 
         // Menu Handle
         EmulatorWindow.MenuHandle.Instance.Render(ctx, (

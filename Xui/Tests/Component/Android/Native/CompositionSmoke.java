@@ -42,9 +42,23 @@ public final class CompositionSmoke extends Activity {
         } catch(Throwable failure) {fail(failure);}
     }
     private Surface child() {return (Surface)((Surface)host.getChildAt(0)).getChildAt(0);}
+    private void statusBar() {
+        ByteBuffer packet=ByteBuffer.allocateDirect(4).order(ByteOrder.LITTLE_ENDIAN);
+        for(int appearance:new int[]{1,2,0}) {
+            packet.clear();packet.putInt(appearance).flip();send(9,packet);
+            boolean dark=appearance==2 || (appearance==0 &&
+                (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)!=android.content.res.Configuration.UI_MODE_NIGHT_YES);
+            boolean actual;
+            if(Build.VERSION.SDK_INT>=30) actual=(getWindow().getInsetsController().getSystemBarsAppearance() &
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS)!=0;
+            else actual=(getWindow().getDecorView().getSystemUiVisibility() & android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR)!=0;
+            check(actual==dark,"status-bar foreground appearance "+appearance);
+        }
+    }
     private int attachAttempts;
     private void move() {
         try {
+            statusBar();
             Surface node=child();
             if((!node.isAttachedToWindow()||node.player.replayCount==0)&&attachAttempts++<100){handler.postDelayed(this::move,100);return;}
             check(node.isHardwareAccelerated(),"hardware canvas required");

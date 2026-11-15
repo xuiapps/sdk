@@ -13,6 +13,7 @@ namespace Xui.Apps.TestApp;
 internal sealed class MobileHomeHeader : ViewCollection
 {
     public const int ExpandedHeight = 248;
+    private readonly MobileFrameRate frameRate;
     private readonly MobileHomeHeaderMotion motion = new();
     private readonly object backdropKey = new();
     private readonly TransformView logo;
@@ -26,8 +27,9 @@ internal sealed class MobileHomeHeader : ViewCollection
     private NFloat lastTranslation;
     private Rect lastFrame;
 
-    public MobileHomeHeader()
+    public MobileHomeHeader(MobileFrameRate frameRate)
     {
+        this.frameRate = frameRate;
         Id = "HomeHeader";
         logo = Wrap(new XuiLogoView { Id = "HomeLogo" });
         title = Wrap(new Label
@@ -100,7 +102,10 @@ internal sealed class MobileHomeHeader : ViewCollection
         lastTranslation = motion.Translation;
         lastFrame = Frame;
         var p = Easing.EaseInOutCubic(motion.Progress);
-        Move(logo, (Frame.X + 26, Frame.Y + 28), 28f / 64, p);
+        Move(logo, (Frame.X + 26, Frame.Y + 28), 34f / 64, p, 1.125f);
+        ((MobileHomeActionButton)heart.Content!).BackgroundOpacity = 1 - p;
+        ((MobileHomeActionButton)fps.Content!).BackgroundOpacity = 1 - p;
+        ((MobileSettingsButton)settings.Content!).BackgroundOpacity = 1 - p;
         Move(heart, (Frame.X + 68, Frame.Y + 28), 1, p);
         Move(fps, (Frame.Right - 80, Frame.Y + 28), 1, p);
         Move(settings, (Frame.Right - 28, Frame.Y + 28), 1, p);
@@ -112,10 +117,11 @@ internal sealed class MobileHomeHeader : ViewCollection
         InvalidateHitTest();
     }
 
-    private void Move(TransformView host, Point target, NFloat targetScale, NFloat p)
+    private void Move(TransformView host, Point target, NFloat targetScale, NFloat p, NFloat initialScale = default)
     {
         var source = host.Content!.Frame.Center;
-        var scale = 1 + (targetScale - 1) * p;
+        if (initialScale == 0) initialScale = 1;
+        var scale = initialScale + (targetScale - initialScale) * p;
         var x = source.X + (target.X - source.X) * p;
         var y = source.Y + motion.Translation + (target.Y - source.Y - motion.Translation) * p;
         host.Transform = new AffineTransform(scale, 0, 0, scale, x - source.X * scale, y - source.Y * scale);
@@ -156,15 +162,29 @@ internal sealed class MobileHomeHeader : ViewCollection
         ratingOverlay ??= GetService(typeof(IOverlay)) as IOverlay;
         if (ratingOverlay is null) return;
         var button = heart.Content!;
-        var anchor = new Rect(button.LocalToGlobal(button.Frame.TopLeft), button.Frame.Size);
+        var bounds = this.TryFindParent<RootView>(out var root) ? root.Window.DisplayArea :
+            new Rect(LocalToGlobal(Frame.TopLeft), Frame.Size);
+        var width = NFloat.Min(320, NFloat.Max(0, bounds.Width - 24));
+        var anchor = new Rect(bounds.Center.X - width / 2, button.LocalToGlobal(button.Frame.TopLeft).Y, width, button.Frame.Height);
         var panel = new MobileRatingPanel(rating, value => rating = value, CloseRating, GetService(typeof(IDesignSystem)) as IDesignSystem);
-        ratingOverlay.Show(panel, anchor, size: (NFloat.Min(320, Frame.Width - 24), 208));
+        ratingOverlay.Show(panel, anchor, size: (width, 208));
     }
 
     public void CloseRating() => ratingOverlay?.Close();
 
+    protected override void OnActivate()
+    {
+        base.OnActivate();
+        frameRate.Changed += UpdateFrameRate;
+        if (frameRate.IsWarmingUp) ((MobileHomeActionButton)fps.Content!).StartWarmup(frameRate);
+        if (frameRate.RoundedFramesPerSecond is { } rate) UpdateFrameRate(rate);
+    }
+
+    private void UpdateFrameRate(int rate) => ((MobileHomeActionButton)fps.Content!).SetFrameRate(rate);
+
     protected override void OnDeactivate()
     {
+        frameRate.Changed -= UpdateFrameRate;
         CloseRating();
         base.OnDeactivate();
     }

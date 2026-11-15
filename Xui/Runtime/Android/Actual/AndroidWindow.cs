@@ -18,7 +18,7 @@ using Xui.Runtime.Android.Interop;
 namespace Xui.Runtime.Android.Actual;
 
 /// <summary>Binding-free Android window. The host supplies only a borrowed JNI Activity handle.</summary>
-public sealed unsafe class AndroidWindow : IWindow, IDisposable
+public sealed unsafe class AndroidWindow : IWindow, IStatusBar, IDisposable
 {
     private sealed class EmptyServices : IServiceProvider { internal static readonly EmptyServices Instance = new(); public object? GetService(Type type) => null; }
     private readonly int ownerThread = Environment.CurrentManagedThreadId;
@@ -42,6 +42,21 @@ public sealed unsafe class AndroidWindow : IWindow, IDisposable
     /// <summary>Optional host services; the renderer itself has no managed Android dependencies.</summary>
     public IServiceProvider? HostServices { get; set; }
     public string Title { get => title; set => title = value; }
+    private StatusBarAppearance statusBarAppearance;
+    public StatusBarAppearance Appearance
+    {
+        get => statusBarAppearance;
+        set
+        {
+            if (value is < StatusBarAppearance.Auto or > StatusBarAppearance.Dark)
+                throw new ArgumentOutOfRangeException(nameof(value));
+            if (statusBarAppearance == value) return;
+            request.Clear(); request.Int((int)value);
+            AndroidBridge.Invoke(native, 9, request);
+            statusBarAppearance = value;
+        }
+    }
+
     private bool requireKeyboard;
     public bool RequireKeyboard
     {
@@ -70,7 +85,7 @@ public sealed unsafe class AndroidWindow : IWindow, IDisposable
     public void Show() => dirty = true;
     public void Invalidate() => dirty = true;
     object? IServiceProvider.GetService(Type type) => type == typeof(IContext) || type == typeof(IMeasureContext) ? context :
-        type == typeof(ITextMeasureContext) ? text : type == typeof(ITextInputSession) ? input : type == typeof(IGpuDevice) ? gpu?.IsSupported==true?gpu:null : type == typeof(IShaderBackend) ? shaderBackend : type == typeof(IDeviceInfo) ? device : type == typeof(IImagePipeline) ? resources : type == typeof(IImage) ? resources?.CreateImage() : HostServices?.GetService(type) ?? NextServiceProvider.GetService(type);
+        type == typeof(IStatusBar) ? this : type == typeof(ITextMeasureContext) ? text : type == typeof(ITextInputSession) ? input : type == typeof(IGpuDevice) ? gpu?.IsSupported==true?gpu:null : type == typeof(IShaderBackend) ? shaderBackend : type == typeof(IDeviceInfo) ? device : type == typeof(IImagePipeline) ? resources : type == typeof(IImage) ? resources?.CreateImage() : HostServices?.GetService(type) ?? NextServiceProvider.GetService(type);
     public void Close() => Dispose();
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

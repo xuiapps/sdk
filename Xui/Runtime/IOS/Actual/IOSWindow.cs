@@ -15,7 +15,7 @@ using Xui.Core.Math2D;
 
 namespace Xui.Runtime.IOS.Actual;
 
-public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITextMagnifier, Xui.Core.Actual.ITextInputSession
+public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.IStatusBar, Xui.Core.Actual.ITextMagnifier, Xui.Core.Actual.ITextInputSession
 {
     public static Sel AnimationFrameSel = new Sel("animationFrame:");
 
@@ -344,8 +344,24 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
         ObjC.objc_msgSend(this, new Sel("setHidden:"), true);
     }
 
+    private Xui.Core.Actual.StatusBarAppearance statusBarAppearance;
+    public Xui.Core.Actual.StatusBarAppearance Appearance
+    {
+        get => statusBarAppearance;
+        set
+        {
+            if (value is < Xui.Core.Actual.StatusBarAppearance.Auto or > Xui.Core.Actual.StatusBarAppearance.Dark)
+                throw new ArgumentOutOfRangeException(nameof(value));
+            if (statusBarAppearance == value) return;
+            statusBarAppearance = value;
+            RootViewController.SetNeedsStatusBarAppearanceUpdate();
+        }
+    }
+
     object? IServiceProvider.GetService(Type serviceType)
     {
+        if (serviceType == typeof(Xui.Core.Actual.IStatusBar))
+            return this;
         if (serviceType == typeof(Xui.Core.Actual.IHapticFeedback))
             return haptics;
         if (serviceType == typeof(Xui.Core.Actual.IVibration))

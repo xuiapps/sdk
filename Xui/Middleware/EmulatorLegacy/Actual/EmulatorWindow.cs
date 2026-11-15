@@ -17,7 +17,7 @@ namespace Xui.Middleware.EmulatorLegacy.Actual;
 /// window is deliberately hosted by <see cref="EmulatorHostWindow"/> and knows nothing
 /// about the virtual mobile window behind this adapter.
 /// </summary>
-public partial class EmulatorWindow : Xui.Core.Middleware.IWindow
+public partial class EmulatorWindow : Xui.Core.Middleware.IWindow, IStatusBar
 {
     private readonly LinkedEmulatorWindow emulator;
     private readonly EmulatorDeviceInfo deviceInfo;
@@ -60,6 +60,21 @@ public partial class EmulatorWindow : Xui.Core.Middleware.IWindow
         }
     }
 
+    private StatusBarAppearance statusBarAppearance;
+    public StatusBarAppearance Appearance
+    {
+        get => statusBarAppearance;
+        set
+        {
+            if (value is < StatusBarAppearance.Auto or > StatusBarAppearance.Dark)
+                throw new ArgumentOutOfRangeException(nameof(value));
+            if (statusBarAppearance == value) return;
+            statusBarAppearance = value;
+            phoneFrame?.InvalidateRender();
+            Invalidate();
+        }
+    }
+
     public bool RenderTouchIndicators { get; set; } = true;
 
     public EmulatorStatusBarStyle? StatusBarStyleOverride
@@ -96,6 +111,8 @@ public partial class EmulatorWindow : Xui.Core.Middleware.IWindow
 
     public object? GetService(Type serviceType)
     {
+        if (serviceType == typeof(IStatusBar))
+            return this;
         if (serviceType == typeof(IDeviceInfo))
             return deviceInfo;
 
@@ -131,7 +148,11 @@ public partial class EmulatorWindow : Xui.Core.Middleware.IWindow
 
     internal void RenderTouchIndicator(IContext context) => emulator.RenderTouchIndicator(context);
 
-    internal EmulatorStatusBarStyle ResolveStatusBarStyle() => statusBarStyleOverride ?? default;
+    internal EmulatorStatusBarStyle ResolveStatusBarStyle() => (statusBarStyleOverride ?? default) with
+    {
+        LightForeground = Appearance == StatusBarAppearance.Light ||
+            (Appearance == StatusBarAppearance.Auto && deviceInfo.ColorScheme == ColorScheme.Dark),
+    };
 
     internal IClock ResolveClock() =>
         NextServiceProvider.GetService<IClock>() ?? SystemClock.Default;

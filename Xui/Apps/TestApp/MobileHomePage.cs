@@ -6,10 +6,11 @@ namespace Xui.Apps.TestApp;
 /// <summary>The mobile home menu, with a header outside the content's scroll transform.</summary>
 internal sealed class MobileHomePage : ScrollView, INavigationAware
 {
-    private readonly MobileHomeHeader header = new();
+    private readonly MobileHomeHeader header;
 
-    public MobileHomePage()
+    public MobileHomePage(MobileFrameRate frameRate)
     {
+        header = new MobileHomeHeader(frameRate);
         Id = "HomeScroll";
         UseCompositionGroup = true;
         Direction = ScrollDirection.Vertical;
