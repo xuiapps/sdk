@@ -252,11 +252,12 @@ namespace Xui.Core.UI.Input
             // Route event to target
             BuildRoute(targetView);
 
+            PointerGestureBuffer potentialGestures = default;
             for (int i = _route.Count - 1; i >= 0; i--)
-                DispatchToView(_route[i], ref e, EventPhase.Tunnel);
+                DispatchToView(_route[i], ref e, EventPhase.Tunnel, potentialGestures);
 
             for (int i = 0; i < _route.Count; i++)
-                DispatchToView(_route[i], ref e, EventPhase.Bubble);
+                DispatchToView(_route[i], ref e, EventPhase.Bubble, potentialGestures);
 
             // System cancellation ends capture even for controls which only
             // reset their pressed state in LostCapture.
@@ -389,10 +390,10 @@ namespace Xui.Core.UI.Input
             return view;
         }
 
-        private static void DispatchToView(View view, ref PointerEventRef e, EventPhase phase)
+        private static void DispatchToView(View view, scoped ref PointerEventRef e, EventPhase phase, scoped Span<PointerGestureCandidate> potentialGestures = default)
         {
             var localState = e.State.WithPosition(view.GlobalToLocal(e.State.Position));
-            var localEvent = new PointerEventRef(
+            scoped PointerEventRef localEvent = new(
                 e.Type,
                 e.PointerId,
                 e.PersistentDeviceId,
@@ -401,6 +402,8 @@ namespace Xui.Core.UI.Input
                 e.CoalescedStates,
                 e.PredictedStates,
                 e.TextMeasure);
+            localEvent.PotentialGestureStorage = potentialGestures;
+            localEvent.CanPushPotentialGesture = phase == EventPhase.Tunnel && e.Type == PointerEventType.Down;
             view.OnPointerEvent(ref localEvent, phase);
         }
 

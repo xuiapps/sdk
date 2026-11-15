@@ -18,14 +18,17 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         FontSize = 17,
         FontWeight = FontWeight.SemiBold,
     };
-    private readonly Label description = new()
+    private readonly VerticalStack description = Description("Show live FPS, allocations,", "and managed heap size.");
+    private readonly Toggle performanceToggle = new() { Id = "PerformanceOverlayToggle" };
+    private readonly Label developerTitle = new()
     {
-        Text = "Show live FPS, frame allocations, and managed heap size.",
+        Text = "Developer & preview",
         FontFamily = "Inter",
-        FontSize = 13,
-        TextColor = new Color(0x5E6068FF),
+        FontSize = 17,
+        FontWeight = FontWeight.SemiBold,
     };
-    private readonly Toggle performanceToggle = new();
+    private readonly VerticalStack developerDescription = Description("Show developer and preview", "features in examples.");
+    private readonly Toggle developerToggle = new() { Id = "DeveloperFeaturesToggle" };
 
     public MobileSettingsPage()
     {
@@ -34,6 +37,14 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         Add(title);
         Add(description);
         Add(performanceToggle);
+        Add(developerTitle);
+        Add(developerDescription);
+        Add(developerToggle);
+        developerToggle.Changed = enabled =>
+        {
+            if (GetService(typeof(ExampleSettings)) is ExampleSettings settings)
+                settings.ShowDeveloperFeatures = enabled;
+        };
     }
 
     public PagePresentation Presentation => new();
@@ -43,6 +54,7 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         base.OnActivate();
         if (this.TryFindParent<MobileNavigation>(out var navigation))
             performanceToggle.IsOn = navigation.IsPerformanceOverlayEnabled;
+        developerToggle.IsOn = (GetService(typeof(ExampleSettings)) as ExampleSettings)?.ShowDeveloperFeatures ?? false;
     }
 
     protected override Size MeasureCore(Size available, IMeasureContext context)
@@ -51,6 +63,9 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         title.Measure((available.Width - 116, 24), context);
         description.Measure((available.Width - 116, 40), context);
         performanceToggle.Measure(available, context);
+        developerTitle.Measure((available.Width - 116, 48), context);
+        developerDescription.Measure((available.Width - 116, 48), context);
+        developerToggle.Measure(available, context);
         return available;
     }
 
@@ -60,7 +75,11 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         title.Arrange((rect.X + 20, rect.Y + 76, rect.Width - 116, 24), context);
         description.Arrange((rect.X + 20, rect.Y + 102, rect.Width - 116, 40), context);
         var toggleSize = performanceToggle.Measure(rect.Size, context);
-        performanceToggle.Arrange((rect.X + 20, rect.Y + 89, toggleSize.Width, toggleSize.Height), context);
+        performanceToggle.Arrange((rect.Right - 20 - toggleSize.Width, rect.Y + 89, toggleSize.Width, toggleSize.Height), context);
+        developerTitle.Arrange((rect.X + 20, rect.Y + 174, rect.Width - 116, 48), context);
+        developerDescription.Arrange((rect.X + 20, rect.Y + 200, rect.Width - 116, 48), context);
+        var developerSize = developerToggle.Measure(rect.Size, context);
+        developerToggle.Arrange((rect.Right - 20 - developerSize.Width, rect.Y + 187, developerSize.Width, developerSize.Height), context);
     }
 
     protected override void RenderCore(IContext context)
@@ -69,7 +88,21 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         this.RenderChild(context, title);
         this.RenderChild(context, description);
         this.RenderChild(context, performanceToggle);
+        this.RenderChild(context, developerTitle);
+        this.RenderChild(context, developerDescription);
+        this.RenderChild(context, developerToggle);
     }
+
+    private static VerticalStack Description(string first, string second) => new()
+    {
+        Content = [DescriptionLine(first), DescriptionLine(second)],
+    };
+
+    private static Label DescriptionLine(string text) => new()
+    {
+        Text = text, FontFamily = "Inter", FontSize = 13,
+        TextColor = new Color(0x5E6068FF),
+    };
 
     private void SetPerformanceOverlayEnabled(bool enabled)
     {

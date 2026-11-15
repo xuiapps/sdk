@@ -8,7 +8,7 @@ using NFloat = System.Runtime.InteropServices.NFloat;
 namespace Xui.Apps.TestApp.Pages;
 
 /// <summary>Mobile presentation shell for an individual TestApp example.</summary>
-public sealed class MobileExamplePage<T> : ViewCollection, IPage
+public sealed class MobileExamplePage<T> : ViewCollection, IPage, INavigationAware
     where T : Example, new()
 {
     private static readonly NFloat HeaderHeight = 48;
@@ -35,6 +35,12 @@ public sealed class MobileExamplePage<T> : ViewCollection, IPage
 
     /// <inheritdoc/>
     public PagePresentation Presentation => new();
+
+    public void OnNavigationStateChanged(in NavigationStateChange change)
+    {
+        if (content is INavigationAware aware)
+            aware.OnNavigationStateChanged(in change);
+    }
 
     protected override Size MeasureCore(Size available, IMeasureContext context)
     {

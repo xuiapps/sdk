@@ -233,6 +233,9 @@ public class NavigationView : ViewCollection, INavigation, IFullScreenView
     /// <inheritdoc/>
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
+        if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down && e.State.PointerType == PointerType.Touch &&
+            outgoingPage is null && CanGoBack && e.State.Position.X <= BackSwipeEdgeWidth)
+            e.PushPotentialGesture(this, PointerGestures.DragHorizontalTentative);
         if (phase != EventPhase.Bubble)
             return;
 

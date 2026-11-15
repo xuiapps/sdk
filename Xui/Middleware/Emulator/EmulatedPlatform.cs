@@ -34,11 +34,18 @@ internal sealed class EmulatedPlatform
     private sealed class EmulatedServiceProvider(EmulatedPlatform platform, IServiceProvider applicationServices) : IServiceProvider
     {
         private readonly EmulatedDeviceInfo deviceInfo = new(platform);
+        private readonly EmulatedHapticFeedback haptics = new();
+        private readonly EmulatedVibration vibration = new();
 
         public object? GetService(Type serviceType)
         {
             if (serviceType == typeof(IDeviceInfo))
                 return deviceInfo;
+
+            if (serviceType == typeof(Xui.Core.Actual.IHapticFeedback))
+                return applicationServices.GetService(serviceType) ?? haptics;
+            if (serviceType == typeof(Xui.Core.Actual.IVibration))
+                return applicationServices.GetService(serviceType) ?? vibration;
 
             // Images are platform resources. The emulated app renders through the
             // host's native context, so its image handles must come from that same

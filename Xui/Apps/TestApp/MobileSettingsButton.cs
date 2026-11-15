@@ -9,6 +9,8 @@ namespace Xui.Apps.TestApp;
 /// <summary>A compact graphical cog that opens the mobile TestApp settings.</summary>
 internal sealed class MobileSettingsButton : View
 {
+    public MobileSettingsButton() => Id = "Settings";
+
     private bool pressed;
 
     protected override Size MeasureCore(Size available, IMeasureContext context) => (48, 48);

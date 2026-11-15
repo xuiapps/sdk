@@ -317,6 +317,14 @@ public partial class ScrollView : View
     /// <inheritdoc/>
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
+        if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down &&
+            !(activePointer != -1 && activePointer != e.PointerId && gestureMode == ScrollGestureMode.Scrolling))
+            e.PushPotentialGesture(this, Direction switch
+            {
+                ScrollDirection.Horizontal => PointerGestures.DragHorizontalTentative,
+                ScrollDirection.Vertical => PointerGestures.DragVerticalTentative,
+                _ => PointerGestures.Drag,
+            });
         if (phase != EventPhase.Bubble) return;
         if (e.Type == PointerEventType.Down)
         {

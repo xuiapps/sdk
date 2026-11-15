@@ -10,10 +10,9 @@ namespace Xui.DevKit.UI.Widgets;
 /// A button that consumes design system tokens for colors, shape, and typography.
 /// Supports <see cref="ButtonVariant"/> (Filled, Outline, Text) and hover/pressed states.
 /// </summary>
-public class Button : View, IDesignSystemChangeNotifications
+public partial class Button : View, IDesignSystemChangeNotifications
 {
     private bool hover;
-    private bool pressed;
 
     /// <summary>Creates a new button with content-sized alignment.</summary>
     public Button()
@@ -123,6 +122,11 @@ public class Button : View, IDesignSystemChangeNotifications
     /// <inheritdoc/>
     protected override void OnDeactivate()
     {
+        // Navigation may immediately attach this button under another page host.
+        // Cancel live input, but let completed taps finish on their original clock.
+        var pointer = pressedPointer;
+        if (pointer != -1) { EndPress(false); ReleasePointer(pointer); }
+        hover = false;
         designSystem.Deactivate(this);
         base.OnDeactivate();
     }
@@ -162,12 +166,13 @@ public class Button : View, IDesignSystemChangeNotifications
                 break;
         }
 
+        RenderRipples(context);
         RenderLabel(context);
     }
 
     private void RenderFilled(IContext context)
     {
-        var fill = pressed ? pressedFillColor : hover ? hoverFillColor : fillColor;
+        var fill = Blend(hover ? hoverFillColor : fillColor, pressedFillColor, FeedbackOpacity);
         context.BeginPath();
         context.RoundRect(this.Frame, cornerRadius);
         context.SetFill(fill);
@@ -176,20 +181,7 @@ public class Button : View, IDesignSystemChangeNotifications
 
     private void RenderOutline(IContext context)
     {
-        if (pressed)
-        {
-            context.BeginPath();
-            context.RoundRect(this.Frame, cornerRadius);
-            context.SetFill(pressedTextBgColor);
-            context.Fill();
-        }
-        else if (hover)
-        {
-            context.BeginPath();
-            context.RoundRect(this.Frame, cornerRadius);
-            context.SetFill(hoverTextBgColor);
-            context.Fill();
-        }
+        RenderStateLayer(context);
 
         // Always draw outline
         context.BeginPath();
@@ -201,21 +193,17 @@ public class Button : View, IDesignSystemChangeNotifications
 
     private void RenderText(IContext context)
     {
-        // Only show background on hover or press
-        if (pressed)
-        {
-            context.BeginPath();
-            context.RoundRect(this.Frame, cornerRadius);
-            context.SetFill(pressedTextBgColor);
-            context.Fill();
-        }
-        else if (hover)
-        {
-            context.BeginPath();
-            context.RoundRect(this.Frame, cornerRadius);
-            context.SetFill(hoverTextBgColor);
-            context.Fill();
-        }
+        RenderStateLayer(context);
+    }
+
+    private void RenderStateLayer(IContext context)
+    {
+        var opacity = FeedbackOpacity;
+        if (!hover && opacity <= 0) return;
+        var color = hover ? Blend(hoverTextBgColor, pressedTextBgColor, opacity) : pressedTextBgColor;
+        if (!hover) color.Alpha *= opacity;
+        context.BeginPath(); context.RoundRect(Frame, cornerRadius);
+        context.SetFill(color); context.Fill();
     }
 
     private void RenderLabel(IContext context)
@@ -243,39 +231,37 @@ public class Button : View, IDesignSystemChangeNotifications
     /// <inheritdoc/>
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
-        if (e.Type == PointerEventType.Enter)
+        if (e.Type == PointerEventType.Enter && e.State.PointerType == PointerType.Mouse)
         {
             hover = true;
-            this.InvalidateRender();
+            InvalidateRender();
         }
         else if (e.Type == PointerEventType.Leave)
         {
             hover = false;
-            this.InvalidateRender();
+            InvalidateRender();
         }
-        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down && pressedPointer == -1)
         {
-            this.CapturePointer(e.PointerId, PointerGestures.Tap);
-            pressed = true;
-            this.InvalidateRender();
+            hover = e.State.PointerType == PointerType.Mouse && hover;
+            var delay = false;
+            if (e.State.PointerType == PointerType.Touch)
+                foreach (var candidate in e.PotentialGestures)
+                    if (candidate.Handler != this && candidate.Gesture is IDrag) { delay = true; break; }
+            BeginPress(e.PointerId, e.State.Position, delay);
+            CapturePointer(e.PointerId, PointerGestures.Tap);
         }
-        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up && pressedPointer == e.PointerId)
         {
-            // Snapshot before release: ReleasePointer fires LostCapture synchronously,
-            // and the LostCapture handler below clears `pressed`.
-            var wasPressed = pressed;
-            pressed = false;
-            this.ReleasePointer(e.PointerId);
-            if (wasPressed)
-                Clicked?.Invoke();
-            this.InvalidateRender();
+            var tapped = HitTest(e.State.Position);
+            EndPress(tapped);
+            ReleasePointer(e.PointerId);
+            if (tapped) Clicked?.Invoke();
         }
-        else if (e.Type == PointerEventType.LostCapture)
+        else if (e.Type is PointerEventType.Cancel or PointerEventType.LostCapture && pressedPointer == e.PointerId)
         {
-            // Another view (e.g. ScrollView) stole the pointer — cancel press.
-            pressed = false;
+            EndPress(false);
             hover = false;
-            this.InvalidateRender();
         }
 
         base.OnPointerEvent(ref e, phase);

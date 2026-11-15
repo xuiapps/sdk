@@ -203,6 +203,75 @@ public class CanvasDrawingCarouselTest
         Assert.Equal(example.SectionCount - 1, example.SelectedSectionIndex);
     }
 
+    [Theory]
+    [InlineData("tap", false)]
+    [InlineData("tap", true)]
+    [InlineData("vertical", false)]
+    [InlineData("vertical", true)]
+    [InlineData("cancel", false)]
+    [InlineData("cancel", true)]
+    [InlineData("lost capture", false)]
+    [InlineData("lost capture", true)]
+    public void InterruptedSettlingResumesLatestSwipeTarget(string interruption, bool reverse)
+    {
+        using var app = new TestSinglePageApp<Application, MainWindow>((430, 932),
+            configure: services =>
+            {
+                services.AddSingleton<ITestSettings>(new TestSettings());
+                services.AddSingleton<IDeviceInfo>(new Device(DevicePlatform.iOS));
+                services.AddSingleton<TimeProvider>(new FrozenClock());
+            }, fontSource: Xui.Core.Fonts.Inter.Source);
+        app.Render();
+        var button = app.Window.RootView.FindViewById("CanvasTests")!;
+        Assert.True(button.TryFindParent<NavigationView>(out var navigation));
+        var page = new MobileExamplePage<CanvasTestsExample>();
+        navigation.Push(page);
+        long time = 0;
+        void Advance(int ms)
+        {
+            app.AnimationFrame(TimeSpan.FromMilliseconds(time), TimeSpan.FromMilliseconds(time));
+            app.AnimationFrame(TimeSpan.FromMilliseconds(time), TimeSpan.FromMilliseconds(time + ms));
+            time += ms;
+            app.Render();
+        }
+        Advance(350);
+        var example = Assert.IsType<CanvasTestsExample>(page[0]);
+        var carousel = page.FindViewById("CanvasDrawingCarousel")!;
+        int initial = reverse ? 4 : 0;
+        example.SelectSection(initial);
+        Advance(1000);
+        var y = carousel.Frame.Center.Y;
+        for (int i = 0; i < 3; i++)
+        {
+            var from = reverse ? 120 : 330;
+            var to = reverse ? 330 : 120;
+            app.PointerDown((from, y));
+            app.PointerMove((to, y));
+            app.PointerUp((to, y));
+            Advance(120); // Visually near the next card, but not committed yet.
+        }
+        Assert.Equal(initial, example.SelectedSectionIndex);
+        int expected = initial + (reverse ? -3 : 3);
+        var card = Assert.IsType<TransformView>(carousel[expected]);
+        var beforeTap = card.Transform;
+        app.PointerDown((220, y));
+        Advance(80);
+        Assert.Equal(beforeTap, card.Transform); // A held touch catches the animation.
+        if (interruption == "vertical")
+            app.PointerMove((220, y + 40));
+        else if (interruption != "tap")
+        {
+            var type = interruption == "cancel" ? PointerEventType.Cancel : PointerEventType.LostCapture;
+            var cancel = new PointerEventRef(type, 0, 0, true, default, [], []);
+            carousel.OnPointerEvent(ref cancel, EventPhase.Bubble);
+        }
+        app.PointerUp((220, interruption == "vertical" ? y + 40 : y));
+        Advance(1000);
+        Assert.Equal(expected, example.SelectedSectionIndex);
+        Assert.Equal((nfloat)0, card.Transform.Tx);
+        Assert.Equal((nfloat)1, card.Transform.A);
+    }
+
     private sealed class FrozenClock : TimeProvider
     {
         public override long GetTimestamp() => 0;

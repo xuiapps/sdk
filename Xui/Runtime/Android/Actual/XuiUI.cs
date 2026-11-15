@@ -6,6 +6,12 @@ namespace Xui.Runtime.Android.Actual;
 
 public class XuiUI : global::Android.Views.View
 {
+    internal AndroidHapticFeedback Haptics { get; }
+    private AndroidVibration? vibration;
+    internal AndroidVibration Vibration => vibration ??= new AndroidVibration(this);
+    internal void StopVibration() => vibration?.Stop();
+    internal void DisposeVibration() => vibration?.Dispose();
+
     private static readonly Java.Lang.Class baseCanvasClass;
     private static readonly Java.Lang.Reflect.Field mNativeCanvasWrapperField;
 
@@ -22,6 +28,13 @@ public class XuiUI : global::Android.Views.View
     public XuiUI(XuiActivity xuiActivity) : base(xuiActivity)
     {
         this.xuiActivity = xuiActivity;
+        Haptics = new AndroidHapticFeedback(this);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) { Haptics.Dispose(); vibration?.Dispose(); }
+        base.Dispose(disposing);
     }
 
     protected override void OnSizeChanged(int w, int h, int oldw, int oldh)

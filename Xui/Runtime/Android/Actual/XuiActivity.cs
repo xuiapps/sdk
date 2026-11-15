@@ -58,6 +58,19 @@ public class XuiActivity : global::Android.App.Activity, Xui.Core.Actual.IWindow
         // Xui.Apps.BlankApp.App.Main(new string[0]);
     }
 
+    protected override void OnPause()
+    {
+        ui?.StopVibration();
+        base.OnPause();
+    }
+
+    protected override void OnDestroy()
+    {
+        ui?.DisposeVibration();
+        ui?.Haptics.Dispose();
+        base.OnDestroy();
+    }
+
     public void Invalidate()
     {
         this.ui!.Invalidate();
@@ -67,7 +80,12 @@ public class XuiActivity : global::Android.App.Activity, Xui.Core.Actual.IWindow
     {
     }
 
-    object? IServiceProvider.GetService(Type serviceType) => NextServiceProvider.GetService(serviceType);
+    object? IServiceProvider.GetService(Type serviceType) =>
+        serviceType == typeof(Xui.Core.Actual.IHapticFeedback)
+            ? ui?.Haptics
+            : serviceType == typeof(Xui.Core.Actual.IVibration)
+                ? ui?.Vibration
+                : NextServiceProvider.GetService(serviceType);
 
     public override bool OnTouchEvent(MotionEvent? e)
     {

@@ -1,12 +1,6 @@
 using System.Runtime.InteropServices;
-using Xui.Core.Canvas;
-using Xui.Core.DI;
-using Xui.Core.Math2D;
-using Xui.Core.UI;
-using Xui.Core.UI.Input;
 using Xui.GPU.Hardware;
 using Xui.GPU.Shaders.Types;
-using static Xui.Core.Canvas.Colors;
 
 namespace Xui.Apps.TestApp.Pages.ThreeD.Tests.GpuHardwareCubeTest;
 
@@ -15,100 +9,43 @@ namespace Xui.Apps.TestApp.Pages.ThreeD.Tests.GpuHardwareCubeTest;
 /// Uses Direct3D 11 on Windows, Metal on macOS/iOS.
 /// Features click-and-drag rotation interaction.
 /// </summary>
-public class GpuHardwareCubeTestView : View
+public class GpuHardwareCubeTestView : CubeSurface
 {
-    private NFloat rotationX = 0.3f;
-    private NFloat rotationY = 0.3f;
-    private Point? dragStart = null;
-    private NFloat dragStartRotX = 0;
-    private NFloat dragStartRotY = 0;
-
     // GPU resources
     private IGpuDevice? _gpuDevice;
     private IGpuRenderTarget? _renderTarget;
     private IGpuVertexShader? _vertexShader;
     private IGpuFragmentShader? _fragmentShader;
-    private string _backendName = "None";
+    private string _backendName = "Hardware rendering unavailable on this platform.";
 
-    // Display resources
-    private IImage? _platformImage;
-    private byte[]? _bgraBuffer;
-    private bool _initialized = false;
+    protected override string BackendLabel => _backendName;
 
-    public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
+    protected override bool RenderPixels(byte[] pixels)
     {
-        if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
+        if (_renderTarget is null)
         {
-            this.CapturePointer(e.PointerId);
-            dragStart = e.State.Position;
-            dragStartRotX = rotationX;
-            dragStartRotY = rotationY;
+            _gpuDevice = GetService(typeof(IGpuDevice)) as IGpuDevice;
+            var backend = GetService(typeof(Xui.GPU.Backends.IShaderBackend)) as Xui.GPU.Backends.IShaderBackend;
+            if (_gpuDevice is null || backend is null) return false;
+            _backendName = $"GPU: {_gpuDevice.BackendName}";
+            var source = CubeShader.GenerateShaderSource(backend);
+            _vertexShader = _gpuDevice.CompileVertexShader(source, CubeShader.GetVertexEntry(backend.Name));
+            _fragmentShader = _gpuDevice.CompileFragmentShader(source, CubeShader.GetFragmentEntry(backend.Name));
+            _renderTarget = _gpuDevice.CreateRenderTarget(300, 300);
         }
-        else if (e.Type == PointerEventType.Move && dragStart != null)
-        {
-            var delta = e.State.Position - dragStart.Value;
-            rotationY = dragStartRotY + delta.X * 0.01f;
-            rotationX = dragStartRotX + delta.Y * 0.01f;
-            this.InvalidateRender();
-        }
-        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
-        {
-            this.ReleasePointer(e.PointerId);
-            dragStart = null;
-        }
-
-        base.OnPointerEvent(ref e, phase);
+        RenderFrame(pixels);
+        return true;
     }
 
-    protected override Size MeasureCore(Size availableBorderEdgeSize, IMeasureContext context)
+    protected override void OnDeactivate()
     {
-        return new Size(300, 300);
+        _renderTarget?.Dispose(); _renderTarget = null;
+        _vertexShader?.Dispose(); _vertexShader = null;
+        _fragmentShader?.Dispose(); _fragmentShader = null;
+        base.OnDeactivate();
     }
 
-    protected override void RenderCore(IContext context)
-    {
-        if (!_initialized)
-        {
-            _bgraBuffer = new byte[300 * 300 * 4];
-            _platformImage = this.GetService<IImage>();
-            InitializeGpu();
-            _initialized = true;
-        }
-
-        RenderFrame();
-
-        // Upload pixels to platform image and draw
-        _platformImage?.LoadPixels(300, 300, _bgraBuffer!);
-        var destRect = new Rect(this.Frame.X, this.Frame.Y, 300, 300);
-        if (_platformImage != null)
-            context.DrawImage(_platformImage, destRect);
-
-        // Draw border
-        context.SetStroke(Black);
-        context.StrokeRect(destRect);
-
-        // Draw backend label
-        context.SetFill(new Color(0x00, 0x00, 0x00, 0xCC));
-        context.SetFont(new Font(11, "Inter"));
-        context.FillText(
-            $"GPU: {_backendName}",
-            new Point(this.Frame.X + 6, this.Frame.Y + 16));
-    }
-
-    private void InitializeGpu()
-    {
-        _gpuDevice = this.GetRequiredService<IGpuDevice>();
-        var shaderBackend = this.GetRequiredService<Xui.GPU.Backends.IShaderBackend>();
-
-        _backendName = _gpuDevice.BackendName;
-
-        var shaderSource = CubeShader.GenerateShaderSource(shaderBackend);
-        _vertexShader = _gpuDevice.CompileVertexShader(shaderSource, CubeShader.GetVertexEntry(shaderBackend.Name));
-        _fragmentShader = _gpuDevice.CompileFragmentShader(shaderSource, CubeShader.GetFragmentEntry(shaderBackend.Name));
-        _renderTarget = _gpuDevice.CreateRenderTarget(300, 300);
-    }
-
-    private unsafe void RenderFrame()
+    private unsafe void RenderFrame(byte[] pixels)
     {
         using var cmd = _gpuDevice!.CreateCommandList();
 
@@ -139,7 +76,7 @@ public class GpuHardwareCubeTestView : View
         cmd.EndRenderPass();
         cmd.Commit();
 
-        _renderTarget!.ReadbackPixelsBgra(_bgraBuffer!);
+        _renderTarget!.ReadbackPixelsBgra(pixels);
     }
 
     private Float4x4 ComputeMvpMatrix()

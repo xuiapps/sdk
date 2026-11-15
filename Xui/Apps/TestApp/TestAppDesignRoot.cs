@@ -15,6 +15,7 @@ internal sealed class TestAppDesignRoot : View, IFullScreenView
     private readonly View content;
     private XuiDesignSystem? designSystem;
     private IDeviceInfo? device;
+    private readonly ExampleSettings exampleSettings = new();
 
     public TestAppDesignRoot(View content)
     {
@@ -32,6 +33,8 @@ internal sealed class TestAppDesignRoot : View, IFullScreenView
 
     public override object? GetService(Type serviceType)
     {
+        if (serviceType == typeof(ExampleSettings))
+            return exampleSettings;
         if (serviceType == typeof(IDesignSystem) && designSystem is not null)
             return designSystem;
 

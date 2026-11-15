@@ -18,6 +18,7 @@ internal sealed class MobileDemoMenu : VerticalStack
         AddCanvas();
         AddLayout();
         AddInput();
+        AddHaptics();
         AddGpu();
         AddDesign();
         AddDeviceInfo();
@@ -44,6 +45,14 @@ internal sealed class MobileDemoMenu : VerticalStack
         var panel = AddPanel("Input");
         panel.AddExample<GesturesExample>("Gestures", "Gestures");
         panel.AddExample<TextBoxExample>("TextBox", "Text Input");
+    }
+
+    private void AddHaptics()
+    {
+        var panel = AddPanel("Haptics & Vibration");
+        panel.AddExample<HapticsExample>("Haptics", "Haptics");
+        panel.AddExample<LiveVibrationExample>("VibrationLive", "Live vibration");
+        panel.AddExample<RecordedVibrationExample>("VibrationRecord", "Record & repeat");
     }
 
     private void AddGpu()

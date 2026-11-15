@@ -24,6 +24,7 @@ internal sealed class ExampleCardCarousel : ViewCollection
     private bool settling;
     private TimeSpan? animationStart;
     private int pointerId = -1;
+    private int resumeTarget;
     private Point pointerStart;
     private NFloat dragStart;
     private int dragIndex;
@@ -152,6 +153,8 @@ internal sealed class ExampleCardCarousel : ViewCollection
 
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
+        if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down && pointerId == -1)
+            e.PushPotentialGesture(this, PointerGestures.DragHorizontalTentative);
         if (phase != EventPhase.Bubble) return;
         if (e.Type == PointerEventType.Down && pointerId == -1)
         {
@@ -164,6 +167,9 @@ internal sealed class ExampleCardCarousel : ViewCollection
                 { Platform: DevicePlatform.iOS or DevicePlatform.MacOS, PrefersReducedMotion: false };
             clock = GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
             pointerId = e.PointerId;
+            // SelectedIndex is committed only when settling finishes. Catch the
+            // current destination before pausing, so a tap cannot rewind earlier swipes.
+            resumeTarget = settling ? animationTarget : SelectedIndex;
             settling = false; spring = null;
             pointerStart = e.State.Position;
             lastX = pointerStart.X;
@@ -182,13 +188,13 @@ internal sealed class ExampleCardCarousel : ViewCollection
                 if (RespectChildGestures && GetCapturedGesture(e.PointerId) is { } captured && captured is not ITap and not IDragVerticalTentative)
                 {
                     pointerId = -1;
-                    if (position != SelectedIndex) Settle(SelectedIndex);
+                    ResumeSettling();
                     return;
                 }
                 if (NFloat.Abs(dy) > 8 && NFloat.Abs(dy) > NFloat.Abs(dx))
                 {
                     pointerId = -1;
-                    if (position != SelectedIndex) Settle(SelectedIndex);
+                    ResumeSettling();
                     return;
                 }
                 if (NFloat.Abs(dx) <= 8) return;
@@ -226,7 +232,7 @@ internal sealed class ExampleCardCarousel : ViewCollection
             if (dragging)
             {
                 dragging = false;
-                var target = SelectedIndex;
+                var target = resumeTarget;
                 if (e.Type == PointerEventType.Up)
                 {
                     var delta = position - dragIndex;
@@ -239,13 +245,16 @@ internal sealed class ExampleCardCarousel : ViewCollection
                     ? NFloat.Clamp(presentationVelocity / stride, -4, 4) : 0;
                 Settle(Math.Clamp(target, 0, cards.Count - 1));
             }
-            if (!dragging && !settling && position != SelectedIndex)
-            {
-                springVelocity = 0;
-                Settle(SelectedIndex);
-            }
+            if (!dragging && !settling) ResumeSettling();
             if (e.Type != PointerEventType.LostCapture) ReleasePointer(id);
         }
+    }
+
+    private void ResumeSettling()
+    {
+        if (position == resumeTarget && SelectedIndex == resumeTarget) return;
+        springVelocity = 0;
+        Settle(resumeTarget);
     }
 
     private void SelectIndicator(NFloat pointerX)

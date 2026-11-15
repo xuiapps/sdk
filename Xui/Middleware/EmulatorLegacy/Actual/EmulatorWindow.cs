@@ -21,6 +21,8 @@ public partial class EmulatorWindow : Xui.Core.Middleware.IWindow
 {
     private readonly LinkedEmulatorWindow emulator;
     private readonly EmulatorDeviceInfo deviceInfo;
+    private readonly EmulatedHapticFeedback haptics = new();
+    private readonly EmulatedVibration vibration = new();
     private EmulatorHostWindow? host;
     private PhoneFrameView? phoneFrame;
     private EmulatorStatusBarStyle? statusBarStyleOverride;
@@ -96,6 +98,11 @@ public partial class EmulatorWindow : Xui.Core.Middleware.IWindow
     {
         if (serviceType == typeof(IDeviceInfo))
             return deviceInfo;
+
+        if (serviceType == typeof(IHapticFeedback))
+            return NextServiceProvider.GetService(serviceType) ?? haptics;
+        if (serviceType == typeof(IVibration))
+            return NextServiceProvider.GetService(serviceType) ?? vibration;
 
         return host?.GetService(serviceType) ?? NextServiceProvider.GetService(serviceType);
     }

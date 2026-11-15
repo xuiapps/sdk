@@ -83,6 +83,18 @@ public class SdkHomePage : VerticalStack
             Text = "Layers",
             TextColor = foreground,
         });
+        this.Add(new SdkExampleButton<HapticsExample>() {
+            Id = "Haptics",
+            Margin = 3,
+            Text = "Haptics",
+            TextColor = foreground,
+        });
+        this.Add(new SdkExampleButton<LiveVibrationExample>() {
+            Id = "VibrationLive", Margin = 3, Text = "Live vibration", TextColor = foreground,
+        });
+        this.Add(new SdkExampleButton<RecordedVibrationExample>() {
+            Id = "VibrationRecord", Margin = 3, Text = "Record & repeat", TextColor = foreground,
+        });
         this.Add(new SdkExampleButton<ThreeDExample>() {
             Id = "3D",
             Margin = 3,

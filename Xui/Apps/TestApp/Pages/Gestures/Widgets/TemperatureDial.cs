@@ -1,4 +1,5 @@
 using System.Globalization;
+using Xui.Core.Actual;
 using Xui.Core.Animation;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
@@ -22,10 +23,24 @@ public sealed class TemperatureDial : View
     private NFloat? releaseVelocity;
     private ExponentialDecayCurve? coast;
     private string reading = "21.0°";
+    private IHapticFeedback? haptics;
+    private bool feedbackOnSettle;
     public TemperatureDial() => Id = "TemperatureDial";
-    private void SetTemperature(NFloat value)
+    private void SetTemperature(NFloat value, bool tickCrossings = true)
     {
+        var previous = Temperature;
         Temperature = NFloat.Clamp(value, 16, 30);
+        feedbackOnSettle |= Temperature != previous;
+        if (tickCrossings)
+        {
+            // Include the line we arrive at, but not the line we leave. Using
+            // floor upwards and ceiling downwards keeps feedback on the ruler marks.
+            var ticks = Temperature > previous
+                ? (int)(NFloat.Floor(Temperature * 2) - NFloat.Floor(previous * 2))
+                : (int)(NFloat.Ceiling(previous * 2) - NFloat.Ceiling(Temperature * 2));
+            for (; ticks > 0; ticks--)
+                haptics?.Play(HapticEffect.Tick);
+        }
         reading = ((double)Temperature).ToString("0.0", CultureInfo.InvariantCulture) + "°";
         InvalidateRender();
     }
@@ -36,6 +51,9 @@ public sealed class TemperatureDial : View
         {
             pointer = e.PointerId; startX = e.State.Position.X; startValue = Temperature; settling = false;
             coast = null; releaseVelocity = null; velocity = 0; sampleValue = Temperature; sampleTime = null;
+            haptics = GetService(typeof(IHapticFeedback)) as IHapticFeedback;
+            feedbackOnSettle = Temperature * 2 != NFloat.Round(Temperature * 2);
+            haptics?.Prepare(HapticEffect.Tick);
             CapturePointer(pointer, PointerGestures.DragHorizontalTentative);
             RequestAnimationFrame();
         }
@@ -95,8 +113,16 @@ public sealed class TemperatureDial : View
         if (!settling) return;
         animationStart ??= current;
         var t = NFloat.Clamp((NFloat)(current - animationStart.Value).TotalSeconds / 0.25f, 0, 1);
-        SetTemperature(from + (target - from) * Easing.EaseInOutCubic(t));
-        if (t == 1) settling = false; else RequestAnimationFrame();
+        // Snapping produces one arrival tick at completion, not another crossing
+        // tick as floating-point interpolation reaches the target line.
+        SetTemperature(t == 1 ? target : from + (target - from) * Easing.EaseInOutCubic(t), tickCrossings: false);
+        if (t == 1)
+        {
+            settling = false;
+            if (feedbackOnSettle) haptics?.Play(HapticEffect.Tick);
+            feedbackOnSettle = false;
+        }
+        else RequestAnimationFrame();
     }
     private void BeginSnap()
     {
@@ -107,6 +133,8 @@ public sealed class TemperatureDial : View
     {
         var id = pointer; pointer = -1; settling = false;
         coast = null; releaseVelocity = null; velocity = 0;
+        haptics = null;
+        feedbackOnSettle = false;
         if (id != -1) ReleasePointer(id);
         base.OnDeactivate();
     }

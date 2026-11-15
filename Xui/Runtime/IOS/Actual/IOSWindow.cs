@@ -21,6 +21,7 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
         .Extend("XUIIOSWindow")
         .AddMethod("sendEvent:", SendEvent)
         .AddMethod("animationFrame:", AnimationFrame)
+        .AddMethod("vibrationApplicationInactive:", VibrationApplicationInactive)
         .Register();
 
     public static void SendEvent(nint self, nint sel, nint uiEvent) =>
@@ -28,6 +29,9 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
     
     public static void AnimationFrame(nint self, nint sel, nint caDisplayLink) =>
         Marshalling.Get<IOSWindow>(self).AnimationFrame(caDisplayLink);
+
+    private static void VibrationApplicationInactive(nint self, nint sel, nint notification) =>
+        Marshalling.Get<IOSWindow>(self).vibration?.Stop();
     
     // Keep native touch identities stable without growing a dictionary during an
     // interaction. Ten slots cover normal multi-touch hardware with room to spare.
@@ -49,6 +53,9 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
     private TimeSpan nextFrameTime;
     private bool pendingInvalidate;
     private UITextLoupeSessionPtr textLoupe;
+    private readonly IOSHapticFeedback haptics = new();
+    private IOSVibration? vibration;
+    private nint notificationCenter;
 
     bool Xui.Core.Actual.ITextMagnifier.IsSupported => UITextLoupeSessionPtr.IsSupported;
 
@@ -76,6 +83,11 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
         this.Title = "";
         this.RootView = new IOSWindowRootView(this);
         this.deviceInfo = new IOSDeviceInfo(this.RootView);
+
+        notificationCenter = objc_msgSend_retIntPtr(new Class(ObjC.Lib, "NSNotificationCenter"), new Sel("defaultCenter"));
+        using (var name = new CoreFoundation.CFStringRef("UIApplicationWillResignActiveNotification"))
+            ObjC.objc_msgSend(notificationCenter, new Sel("addObserver:selector:name:object:"), this,
+                new Sel("vibrationApplicationInactive:"), name, 0);
 
         this.SoftKeyboard = new IOSSoftKeyboard(this);
         this.SoftKeyboard.NextResponder = this.RootView;
@@ -314,12 +326,19 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
         RequireKeyboard = false;
         SoftKeyboard.Close();
         textLoupe.Dispose();
+        haptics.Dispose();
+        vibration?.Dispose();
+        ObjC.objc_msgSend(notificationCenter, new Sel("removeObserver:"), this);
         ObjC.objc_msgSend(displayLink, new Sel("invalidate"));
         ObjC.objc_msgSend(this, new Sel("setHidden:"), true);
     }
 
     object? IServiceProvider.GetService(Type serviceType)
     {
+        if (serviceType == typeof(Xui.Core.Actual.IHapticFeedback))
+            return haptics;
+        if (serviceType == typeof(Xui.Core.Actual.IVibration))
+            return vibration ??= new IOSVibration();
         if (serviceType == typeof(Xui.Core.Actual.ITextInputSession))
             return this;
         if (serviceType == typeof(Xui.Core.Actual.ITextMagnifier))

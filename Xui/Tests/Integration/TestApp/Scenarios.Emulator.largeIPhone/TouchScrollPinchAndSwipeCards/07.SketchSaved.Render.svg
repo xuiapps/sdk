@@ -67,9 +67,12 @@
       <path d="M 0 0 H 358 V 372 H 0 Z " clip-rule="nonzero" />
     </clipPath>
     <clipPath id="clip13">
-      <path d="M 44 101.46 H 314 A 16 16 0 0 1 330 117.46 V 241.46 A 16 16 0 0 1 314 257.46 H 44 A 16 16 0 0 1 28 241.46 V 117.46 A 16 16 0 0 1 44 101.46 Z " clip-rule="nonzero" />
+      <path d="M 46.47 54.52 H 124.08 A 18.47 18.47 0 0 1 142.55 72.99 V 72.99 A 18.47 18.47 0 0 1 124.08 91.46 H 46.47 A 18.47 18.47 0 0 1 28 72.99 V 72.99 A 18.47 18.47 0 0 1 46.47 54.52 Z " clip-rule="nonzero" />
     </clipPath>
     <clipPath id="clip14">
+      <path d="M 44 101.46 H 314 A 16 16 0 0 1 330 117.46 V 241.46 A 16 16 0 0 1 314 257.46 H 44 A 16 16 0 0 1 28 241.46 V 117.46 A 16 16 0 0 1 44 101.46 Z " clip-rule="nonzero" />
+    </clipPath>
+    <clipPath id="clip15">
       <path d="M 44 322.4 H 314 A 16 16 0 0 1 330 338.4 V 462.4 A 16 16 0 0 1 314 478.4 H 44 A 16 16 0 0 1 28 462.4 V 338.4 A 16 16 0 0 1 44 322.4 Z " clip-rule="nonzero" />
     </clipPath>
     <linearGradient id="grad5" x1="0" y1="0" x2="12" y2="0" gradientUnits="userSpaceOnUse">
@@ -83,10 +86,10 @@
       <stop offset="85.7%" stop-color="#000000" stop-opacity="0.01" />
       <stop offset="100%" stop-color="#000000" stop-opacity="0" />
     </radialGradient>
-    <clipPath id="clip15">
+    <clipPath id="clip16">
       <path d="M 66 170.5 H 364 A 30 30 0 0 1 394 200.5 V 700.5 A 30 30 0 0 1 364 730.5 H 66 A 30 30 0 0 1 36 700.5 V 200.5 A 30 30 0 0 1 66 170.5 Z " clip-rule="nonzero" />
     </clipPath>
-    <clipPath id="clip16">
+    <clipPath id="clip17">
       <path d="M 36 170.5 H 394 V 730.5 H 36 Z " clip-rule="nonzero" />
     </clipPath>
   </defs>
@@ -220,10 +223,13 @@
                       <g clip-path="url(#clip12)">
                         <g>
                           <text x="28" y="28" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Idea 1 saved. Keep creating.</text>
-                          <path d="M 46.47 54.52 H 124.08 A 18.47 18.47 0 0 1 142.55 72.99 V 72.99 A 18.47 18.47 0 0 1 124.08 91.46 H 46.47 A 18.47 18.47 0 0 1 28 72.99 V 72.99 A 18.47 18.47 0 0 1 46.47 54.52 Z " fill="#6300A3" fill-rule="nonzero" />
+                          <path d="M 46.47 54.52 H 124.08 A 18.47 18.47 0 0 1 142.55 72.99 V 72.99 A 18.47 18.47 0 0 1 124.08 91.46 H 46.47 A 18.47 18.47 0 0 1 28 72.99 V 72.99 A 18.47 18.47 0 0 1 46.47 54.52 Z " fill="#43007C" fill-rule="nonzero" />
+                          <g clip-path="url(#clip13)">
+                            <path d="M 143.71 72.99 A 58.44 58.44 0 0 1 26.83 72.99 A 58.44 58.44 0 0 1 143.71 72.99 " fill="#FEFEFE" fill-rule="nonzero" fill-opacity="0.12" />
+                          </g>
                           <text x="48" y="64.52" fill="#FEFEFE" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Save idea 1</text>
                           <path d="M 44 101.46 H 314 A 16 16 0 0 1 330 117.46 V 241.46 A 16 16 0 0 1 314 257.46 H 44 A 16 16 0 0 1 28 241.46 V 117.46 A 16 16 0 0 1 44 101.46 Z " fill="#E9EDFC" fill-rule="nonzero" />
-                          <g clip-path="url(#clip13)">
+                          <g clip-path="url(#clip14)">
                             <path d="M 45 117.46 A 1 1 0 0 1 43 117.46 A 1 1 0 0 1 45 117.46 " fill="#DCE2EE" fill-rule="nonzero" />
                             <path d="M 69 117.46 A 1 1 0 0 1 67 117.46 A 1 1 0 0 1 69 117.46 " fill="#DCE2EE" fill-rule="nonzero" />
                             <path d="M 93 117.46 A 1 1 0 0 1 91 117.46 A 1 1 0 0 1 93 117.46 " fill="#DCE2EE" fill-rule="nonzero" />
@@ -303,7 +309,7 @@
                           <path d="M 46.47 275.46 H 126.89 A 18.47 18.47 0 0 1 145.36 293.93 V 293.93 A 18.47 18.47 0 0 1 126.89 312.4 H 46.47 A 18.47 18.47 0 0 1 28 293.93 V 293.93 A 18.47 18.47 0 0 1 46.47 275.46 Z " fill="#6300A3" fill-rule="nonzero" />
                           <text x="48" y="285.46" fill="#FEFEFE" text-anchor="start" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">Save idea 2</text>
                           <path d="M 44 322.4 H 314 A 16 16 0 0 1 330 338.4 V 462.4 A 16 16 0 0 1 314 478.4 H 44 A 16 16 0 0 1 28 462.4 V 338.4 A 16 16 0 0 1 44 322.4 Z " fill="#E9EDFC" fill-rule="nonzero" />
-                          <g clip-path="url(#clip14)">
+                          <g clip-path="url(#clip15)">
                             <path d="M 45 338.4 A 1 1 0 0 1 43 338.4 A 1 1 0 0 1 45 338.4 " fill="#DCE2EE" fill-rule="nonzero" />
                             <path d="M 69 338.4 A 1 1 0 0 1 67 338.4 A 1 1 0 0 1 69 338.4 " fill="#DCE2EE" fill-rule="nonzero" />
                             <path d="M 93 338.4 A 1 1 0 0 1 91 338.4 A 1 1 0 0 1 93 338.4 " fill="#DCE2EE" fill-rule="nonzero" />
@@ -430,8 +436,8 @@
               </g>
               <path d="M 66 170.5 H 364 A 30 30 0 0 1 394 200.5 V 700.5 A 30 30 0 0 1 364 730.5 H 66 A 30 30 0 0 1 36 700.5 V 200.5 A 30 30 0 0 1 66 170.5 Z " fill="#F8F8F8" fill-rule="nonzero" />
               <path d="M 66 170.5 H 364 A 30 30 0 0 1 394 200.5 V 700.5 A 30 30 0 0 1 364 730.5 H 66 A 30 30 0 0 1 36 700.5 V 200.5 A 30 30 0 0 1 66 170.5 Z " fill="none" stroke="#BDBDBD" />
-              <g clip-path="url(#clip15)">
-                <g clip-path="url(#clip16)">
+              <g clip-path="url(#clip16)">
+                <g clip-path="url(#clip17)">
                   <g transform="translate(36,170.5)">
                   </g>
                 </g>
