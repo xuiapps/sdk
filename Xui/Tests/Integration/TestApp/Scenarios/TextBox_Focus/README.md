@@ -2,13 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Focus the Name text box and verify focus visuals.
+# TextBox_Focus
 
 ### 01. TextBoxPage
 

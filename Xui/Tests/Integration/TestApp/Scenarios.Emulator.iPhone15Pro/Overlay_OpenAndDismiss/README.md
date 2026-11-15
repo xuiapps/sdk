@@ -2,28 +2,18 @@
 
 ## Timeline
 
-# TestApp
+# Window overlay
 
-Open the test app to see the menu with SDK examples.
+Tap the identified trigger to open an overlay, then tap outside its bounds to dismiss it.
 
-## Scenario
+### 01. Closed
 
-Open the Layers overlay demo, display overlay popup, and dismiss by outside click.
+<img src="./01.Closed.Render.svg" alt="01. Closed expected" />
 
-```
-Interaction points:
-- Open Overlay button: (500, 262)
-- Outside click dismiss point: (220, 40)
-```
+### 02. Open
 
-### 01. Layers.OverlayDemo
+<img src="./02.Open.Render.svg" alt="02. Open expected" />
 
-<img src="./01.Layers.OverlayDemo.Render.svg" alt="01. Layers.OverlayDemo expected" />
+### 03. Dismissed
 
-### 02. Layers.OverlayOpen
-
-<img src="./02.Layers.OverlayOpen.Render.svg" alt="02. Layers.OverlayOpen expected" />
-
-### 03. Layers.OverlayDismissed
-
-<img src="./03.Layers.OverlayDismissed.Render.svg" alt="03. Layers.OverlayDismissed expected" />
+<img src="./03.Dismissed.Render.svg" alt="03. Dismissed expected" />

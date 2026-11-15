@@ -2,13 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Type into PasswordBox and verify masked rendering.
+# TextBox_Password
 
 ### 01. PasswordTyped
 

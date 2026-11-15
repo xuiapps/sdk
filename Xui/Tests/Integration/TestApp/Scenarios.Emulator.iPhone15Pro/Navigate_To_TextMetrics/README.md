@@ -2,21 +2,11 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Navigate from home to the TextMetrics example and capture hover/press transitions.
+# Navigate_To_TextMetrics
 
 ### 01. HomePage
 
 <img src="./01.HomePage.Render.svg" alt="01. HomePage expected" />
-
-- Hover TextMetrics button
-- Press TextMetrics button
-- Release to navigate
 
 ### 02. Hover
 

@@ -2,13 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Use keyboard selection and replacement inside NameBox.
+# TextBox_KeyboardSelection
 
 ### 01. Typed
 

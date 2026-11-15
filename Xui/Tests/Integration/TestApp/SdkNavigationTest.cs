@@ -1,187 +1,113 @@
+using System.Runtime.CompilerServices;
 using Xui.Apps.TestApp;
+using Xui.Apps.TestApp.Examples;
+using Xui.Apps.TestApp.Pages.Layout;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
+using Xui.Runtime.Software.Actual;
 using Xui.Runtime.Test;
-using System.Runtime.CompilerServices;
 
 namespace Xui.Tests.Integration.TestApp;
 
-/// <summary>
-/// Integration tests that boot the real TestApp via the test platform,
-/// render the home page, send mouse events to navigate, and capture SVG snapshots.
-/// </summary>
 public class SdkNavigationTest
 {
-    private static Size WindowSize = (600, 400);
-    private static TestSinglePageApp<Application, MainWindow> CreateApp(
-        TestRuntimeVariant runtimeVariant,
-        [CallerFilePath] string callerPath = "",
-        [CallerMemberName] string testName = "") =>
-        IntegrationRuntimeVariants.CreateApp<Application, MainWindow>(
-            WindowSize, runtimeVariant, callerPath, testName);
-
-    private static void AddTestAppIntro(TestSinglePageApp<Application, MainWindow> app)
+    private static void Scenario(TestRuntimeVariant variant, Action<TestSinglePageApp<Application, MainWindow>> action,
+        [CallerFilePath] string path = "", [CallerMemberName] string name = "")
     {
-        app.MarkdownHeading("TestApp", level: 1);
-        app.MarkdownParagraph("Open the test app to see the menu with SDK examples.");
+        using var app = IntegrationRuntimeVariants.CreateApp<Application, MainWindow>((600, 400), variant, path, name);
+        app.Run(() => { app.Prepare(); app.MarkdownHeading(name, 1); action(app); });
     }
 
-    [Theory]
-    [MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
-    public void HomePage_Renders(TestRuntimeVariant runtimeVariant)
+    [Theory, MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
+    public void HomePage_Renders(TestRuntimeVariant runtimeVariant) => Scenario(runtimeVariant, app =>
     {
-        using var app = CreateApp(runtimeVariant);
-        AddTestAppIntro(app);
-        app.MarkdownHeading("Scenario");
-        app.MarkdownParagraph("Render the app home page as the baseline state.");
+        app.RequireView("CanvasTests", "verifying the home menu");
         app.Snapshot("HomePage");
-    }
+    });
 
-    [Theory]
-    [MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
-    public void Navigate_To_TextMetrics(TestRuntimeVariant runtimeVariant)
+    [Theory, MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
+    public void Navigate_To_TextMetrics(TestRuntimeVariant runtimeVariant) => Scenario(runtimeVariant, app =>
     {
-        using var app = CreateApp(runtimeVariant);
-        AddTestAppIntro(app);
-        app.MarkdownHeading("Scenario");
-        app.MarkdownParagraph("Navigate from home to the TextMetrics example and capture hover/press transitions.");
         app.Snapshot("HomePage");
-
-        var button = app.Window.RootView.FindViewById("TextMetrics");
-        Assert.NotNull(button);
-
-        app.MouseMove(button);
-        app.MarkdownList(["Hover TextMetrics button", "Press TextMetrics button", "Release to navigate"]);
-        app.Snapshot("Hover");
-        app.MouseDown(button);
-        app.Snapshot("Pressed");
-        app.MouseUp(button);
+        var button = app.Reveal("TextMetrics");
+        app.MouseMove(button); app.Snapshot("Hover");
+        app.MouseDown(button); app.Snapshot("Pressed");
+        app.MouseUp(button); app.Advance(TimeSpan.FromMilliseconds(400));
+        app.Target<TextMetricsExample>("Example.TextMetricsExample", "verifying Text Metrics navigation");
         app.Snapshot("TextMetrics");
-    }
+    });
 
-    [Theory]
-    [MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
-    public void Navigate_Through_All(TestRuntimeVariant runtimeVariant)
+    [Theory, MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
+    public void Navigate_Through_All(TestRuntimeVariant runtimeVariant) => Scenario(runtimeVariant, app =>
     {
-        using var app = CreateApp(runtimeVariant);
-        AddTestAppIntro(app);
-        app.MarkdownHeading("Scenario");
-        app.MarkdownParagraph("Visit each example page from home, snapshot it, then return to home.");
         app.Snapshot("HomePage");
-
-        string[] pages = ["TextMetrics", "TextLayout", "NestedStacks", "ViewCollectionAlignment", "AnimatedHeart", "TextBox"];
-
-        foreach (var page in pages)
+        (string Menu, string Example)[] pages = runtimeVariant == TestRuntimeVariant.Desktop
+            ? [("TextMetrics", "TextMetricsExample"), ("TextLayout", "TextLayoutExample"),
+               ("NestedStacks", "NestedStacksExample"), ("ViewCollectionAlignment", "ViewCollectionAlignmentExample"),
+               ("AnimatedHeart", "CanvasAnimationsExample"), ("TextBox", "TextBoxExample")]
+            : [("TextMetrics", "TextMetricsExample"), ("Basics", "BasicsExample"),
+               ("GridLayout", "GridExample"), ("FlexboxLayout", "FlexboxExample"),
+               ("AnimatedHeart", "CanvasAnimationsExample"), ("TextBox", "TextBoxExample")];
+        foreach (var (menu, example) in pages)
         {
-            app.MarkdownHeading($"Navigate: {page}", level: 3);
-            var button = app.Window.RootView.FindViewById(page);
-            Assert.NotNull(button);
-            app.MouseMove(button);
-            app.MouseDown(button);
-            app.MouseUp(button);
-
-            app.AnimationFrame(TimeSpan.Zero, TimeSpan.Zero);
-            app.Snapshot(page);
-
-            var back = app.Window.RootView.FindViewById("Back");
-            Assert.NotNull(back);
-            app.MouseMove(back);
-            app.MouseDown(back);
-            app.MouseUp(back);
+            app.Tap(menu);
+            app.RequireView("Example." + example, $"verifying destination for '{menu}'");
+            app.Snapshot(menu);
+            app.Back();
+            Assert.Null(app.Window.RootView.FindViewById("Example." + example));
         }
-    }
+    });
 
-    /// <summary>
-    /// Bug: After navigating to an example and back, the button that was
-    /// hovered before navigation still shows its hover effect.
-    /// Views removed from the tree should receive a pointer-leave event.
-    /// </summary>
-    [Theory]
-    [MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
-    public void Pending_Hover_After_Navigation(TestRuntimeVariant runtimeVariant)
+    [Theory, MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
+    public void Pending_Hover_After_Navigation(TestRuntimeVariant runtimeVariant) => Scenario(runtimeVariant, app =>
     {
-        using var app = CreateApp(runtimeVariant);
-        AddTestAppIntro(app);
-        app.MarkdownHeading("Scenario");
-        app.MarkdownParagraph("Reproduce stale hover state after navigating to NestedStacks and back.");
-        app.Snapshot("HomePage");
-
-        // Hover and click the NestedStacks button
-        var button = app.Window.RootView.FindViewById("NestedStacks");
-        Assert.NotNull(button);
-        app.MouseMove(button);
-        app.Snapshot("HoverNestedStacks");
-        app.MouseDown(button);
-        app.Snapshot("PressedNestedStacks");
-        app.MouseUp(button);
-
-        app.Snapshot("NestedStacks");
-
-        // Click back
-        var back = app.Window.RootView.FindViewById("Back");
-        Assert.NotNull(back);
-        app.MouseMove(back);
-        app.Snapshot("HoverBack");
-        app.MouseDown(back);
-        app.Snapshot("PressHoverBack");
-        app.MouseUp(back);
-        app.Snapshot("ClickedHomePage");
-
-        // Bug: NestedStacks button still shows hover despite being re-created
-        // Move mouse away from any button to a neutral position
-        app.MouseMove(new Point(10, 10));
-        app.MarkdownCode("""
-            Expected: returning home should clear hover state from removed views.
-            Validation: move mouse to a neutral position and snapshot visual state.
-            """);
+        // TextMetrics is present on both current menus. Compare its own drawing so
+        // the intentionally retained press ripple/home-header animation cannot mask hover state.
+        var button = app.Reveal("TextMetrics");
+        var idle = Drawing(button);
+        app.MouseMove(button); app.Snapshot("HoverTextMetrics");
+        app.MouseDown(button); app.Snapshot("PressedTextMetrics");
+        app.MouseUp(button); app.Advance(TimeSpan.FromMilliseconds(400));
+        app.RequireView("Example.TextMetricsExample", "verifying forward navigation");
+        app.Snapshot("TextMetrics");
+        app.Back();
+        app.Advance(TimeSpan.FromSeconds(1));
+        var neutral = app.Window.SafeArea.TopLeft + new Vector(2, 2);
+        app.MouseMove(neutral);
+        button = app.Reveal("TextMetrics");
+        Assert.Equal(idle, Drawing(button));
         app.Snapshot("MouseMovedAway");
-    }
+    });
 
-    /// <summary>
-    /// Bug: After moving the mouse over the back button (without clicking),
-    /// the animated heart stops animating — animation frames no longer
-    /// produce different renders at rest vs peak times.
-    /// </summary>
-    [Theory]
-    [MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
-    public void Heartbeat_Stops_After_Mouse_Over_Back(TestRuntimeVariant runtimeVariant)
+    [Theory, MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
+    public void Heartbeat_Stops_After_Mouse_Over_Back(TestRuntimeVariant runtimeVariant) => Scenario(runtimeVariant, app =>
     {
-        using var app = CreateApp(runtimeVariant);
-        AddTestAppIntro(app);
-        app.MarkdownHeading("Scenario");
-        app.MarkdownParagraph("Verify that heart animation keeps ticking after pointer hover on Back.");
-
-        // Navigate to AnimatedHeart
-        var button = app.Window.RootView.FindViewById("AnimatedHeart");
-        app.Snapshot("Home");
-
-        Assert.NotNull(button);
-        app.MouseMove(button);
-        app.MouseDown(button);
-        app.MouseUp(button);
-
-        // Capture heart at rest (t=0.0s) and primary peak (t=0.10s)
-        app.AnimationFrame(TimeSpan.Zero, TimeSpan.Zero);
-        app.Snapshot("Heart.Rest");
-        app.AnimationFrame(TimeSpan.Zero, TimeSpan.FromSeconds(0.10));
-        app.Snapshot("Heart.PrimaryPeak");
-
-        // Move mouse over the back button (do NOT click)
-        var back = app.Window.RootView.FindViewById("Back");
-        Assert.NotNull(back);
+        app.Open<CanvasAnimationsExample>("AnimatedHeart");
+        var heart = app.RequireView("CanvasAnimations.Heart", "checking heartbeat animation");
+        var before = Drawing(heart); app.Snapshot("Heart.Before");
+        app.Advance(TimeSpan.FromMilliseconds(100));
+        Assert.NotEqual(before, Drawing(heart)); app.Snapshot("Heart.After");
+        var back = app.RequireView("Back", "hovering Back without navigating");
         app.MouseMove(back);
-        app.Snapshot("MouseOverBack");
+        before = Drawing(heart); app.Snapshot("MouseOverBack");
+        // A heartbeat has a resting interval. Observe a complete beat rather
+        // than assuming any particular pair of timestamps must differ.
+        var changed = false;
+        for (var frame = 0; frame < 12; frame++)
+        {
+            app.Advance(TimeSpan.FromMilliseconds(80));
+            changed |= before != Drawing(heart);
+        }
+        Assert.True(changed, "The heart stopped animating while Back was hovered.");
+        Assert.Same(heart, app.RequireView("CanvasAnimations.Heart", "verifying hover kept the page active"));
+        app.Snapshot("Heart.AfterMouseOver");
+    });
 
-        // Bug: heart should still animate but it stops
-        // Capture the same two phases again
-        app.AnimationFrame(TimeSpan.FromSeconds(0.10), TimeSpan.FromSeconds(0.833));
-        app.Snapshot("Heart.Rest.AfterMouseOver");
-        app.AnimationFrame(TimeSpan.FromSeconds(0.833), TimeSpan.FromSeconds(0.933));
-        app.MarkdownList(
-        [
-            "Heart.Rest vs Heart.PrimaryPeak should differ before hover.",
-            "Heart.Rest.AfterMouseOver vs Heart.PrimaryPeak.AfterMouseOver should also differ."
-        ]);
-        app.Snapshot("Heart.PrimaryPeak.AfterMouseOver");
+    private static string Drawing(View view)
+    {
+        using var stream = new MemoryStream();
+        using (var context = new SvgDrawingContext((600, 1000), stream, Xui.Core.Fonts.Inter.URIs, keepOpen: true))
+            view.Render(context);
+        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
     }
 }

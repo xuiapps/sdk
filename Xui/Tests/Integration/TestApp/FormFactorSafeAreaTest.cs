@@ -22,9 +22,13 @@ public class FormFactorSafeAreaTest
     public void HomePage_Respects_SafeArea(TestRuntimeVariant runtimeVariant)
     {
         using var app = CreateApp(runtimeVariant);
-        app.MarkdownHeading("Scenario");
-        app.MarkdownParagraph($"Render home page in {runtimeVariant}.");
-        app.Snapshot("HomePage");
+        app.Run(() =>
+        {
+            app.Prepare();
+            app.MarkdownHeading("Scenario");
+            app.MarkdownParagraph($"Render home page in {runtimeVariant}.");
+            app.Snapshot("HomePage");
+        });
     }
 
     [Theory]
@@ -32,16 +36,13 @@ public class FormFactorSafeAreaTest
     public void TextMetrics_Respects_SafeArea(TestRuntimeVariant runtimeVariant)
     {
         using var app = CreateApp(runtimeVariant);
-        app.MarkdownHeading("Scenario");
-        app.MarkdownParagraph($"Navigate to TextMetrics in {runtimeVariant}.");
-        app.Render();
-
-        var button = app.Window.RootView.FindViewById("TextMetrics");
-        Assert.NotNull(button);
-
-        app.MouseMove(button);
-        app.MouseDown(button);
-        app.MouseUp(button);
-        app.Snapshot("TextMetrics");
+        app.Run(() =>
+        {
+            app.Prepare();
+            app.MarkdownHeading("Scenario");
+            app.MarkdownParagraph($"Navigate to TextMetrics in {runtimeVariant}.");
+            app.Open<Xui.Apps.TestApp.Examples.TextMetricsExample>("TextMetrics");
+            app.Snapshot("TextMetrics");
+        });
     }
 }

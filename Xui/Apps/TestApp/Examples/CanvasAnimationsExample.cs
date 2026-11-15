@@ -12,7 +12,7 @@ public sealed class CanvasAnimationsExample : Example, IExampleSectionNavigator
 {
     private static readonly (string Name, Func<View> Create)[] Sections =
     [
-        ("BeatingHeart", static () => new BeatingHeart()),
+        ("BeatingHeart", static () => new BeatingHeart { Id = "CanvasAnimations.Heart" }),
         ("MorphingShape", static () => new MorphingShape()),
         ("DownloadComplete", static () => new DownloadComplete()),
     ];

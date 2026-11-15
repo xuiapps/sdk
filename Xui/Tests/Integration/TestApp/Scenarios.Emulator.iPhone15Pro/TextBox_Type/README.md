@@ -2,13 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Type incrementally in NameBox and verify content growth.
+# TextBox_Type
 
 ### 01. Typed.Hello
 

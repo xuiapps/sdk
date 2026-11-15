@@ -2,13 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Type text, backspace twice, then type replacement character.
+# TextBox_Backspace
 
 ### 01. BeforeBackspace
 

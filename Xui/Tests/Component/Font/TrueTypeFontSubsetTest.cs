@@ -132,6 +132,31 @@ public sealed class TrueTypeFontSubsetTest
         return catalog.FontForFace(new FontFace("Inter", FontWeight.Normal, FontStyle.Normal, FontStretch.Normal))!;
     }
 
+    [Theory]
+    [InlineData(100)]
+    [InlineData(200)]
+    [InlineData(300)]
+    [InlineData(400)]
+    [InlineData(500)]
+    [InlineData(600)]
+    [InlineData(700)]
+    [InlineData(800)]
+    [InlineData(900)]
+    public void UriCatalog_ResolvesAndMeasuresEveryInterWeight(int weight)
+    {
+        var catalog = new Catalog(Xui.Core.Fonts.Inter.URIs);
+        foreach (var style in new[] { FontStyle.Normal, FontStyle.Italic })
+        {
+            var face = new FontFace("Inter", new FontWeight(weight), style, FontStretch.Normal);
+            var resolved = catalog.FontForFace(face);
+            Assert.NotNull(resolved);
+            Assert.True(FontFace.Comparer.Equals(face, resolved.Face));
+            var metrics = catalog.MeasureText(new CanvasFont(20, "Inter", face.Weight, style), "Hello World!");
+            Assert.True(metrics.Size.Width > 0);
+            Assert.True(metrics.Size.Height > 0);
+        }
+    }
+
     private static Rune R(char value) => new(value);
 
 }

@@ -2,13 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Render the app home page as the baseline state.
+# HomePage_Renders
 
 ### 01. HomePage
 

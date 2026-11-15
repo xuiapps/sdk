@@ -44,6 +44,7 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
     private bool mouseLeftPressed;
     private bool hasMouseInteraction;
     private bool disposed;
+    private bool scenarioFailed;
     private TimeSpan lastFramePrevious;
     private TimeSpan lastFrameNext;
 
@@ -106,6 +107,7 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
                 services.AddSingleton<IClock>(clock);
                 services.AddSingleton<TimeProvider>(this.inputClock);
                 services.AddSingleton<IRandom>(random ?? SystemRandom.Default);
+                services.AddSingleton<Xui.Core.DI.IDeviceInfo>(new TestDeviceInfo());
                 services.AddScoped<TApplication>();
                 services.AddScoped<TWindow>();
                 configure?.Invoke(services);
@@ -210,9 +212,30 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
         renderWindow.OnMouseUp(ref e);
     }
 
-    public void MouseMove(View view) => MouseMove(view.Frame.Center);
-    public void MouseDown(View view, MouseButton button = MouseButton.Left) => MouseDown(view.Frame.Center, button);
-    public void MouseUp(View view, MouseButton button = MouseButton.Left) => MouseUp(view.Frame.Center, button);
+    /// <summary>Returns the view's layout center in window coordinates, including ancestor transforms.</summary>
+    public static Point ViewCenter(View view) => view.Parent?.LocalToGlobal(view.Frame.Center) ?? view.Frame.Center;
+
+    public void MouseMove(View view) => MouseMove(ViewCenter(view));
+    public void MouseDown(View view, MouseButton button = MouseButton.Left) => MouseDown(ViewCenter(view), button);
+    public void MouseUp(View view, MouseButton button = MouseButton.Left) => MouseUp(ViewCenter(view), button);
+
+    /// <summary>Finds a scenario target, or fails with its ID and the intended action.</summary>
+    public View RequireView(string id, string action) => Window.RootView.FindViewById(id)
+        ?? throw new InvalidOperationException($"Cannot find element '{id}' while {action} in {typeof(TWindow).Name}.");
+
+    /// <summary>
+    /// Runs scenario assertions while preserving their original exception if snapshot
+    /// differences are subsequently reported during disposal. Snapshot-only failures still fail.
+    /// </summary>
+    public void Run(Action scenario)
+    {
+        try { scenario(); }
+        catch
+        {
+            scenarioFailed = true;
+            throw;
+        }
+    }
 
     public void PointerDown(Point position, int index = 0, float radius = 0.5f) =>
         DispatchTouch([new Touch
@@ -304,6 +327,16 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
         this.lastFrameNext = next;
         var frame = new FrameEventRef(previous, next);
         renderWindow.OnAnimationFrame(ref frame);
+    }
+
+    /// <summary>Advances the deterministic clock, initializing newly requested animations first.</summary>
+    public void Advance(TimeSpan elapsed)
+    {
+        if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
+        var start = lastFrameNext;
+        AnimationFrame(start, start);
+        AnimationFrame(start, start + elapsed);
+        Render();
     }
 
     // ── Render ───────────────────────────────────────────────────
@@ -711,7 +744,7 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
             this.host.Dispose();
 
             var failures = this.snapshots.Where(s => !s.Passed).ToList();
-            if (failures.Count > 0 || !markdownPassed)
+            if (!scenarioFailed && (failures.Count > 0 || !markdownPassed))
             {
                 var sb = new StringBuilder();
                 if (failures.Count > 0)

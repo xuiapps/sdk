@@ -9,81 +9,91 @@
       <path d="M 68 24 H 373 A 44 44 0 0 1 417 68 V 832 A 44 44 0 0 1 373 876 H 68 A 44 44 0 0 1 24 832 V 68 A 44 44 0 0 1 68 24 Z " clip-rule="nonzero" />
     </clipPath>
     <clipPath id="clip1">
-      <path d="M 0 0 H 393 V 852 H 0 Z " clip-rule="nonzero" />
+      <path d="M 0 0 H 393 A 0 0 0 0 1 393 0 V 852 A 0 0 0 0 1 393 852 H 0 A 0 0 0 0 1 0 852 V 0 A 0 0 0 0 1 0 0 Z " clip-rule="nonzero" />
     </clipPath>
     <clipPath id="clip2">
-      <path d="M 0 0 H 393 V 711 H 0 Z " clip-rule="nonzero" />
-    </clipPath>
-    <clipPath id="clip3">
       <path d="M 149.25 202.87 H 243.75 A 13.63 13.63 0 0 1 257.39 216.5 V 453.23 A 13.63 13.63 0 0 1 243.75 466.87 H 149.25 A 13.63 13.63 0 0 1 135.61 453.23 V 216.5 A 13.63 13.63 0 0 1 149.25 202.87 Z " clip-rule="nonzero" />
     </clipPath>
+<linearGradient id="surfaceGlass1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.88"/><stop offset="1" stop-color="#DBE6FF" stop-opacity="0.72"/></linearGradient>
+<filter id="surfaceGlass1Soft" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="0.4"/></filter>
   </defs>
   <g clip-path="url(#clip0)">
     <g transform="translate(24,24)">
-      <g clip-path="url(#clip1)">
-        <rect x="0" y="0" width="393" height="852" fill="#FFFFFF" />
-        <g>
-          <g transform="translate(0,107)">
-            <g clip-path="url(#clip2)">
+      <g>
+<rect x="0" y="0" width="393" height="852" rx="0" fill="#FFFFFF" fill-opacity="1"/>
+        <g clip-path="url(#clip1)">
+          <g>
+            <g>
               <g>
-                <text x="20" y="24" fill="#208B80" text-anchor="start" dominant-baseline="text-before-edge" font-size="11" font-family="Inter" font-weight="600" xml:space="preserve">MADE TO FIT</text>
-                <text x="20" y="55.31" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" font-weight="600" xml:space="preserve">Room for your content.</text>
-                <text x="20" y="92.35" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Live window geometry, in logical points.</text>
-                <path d="M 40 126.87 H 353 A 20 20 0 0 1 373 146.87 V 538.87 A 20 20 0 0 1 353 558.87 H 40 A 20 20 0 0 1 20 538.87 V 146.87 A 20 20 0 0 1 40 126.87 Z " fill="#F6F8FA" fill-rule="nonzero" />
-                <text x="36" y="148.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="10" font-family="Inter" font-weight="500" xml:space="preserve">SAFE AREA / INSETS</text>
-                <g clip-path="url(#clip3)">
-                  <rect x="135.61" y="202.87" width="121.77" height="264" fill="#FBE7EC" />
-                  <rect x="135.61" y="221.15" width="121.77" height="235.18" fill="#E1F3ED" />
-                  <path d="M 135.61 221.15 L 257.39 221.15 " fill="none" stroke="#208B80" />
-                  <path d="M 135.61 456.33 L 257.39 456.33 " fill="none" stroke="#208B80" />
-                  <path d="M 135.61 202.87 L 135.61 466.87 " fill="none" stroke="#208B80" />
-                  <path d="M 257.39 202.87 L 257.39 466.87 " fill="none" stroke="#208B80" />
+                <g transform="translate(0,107)">
+                  <g>
+                    <text x="20" y="24" fill="#208B80" text-anchor="start" dominant-baseline="text-before-edge" font-size="11" font-family="Inter" font-weight="600" xml:space="preserve">MADE TO FIT</text>
+                    <text x="20" y="55.31" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" font-weight="600" xml:space="preserve">Room for your content.</text>
+                    <text x="20" y="92.35" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Live window geometry, in logical points.</text>
+                    <path d="M 40 126.87 H 353 A 20 20 0 0 1 373 146.87 V 538.87 A 20 20 0 0 1 353 558.87 H 40 A 20 20 0 0 1 20 538.87 V 146.87 A 20 20 0 0 1 40 126.87 Z " fill="#F6F8FA" fill-rule="nonzero" />
+                    <text x="36" y="148.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="10" font-family="Inter" font-weight="500" xml:space="preserve">SAFE AREA / INSETS</text>
+                    <g clip-path="url(#clip2)">
+                      <rect x="135.61" y="202.87" width="121.77" height="264" fill="#FBE7EC" />
+                      <rect x="135.61" y="221.15" width="121.77" height="235.18" fill="#E1F3ED" />
+                      <path d="M 135.61 221.15 L 257.39 221.15 " fill="none" stroke="#208B80" />
+                      <path d="M 135.61 456.33 L 257.39 456.33 " fill="none" stroke="#208B80" />
+                      <path d="M 135.61 202.87 L 135.61 466.87 " fill="none" stroke="#208B80" />
+                      <path d="M 257.39 202.87 L 257.39 466.87 " fill="none" stroke="#208B80" />
+                    </g>
+                    <path d="M 149.25 202.87 H 243.75 A 13.63 13.63 0 0 1 257.39 216.5 V 453.23 A 13.63 13.63 0 0 1 243.75 466.87 H 149.25 A 13.63 13.63 0 0 1 135.61 453.23 V 216.5 A 13.63 13.63 0 0 1 149.25 202.87 Z " fill="none" stroke="#252B3A" stroke-width="2" />
+                    <text x="196.5" y="328.74" fill="#208B80" text-anchor="middle" dominant-baseline="alphabetic" font-size="11" font-family="Inter" font-weight="500" xml:space="preserve">SAFE</text>
+                    <text x="196.5" y="344.74" fill="#208B80" text-anchor="middle" dominant-baseline="alphabetic" font-size="11" font-family="Inter" font-weight="500" xml:space="preserve">CONTENT</text>
+                    <text x="36" y="174.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">TOP</text>
+                    <text x="36" y="192.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">59 pt</text>
+                    <path d="M 36 198.87 L 96 198.87 " fill="none" stroke="#208B80" />
+                    <path d="M 96 198.87 L 146.25 198.87 L 196.5 212.01 " fill="none" stroke="#208B80" />
+                    <path d="M 198.5 212.01 A 2 2 0 0 1 194.5 212.01 A 2 2 0 0 1 198.5 212.01 " fill="#208B80" fill-rule="nonzero" />
+                    <text x="36" y="296.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">LEFT</text>
+                    <text x="36" y="314.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">0 pt</text>
+                    <path d="M 36 320.87 L 96 320.87 " fill="none" stroke="#208B80" />
+                    <path d="M 96 320.87 L 115.81 320.87 L 135.61 334.87 " fill="none" stroke="#208B80" />
+                    <path d="M 137.61 334.87 A 2 2 0 0 1 133.61 334.87 A 2 2 0 0 1 137.61 334.87 " fill="#208B80" fill-rule="nonzero" />
+                    <text x="297" y="346.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">RIGHT</text>
+                    <text x="297" y="364.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">0 pt</text>
+                    <path d="M 297 370.87 L 357 370.87 " fill="none" stroke="#208B80" />
+                    <path d="M 297 370.87 L 277.19 370.87 L 257.39 334.87 " fill="none" stroke="#208B80" />
+                    <path d="M 259.39 334.87 A 2 2 0 0 1 255.39 334.87 A 2 2 0 0 1 259.39 334.87 " fill="#208B80" fill-rule="nonzero" />
+                    <text x="297" y="472.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">BOTTOM</text>
+                    <text x="297" y="490.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">34 pt</text>
+                    <path d="M 297 496.87 L 357 496.87 " fill="none" stroke="#208B80" />
+                    <path d="M 297 496.87 L 246.75 496.87 L 196.5 461.6 " fill="none" stroke="#208B80" />
+                    <path d="M 198.5 461.6 A 2 2 0 0 1 194.5 461.6 A 2 2 0 0 1 198.5 461.6 " fill="#208B80" fill-rule="nonzero" />
+                    <path d="M 36 520.87 L 357 520.87 " fill="none" stroke="#D9DFE7" />
+                    <text x="36" y="541.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="12" font-family="Inter" font-weight="500" xml:space="preserve">393 × 852 pt</text>
+                    <text x="357" y="541.87" fill="#727B8D" text-anchor="end" dominant-baseline="alphabetic" font-size="11" font-family="Inter" font-weight="500" xml:space="preserve">Corners 44 pt</text>
+                    <text x="20" y="586.87" fill="#208B80" text-anchor="start" dominant-baseline="text-before-edge" font-size="11" font-family="Inter" font-weight="600" xml:space="preserve">DEVICE</text>
+                    <path d="M 20 658.18 L 373 658.18 " fill="none" stroke="#E9ECEF" />
+                    <text x="20" y="629.18" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">Operating system</text>
+                    <text x="351.36" y="629.18" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" font-weight="500" xml:space="preserve">iOS</text>
+                    <path d="M 20 698.18 L 373 698.18 " fill="none" stroke="#E9ECEF" />
+                    <text x="20" y="669.18" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">Form factor</text>
+                    <text x="331.06" y="669.18" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" font-weight="500" xml:space="preserve">Mobile</text>
+                    <path d="M 20 738.18 L 373 738.18 " fill="none" stroke="#E9ECEF" />
+                    <text x="20" y="709.18" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">Pointer model</text>
+                    <text x="334.53" y="709.18" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" font-weight="500" xml:space="preserve">Touch</text>
+                    <path d="M 20 778.18 L 373 778.18 " fill="none" stroke="#E9ECEF" />
+                  </g>
+                  <g>
+                    <path d="M 389.5 14.67 H 389.5 A 1.5 1.5 0 0 1 391 16.17 V 490.76 A 1.5 1.5 0 0 1 389.5 492.26 H 389.5 A 1.5 1.5 0 0 1 388 490.76 V 16.17 A 1.5 1.5 0 0 1 389.5 14.67 Z " fill="#000000" fill-rule="nonzero" fill-opacity="0.35" />
+                  </g>
                 </g>
-                <path d="M 149.25 202.87 H 243.75 A 13.63 13.63 0 0 1 257.39 216.5 V 453.23 A 13.63 13.63 0 0 1 243.75 466.87 H 149.25 A 13.63 13.63 0 0 1 135.61 453.23 V 216.5 A 13.63 13.63 0 0 1 149.25 202.87 Z " fill="none" stroke="#252B3A" stroke-width="2" />
-                <text x="196.5" y="328.74" fill="#208B80" text-anchor="middle" dominant-baseline="alphabetic" font-size="11" font-family="Inter" font-weight="500" xml:space="preserve">SAFE</text>
-                <text x="196.5" y="344.74" fill="#208B80" text-anchor="middle" dominant-baseline="alphabetic" font-size="11" font-family="Inter" font-weight="500" xml:space="preserve">CONTENT</text>
-                <text x="36" y="174.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">TOP</text>
-                <text x="36" y="192.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">59 pt</text>
-                <path d="M 36 198.87 L 96 198.87 " fill="none" stroke="#208B80" />
-                <path d="M 96 198.87 L 146.25 198.87 L 196.5 212.01 " fill="none" stroke="#208B80" />
-                <path d="M 198.5 212.01 A 2 2 0 0 1 194.5 212.01 A 2 2 0 0 1 198.5 212.01 " fill="#208B80" fill-rule="nonzero" />
-                <text x="36" y="296.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">LEFT</text>
-                <text x="36" y="314.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">0 pt</text>
-                <path d="M 36 320.87 L 96 320.87 " fill="none" stroke="#208B80" />
-                <path d="M 96 320.87 L 115.81 320.87 L 135.61 334.87 " fill="none" stroke="#208B80" />
-                <path d="M 137.61 334.87 A 2 2 0 0 1 133.61 334.87 A 2 2 0 0 1 137.61 334.87 " fill="#208B80" fill-rule="nonzero" />
-                <text x="297" y="346.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">RIGHT</text>
-                <text x="297" y="364.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">0 pt</text>
-                <path d="M 297 370.87 L 357 370.87 " fill="none" stroke="#208B80" />
-                <path d="M 297 370.87 L 277.19 370.87 L 257.39 334.87 " fill="none" stroke="#208B80" />
-                <path d="M 259.39 334.87 A 2 2 0 0 1 255.39 334.87 A 2 2 0 0 1 259.39 334.87 " fill="#208B80" fill-rule="nonzero" />
-                <text x="297" y="472.87" fill="#727B8D" text-anchor="start" dominant-baseline="alphabetic" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">BOTTOM</text>
-                <text x="297" y="490.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="14" font-family="Inter" font-weight="500" xml:space="preserve">34 pt</text>
-                <path d="M 297 496.87 L 357 496.87 " fill="none" stroke="#208B80" />
-                <path d="M 297 496.87 L 246.75 496.87 L 196.5 461.6 " fill="none" stroke="#208B80" />
-                <path d="M 198.5 461.6 A 2 2 0 0 1 194.5 461.6 A 2 2 0 0 1 198.5 461.6 " fill="#208B80" fill-rule="nonzero" />
-                <path d="M 36 520.87 L 357 520.87 " fill="none" stroke="#D9DFE7" />
-                <text x="36" y="541.87" fill="#252B3A" text-anchor="start" dominant-baseline="alphabetic" font-size="12" font-family="Inter" font-weight="500" xml:space="preserve">393 × 852 pt</text>
-                <text x="357" y="541.87" fill="#727B8D" text-anchor="end" dominant-baseline="alphabetic" font-size="11" font-family="Inter" font-weight="500" xml:space="preserve">Corners 44 pt</text>
-                <text x="20" y="586.87" fill="#208B80" text-anchor="start" dominant-baseline="text-before-edge" font-size="11" font-family="Inter" font-weight="600" xml:space="preserve">DEVICE</text>
-                <path d="M 20 658.18 L 373 658.18 " fill="none" stroke="#E9ECEF" />
-                <text x="20" y="629.18" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">Operating system</text>
-                <text x="351.36" y="629.18" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" font-weight="500" xml:space="preserve">iOS</text>
-                <path d="M 20 698.18 L 373 698.18 " fill="none" stroke="#E9ECEF" />
-                <text x="20" y="669.18" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">Form factor</text>
-                <text x="331.06" y="669.18" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" font-weight="500" xml:space="preserve">Mobile</text>
-                <path d="M 20 738.18 L 373 738.18 " fill="none" stroke="#E9ECEF" />
-                <text x="20" y="709.18" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">Pointer model</text>
-                <text x="334.53" y="709.18" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" font-weight="500" xml:space="preserve">Touch</text>
               </g>
-              <path d="M 389.5 14.67 H 389.5 A 1.5 1.5 0 0 1 391 16.17 V 490.76 A 1.5 1.5 0 0 1 389.5 492.26 H 389.5 A 1.5 1.5 0 0 1 388 490.76 V 16.17 A 1.5 1.5 0 0 1 389.5 14.67 Z " fill="#000000" fill-rule="nonzero" fill-opacity="0.35" />
+            </g>
+            <g>
+<rect x="0" y="0" width="393" height="107" rx="0" data-xui-material="Blur" fill="url(#surfaceGlass1)" stroke="#FFFFFF" stroke-opacity="0.7" filter="url(#surfaceGlass1Soft)"/>
+              <path d="M 20.5 78 L 15.5 83 L 20.5 88 " fill="none" stroke="#030303" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <text x="31" y="83" fill="#030303" text-anchor="start" dominant-baseline="central" font-size="16" font-family="Inter" font-weight="500" xml:space="preserve">Back</text>
+              <text x="150.33" y="72.72" fill="#030303" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Device Info</text>
+              <path d="M 0 107 L 393 107 " fill="none" stroke="#BDBDBD" />
             </g>
           </g>
-          <rect x="0" y="0" width="393" height="107" fill="#FFFFFF" />
-          <path d="M 20.5 78 L 15.5 83 L 20.5 88 " fill="none" stroke="#030303" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-          <text x="31" y="83" fill="#030303" text-anchor="start" dominant-baseline="central" font-size="16" font-family="Inter" font-weight="500" xml:space="preserve">Back</text>
-          <text x="150.33" y="72.72" fill="#030303" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Device Info</text>
-          <path d="M 0 107 L 393 107 " fill="none" stroke="#BDBDBD" />
+          <g>
+          </g>
         </g>
       </g>
     </g>

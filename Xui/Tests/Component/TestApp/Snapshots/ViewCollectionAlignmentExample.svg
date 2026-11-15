@@ -1,47 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
-  <path d="M 5 1 H 18.74 A 4 4 0 0 1 22.74 5 V 395 A 4 4 0 0 1 18.74 399 H 5 A 4 4 0 0 1 1 395 V 5 A 4 4 0 0 1 5 1 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="1" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Left</text>
-  <path d="M 5 0.5 H 18.74 A 4.5 4.5 0 0 1 23.24 5 V 395 A 4.5 4.5 0 0 1 18.74 399.5 H 5 A 4.5 4.5 0 0 1 0.5 395 V 5 A 4.5 4.5 0 0 1 5 0.5 Z " fill="none" stroke="#000000" />
-  <path d="M 284.91 1 H 315.09 A 4 4 0 0 1 319.09 5 V 395 A 4 4 0 0 1 315.09 399 H 284.91 A 4 4 0 0 1 280.91 395 V 5 A 4 4 0 0 1 284.91 1 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <path d="M 13 9 H 26.74 A 4 4 0 0 1 30.74 13 V 387 A 4 4 0 0 1 26.74 391 H 13 A 4 4 0 0 1 9 387 V 13 A 4 4 0 0 1 13 9 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="9" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Left</text>
+  <path d="M 13 8.5 H 26.74 A 4.5 4.5 0 0 1 31.24 13 V 387 A 4.5 4.5 0 0 1 26.74 391.5 H 13 A 4.5 4.5 0 0 1 8.5 387 V 13 A 4.5 4.5 0 0 1 13 8.5 Z " fill="none" stroke="#000000" />
+  <path d="M 284.91 9 H 315.09 A 4 4 0 0 1 319.09 13 V 387 A 4 4 0 0 1 315.09 391 H 284.91 A 4 4 0 0 1 280.91 387 V 13 A 4 4 0 0 1 284.91 9 Z " fill="#FFFFFF" fill-rule="nonzero" />
   <text x="280.91" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Center</text>
-  <path d="M 284.91 0.5 H 315.09 A 4.5 4.5 0 0 1 319.59 5 V 395 A 4.5 4.5 0 0 1 315.09 399.5 H 284.91 A 4.5 4.5 0 0 1 280.41 395 V 5 A 4.5 4.5 0 0 1 284.91 0.5 Z " fill="none" stroke="#000000" />
-  <path d="M 573.99 1 H 595 A 4 4 0 0 1 599 5 V 395 A 4 4 0 0 1 595 399 H 573.99 A 4 4 0 0 1 569.99 395 V 5 A 4 4 0 0 1 573.99 1 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="569.99" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Right</text>
-  <path d="M 573.99 0.5 H 595 A 4.5 4.5 0 0 1 599.5 5 V 395 A 4.5 4.5 0 0 1 595 399.5 H 573.99 A 4.5 4.5 0 0 1 569.49 395 V 5 A 4.5 4.5 0 0 1 573.99 0.5 Z " fill="none" stroke="#000000" />
-  <path d="M 5 1 H 595 A 4 4 0 0 1 599 5 V 11.52 A 4 4 0 0 1 595 15.52 H 5 A 4 4 0 0 1 1 11.52 V 5 A 4 4 0 0 1 5 1 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="289.32" y="1" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Top</text>
-  <path d="M 5 0.5 H 595 A 4.5 4.5 0 0 1 599.5 5 V 11.52 A 4.5 4.5 0 0 1 595 16.02 H 5 A 4.5 4.5 0 0 1 0.5 11.52 V 5 A 4.5 4.5 0 0 1 5 0.5 Z " fill="none" stroke="#000000" />
-  <path d="M 5 192.74 H 595 A 4 4 0 0 1 599 196.74 V 203.26 A 4 4 0 0 1 595 207.26 H 5 A 4 4 0 0 1 1 203.26 V 196.74 A 4 4 0 0 1 5 192.74 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <path d="M 284.91 8.5 H 315.09 A 4.5 4.5 0 0 1 319.59 13 V 387 A 4.5 4.5 0 0 1 315.09 391.5 H 284.91 A 4.5 4.5 0 0 1 280.41 387 V 13 A 4.5 4.5 0 0 1 284.91 8.5 Z " fill="none" stroke="#000000" />
+  <path d="M 565.99 9 H 587 A 4 4 0 0 1 591 13 V 387 A 4 4 0 0 1 587 391 H 565.99 A 4 4 0 0 1 561.99 387 V 13 A 4 4 0 0 1 565.99 9 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="561.99" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Right</text>
+  <path d="M 565.99 8.5 H 587 A 4.5 4.5 0 0 1 591.5 13 V 387 A 4.5 4.5 0 0 1 587 391.5 H 565.99 A 4.5 4.5 0 0 1 561.49 387 V 13 A 4.5 4.5 0 0 1 565.99 8.5 Z " fill="none" stroke="#000000" />
+  <path d="M 13 9 H 587 A 4 4 0 0 1 591 13 V 19.52 A 4 4 0 0 1 587 23.52 H 13 A 4 4 0 0 1 9 19.52 V 13 A 4 4 0 0 1 13 9 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="289.32" y="9" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Top</text>
+  <path d="M 13 8.5 H 587 A 4.5 4.5 0 0 1 591.5 13 V 19.52 A 4.5 4.5 0 0 1 587 24.02 H 13 A 4.5 4.5 0 0 1 8.5 19.52 V 13 A 4.5 4.5 0 0 1 13 8.5 Z " fill="none" stroke="#000000" />
+  <path d="M 13 192.74 H 587 A 4 4 0 0 1 591 196.74 V 203.26 A 4 4 0 0 1 587 207.26 H 13 A 4 4 0 0 1 9 203.26 V 196.74 A 4 4 0 0 1 13 192.74 Z " fill="#FFFFFF" fill-rule="nonzero" />
   <text x="280.83" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Middle</text>
-  <path d="M 5 192.24 H 595 A 4.5 4.5 0 0 1 599.5 196.74 V 203.26 A 4.5 4.5 0 0 1 595 207.76 H 5 A 4.5 4.5 0 0 1 0.5 203.26 V 196.74 A 4.5 4.5 0 0 1 5 192.24 Z " fill="none" stroke="#000000" />
-  <path d="M 5 384.48 H 595 A 4 4 0 0 1 599 388.48 V 395 A 4 4 0 0 1 595 399 H 5 A 4 4 0 0 1 1 395 V 388.48 A 4 4 0 0 1 5 384.48 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="279.76" y="384.48" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Bottom</text>
-  <path d="M 5 383.98 H 595 A 4.5 4.5 0 0 1 599.5 388.48 V 395 A 4.5 4.5 0 0 1 595 399.5 H 5 A 4.5 4.5 0 0 1 0.5 395 V 388.48 A 4.5 4.5 0 0 1 5 383.98 Z " fill="none" stroke="#000000" />
-  <path d="M 29 25 H 67.46 A 4 4 0 0 1 71.46 29 V 35.52 A 4 4 0 0 1 67.46 39.52 H 29 A 4 4 0 0 1 25 35.52 V 29 A 4 4 0 0 1 29 25 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="25" y="25" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Top Left</text>
-  <path d="M 29 24.5 H 67.46 A 4.5 4.5 0 0 1 71.96 29 V 35.52 A 4.5 4.5 0 0 1 67.46 40.02 H 29 A 4.5 4.5 0 0 1 24.5 35.52 V 29 A 4.5 4.5 0 0 1 29 24.5 Z " fill="none" stroke="#000000" />
-  <path d="M 272.55 25 H 327.45 A 4 4 0 0 1 331.45 29 V 35.52 A 4 4 0 0 1 327.45 39.52 H 272.55 A 4 4 0 0 1 268.55 35.52 V 29 A 4 4 0 0 1 272.55 25 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="268.55" y="25" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Top Center</text>
-  <path d="M 272.55 24.5 H 327.45 A 4.5 4.5 0 0 1 331.95 29 V 35.52 A 4.5 4.5 0 0 1 327.45 40.02 H 272.55 A 4.5 4.5 0 0 1 268.05 35.52 V 29 A 4.5 4.5 0 0 1 272.55 24.5 Z " fill="none" stroke="#000000" />
-  <path d="M 525.26 25 H 571 A 4 4 0 0 1 575 29 V 35.52 A 4 4 0 0 1 571 39.52 H 525.26 A 4 4 0 0 1 521.26 35.52 V 29 A 4 4 0 0 1 525.26 25 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="521.26" y="25" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Top Right</text>
-  <path d="M 525.26 24.5 H 571 A 4.5 4.5 0 0 1 575.5 29 V 35.52 A 4.5 4.5 0 0 1 571 40.02 H 525.26 A 4.5 4.5 0 0 1 520.76 35.52 V 29 A 4.5 4.5 0 0 1 525.26 24.5 Z " fill="none" stroke="#000000" />
-  <path d="M 29 192.74 H 84.46 A 4 4 0 0 1 88.46 196.74 V 203.26 A 4 4 0 0 1 84.46 207.26 H 29 A 4 4 0 0 1 25 203.26 V 196.74 A 4 4 0 0 1 29 192.74 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="25" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Middle Left</text>
-  <path d="M 29 192.24 H 84.46 A 4.5 4.5 0 0 1 88.96 196.74 V 203.26 A 4.5 4.5 0 0 1 84.46 207.76 H 29 A 4.5 4.5 0 0 1 24.5 203.26 V 196.74 A 4.5 4.5 0 0 1 29 192.24 Z " fill="none" stroke="#000000" />
+  <path d="M 13 192.24 H 587 A 4.5 4.5 0 0 1 591.5 196.74 V 203.26 A 4.5 4.5 0 0 1 587 207.76 H 13 A 4.5 4.5 0 0 1 8.5 203.26 V 196.74 A 4.5 4.5 0 0 1 13 192.24 Z " fill="none" stroke="#000000" />
+  <path d="M 13 376.48 H 587 A 4 4 0 0 1 591 380.48 V 387 A 4 4 0 0 1 587 391 H 13 A 4 4 0 0 1 9 387 V 380.48 A 4 4 0 0 1 13 376.48 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="279.76" y="376.48" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Bottom</text>
+  <path d="M 13 375.98 H 587 A 4.5 4.5 0 0 1 591.5 380.48 V 387 A 4.5 4.5 0 0 1 587 391.5 H 13 A 4.5 4.5 0 0 1 8.5 387 V 380.48 A 4.5 4.5 0 0 1 13 375.98 Z " fill="none" stroke="#000000" />
+  <path d="M 37 33 H 75.46 A 4 4 0 0 1 79.46 37 V 43.52 A 4 4 0 0 1 75.46 47.52 H 37 A 4 4 0 0 1 33 43.52 V 37 A 4 4 0 0 1 37 33 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="33" y="33" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Top Left</text>
+  <path d="M 37 32.5 H 75.46 A 4.5 4.5 0 0 1 79.96 37 V 43.52 A 4.5 4.5 0 0 1 75.46 48.02 H 37 A 4.5 4.5 0 0 1 32.5 43.52 V 37 A 4.5 4.5 0 0 1 37 32.5 Z " fill="none" stroke="#000000" />
+  <path d="M 272.55 33 H 327.45 A 4 4 0 0 1 331.45 37 V 43.52 A 4 4 0 0 1 327.45 47.52 H 272.55 A 4 4 0 0 1 268.55 43.52 V 37 A 4 4 0 0 1 272.55 33 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="268.55" y="33" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Top Center</text>
+  <path d="M 272.55 32.5 H 327.45 A 4.5 4.5 0 0 1 331.95 37 V 43.52 A 4.5 4.5 0 0 1 327.45 48.02 H 272.55 A 4.5 4.5 0 0 1 268.05 43.52 V 37 A 4.5 4.5 0 0 1 272.55 32.5 Z " fill="none" stroke="#000000" />
+  <path d="M 517.26 33 H 563 A 4 4 0 0 1 567 37 V 43.52 A 4 4 0 0 1 563 47.52 H 517.26 A 4 4 0 0 1 513.26 43.52 V 37 A 4 4 0 0 1 517.26 33 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="513.26" y="33" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Top Right</text>
+  <path d="M 517.26 32.5 H 563 A 4.5 4.5 0 0 1 567.5 37 V 43.52 A 4.5 4.5 0 0 1 563 48.02 H 517.26 A 4.5 4.5 0 0 1 512.76 43.52 V 37 A 4.5 4.5 0 0 1 517.26 32.5 Z " fill="none" stroke="#000000" />
+  <path d="M 37 192.74 H 92.46 A 4 4 0 0 1 96.46 196.74 V 203.26 A 4 4 0 0 1 92.46 207.26 H 37 A 4 4 0 0 1 33 203.26 V 196.74 A 4 4 0 0 1 37 192.74 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="33" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Middle Left</text>
+  <path d="M 37 192.24 H 92.46 A 4.5 4.5 0 0 1 96.96 196.74 V 203.26 A 4.5 4.5 0 0 1 92.46 207.76 H 37 A 4.5 4.5 0 0 1 32.5 203.26 V 196.74 A 4.5 4.5 0 0 1 37 192.24 Z " fill="none" stroke="#000000" />
   <path d="M 264.05 192.74 H 335.95 A 4 4 0 0 1 339.95 196.74 V 203.26 A 4 4 0 0 1 335.95 207.26 H 264.05 A 4 4 0 0 1 260.05 203.26 V 196.74 A 4 4 0 0 1 264.05 192.74 Z " fill="#FFFFFF" fill-rule="nonzero" />
   <text x="260.05" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Middle Center</text>
   <path d="M 264.05 192.24 H 335.95 A 4.5 4.5 0 0 1 340.45 196.74 V 203.26 A 4.5 4.5 0 0 1 335.95 207.76 H 264.05 A 4.5 4.5 0 0 1 259.55 203.26 V 196.74 A 4.5 4.5 0 0 1 264.05 192.24 Z " fill="none" stroke="#000000" />
-  <path d="M 508.27 192.74 H 571 A 4 4 0 0 1 575 196.74 V 203.26 A 4 4 0 0 1 571 207.26 H 508.27 A 4 4 0 0 1 504.27 203.26 V 196.74 A 4 4 0 0 1 508.27 192.74 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="504.27" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Middle Right</text>
-  <path d="M 508.27 192.24 H 571 A 4.5 4.5 0 0 1 575.5 196.74 V 203.26 A 4.5 4.5 0 0 1 571 207.76 H 508.27 A 4.5 4.5 0 0 1 503.77 203.26 V 196.74 A 4.5 4.5 0 0 1 508.27 192.24 Z " fill="none" stroke="#000000" />
-  <path d="M 29 360.48 H 86.6 A 4 4 0 0 1 90.6 364.48 V 371 A 4 4 0 0 1 86.6 375 H 29 A 4 4 0 0 1 25 371 V 364.48 A 4 4 0 0 1 29 360.48 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="25" y="360.48" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Bottom Left</text>
-  <path d="M 29 359.98 H 86.6 A 4.5 4.5 0 0 1 91.1 364.48 V 371 A 4.5 4.5 0 0 1 86.6 375.5 H 29 A 4.5 4.5 0 0 1 24.5 371 V 364.48 A 4.5 4.5 0 0 1 29 359.98 Z " fill="none" stroke="#000000" />
-  <path d="M 262.98 360.48 H 337.02 A 4 4 0 0 1 341.02 364.48 V 371 A 4 4 0 0 1 337.02 375 H 262.98 A 4 4 0 0 1 258.98 371 V 364.48 A 4 4 0 0 1 262.98 360.48 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="258.98" y="360.48" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Bottom Center</text>
-  <path d="M 262.98 359.98 H 337.02 A 4.5 4.5 0 0 1 341.52 364.48 V 371 A 4.5 4.5 0 0 1 337.02 375.5 H 262.98 A 4.5 4.5 0 0 1 258.48 371 V 364.48 A 4.5 4.5 0 0 1 262.98 359.98 Z " fill="none" stroke="#000000" />
-  <path d="M 506.13 360.48 H 571 A 4 4 0 0 1 575 364.48 V 371 A 4 4 0 0 1 571 375 H 506.13 A 4 4 0 0 1 502.13 371 V 364.48 A 4 4 0 0 1 506.13 360.48 Z " fill="#FFFFFF" fill-rule="nonzero" />
-  <text x="502.13" y="360.48" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Bottom Right</text>
-  <path d="M 506.13 359.98 H 571 A 4.5 4.5 0 0 1 575.5 364.48 V 371 A 4.5 4.5 0 0 1 571 375.5 H 506.13 A 4.5 4.5 0 0 1 501.63 371 V 364.48 A 4.5 4.5 0 0 1 506.13 359.98 Z " fill="none" stroke="#000000" />
+  <path d="M 500.27 192.74 H 563 A 4 4 0 0 1 567 196.74 V 203.26 A 4 4 0 0 1 563 207.26 H 500.27 A 4 4 0 0 1 496.27 203.26 V 196.74 A 4 4 0 0 1 500.27 192.74 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="496.27" y="192.74" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Middle Right</text>
+  <path d="M 500.27 192.24 H 563 A 4.5 4.5 0 0 1 567.5 196.74 V 203.26 A 4.5 4.5 0 0 1 563 207.76 H 500.27 A 4.5 4.5 0 0 1 495.77 203.26 V 196.74 A 4.5 4.5 0 0 1 500.27 192.24 Z " fill="none" stroke="#000000" />
+  <path d="M 37 352.48 H 94.6 A 4 4 0 0 1 98.6 356.48 V 363 A 4 4 0 0 1 94.6 367 H 37 A 4 4 0 0 1 33 363 V 356.48 A 4 4 0 0 1 37 352.48 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="33" y="352.48" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Bottom Left</text>
+  <path d="M 37 351.98 H 94.6 A 4.5 4.5 0 0 1 99.1 356.48 V 363 A 4.5 4.5 0 0 1 94.6 367.5 H 37 A 4.5 4.5 0 0 1 32.5 363 V 356.48 A 4.5 4.5 0 0 1 37 351.98 Z " fill="none" stroke="#000000" />
+  <path d="M 262.98 352.48 H 337.02 A 4 4 0 0 1 341.02 356.48 V 363 A 4 4 0 0 1 337.02 367 H 262.98 A 4 4 0 0 1 258.98 363 V 356.48 A 4 4 0 0 1 262.98 352.48 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="258.98" y="352.48" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Bottom Center</text>
+  <path d="M 262.98 351.98 H 337.02 A 4.5 4.5 0 0 1 341.52 356.48 V 363 A 4.5 4.5 0 0 1 337.02 367.5 H 262.98 A 4.5 4.5 0 0 1 258.48 363 V 356.48 A 4.5 4.5 0 0 1 262.98 351.98 Z " fill="none" stroke="#000000" />
+  <path d="M 498.13 352.48 H 563 A 4 4 0 0 1 567 356.48 V 363 A 4 4 0 0 1 563 367 H 498.13 A 4 4 0 0 1 494.13 363 V 356.48 A 4 4 0 0 1 498.13 352.48 Z " fill="#FFFFFF" fill-rule="nonzero" />
+  <text x="494.13" y="352.48" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Bottom Right</text>
+  <path d="M 498.13 351.98 H 563 A 4.5 4.5 0 0 1 567.5 356.48 V 363 A 4.5 4.5 0 0 1 563 367.5 H 498.13 A 4.5 4.5 0 0 1 493.63 363 V 356.48 A 4.5 4.5 0 0 1 498.13 351.98 Z " fill="none" stroke="#000000" />
 </svg>
