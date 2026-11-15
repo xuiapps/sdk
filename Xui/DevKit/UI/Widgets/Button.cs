@@ -3,6 +3,7 @@ using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.Core.UI.Input;
 using Xui.DevKit.UI.Design;
+using Xui.DevKit.UI.Layer;
 
 namespace Xui.DevKit.UI.Widgets;
 
@@ -220,10 +221,7 @@ public partial class Button : View, IDesignSystemChangeNotifications
         else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down && pressedPointer == -1)
         {
             hover = e.State.PointerType == PointerType.Mouse && hover;
-            var delay = false;
-            if (e.State.PointerType == PointerType.Touch)
-                foreach (var candidate in e.PotentialGestures)
-                    if (candidate.Handler != this && candidate.Gesture is IDrag) { delay = true; break; }
+            var delay = PressFeedbackLayer<Button>.ShouldDelay(this, ref e);
             BeginPress(e.PointerId, e.State.Position, delay);
             CapturePointer(e.PointerId, PointerGestures.Tap);
         }

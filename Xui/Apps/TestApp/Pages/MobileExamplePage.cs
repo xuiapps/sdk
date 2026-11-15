@@ -13,13 +13,16 @@ public sealed class MobileExamplePage<T> : ViewCollection, IPage, INavigationAwa
     where T : Example, new()
 {
     private static readonly NFloat HeaderHeight = 48;
-    private readonly T content = new();
+    private readonly T content;
     private readonly MobileExampleHeader header;
     private readonly MobileExampleFooter? footer;
     private readonly MobileExampleSectionMenu? sectionMenu;
 
-    public MobileExamplePage()
+    public MobileExamplePage() : this(new T()) { }
+
+    public MobileExamplePage(T content)
     {
+        this.content = content;
         if (content is IMobileExamplePresentation mobilePresentation)
             mobilePresentation.UseMobilePresentation();
         header = new MobileExampleHeader(content.Title);
@@ -63,9 +66,13 @@ public sealed class MobileExamplePage<T> : ViewCollection, IPage, INavigationAwa
 
     private void RenderSurface(IContext context, View view)
     {
+        var bounds = new Rect(view.Frame.X - 24, view.Frame.Y - 24, view.Frame.Width + 48, view.Frame.Height + 48);
+        if (ReferenceEquals(view, content) && content is IMobileExamplePresentation { DrawsUnderHeader: true }
+            && this.TryFindParent<RootView>(out var windowRoot))
+            bounds = windowRoot.Window.DisplayArea;
         using var group = context.Group(new GroupOptions
         {
-            Key = view, ViewBacking = true, Bounds = new Rect(view.Frame.X - 24, view.Frame.Y - 24, view.Frame.Width + 48, view.Frame.Height + 48),
+            Key = view, ViewBacking = true, Bounds = bounds,
             HasUpdates = view.RequiresRender(context)
         });
         if (group.NeedsRedraw) RenderChild(context, view,

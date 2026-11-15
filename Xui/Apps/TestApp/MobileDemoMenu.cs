@@ -22,6 +22,7 @@ internal sealed class MobileDemoMenu : MobileSurfaceStack
         AddGpu();
         AddDesign();
         AddDeviceInfo();
+        AddPerformance();
     }
 
     private void AddCanvas()
@@ -71,6 +72,12 @@ internal sealed class MobileDemoMenu : MobileSurfaceStack
     {
         var panel = AddPanel("Device Info");
         panel.AddExample<DeviceInfoExample>("DeviceInfo", "Device Info", MobileDemoIcon.Device);
+    }
+
+    private void AddPerformance()
+    {
+        var panel = AddPanel("Performance");
+        panel.AddExample<Pages.Market.MarketExample>("MarketPulse", "Market Pulse · 5,000 rows", MobileDemoIcon.Market);
     }
 
     private MobileDemoCategoryPanel AddPanel(string heading)

@@ -113,6 +113,9 @@ public class SdkHomePage : VerticalStack
             Text = "Gestures",
             TextColor = foreground,
         });
+        this.Add(new SdkExampleButton<Market.MarketExample>() {
+            Id = "MarketPulse", Margin = 3, Text = "Market Pulse · 5,000 rows", TextColor = foreground,
+        });
         this.Add(new SdkExampleButton<WindowModesMacOS>() {
             Id = "WindowModes",
             Margin = 3,

@@ -466,13 +466,12 @@ public partial class ScrollView : View
 
                 if (nfloat.Max(nfloat.Abs(totalDx), nfloat.Abs(totalDy)) > ScrollThreshold)
                 {
-                    // Leave drags on the other axis to the ancestor carousel/scroller.
+                    // Leave this move to the other axis, but keep watching while the child
+                    // owns a tap. The user can turn toward our axis before any drag wins.
+                    // An ancestor that claims the pointer will remove us from its route.
                     if ((Direction == ScrollDirection.Vertical && nfloat.Abs(totalDx) >= nfloat.Abs(totalDy)) ||
                         (Direction == ScrollDirection.Horizontal && nfloat.Abs(totalDy) >= nfloat.Abs(totalDx)))
                     {
-                        gestureMode = ScrollGestureMode.StandDown;
-                        activePointer = -1;
-                        QueueReturnToBounds();
                         break;
                     }
                     // Re-check the current gesture: in nested ScrollView setups, an inner

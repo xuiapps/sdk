@@ -8,6 +8,8 @@ internal interface IExampleNavigation
 {
     void PopExample();
 
+    void PushExamplePage(Example page);
+
     void PushExamplePage<TPage>() where TPage : Example, new();
 }
 

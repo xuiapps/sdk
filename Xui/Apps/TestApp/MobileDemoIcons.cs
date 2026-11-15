@@ -7,7 +7,7 @@ namespace Xui.Apps.TestApp;
 internal enum MobileDemoIcon
 {
     Drawing, Animation, TextMetrics, Basics, Grid, Flexbox, Gestures, TextInput,
-    Haptics, Vibration, Recording, Cube, Design, Device,
+    Haptics, Vibration, Recording, Cube, Design, Device, Market,
 }
 
 /// <summary>Purple outline symbols in a 32-point area for the home menu.</summary>
@@ -26,6 +26,11 @@ internal static class MobileDemoIcons
             context.LineCap = LineCap.Round; context.LineJoin = LineJoin.Round;
             switch (icon)
             {
+                case MobileDemoIcon.Market:
+                    Path(context, [(2, 2), (2, 18), (18, 18)]);
+                    Path(context, [(5, 13), (9, 9), (12, 11), (18, 3)]);
+                    Path(context, [(13, 3), (18, 3), (18, 8)]);
+                    break;
                 case MobileDemoIcon.Drawing:
                     Path(context, [(3, 13), (14, 2), (18, 6), (7, 17), (2, 18), (3, 13)]);
                     Line(context, (12, 4), (16, 8));

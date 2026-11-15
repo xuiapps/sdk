@@ -29,5 +29,7 @@ internal sealed class MobileNavigation : NavigationView, IExampleNavigation
     public void PushExamplePage<TPage>() where TPage : Example, new() =>
         Push(new MobileExamplePage<TPage>());
 
+    public void PushExamplePage(Example page) => Push(new MobileExamplePage<Example>(page));
+
     public void PopExample() => Pop();
 }
