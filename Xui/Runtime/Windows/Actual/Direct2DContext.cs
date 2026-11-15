@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
 using Xui.Core.Curves2D;
 using Xui.Core.Math2D;
 using static Xui.Runtime.Windows.D2D1;
@@ -11,6 +12,10 @@ namespace Xui.Runtime.Windows.Actual;
 
 public partial class Direct2DContext : IContext
 {
+    private FilterState filter;
+    public void SetFilter() => filter = default;
+    public void SetFilter(Brightness brightness) => filter = new(brightness);
+
     private readonly RenderTarget RenderTarget;
 
     private readonly D2D1.Factory3 D2D1Factory;
@@ -43,6 +48,7 @@ public partial class Direct2DContext : IContext
 
     private struct State
     {
+        public FilterState Filter;
         public int Blocks;
         public int Layers;
         public int Transforms;
@@ -106,6 +112,7 @@ public partial class Direct2DContext : IContext
         {
             this.states.Push(new State()
             {
+                Filter = this.filter,
                 Blocks = this.drawingStateBlocks.Count,
                 Transforms = this.transforms.Count,
                 Layers = this.layersCount,
@@ -145,6 +152,7 @@ public partial class Direct2DContext : IContext
         if (this.states.Count > 0)
         {
             var state = this.states.Pop();
+            this.filter = state.Filter;
 
             while(this.drawingStateBlocks.Count > state.Blocks)
             {
@@ -192,22 +200,22 @@ public partial class Direct2DContext : IContext
         this.StrokeStyle.SetLineDash(segments);
 
     void IPenContext.SetStroke(Color color) =>
-        this.stroke.SetSolidColor(color);
+        this.stroke.SetSolidColor(filter.Apply(color));
 
     void IPenContext.SetStroke(LinearGradient linearGradient) =>
-        this.stroke.SetLinearGradient(linearGradient);
+        this.stroke.SetLinearGradient(linearGradient, filter);
 
     void IPenContext.SetStroke(RadialGradient radialGradient) =>
-        this.stroke.SetRadialGradient(radialGradient);
+        this.stroke.SetRadialGradient(radialGradient, filter);
 
     void IPenContext.SetFill(Color color) =>
-        this.fill.SetSolidColor(color);
+        this.fill.SetSolidColor(filter.Apply(color));
 
     void IPenContext.SetFill(LinearGradient linearGradient) =>
-        this.fill.SetLinearGradient(linearGradient);
+        this.fill.SetLinearGradient(linearGradient, filter);
 
     void IPenContext.SetFill(RadialGradient radialGradient) =>
-        this.fill.SetRadialGradient(radialGradient);
+        this.fill.SetRadialGradient(radialGradient, filter);
 
     void IPenContext.SetFill(ImagePattern pattern) =>
         this.fill.SetBitmapBrush(pattern);
@@ -809,6 +817,7 @@ public partial class Direct2DContext : IContext
 
     public void BeginDraw()
     {
+        filter = default;
     }
 
     public void EndDraw()
@@ -869,7 +878,7 @@ public partial class Direct2DContext : IContext
             this.PaintStyle = PaintStyle.SolidColor;
         }
 
-        public void SetLinearGradient(LinearGradient linearGradient)
+        public void SetLinearGradient(LinearGradient linearGradient, FilterState filter)
         {
             this.Brush.Dispose();
 
@@ -892,7 +901,7 @@ public partial class Direct2DContext : IContext
                 gradientStops[i] = new()
                 {
                     Position = (float)abstr.Offset,
-                    Color = abstr.Color
+                    Color = filter.Apply(abstr.Color)
                 };
             }
 
@@ -900,7 +909,7 @@ public partial class Direct2DContext : IContext
             this.PaintStyle = PaintStyle.LinearGradient;
         }
 
-        public void SetRadialGradient(RadialGradient radialGradient)
+        public void SetRadialGradient(RadialGradient radialGradient, FilterState filter)
         {
             this.Brush.Dispose();
 
@@ -927,7 +936,7 @@ public partial class Direct2DContext : IContext
                 gradientStops[i] = new()
                 {
                     Position = (float)abstr.Offset,
-                    Color = abstr.Color
+                    Color = filter.Apply(abstr.Color)
                 };
             }
 

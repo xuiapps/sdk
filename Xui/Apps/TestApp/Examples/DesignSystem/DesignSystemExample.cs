@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Xui.Apps.TestApp.Examples;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
@@ -15,7 +16,7 @@ namespace Xui.Apps.TestApp.Examples.DesignSystem;
 /// Root view for the Design System demo. Owns the design system state and
 /// provides IDesignSystem and IDesignSystemEditor to all descendants via GetService.
 /// </summary>
-public class DesignSystemExample : Example, IDesignSystemEditor
+public class DesignSystemExample : Example, IDesignSystemEditor, IMobileExamplePresentation
 {
     private NFloat primaryHue = 240;
     private ColorHarmony harmony = ColorHarmony.SplitComplementary;
@@ -24,12 +25,13 @@ public class DesignSystemExample : Example, IDesignSystemEditor
     private SizingPreset sizingPreset = SizingPreset.Mobile;
     private MotionPreset motionPreset = MotionPreset.Normal;
     private XuiDesignSystem? designSystem;
+    private readonly DesignSystemResponsiveContent responsiveContent;
 
     public DesignSystemExample()
     {
         Title = "Design System";
 
-        Content = new Grid
+        Content = responsiveContent = new DesignSystemResponsiveContent(new Grid
         {
             TemplateColumns = [Px(460), Fr(1)],
             TemplateRows = [Fr(1)],
@@ -143,8 +145,11 @@ public class DesignSystemExample : Example, IDesignSystemEditor
                     ]
                 },
             ]
-        };
+        });
     }
+
+    /// <inheritdoc/>
+    public void UseMobilePresentation() => responsiveContent.UseMobilePresentation();
 
     NFloat IDesignSystemEditor.PrimaryHue => primaryHue;
     ColorHarmony IDesignSystemEditor.Harmony => harmony;

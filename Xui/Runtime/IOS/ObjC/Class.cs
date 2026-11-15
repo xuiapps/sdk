@@ -88,7 +88,7 @@ public static partial class ObjC
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public Builder Extend(string name, int extraBytes = 0) => new Builder(this, name, extraBytes);
+        public Builder Extend(string name, nuint extraBytes = 0) => new Builder(this, name, extraBytes);
 
         public static implicit operator nint(Class cls) => cls.Id;
     }

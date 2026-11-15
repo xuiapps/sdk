@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Android.Graphics;
 using Android.Net;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
 using Xui.Core.Math2D;
 
 using ARect = global::Android.Graphics.Rect;
@@ -11,6 +12,10 @@ namespace Xui.Runtime.Android.Actual;
 
 public class AndroidDrawingContext : IContext
 {
+    private FilterState filter;
+    public void SetFilter() => filter = default;
+    public void SetFilter(Brightness brightness) => filter = new(brightness);
+
     private Paint aFillPaint;
     private Paint aStrokePaint;
 
@@ -205,8 +210,11 @@ public class AndroidDrawingContext : IContext
         throw new NotImplementedException();
     }
 
-    public void SetFill(Core.Canvas.Color color) =>
+    public void SetFill(Core.Canvas.Color color)
+    {
+        color = filter.Apply(color);
         this.aFillPaint.SetARGB((int)(color.Alpha * 255), (int)(color.Red * 255), (int)(color.Green * 255), (int)(color.Blue * 255));
+    }
 
     public void SetFill(Core.Canvas.LinearGradient linearGradient)
     {
@@ -263,8 +271,11 @@ public class AndroidDrawingContext : IContext
         throw new NotImplementedException();
     }
 
-    public void SetStroke(Core.Canvas.Color color) =>
+    public void SetStroke(Core.Canvas.Color color)
+    {
+        color = filter.Apply(color);
         this.aStrokePaint.SetARGB((int)(color.Alpha * 255), (int)(color.Red * 255), (int)(color.Green * 255), (int)(color.Blue * 255));
+    }
 
     public void SetStroke(Core.Canvas.LinearGradient linearGradient)
     {

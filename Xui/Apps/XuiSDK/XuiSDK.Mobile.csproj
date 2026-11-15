@@ -14,9 +14,18 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+		<!--
+			Xui owns the nfloat alias in GlobalUsings.cs for every target.
+			The iOS workload normally generates the same alias, so opt out to avoid CS1537.
+		-->
+		<NoNFloatUsing>true</NoNFloatUsing>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- Xui application assets retain their cross-platform logical asset:// path. -->
+		<MauiAsset Include="Assets\**" LogicalName="Assets/%(RecursiveDir)%(Filename)%(Extension)" />
+
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.3" />
 	</ItemGroup>

@@ -88,7 +88,7 @@ public partial class BrowserWindow : Xui.Core.Actual.IWindow
             Rect rect = new Rect(0, 0, (NFloat)width, (NFloat)height);
             RenderEventRef renderEventRef = new RenderEventRef(rect, frameEventRef, drawingContext);
 
-            BrowserDrawingContext.CanvasReset();
+            drawingContext.Reset();
             BrowserDrawingContext.CanvasScale(pixelRatio, pixelRatio);
             this.Abstract.Render(ref renderEventRef);
         }

@@ -17,6 +17,9 @@ public ref struct TouchEventRef
     /// </summary>
     public readonly ReadOnlySpan<Touch> Touches;
 
+    /// <summary>Text measurement supplied by the window for precision caret hit-testing.</summary>
+    public Xui.Core.Canvas.ITextMeasureContext? TextMeasure;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TouchEventRef"/> struct
     /// with the provided set of touch points.
@@ -25,5 +28,6 @@ public ref struct TouchEventRef
     public TouchEventRef(ReadOnlySpan<Touch> touches)
     {
         Touches = touches;
+        TextMeasure = null;
     }
 }

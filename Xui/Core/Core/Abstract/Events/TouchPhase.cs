@@ -18,5 +18,8 @@ public enum TouchPhase
     /// <summary>
     /// The touch has ended (finger or stylus lifted off the surface).
     /// </summary>
-    End
+    End,
+
+    /// <summary>The system interrupted the contact; it must not complete a tap.</summary>
+    Cancel
 }

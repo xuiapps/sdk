@@ -32,27 +32,24 @@ public class RotatingCubeTest : View
 
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
-        if (e.State.PointerType == PointerType.Mouse)
+        if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
         {
-            if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
-            {
-                this.CapturePointer(e.PointerId);
-                dragStart = e.State.Position;
-                dragStartRotX = rotationX;
-                dragStartRotY = rotationY;
-            }
-            else if (e.Type == PointerEventType.Move && dragStart != null)
-            {
-                var delta = e.State.Position - dragStart.Value;
-                rotationY = dragStartRotY + delta.X * 0.01f;
-                rotationX = dragStartRotX + delta.Y * 0.01f;
-                this.InvalidateRender();
-            }
-            else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
-            {
-                this.ReleasePointer(e.PointerId);
-                dragStart = null;
-            }
+            this.CapturePointer(e.PointerId);
+            dragStart = e.State.Position;
+            dragStartRotX = rotationX;
+            dragStartRotY = rotationY;
+        }
+        else if (e.Type == PointerEventType.Move && dragStart != null)
+        {
+            var delta = e.State.Position - dragStart.Value;
+            rotationY = dragStartRotY + delta.X * 0.01f;
+            rotationX = dragStartRotX + delta.Y * 0.01f;
+            this.InvalidateRender();
+        }
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
+        {
+            this.ReleasePointer(e.PointerId);
+            dragStart = null;
         }
 
         base.OnPointerEvent(ref e, phase);

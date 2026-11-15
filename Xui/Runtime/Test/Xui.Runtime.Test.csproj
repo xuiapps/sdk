@@ -15,7 +15,7 @@
     <ProjectReference Include="../../Core/Core.DI/Xui.Core.DI.csproj" />
     <ProjectReference Include="../Software/Xui.Runtime.Software.csproj" />
     <ProjectReference Include="../../Core/Fonts/Xui.Core.Fonts.csproj" />
-    <ProjectReference Include="../../Middleware/Emulator/Xui.Middleware.Emulator.csproj" />
+    <ProjectReference Include="../../Middleware/EmulatorLegacy/Xui.Middleware.EmulatorLegacy.csproj" />
   </ItemGroup>
 
 </Project>

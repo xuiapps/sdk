@@ -1,4 +1,5 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
 using Xui.Core.Math2D;
 
 namespace Xui.Middleware.DevTools;
@@ -10,6 +11,9 @@ namespace Xui.Middleware.DevTools;
 /// </summary>
 internal sealed class SplicingContext(IContext real, IContext capture) : IContext
 {
+    public void SetFilter() { real.SetFilter(); capture.SetFilter(); }
+    public void SetFilter(Brightness brightness) { real.SetFilter(brightness); capture.SetFilter(brightness); }
+
     public void Save()
     {
         real.Save();

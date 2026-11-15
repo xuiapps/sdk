@@ -6,8 +6,10 @@ using static Xui.Core.Canvas.Colors;
 
 namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 
-public class ArcFlowerTest : View
+public class ArcFlowerTest : View, ICanvasDrawingExample
 {
+    Rect ICanvasDrawingExample.GetArtworkBounds(IMeasureContext context) => new(62, 70, 176, 160);
+
     private static readonly Color[] PetalColors =
     [
         new(0xe7, 0x4c, 0x3c, 0xFF),  // red
@@ -20,9 +22,6 @@ public class ArcFlowerTest : View
 
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(White);
-        context.FillRect(this.Frame);
-
         NFloat cx = this.Frame.X + 150;
         NFloat cy = this.Frame.Y + 150;
         NFloat pi = NFloat.Pi;

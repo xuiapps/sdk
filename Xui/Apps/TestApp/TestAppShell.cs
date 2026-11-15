@@ -50,8 +50,9 @@ public sealed class TestAppShell : View
 
     protected override void RenderCore(IContext context)
     {
-        content.Render(context);
-        footer?.Render(context);
+        this.RenderChild(context, content);
+        if (footer is not null)
+            this.RenderChild(context, footer);
     }
 }
 

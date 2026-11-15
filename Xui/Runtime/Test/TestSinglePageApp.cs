@@ -8,8 +8,8 @@ using Xui.Core.Abstract.Events;
 using Xui.Core.Actual;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
-using Xui.Middleware.Emulator.Actual;
-using Xui.Middleware.Emulator.Devices;
+using Xui.Middleware.EmulatorLegacy.Actual;
+using Xui.Middleware.EmulatorLegacy.Devices;
 using Xui.Runtime.Software.Actual;
 using Xui.Runtime.Software.Font;
 using Xui.Runtime.Test.Actual;
@@ -29,10 +29,12 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
     where TWindow : Window
 {
     private readonly TestPlatform platform;
+    private readonly FrameTimeProvider inputClock = new();
     private readonly Xui.Core.Abstract.IWindow renderWindow;
     private readonly EmulatorWindow? emulatorWindow;
     private readonly FixedClock? fixedClock;
     private readonly IHost host;
+    private readonly Xui.Core.Canvas.IFontSource? fontSource;
     private readonly string snapshotsDir;
     private readonly List<SnapshotEntry> snapshots = new();
     private readonly List<ReportEntry> reportEntries = new();
@@ -55,6 +57,9 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
     /// </summary>
     public Size Size { get; }
 
+    /// <summary>Optional font emission policy for SVG snapshots; null preserves system-font output.</summary>
+    public SvgDrawingContext.SvgFontResolver? SvgFontResolver { get; set; }
+
     public IClock Clock => host.Services.GetRequiredService<IClock>();
 
     public IRandom Random => host.Services.GetRequiredService<IRandom>();
@@ -75,8 +80,10 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
         EmulatorStatusBarStyle? emulatorStatusBarStyleOverride = null,
         string? snapshotSet = null,
         [CallerFilePath] string callerPath = "",
-        [CallerMemberName] string testName = "")
+        [CallerMemberName] string testName = "",
+        Xui.Core.Canvas.IFontSource? fontSource = null)
     {
+        this.fontSource = fontSource;
         this.Size = windowSize;
         this.platform = new TestPlatform();
         IRuntime runtime = this.platform;
@@ -97,6 +104,7 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
             {
                 services.AddSingleton(runtime);
                 services.AddSingleton<IClock>(clock);
+                services.AddSingleton<TimeProvider>(this.inputClock);
                 services.AddSingleton<IRandom>(random ?? SystemRandom.Default);
                 services.AddScoped<TApplication>();
                 services.AddScoped<TWindow>();
@@ -109,13 +117,16 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
         application.Run();
 
         var createdWindow = this.platform.Windows[this.platform.Windows.Count - 1];
-        if (createdWindow.Abstract is EmulatorWindow emulator)
+        if (createdWindow.Abstract is EmulatorHostWindow emulatorHost)
         {
+            var emulator = emulatorHost.Emulator;
             this.emulatorWindow = emulator;
             if (emulatorDevice.HasValue)
                 this.emulatorWindow.CurrentDevice = emulatorDevice.Value;
             this.emulatorWindow.StatusBarStyleOverride = emulatorStatusBarStyleOverride ?? EmulatorStatusBarStyle.Deterministic;
             this.emulatorWindow.RenderTouchIndicators = false;
+            // Snapshot tests render the isolated phone surface. Keep their synthetic input
+            // on that same virtual surface; host-window routing is exercised by real runtimes.
             this.renderWindow = emulator;
             this.Window = (Window)emulator.AppWindow;
         }
@@ -135,7 +146,7 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
         // Provide a software text measure context so pointer events can hit-test text positions.
         var testWindow = this.platform.Windows[this.platform.Windows.Count - 1];
         testWindow.TextMeasureContext = new SoftwareTextMeasureContext(
-            new Catalog(Xui.Core.Fonts.Inter.URIs));
+            fontSource is null ? new Catalog(Xui.Core.Fonts.Inter.URIs) : new Catalog(fontSource));
     }
 
     // ── Input ────────────────────────────────────────────────────
@@ -288,6 +299,7 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
     /// </summary>
     public void AnimationFrame(TimeSpan previous, TimeSpan next)
     {
+        this.inputClock.Timestamp = next.Ticks;
         this.lastFramePrevious = previous;
         this.lastFrameNext = next;
         var frame = new FrameEventRef(previous, next);
@@ -306,7 +318,9 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
         var renderSize = emulatorWindow?.SnapshotSize ?? this.Size;
 
         using (var context = new SvgDrawingContext(
-            renderSize, stream, Xui.Core.Fonts.Inter.URIs, keepOpen: true))
+            renderSize, stream,
+            fontSource is null ? new Catalog(Xui.Core.Fonts.Inter.URIs) : new Catalog(fontSource),
+            resolver: SvgFontResolver, keepOpen: true))
         {
             this.platform.CurrentDrawingContext = context;
 
@@ -493,6 +507,7 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
                     activeTouchContacts[touch.Index] = touch;
                     break;
                 case TouchPhase.End:
+                case TouchPhase.Cancel:
                     activeTouchContacts.Remove(touch.Index);
                     break;
             }
@@ -722,6 +737,13 @@ public class TestSinglePageApp<TApplication, TWindow> : IDisposable
                 throw new Exception(sb.ToString());
             }
         }
+    }
+
+    private sealed class FrameTimeProvider : TimeProvider
+    {
+        public long Timestamp;
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+        public override long GetTimestamp() => Timestamp;
     }
 
     private abstract record ReportEntry;

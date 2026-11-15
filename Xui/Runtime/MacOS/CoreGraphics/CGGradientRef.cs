@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
 
 namespace Xui.Runtime.MacOS;
 
@@ -26,9 +27,11 @@ public static partial class CoreGraphics
             this.Self = self;
         }
 
-        public CGGradientRef(ReadOnlySpan<GradientStop> gradient) : this(Map(gradient)) {}
+        public CGGradientRef(ReadOnlySpan<GradientStop> gradient) : this(Map(gradient, default)) {}
 
-        private static nint Map(ReadOnlySpan<GradientStop> gradient)
+        internal CGGradientRef(ReadOnlySpan<GradientStop> gradient, FilterState filter) : this(Map(gradient, filter)) {}
+
+        private static nint Map(ReadOnlySpan<GradientStop> gradient, FilterState filter)
         {
             using var rgb = CGColorSpaceRef.CreateDeviceRGB();
             Span<NFloat> components = stackalloc NFloat[gradient.Length * 4];
@@ -36,11 +39,12 @@ public static partial class CoreGraphics
             for(int i = 0; i < gradient.Length; i++)
             {
                 var stop = gradient[i];
+                var color = filter.Apply(stop.Color);
                 var o = i * 4;
-                components[o + 0] = stop.Color.Red;
-                components[o + 1] = stop.Color.Green;
-                components[o + 2] = stop.Color.Blue;
-                components[o + 3] = stop.Color.Alpha;
+                components[o + 0] = color.Red;
+                components[o + 1] = color.Green;
+                components[o + 2] = color.Blue;
+                components[o + 3] = color.Alpha;
                 locations[i] = stop.Offset;
             }
             return CGGradientCreateWithColorComponents(

@@ -1,0 +1,14 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="xui" gradientTransform="rotate(64)">
+      <stop offset="0%" stop-color="#d642cd" />
+      <stop offset="100%" stop-color="#8a05FF" />
+    </linearGradient>
+  </defs>
+
+  <g>
+    <!-- Background -->
+    <path d="M 0 0 L 64 0 64 64 0 64 Z" fill="url(#xui)" />
+  </g>
+
+</svg>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.Runtime.Software.Actual;
@@ -41,6 +42,9 @@ public sealed class SVGDocument
     /// </summary>
     public IEnumerable<Uri> FontUris { get; set; } = [];
 
+    /// <summary>Optional descriptor-first font source used in preference to <see cref="FontUris"/>.</summary>
+    public IFontSource? FontSource { get; set; }
+
     /// <summary>Controls how resolved font faces are represented in the SVG.</summary>
     public SvgDrawingContext.SvgFontResolver FontResolver { get; set; } = SvgDrawingContext.SvgFontResolver.Default;
 
@@ -56,7 +60,7 @@ public sealed class SVGDocument
         using (var context = new SvgDrawingContext(
             this.Size,
             stream,
-            catalog: new Catalog(this.FontUris),
+            catalog: this.FontSource is null ? new Catalog(this.FontUris) : new Catalog(this.FontSource),
             resolver: this.FontResolver,
             numericFormat: this.NumericFormat,
             keepOpen: true))

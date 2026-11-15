@@ -68,13 +68,14 @@ public partial class MacOSWindow : NSWindow, Xui.Core.Actual.IWindow
     internal void OnWindowDidResize() => this.style.OnWindowDidResize(this);
 
     // Per-window drawing context (owns Path2D, text measure, paint state)
-    private readonly MacOSDrawingContext drawingContext = new MacOSDrawingContext();
+    private readonly MacOSDrawingContext drawingContext;
+    private readonly IFontSource? fontSource;
 
     // Text measurement context (used for hit-testing cursor position on mouse click)
     private MacOSTextMeasureContext? _textMeasureContext;
 
     public ITextMeasureContext? TextMeasureContext =>
-        _textMeasureContext ??= new MacOSTextMeasureContext();
+        _textMeasureContext ??= new MacOSTextMeasureContext(fontSource);
 
     public IServiceProvider NextServiceProvider { get; }
 
@@ -183,6 +184,8 @@ public partial class MacOSWindow : NSWindow, Xui.Core.Actual.IWindow
         this.desktopStyle = @abstract.GetDesktopStyle();
         this.style = GetStyle(@abstract);
         this.NextServiceProvider = nextServiceProvider;
+        this.fontSource = nextServiceProvider.GetService(typeof(IFontSource)) as IFontSource;
+        this.drawingContext = new MacOSDrawingContext(fontSource);
         this.Title = "";
         this.Delegate = new MacOSWindowDelegate(this);
 

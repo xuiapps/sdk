@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-
 using Xui.Core.Canvas;
 using Xui.Core.DI;
 using Xui.Core.Math2D;
@@ -29,7 +28,7 @@ internal class ColorWheelView : View
     {
         base.OnActivate();
         wheelImage = this.GetService<IImage>();
-        wheelImage?.Load("Assets/ColorWheel.png");
+        wheelImage?.Load("asset://ColorWheel.png");
     }
 
     protected override void OnDeactivate() => wheelImage = null;

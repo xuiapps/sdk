@@ -73,6 +73,7 @@ public class ScrollableGridTest : View
         scroll = new ScrollView
         {
             Direction = ScrollDirection.Vertical,
+            ScrollbarEndInset = 0,
             Content = grid,
         };
         AddProtectedChild(scroll);
@@ -80,7 +81,7 @@ public class ScrollableGridTest : View
 
     protected override Size MeasureCore(Size availableSize, IMeasureContext context)
     {
-        scroll.Measure(availableSize, context);
+        scroll.Measure((NFloat.Max(0, availableSize.Width - 40), availableSize.Height), context);
         return availableSize;
     }
 
@@ -89,15 +90,8 @@ public class ScrollableGridTest : View
         NFloat padding = 20;
         scroll.Arrange(new Rect(
             rect.X + padding,
-            rect.Y + padding,
-            rect.Width - padding * 2,
-            rect.Height - padding * 2), context);
-    }
-
-    protected override void RenderCore(IContext context)
-    {
-        context.SetFill(new Color(0xF5, 0xF5, 0xF5, 0xFF));
-        context.FillRect(Frame);
-        base.RenderCore(context);
+            rect.Y,
+            NFloat.Max(0, rect.Width - padding * 2),
+            rect.Height), context);
     }
 }

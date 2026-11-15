@@ -195,6 +195,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
 
         if (disposing)
         {
+            this.RootView.FocusedView = null;
             if (!platformClosed)
                 this.Actual.Close();
 
@@ -256,6 +257,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     /// <inheritdoc/>
     public virtual void OnTouch(ref TouchEventRef e)
     {
+        e.TextMeasure = this.TextMeasureContext;
         ((IContent)this.RootView).OnTouch(ref e);
     }
 
@@ -278,12 +280,35 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     }
 
     /// <inheritdoc/>
+    public virtual bool HasText => this.RootView.FocusedView is ITextInputClient { HasText: true };
+
+    /// <inheritdoc/>
+    public virtual bool IsSecureTextEntry => this.RootView.FocusedView is ITextInputClient { IsPassword: true };
+
+    /// <inheritdoc/>
     public virtual void InsertText(ref InsertTextEventRef eventRef)
     {
+        if (this.RootView.FocusedView is ITextEditingClient client)
+        {
+            if (eventRef.Text is "\n" or "\r" or "\r\n")
+            {
+                client.PerformInputAction(Xui.Core.UI.Input.TextInputAction.Default);
+                return;
+            }
+            client.Editor.Insert(eventRef.Text);
+            return;
+        }
+        foreach (var character in eventRef.Text)
+        {
+            var e = new KeyEventRef { Character = character };
+            ((IContent)this.RootView).OnChar(ref e);
+        }
     }
 
     /// <inheritdoc/>
     public virtual void DeleteBackwards(ref DeleteBackwardsEventRef eventRef)
     {
+        var e = new KeyEventRef { Key = VirtualKey.Back };
+        ((IContent)this.RootView).OnKeyDown(ref e);
     }
 }

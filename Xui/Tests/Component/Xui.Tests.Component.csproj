@@ -20,6 +20,7 @@
     <ProjectReference Include="../../Core/Fonts/Xui.Core.Fonts.csproj" />
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
     <ProjectReference Include="../../Runtime/Software/Xui.Runtime.Software.csproj" />
+    <ProjectReference Include="../../Runtime/IOS/IOS.csproj" />
     <ProjectReference Include="../../DevKit/UI/Xui.DevKit.UI.csproj" />
   </ItemGroup>
 

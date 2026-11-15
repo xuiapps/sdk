@@ -94,7 +94,7 @@ public sealed class TrueTypeFontSubsetTest
     {
         using var stream = new MemoryStream();
         using (var context = new SvgDrawingContext(
-            new Size(300, 100), stream, Xui.Core.Fonts.Inter.URIs,
+            new Size(300, 100), stream, Xui.Core.Fonts.Inter.Source,
             resolver: new EmbeddedInterResolver(), keepOpen: true))
         {
             ((ITextMeasureContext)context).SetFont(new CanvasFont(32, "Inter"));
@@ -112,6 +112,17 @@ public sealed class TrueTypeFontSubsetTest
         var subset = new TrueTypeFont(Convert.FromBase64String(match.Groups[1].Value));
         Assert.NotNull(subset.GetGlyphIndex(R('H')));
         Assert.NotNull(subset.GetGlyphIndex(R('!')));
+    }
+
+    [Fact]
+    public void FontSource_ResolvesDeclaredFaceWithoutEagerLoading()
+    {
+        var request = new CanvasFont(16, "Inter", FontWeight.Normal);
+        Assert.True(Xui.Core.Fonts.Inter.Source.TryGet(in request, out var resource));
+        Assert.Equal("Inter", resource.Face.Family);
+
+        var catalog = new Catalog(Xui.Core.Fonts.Inter.Source);
+        Assert.NotNull(catalog.FontForFace(new FontFace("Inter", FontWeight.Normal, FontStyle.Normal, FontStretch.Normal)));
     }
 
     private static TrueTypeFont LoadInter()

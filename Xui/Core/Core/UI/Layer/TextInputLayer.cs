@@ -1,7 +1,8 @@
 using System.Buffers;
-using System.Text;
 using Xui.Core.Abstract.Events;
+using Xui.Core.Actual;
 using Xui.Core.Canvas;
+using Xui.Core.DI;
 using Xui.Core.Math1D;
 using Xui.Core.Math2D;
 using Xui.Core.UI.Input;
@@ -10,7 +11,7 @@ namespace Xui.Core.UI.Layer;
 
 /// <summary>
 /// A leaf layer that implements single-line text input: typing, selection, caret blinking,
-/// password masking, and mouse-driven selection. Carries all text state as struct fields.
+/// password masking, and mouse-driven selection. Shares document state with native text input adapters.
 /// <para>
 /// The layer stores the arranged <see cref="contentRect"/> during <see cref="Arrange"/>
 /// so that <see cref="Render"/> and pointer hit-testing both know the exact text area,
@@ -23,14 +24,25 @@ public struct TextInputLayer : ILayer<View>
 
     // ── Text state ───────────────────────────────────────────────────────
 
-    private StringBuilder? textBuffer;
-    private StringBuilder TextBuffer => textBuffer ??= new StringBuilder();
+    private TextEditingState? editor;
+    /// <summary>The editing state shared with native adapters.</summary>
+    public TextEditingState Editor => editor ??= new();
+    /// <summary>Whether the platform draws and manipulates the selection.</summary>
+    public bool NativeSelection { get; set; }
 
-    private Interval<uint>.ClosedOpen selection;
+    private Interval<uint>.ClosedOpen selection
+    {
+        get => new((uint)Editor.Selection.Start, (uint)Editor.Selection.End);
+        set => Editor.Selection = new((int)Math.Min(value.Start, (uint)int.MaxValue), (int)Math.Min(value.End, (uint)int.MaxValue));
+    }
     private bool caretVisible;
     private TimeSpan caretToggleTime;
     private uint anchor;
-    private bool isMouseSelecting;
+    private bool isSelecting;
+    private bool touchCaretDrag;
+    private int selectingPointer;
+    private Point pointerDown;
+    private ITextMagnifier? magnifier;
 
     // ── Layout state ─────────────────────────────────────────────────────
 
@@ -39,16 +51,14 @@ public struct TextInputLayer : ILayer<View>
 
     // ── Public API ───────────────────────────────────────────────────────
 
+    /// <summary>Whether the input contains text, without allocating a string.</summary>
+    public bool HasText => editor is { Text.Length: > 0 };
+
     /// <summary>Gets or sets the text content.</summary>
     public string Text
     {
-        get => textBuffer?.ToString() ?? string.Empty;
-        set
-        {
-            TextBuffer.Clear();
-            TextBuffer.Append(value);
-            selection = new Interval<uint>.ClosedOpen((uint)value.Length, (uint)value.Length);
-        }
+        get => Editor.Text;
+        set => Editor.Text = value;
     }
 
     /// <summary>
@@ -68,7 +78,7 @@ public struct TextInputLayer : ILayer<View>
     public bool SelectAllOnFocus { get; set; }
 
     /// <summary>Optional character filter. Return true to accept, false to reject.</summary>
-    public Func<char, bool>? InputFilter { get; set; }
+    public Func<char, bool>? InputFilter { get => Editor.InputFilter; set => Editor.InputFilter = value; }
 
     // ── Visual properties ────────────────────────────────────────────────
 
@@ -90,13 +100,18 @@ public struct TextInputLayer : ILayer<View>
     /// <summary>Font used for input measurement, hit testing, and rendering.</summary>
     public Font Font { get; set; }
 
+    private readonly Frame EffectivePadding(View view) =>
+        view.GetService(typeof(IDeviceInfo)) is IDeviceInfo { Platform: DevicePlatform.iOS }
+            ? Padding + new Frame(2, 2, 2, 2)
+            : Padding;
+
     // ── ILayer<View> ─────────────────────────────────────────────────────
 
     /// <inheritdoc/>
     public Size Measure(View view, Size availableSize, IMeasureContext context)
     {
         context.SetFont(Font);
-        var len = TextBuffer.Length;
+        var len = Editor.Text.Length;
         char[]? pooled = null;
         Span<char> buf = len <= MaxStackBufferSize
             ? stackalloc char[MaxStackBufferSize]
@@ -106,7 +121,7 @@ public struct TextInputLayer : ILayer<View>
             var displayText = FillDisplayBuffer(buf, len);
             var textMetrics = context.MeasureText(displayText.Length > 0 ? displayText : "X".AsSpan());
             var width = nfloat.Max(availableSize.Width, 100);
-            return new Size(width, textMetrics.Size.Height + Padding.TotalHeight);
+            return new Size(width, textMetrics.Size.Height + EffectivePadding(view).TotalHeight);
         }
         finally
         {
@@ -117,7 +132,7 @@ public struct TextInputLayer : ILayer<View>
     /// <inheritdoc/>
     public void Arrange(View view, Rect rect, IMeasureContext context)
     {
-        contentRect = rect - Padding;
+        contentRect = rect - EffectivePadding(view);
     }
 
     /// <inheritdoc/>
@@ -130,7 +145,7 @@ public struct TextInputLayer : ILayer<View>
         context.TextBaseline = TextBaseline.Top;
         context.TextAlign = TextAlign.Left;
 
-        var len = TextBuffer.Length;
+        var len = Editor.Text.Length;
         char[]? pooled = null;
         Span<char> buf = len <= MaxStackBufferSize
             ? stackalloc char[MaxStackBufferSize]
@@ -142,7 +157,7 @@ public struct TextInputLayer : ILayer<View>
             var textX = frame.X;
             var textY = frame.Y;
 
-            if (!sel.IsEmpty && focused)
+            if (!sel.IsEmpty && focused && !NativeSelection)
             {
                 var selStart = (int)sel.Start;
                 var selEnd = (int)sel.End;
@@ -186,7 +201,15 @@ public struct TextInputLayer : ILayer<View>
                 context.FillText(displayText, new Point(textX, textY));
             }
 
-            if (focused && caretVisible && sel.IsEmpty)
+            if (Editor.MarkedRange is { Length: > 0 } marked)
+            {
+                var left = marked.Start == 0 ? 0 : context.MeasureText(displayText[..marked.Start]).Size.Width;
+                var right = context.MeasureText(displayText[..marked.End]).Size.Width;
+                context.SetFill(Color);
+                context.FillRect(new Rect(textX + left, frame.Bottom - 1, right - left, 1));
+            }
+
+            if (focused && caretVisible && sel.IsEmpty && !NativeSelection)
             {
                 var caretOffset = sel.Start > 0
                     ? context.MeasureText(displayText[..(int)sel.Start]).Size.Width
@@ -204,13 +227,15 @@ public struct TextInputLayer : ILayer<View>
     /// <inheritdoc/>
     public void Animate(View view, TimeSpan previousTime, TimeSpan currentTime)
     {
-        if (!view.IsFocused)
+        if (!view.IsFocused || NativeSelection)
             return;
 
         if (caretToggleTime == TimeSpan.Zero)
             caretToggleTime = currentTime + CaretBlinkInterval;
 
-        if (currentTime >= caretToggleTime)
+        if (touchCaretDrag && isSelecting)
+            caretVisible = true;
+        else if (currentTime >= caretToggleTime)
         {
             caretVisible = !caretVisible;
             caretToggleTime = currentTime + CaretBlinkInterval;
@@ -228,10 +253,9 @@ public struct TextInputLayer : ILayer<View>
 
         if (e.Type == PointerEventType.Down)
         {
-            var p = e.State.Position;
-            bool inContent = p.X >= contentRect.X && p.X < contentRect.X + contentRect.Width
-                          && p.Y >= contentRect.Y && p.Y < contentRect.Y + contentRect.Height;
-            if (!inContent)
+            if (isSelecting) return;
+            // The padded field is tappable too; only text measurement uses contentRect.
+            if (!view.Frame.Contains(e.State.Position))
                 return;
 
             var wasFocused = view.IsFocused;
@@ -241,37 +265,52 @@ public struct TextInputLayer : ILayer<View>
             if (cursorPos.HasValue)
             {
                 anchor = cursorPos.Value;
-                selection = new Interval<uint>.ClosedOpen(cursorPos.Value, cursorPos.Value);
-                isMouseSelecting = true;
+                if (wasFocused || !SelectAllOnFocus || e.State.PointerType != PointerType.Touch)
+                    selection = new Interval<uint>.ClosedOpen(cursorPos.Value, cursorPos.Value);
+                isSelecting = true;
+                selectingPointer = e.PointerId;
+                touchCaretDrag = e.State.PointerType == PointerType.Touch;
+                pointerDown = e.State.Position;
                 // Text selection is an ongoing drag — ancestor scroll views must not steal capture.
                 view.CapturePointer(e.PointerId, PointerGestures.Drag);
             }
             else if (!wasFocused && SelectAllOnFocus)
             {
                 anchor = 0;
-                selection = new Interval<uint>.ClosedOpen(0, (uint)TextBuffer.Length);
+                selection = new Interval<uint>.ClosedOpen(0, (uint)Editor.Text.Length);
             }
 
             ResetCaretBlink();
             view.InvalidateRender();
         }
-        else if (e.Type == PointerEventType.Move && isMouseSelecting)
+        else if (e.Type == PointerEventType.Move && isSelecting && e.PointerId == selectingPointer)
         {
+            if (NativeSelection) return;
             var cursorPos = HitTestCursor(e.State.Position, e.TextMeasure);
             if (cursorPos.HasValue)
             {
                 var pos = cursorPos.Value;
-                selection = anchor <= pos
-                    ? new Interval<uint>.ClosedOpen(anchor, pos)
-                    : new Interval<uint>.ClosedOpen(pos, anchor);
+                if (touchCaretDrag)
+                {
+                    SetCursor(pos);
+                    var travel = e.State.Position - pointerDown;
+                    if (magnifier is not null || nfloat.Max(nfloat.Abs(travel.X), nfloat.Abs(travel.Y)) >= 4)
+                        UpdateMagnifier(view, e.State.Position, e.TextMeasure!);
+                }
+                else
+                    selection = anchor <= pos
+                        ? new Interval<uint>.ClosedOpen(anchor, pos)
+                        : new Interval<uint>.ClosedOpen(pos, anchor);
                 ResetCaretBlink();
                 view.InvalidateRender();
             }
         }
-        else if (e.Type == PointerEventType.Up && isMouseSelecting)
+        else if (e.Type is PointerEventType.Up or PointerEventType.Cancel or PointerEventType.LostCapture
+            && isSelecting && e.PointerId == selectingPointer)
         {
-            isMouseSelecting = false;
-            view.ReleasePointer(e.PointerId);
+            if (NativeSelection && e.Type == PointerEventType.LostCapture)
+                (view.GetService(typeof(ITextInputSession)) as ITextInputSession)?.CancelSelectionGesture();
+            EndSelection(view);
         }
     }
 
@@ -279,36 +318,27 @@ public struct TextInputLayer : ILayer<View>
     public void OnKeyDown(View view, ref KeyEventRef e)
     {
         var sel = selection;
-        var len = (uint)TextBuffer.Length;
+        var len = (uint)Editor.Text.Length;
+        if (sel.IsEmpty) anchor = sel.Start;
+        else if (anchor != sel.Start && anchor != sel.End) anchor = sel.Start;
 
         switch (e.Key)
         {
+            case VirtualKey.Return when view is ITextInputClient client:
+                client.PerformInputAction(TextInputAction.Default);
+                e.Handled = true;
+                break;
+
             case VirtualKey.Back:
-                if (!sel.IsEmpty)
-                {
-                    TextBuffer.Remove((int)sel.Start, (int)(sel.End - sel.Start));
-                    SetCursor(sel.Start);
-                }
-                else if (sel.Start > 0)
-                {
-                    TextBuffer.Remove((int)sel.Start - 1, 1);
-                    SetCursor(sel.Start - 1);
-                }
+                Editor.DeleteBackward();
+                anchor = (uint)Editor.Selection.Start;
                 ResetCaretBlink(); view.InvalidateRender(); view.InvalidateMeasure();
                 e.Handled = true;
                 break;
 
             case VirtualKey.Delete:
-                if (!sel.IsEmpty)
-                {
-                    TextBuffer.Remove((int)sel.Start, (int)(sel.End - sel.Start));
-                    SetCursor(sel.Start);
-                }
-                else if (sel.Start < len)
-                {
-                    TextBuffer.Remove((int)sel.Start, 1);
-                    SetCursor(sel.Start);
-                }
+                Editor.DeleteForward();
+                anchor = (uint)Editor.Selection.Start;
                 ResetCaretBlink(); view.InvalidateRender(); view.InvalidateMeasure();
                 e.Handled = true;
                 break;
@@ -317,10 +347,10 @@ public struct TextInputLayer : ILayer<View>
                 if (e.Shift)
                 {
                     var cursor = GetCursor();
-                    if (cursor > 0) MoveCursor(cursor - 1);
+                    if (cursor > 0) MoveCursor((uint)Editor.Previous((int)cursor));
                 }
                 else if (!sel.IsEmpty) SetCursor(sel.Start);
-                else if (sel.Start > 0) SetCursor(sel.Start - 1);
+                else if (sel.Start > 0) SetCursor((uint)Editor.Previous((int)sel.Start));
                 ResetCaretBlink(); view.InvalidateRender();
                 e.Handled = true;
                 break;
@@ -329,10 +359,10 @@ public struct TextInputLayer : ILayer<View>
                 if (e.Shift)
                 {
                     var cursor = GetCursor();
-                    if (cursor < len) MoveCursor(cursor + 1);
+                    if (cursor < len) MoveCursor((uint)Editor.Next((int)cursor));
                 }
                 else if (!sel.IsEmpty) SetCursor(sel.End);
-                else if (sel.Start < len) SetCursor(sel.Start + 1);
+                else if (sel.Start < len) SetCursor((uint)Editor.Next((int)sel.Start));
                 ResetCaretBlink(); view.InvalidateRender();
                 e.Handled = true;
                 break;
@@ -356,15 +386,9 @@ public struct TextInputLayer : ILayer<View>
     {
         if (char.IsControl(e.Character))
             return;
-        if (InputFilter != null && !InputFilter(e.Character))
-            return;
 
-        var sel = selection;
-        if (!sel.IsEmpty)
-            TextBuffer.Remove((int)sel.Start, (int)(sel.End - sel.Start));
-
-        TextBuffer.Insert((int)sel.Start, e.Character);
-        SetCursor(sel.Start + 1);
+        if (!Editor.Insert(e.Character.ToString())) return;
+        anchor = (uint)Editor.Selection.Start;
         ResetCaretBlink();
         view.InvalidateRender();
         view.InvalidateMeasure();
@@ -375,7 +399,7 @@ public struct TextInputLayer : ILayer<View>
     public void OnFocus(View view)
     {
         if (SelectAllOnFocus)
-            selection = new Interval<uint>.ClosedOpen(0, (uint)TextBuffer.Length);
+            selection = new Interval<uint>.ClosedOpen(0, (uint)Editor.Text.Length);
 
         caretVisible = true;
         caretToggleTime = TimeSpan.Zero;
@@ -385,6 +409,7 @@ public struct TextInputLayer : ILayer<View>
     /// <inheritdoc/>
     public void OnBlur(View view)
     {
+        EndSelection(view);
         caretVisible = false;
         view.InvalidateRender();
     }
@@ -393,6 +418,46 @@ public struct TextInputLayer : ILayer<View>
 
     // Stack-allocate display text for up to this many characters; rent from ArrayPool beyond that.
     private const int MaxStackBufferSize = 256;
+
+    private void EndSelection(View view)
+    {
+        var wasSelecting = isSelecting;
+        isSelecting = false;
+        touchCaretDrag = false;
+        var previous = magnifier;
+        magnifier = null;
+        previous?.Hide();
+        // Release synchronously dispatches LostCapture; clear state first.
+        if (wasSelecting) view.ReleasePointer(selectingPointer);
+    }
+
+    private void UpdateMagnifier(View view, Point position, ITextMeasureContext measure)
+    {
+        if (!view.IsFocused) return;
+        magnifier ??= view.GetService(typeof(ITextMagnifier)) is ITextMagnifier { IsSupported: true } service
+            ? service : null;
+        if (magnifier is null) return;
+
+        measure.SetFont(Font);
+        var len = Editor.Text.Length;
+        char[]? pooled = null;
+        Span<char> buffer = len <= MaxStackBufferSize
+            ? stackalloc char[MaxStackBufferSize] : (pooled = ArrayPool<char>.Shared.Rent(len));
+        try
+        {
+            var text = FillDisplayBuffer(buffer, len);
+            var offset = selection.Start == 0 ? 0 : measure.MeasureText(text[..(int)selection.Start]).Size.Width;
+            var caret = new Rect(contentRect.X + offset, contentRect.Y, 1, contentRect.Height);
+            // Include scrolling, carousel scaling, and navigation transforms.
+            for (View? ancestor = view; ancestor is not null; ancestor = ancestor.Parent)
+                caret = ancestor.InverseTransformRect(caret);
+            magnifier.Show(view.LocalToGlobal(position), caret);
+        }
+        finally
+        {
+            if (pooled is not null) ArrayPool<char>.Shared.Return(pooled);
+        }
+    }
 
     /// <summary>
     /// Fills <paramref name="buf"/> with the display characters (bullets for password,
@@ -408,10 +473,35 @@ public struct TextInputLayer : ILayer<View>
         if (IsPassword)
             buf[..len].Fill('\u2022');
         else
-            TextBuffer.CopyTo(0, buf, len);
+            Editor.Text.AsSpan().CopyTo(buf);
 
         return buf[..len];
     }
+
+    /// <summary>Returns caret geometry in window coordinates.</summary>
+    public Rect GetCaretRect(View view, int offset, ITextMeasureContext measure)
+    {
+        measure.SetFont(Font);
+        int length = Editor.Boundary(offset);
+        char[]? pooled = null;
+        Span<char> buffer = length <= MaxStackBufferSize ? stackalloc char[MaxStackBufferSize]
+            : (pooled = ArrayPool<char>.Shared.Rent(length));
+        try
+        {
+            if (IsPassword) buffer[..length].Fill('\u2022');
+            else Editor.Text.AsSpan(0, length).CopyTo(buffer);
+            var width = length == 0 ? 0 : measure.MeasureText(buffer[..length]).Size.Width;
+            var rect = new Rect(contentRect.X + width, contentRect.Y, 1, contentRect.Height);
+            for (View? ancestor = view; ancestor is not null; ancestor = ancestor.Parent)
+                rect = ancestor.InverseTransformRect(rect);
+            return rect;
+        }
+        finally { if (pooled is not null) ArrayPool<char>.Shared.Return(pooled); }
+    }
+
+    /// <summary>Hit-tests text using a point in window coordinates.</summary>
+    public int GetTextPosition(View view, Point point, ITextMeasureContext measure) =>
+        (int)(HitTestCursor(view.GlobalToLocal(point), measure) ?? 0);
 
     private void SetCursor(uint pos)
     {
@@ -442,14 +532,14 @@ public struct TextInputLayer : ILayer<View>
 
         textMeasure.SetFont(Font);
         var clickX = pointerPosition.X - contentRect.X;
-        var len = TextBuffer.Length;
+        var len = Editor.Text.Length;
         char[]? pooled = null;
         Span<char> buf = len <= MaxStackBufferSize
             ? stackalloc char[MaxStackBufferSize]
             : (pooled = ArrayPool<char>.Shared.Rent(len));
         try
         {
-            return (uint)textMeasure.HitTestTextPosition(FillDisplayBuffer(buf, len), clickX);
+            return (uint)Editor.Boundary(textMeasure.HitTestTextPosition(FillDisplayBuffer(buf, len), clickX));
         }
         finally
         {

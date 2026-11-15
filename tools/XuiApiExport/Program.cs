@@ -18,7 +18,7 @@ var projects = new Dictionary<string, string>
 {
     ["Xui.Core"]                = Path.Combine(root, "Xui", "Core", "Core"),
     ["Xui.Core.DI"]             = Path.Combine(root, "Xui", "Core", "Core.DI"),
-    ["Xui.Middleware.Emulator"] = Path.Combine(root, "Xui", "Middleware", "Emulator"),
+    ["Xui.Middleware.EmulatorLegacy"] = Path.Combine(root, "Xui", "Middleware", "EmulatorLegacy"),
 };
 
 Console.Error.WriteLine($"Exporting Xui API to {outputBase}...");

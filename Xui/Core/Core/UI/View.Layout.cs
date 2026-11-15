@@ -281,11 +281,15 @@ public partial class View
     }
 
     /// <summary>Renders a child while preserving this view's active culling rectangle.</summary>
-    internal void RenderChild(IContext context, View child)
+    protected internal void RenderChild(IContext context, View child)
     {
         if (this.renderCullingFrame is { } cullingFrame)
             child.Render(context, cullingFrame);
         else
             child.Render(context);
     }
+
+    /// <summary>Renders a child using an explicit culling rectangle in this view's coordinate space.</summary>
+    protected internal void RenderChild(IContext context, View child, Rect cullingFrame) =>
+        child.Render(context, cullingFrame);
 }

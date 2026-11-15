@@ -43,7 +43,11 @@ public class Checkbox : View, IDesignSystemChangeNotifications
         VerticalAlignment = VerticalAlignment.Top;
     }
 
+    /// <summary>Gets the number of child views, which is always zero.</summary>
     public override int Count => 0;
+
+    /// <summary>Gets a child view by index.</summary>
+    /// <exception cref="IndexOutOfRangeException">Always thrown because a checkbox has no child views.</exception>
     public override View this[int index] => throw new IndexOutOfRangeException();
 
     private void ApplyDesignSystem()
@@ -74,12 +78,14 @@ public class Checkbox : View, IDesignSystemChangeNotifications
         base.OnDeactivate();
     }
 
+    /// <summary>Measures the checkbox using its design-system-defined square size.</summary>
     protected override Size MeasureCore(Size available, IMeasureContext context)
     {
         ApplyDesignSystem();
         return new Size(boxSize, boxSize);
     }
 
+    /// <summary>Renders the checkbox box, border, and optional checkmark.</summary>
     protected override void RenderCore(IContext context)
     {
         ApplyDesignSystem();
@@ -116,6 +122,7 @@ public class Checkbox : View, IDesignSystemChangeNotifications
         }
     }
 
+    /// <summary>Updates pointer feedback and toggles the checked state on a completed tap.</summary>
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
         if (e.Type == PointerEventType.Enter) { hover = true; InvalidateRender(); }

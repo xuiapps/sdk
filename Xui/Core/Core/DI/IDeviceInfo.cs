@@ -7,6 +7,9 @@ namespace Xui.Core.DI;
 /// </summary>
 public interface IDeviceInfo
 {
+    /// <summary>Raised on the UI thread when a device or system preference exposed by this service changes.</summary>
+    event Action? Changed;
+
     /// <summary>Gets the operating system the app is running on.</summary>
     DevicePlatform Platform { get; }
 

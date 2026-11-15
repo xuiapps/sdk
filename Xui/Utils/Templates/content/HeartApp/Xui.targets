@@ -1,5 +1,16 @@
 <Project>
 
+  <ItemGroup>
+    <!-- Removes implicit MAUI global usings that clash with Xui types. -->
+    <Using Remove="Microsoft.Maui" />
+    <Using Remove="Microsoft.Maui.Controls" />
+    <Using Remove="Microsoft.Maui.Controls.Hosting" />
+    <Using Remove="Microsoft.Maui.Devices" />
+    <Using Remove="Microsoft.Maui.Hosting" />
+    <Using Remove="Microsoft.Maui.Graphics" />
+    <Using Remove="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
   <PropertyGroup Condition="!($(TargetFramework.Contains('-'))) And '$(XuiDevEmulator)' == 'true' And $([MSBuild]::IsOSPlatform('OSX')) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
     <DefineConstants>$(DefineConstants);EMULATOR;MACOS</DefineConstants>
     <XuiEmulator>true</XuiEmulator>

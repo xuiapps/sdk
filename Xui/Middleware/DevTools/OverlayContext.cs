@@ -1,4 +1,5 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
 using Xui.Core.Math2D;
 
 namespace Xui.Middleware.DevTools;
@@ -15,6 +16,9 @@ namespace Xui.Middleware.DevTools;
 /// </summary>
 internal sealed class OverlayContext(IContext inner, Point? pos, bool isTouch, string? label = null) : IContext
 {
+    public void SetFilter() => inner.SetFilter();
+    public void SetFilter(Brightness brightness) => inner.SetFilter(brightness);
+
     public void Save() => inner.Save();
     public void Restore() => inner.Restore();
 

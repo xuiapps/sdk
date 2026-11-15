@@ -2,6 +2,7 @@ using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.DevKit.UI.Design;
+using Xui.DevKit.UI.Drawing;
 
 namespace Xui.DevKit.UI.Widgets;
 
@@ -17,7 +18,64 @@ public class Card : View, IDesignSystemChangeNotifications
     private Color outlineColor;
     private CornerRadius cornerRadius;
     private nfloat padding;
+    private nfloat? paddingOverride;
+    private bool clipContent;
+    private nfloat shadowExtent;
+    private Color shadowColor = new(0f, 0f, 0f, 0.12f);
     private readonly DesignSystemCache designSystem = new();
+
+    /// <summary>Content inset. Null uses the design system spacing; zero allows content to reach the card edges.</summary>
+    public nfloat? Padding
+    {
+        get => paddingOverride;
+        set
+        {
+            if (value is { } inset && (!nfloat.IsFinite(inset) || inset < 0))
+                throw new ArgumentOutOfRangeException(nameof(value));
+            if (paddingOverride == value) return;
+            paddingOverride = value;
+            Invalidate();
+        }
+    }
+
+    /// <summary>Clips content to the rounded card outline, useful for content that reaches the edges.</summary>
+    public bool ClipContent
+    {
+        get => clipContent;
+        set => SetViewRenderProperty(ref clipContent, value);
+    }
+
+    private nfloat ContentInset => paddingOverride ?? padding;
+
+    /// <summary>Outer shadow fade distance. Zero disables the shadow; layout size is unchanged.</summary>
+    public nfloat ShadowExtent
+    {
+        get => shadowExtent;
+        set
+        {
+            if (!nfloat.IsFinite(value) || value < 0)
+                throw new ArgumentOutOfRangeException(nameof(value));
+            SetViewRenderProperty(ref shadowExtent, value);
+        }
+    }
+
+    /// <summary>Color and opacity at the shadow's inner edge.</summary>
+    public Color ShadowColor
+    {
+        get => shadowColor;
+        set => SetViewRenderProperty(ref shadowColor, value);
+    }
+
+    /// <inheritdoc/>
+    public override Rect CullingFrame
+    {
+        get
+        {
+            var extent = shadowColor.Alpha > 0 ? shadowExtent : 0;
+            return new Rect(Frame.X - extent, Frame.Y - extent,
+                Frame.Width + extent * 2, Frame.Height + extent * 2);
+        }
+    }
 
     /// <summary>The content view inside the card.</summary>
     public View? Content
@@ -87,6 +145,7 @@ public class Card : View, IDesignSystemChangeNotifications
     protected override Size MeasureCore(Size available, IMeasureContext context)
     {
         ApplyDesignSystem();
+        var padding = ContentInset;
         if (content == null)
             return new Size(padding * 2, padding * 2);
 
@@ -105,6 +164,7 @@ public class Card : View, IDesignSystemChangeNotifications
     protected override void ArrangeCore(Rect rect, IMeasureContext context)
     {
         if (content == null) return;
+        var padding = ContentInset;
 
         var inner = new Rect(
             this.Frame.X + padding,
@@ -119,6 +179,7 @@ public class Card : View, IDesignSystemChangeNotifications
     protected override void RenderCore(IContext context)
     {
         ApplyDesignSystem();
+        RoundedRectShadow.Draw(context, this.Frame, cornerRadius, shadowExtent, shadowColor);
         // Fill
         context.BeginPath();
         context.RoundRect(this.Frame, cornerRadius);
@@ -132,7 +193,19 @@ public class Card : View, IDesignSystemChangeNotifications
         context.LineWidth = 1;
         context.Stroke();
 
-        if (content != null)
-            content.Render(context);
+        if (content != null && !clipContent)
+            this.RenderChild(context, content);
+        else if (content != null)
+        {
+            context.Save();
+            try
+            {
+                context.BeginPath();
+                context.RoundRect(this.Frame, cornerRadius);
+                context.Clip();
+                this.RenderChild(context, content);
+            }
+            finally { context.Restore(); }
+        }
     }
 }

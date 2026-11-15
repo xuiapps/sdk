@@ -21,8 +21,7 @@
       <text x="3" y="308.38" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="15" font-family="Inter" xml:space="preserve">3D GPU Rendering</text>
       <text x="3" y="332.53" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="15" font-family="Inter" xml:space="preserve">Design System</text>
       <text x="3" y="356.68" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="15" font-family="Inter" xml:space="preserve">Gestures</text>
-      <rect x="3" y="380.83" width="387" height="18.15" fill="#D3D3D3" />
-      <text x="3" y="380.83" fill="#000000" text-anchor="start" dominant-baseline="text-before-edge" font-size="15" font-family="Inter" xml:space="preserve">Window Modes (macOS)</text>
+      <text x="3" y="380.83" fill="#D3D3D3" text-anchor="start" dominant-baseline="text-before-edge" font-size="15" font-family="Inter" xml:space="preserve">Window Modes (macOS)</text>
     </g>
   </g>
   <path d="M 52 4 H 357 A 48 48 0 0 1 405 52 V 816 A 48 48 0 0 1 357 864 H 52 A 48 48 0 0 1 4 816 V 52 A 48 48 0 0 1 52 4 Z " fill="none" stroke="#111111" stroke-width="8" />

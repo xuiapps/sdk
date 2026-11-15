@@ -6,11 +6,11 @@ using Xui.Core.UI;
 
 namespace Xui.Apps.TestApp.Pages;
 
-public class SdkNavigation : View
+public class SdkNavigation : View, IExampleNavigation
 {
     private View? content;
 
-    private SdkHomePage homePage;
+    private readonly View homePage;
 
     private View? currentExample;
 
@@ -25,9 +25,9 @@ public class SdkNavigation : View
     public override View this[int index] =>
         index == 0 && this.content is not null ? this.content : throw new IndexOutOfRangeException();
 
-    public SdkNavigation()
+    public SdkNavigation(View? homePage = null)
     {
-        this.homePage = new SdkHomePage();
+        this.homePage = homePage ?? new SdkHomePage();
         this.Content = this.homePage;
     }
 

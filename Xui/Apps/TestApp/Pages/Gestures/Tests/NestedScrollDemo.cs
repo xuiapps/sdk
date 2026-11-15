@@ -1,136 +1,60 @@
-using System.Runtime.InteropServices;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
-using static Xui.Core.Canvas.FontWeight;
+using NFloat = System.Runtime.InteropServices.NFloat;
+using static Xui.Apps.TestApp.Pages.Layout.LayoutPreviewStyle;
 
 namespace Xui.Apps.TestApp.Pages.Gestures.Tests;
 
-/// <summary>
-/// Vertical outer ScrollView containing horizontal inner ScrollViews. The horizontal
-/// rows capture with <c>IDragHorizontalTentative</c> on Down, so they scroll
-/// horizontally from the first move — but if the user's motion is dominantly vertical
-/// when the 8pt threshold is crossed, the outer ScrollView steals capture and scrolls
-/// vertically instead. Drag horizontally past 20pt and the inner row promotes itself
-/// to a firm <c>IDrag</c>; from that point the outer can no longer steal.
-/// </summary>
-public class NestedScrollDemo : View
+/// <summary>Horizontal destination shelves nested inside a vertical feed.</summary>
+public class NestedScrollDemo : ViewCollection
 {
     private readonly ScrollView outer;
-
     public NestedScrollDemo()
     {
-        outer = new ScrollView
+        var inset = InputDemoCard.ContentInset;
+        var feed = new VerticalStack { Margin = (inset, 0, inset, 0) };
+        var groups = new[] { "WEEKEND WANDERS", "SLOW MORNINGS", "AFTER HOURS", "THE GREAT OUTDOORS" };
+        var places = new[] { "Coastal walk", "Forest cabin", "Old town", "By the lake", "Mountain air", "City garden" };
+        for (var row = 0; row < groups.Length; row++)
         {
-            Direction = ScrollDirection.Vertical,
-            Content = new VerticalStack
+            var heading = Text(groups[row], 10, FontWeight.SemiBold, Teal);
+            heading.Margin = (row == 0 ? 0 : 22, inset, 10, inset); feed.Add(heading);
+            var shelf = new HorizontalStack { Margin = (0, inset, 0, inset) };
+            for (var col = 0; col < places.Length; col++)
             {
-                Margin = 16,
-                Content =
-                [
-                    Heading("Nested scroll (horizontal in vertical)"),
-                    Paragraph(
-                        "Outer is a vertical ScrollView; the colored rows are horizontal " +
-                        "ScrollViews captured as IDragHorizontalTentative."),
-                    Paragraph(
-                        "• Drag horizontally → row scrolls.\n" +
-                        "• Drag mostly vertically → outer steals at 8pt and scrolls vertically.\n" +
-                        "• Drag horizontally past 20pt → row promotes to IDrag; outer can no longer steal."),
-                    Spacer(12),
-                    Caption("Row A — tiles 1..12"),
-                    ColoredRow(0xFF3B82F6, 12),
-                    Spacer(12),
-                    Caption("Row B — tiles 1..12"),
-                    ColoredRow(0xFFEF4444, 12),
-                    Spacer(12),
-                    Caption("Row C — tiles 1..12"),
-                    ColoredRow(0xFF10B981, 12),
-                    Spacer(12),
-                    Paragraph(
-                        "Filler below to make the outer ScrollView taller than the viewport."),
-                    Filler(40),
-                ]
+                var content = new VerticalStack();
+                content.Add(new LandscapeTile(row + col) { MinimumHeight = 72 });
+                var title = Text(places[(row + col) % places.Length], 13, FontWeight.SemiBold);
+                title.Margin = (10, 0, 4, 0); content.Add(title);
+                content.Add(Text(col % 2 == 0 ? "A little closer to nature" : "Take the scenic route", 9, color: Muted));
+                shelf.Add(new Border { MinimumWidth = 152, MaximumWidth = 152, Padding = 12,
+                    CornerRadius = 14, BackgroundColor = Colors.White,
+                    Margin = (0, col == places.Length - 1 ? 0 : 10, 0, 0), Content = content });
             }
-        };
-        AddProtectedChild(outer);
-    }
-
-    public override int Count => 1;
-    public override View this[int index] => index == 0 ? outer : throw new IndexOutOfRangeException();
-
-    protected override Size MeasureCore(Size available, IMeasureContext context)
-    {
-        outer.Measure(available, context);
-        return available;
-    }
-
-    protected override void ArrangeCore(Rect rect, IMeasureContext context)
-    {
-        outer.Arrange(rect, context);
-    }
-
-    private static Label Heading(string text) =>
-        new Label { Text = text, FontFamily = "Inter", FontSize = 18, FontWeight = SemiBold, Margin = (0, 0, 8, 0) };
-
-    private static Label Paragraph(string text) =>
-        new Label { Text = text, FontFamily = "Inter", FontSize = 13, Margin = (0, 0, 4, 0) };
-
-    private static Label Caption(string text) =>
-        new Label { Text = text, FontFamily = "Inter", FontSize = 14, FontWeight = SemiBold, Margin = (0, 0, 6, 0) };
-
-    private static View Spacer(NFloat height) =>
-        new Label { Text = "", FontFamily = "Inter", MinimumHeight = height };
-
-    private static View Filler(int rows)
-    {
-        var stack = new VerticalStack();
-        for (int i = 0; i < rows; i++)
-            stack.Add(new Label { Text = $"Filler line {i + 1}", FontFamily = "Inter", FontSize = 13, Margin = (0, 0, 4, 0) });
-        return stack;
-    }
-
-    private static ScrollView ColoredRow(uint baseRgba, int count)
-    {
-        var stack = new HorizontalStack();
-        for (int i = 0; i < count; i++)
-        {
-            // Vary brightness slightly across the row so tiles read as distinct.
-            var c = Tint(baseRgba, i, count);
-            stack.Add(new Border
-            {
-                MinimumWidth = 120,
-                MinimumHeight = 80,
-                BackgroundColor = c,
-                CornerRadius = 8,
-                Margin = (0, 8, 0, 0),
-                Content = new Label
-                {
-                    Text = $"#{i + 1}",
-                    FontFamily = "Inter",
-                    FontSize = 18,
-                    FontWeight = Bold,
-                    TextColor = Colors.White,
-                    Margin = 16,
-                },
-            });
+            feed.Add(new ScrollView { Id = $"DestinationShelf{row}", Direction = ScrollDirection.Horizontal,
+                ScrollbarEndInset = inset, MinimumHeight = 150, MaximumHeight = 150, Content = shelf });
         }
-
-        return new ScrollView
-        {
-            Direction = ScrollDirection.Horizontal,
-            MinimumHeight = 96,
-            Content = stack,
-        };
+        Add(outer = new ScrollView { Id = "DestinationFeed", Direction = ScrollDirection.Vertical,
+            ScrollbarEndInset = 0, Content = feed });
     }
+    protected override Size MeasureCore(Size available, IMeasureContext context) { outer.Measure(available, context); return available; }
+    protected override void ArrangeCore(Rect rect, IMeasureContext context) => outer.Arrange(rect, context);
 
-    private static Color Tint(uint baseRgba, int i, int n)
+    private sealed class LandscapeTile(int variation) : View
     {
-        // Spread alpha-mixed brightness across the row.
-        var r = (byte)((baseRgba >> 16) & 0xFF);
-        var g = (byte)((baseRgba >> 8) & 0xFF);
-        var b = (byte)(baseRgba & 0xFF);
-        var t = (float)i / Math.Max(1, n - 1);     // 0..1
-        var k = 0.55f + 0.45f * t;                  // 0.55..1.0
-        return new Color((byte)(r * k), (byte)(g * k), (byte)(b * k), 0xFF);
+        protected override void RenderCore(IContext ctx)
+        {
+            var teal = variation % 2 == 0;
+            Widgets.InputDrawing.Panel(ctx, Frame, teal ? PaleTeal : PaleBlue, 9);
+            Widgets.InputDrawing.Clip(ctx, Frame);
+            ctx.SetFill(new Color(0xF0C47AFF)); ctx.BeginPath();
+            ctx.Arc((Frame.Right - 24, Frame.Y + 20), 10, 0, NFloat.Pi * 2); ctx.Fill();
+            ctx.SetFill(teal ? new Color(0x9CCDBAFF) : new Color(0xADB8E9FF)); ctx.BeginPath();
+            ctx.MoveTo((Frame.X, Frame.Bottom)); ctx.LineTo((Frame.X, Frame.Y + 45));
+            ctx.LineTo((Frame.X + 45, Frame.Y + 20)); ctx.LineTo((Frame.Right, Frame.Bottom)); ctx.ClosePath(); ctx.Fill();
+            ctx.SetFill(teal ? Teal : Blue); ctx.BeginPath(); ctx.MoveTo((Frame.X + 20, Frame.Bottom));
+            ctx.LineTo((Frame.Right - 20, Frame.Y + 36)); ctx.LineTo(Frame.BottomRight); ctx.ClosePath(); ctx.Fill();
+        }
     }
 }

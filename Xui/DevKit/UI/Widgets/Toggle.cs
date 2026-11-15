@@ -44,7 +44,11 @@ public class Toggle : View, IDesignSystemChangeNotifications
         VerticalAlignment = VerticalAlignment.Top;
     }
 
+    /// <summary>Gets the number of child views, which is always zero.</summary>
     public override int Count => 0;
+
+    /// <summary>Gets a child view by index.</summary>
+    /// <exception cref="IndexOutOfRangeException">Always thrown because a toggle has no child views.</exception>
     public override View this[int index] => throw new IndexOutOfRangeException();
 
     private void ApplyDesignSystem()
@@ -77,12 +81,14 @@ public class Toggle : View, IDesignSystemChangeNotifications
         base.OnDeactivate();
     }
 
+    /// <summary>Measures the toggle using its design-system-defined track dimensions.</summary>
     protected override Size MeasureCore(Size available, IMeasureContext context)
     {
         ApplyDesignSystem();
         return new Size(trackWidth, trackHeight);
     }
 
+    /// <summary>Renders the toggle track and thumb for its current state.</summary>
     protected override void RenderCore(IContext context)
     {
         ApplyDesignSystem();
@@ -122,6 +128,7 @@ public class Toggle : View, IDesignSystemChangeNotifications
         context.Fill(FillRule.NonZero);
     }
 
+    /// <summary>Updates pointer feedback and changes the toggle value on a completed tap.</summary>
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
         if (e.Type == PointerEventType.Enter) { hover = true; InvalidateRender(); }

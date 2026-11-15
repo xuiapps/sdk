@@ -3,6 +3,7 @@ using Xui.Core.Canvas;
 using Xui.Core.Math1D;
 using Xui.Core.Math2D;
 using Xui.Core.UI.Layer;
+using Xui.Core.UI.Input;
 
 namespace Xui.Core.UI;
 
@@ -13,14 +14,68 @@ namespace Xui.Core.UI;
 /// <see cref="TextInputLayer"/>; focus-aware border drawing lives in
 /// <see cref="FocusBorderLayer{TView,TChild}"/>.
 /// </summary>
-public class TextBox : LayerView<View, FocusBorderLayer<View, TextInputLayer>>
+public class TextBox : LayerView<View, FocusBorderLayer<View, TextInputLayer>>, ITextEditingClient
 {
     /// <summary>Gets whether this view can receive keyboard focus. Always <c>true</c> for <see cref="TextBox"/>.</summary>
     public override bool Focusable => true;
 
+    /// <summary>Keyboard hints, applied when this field receives focus.</summary>
+    public TextInputOptions InputOptions { get; set; }
+
+    /// <inheritdoc/>
+    public bool CanPerformInputAction(TextInputAction action) => TextInputNavigation.CanPerform(this, action);
+
+    /// <inheritdoc/>
+    public void PerformInputAction(TextInputAction action) => TextInputNavigation.Perform(this, action);
+
+    /// <inheritdoc/>
+    public Xui.Core.UI.Input.TextEditingState Editor => Layer.Border.Child.Editor;
+
+    /// <inheritdoc/>
+    public bool NativeSelection
+    {
+        get => Layer.Border.Child.NativeSelection;
+        set { Layer.Border.Child.NativeSelection = value; InvalidateRender(); }
+    }
+
+    /// <inheritdoc/>
+    public Rect InputBounds
+    {
+        get
+        {
+            var rect = Frame;
+            for (View? ancestor = this; ancestor is not null; ancestor = ancestor.Parent)
+                rect = ancestor.InverseTransformRect(rect);
+            return rect;
+        }
+    }
+
+    /// <inheritdoc/>
+    public Rect GetCaretRect(int offset, ITextMeasureContext measure) => Layer.Border.Child.GetCaretRect(this, offset, measure);
+
+    /// <inheritdoc/>
+    public int GetTextPosition(Point point, ITextMeasureContext measure) => Layer.Border.Child.GetTextPosition(this, point, measure);
+
+    private void EditingChanged(Xui.Core.UI.Input.TextEditingChange change)
+    {
+        if ((change & Xui.Core.UI.Input.TextEditingChange.Text) != 0) InvalidateMeasure();
+        InvalidateRender();
+    }
+
+    /// <inheritdoc/>
+    public bool HasText => Layer.Border.Child.HasText;
+
+    /// <inheritdoc/>
+    protected override void OnDeactivate()
+    {
+        Blur();
+        base.OnDeactivate();
+    }
+
     /// <summary>Initializes a new <see cref="TextBox"/> with default styling.</summary>
     public TextBox()
     {
+        Editor.Changed += EditingChanged;
         Layer.BackgroundColor         = Colors.White;
         Layer.BorderThickness         = 1;
         Layer.BorderColor             = Colors.Gray;

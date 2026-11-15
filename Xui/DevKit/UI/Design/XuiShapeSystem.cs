@@ -10,6 +10,7 @@ internal class XuiShapeSystem : IShapeSystem
     public XuiShapeSystem(XuiDesignSystemOptions options)
     {
         RoundnessFactor = options.RoundnessFactor;
+        CornerRadius Radius(nfloat value) => new(value * RoundnessFactor);
         var preset = options.Shape;
 
         switch (preset)
@@ -28,40 +29,40 @@ internal class XuiShapeSystem : IShapeSystem
                 None       = new CornerRadius(0);
                 ExtraSmall = new CornerRadius(0);
                 Small      = new CornerRadius(0);
-                Medium     = new CornerRadius(3);
-                Large      = new CornerRadius(7);
-                ExtraLarge = new CornerRadius(10);
+                Medium     = Radius(3);
+                Large      = Radius(7);
+                ExtraLarge = Radius(10);
                 Full       = new CornerRadius(0);  // square buttons on desktop
                 break;
 
             case ShapePreset.Rounded:
                 None       = new CornerRadius(0);
-                ExtraSmall = new CornerRadius(2);
-                Small      = new CornerRadius(4);
-                Medium     = new CornerRadius(8);
-                Large      = new CornerRadius(14);
-                ExtraLarge = new CornerRadius(20);
-                Full       = new CornerRadius(4);   // small button radius
+                ExtraSmall = Radius(2);
+                Small      = Radius(4);
+                Medium     = Radius(8);
+                Large      = Radius(14);
+                ExtraLarge = Radius(20);
+                Full       = Radius(4);   // small button radius
                 break;
 
             case ShapePreset.RoundedPill:
                 None       = new CornerRadius(0);
-                ExtraSmall = new CornerRadius(2);
-                Small      = new CornerRadius(4);
-                Medium     = new CornerRadius(8);
-                Large      = new CornerRadius(14);
-                ExtraLarge = new CornerRadius(20);
+                ExtraSmall = Radius(2);
+                Small      = Radius(4);
+                Medium     = Radius(8);
+                Large      = Radius(14);
+                ExtraLarge = Radius(20);
                 Full       = new CornerRadius(9999); // pill buttons
                 break;
 
             case ShapePreset.Soft:
             default:
                 None       = new CornerRadius(0);
-                ExtraSmall = new CornerRadius(4);
-                Small      = new CornerRadius(8);
-                Medium     = new CornerRadius(12);
-                Large      = new CornerRadius(20);
-                ExtraLarge = new CornerRadius(28);
+                ExtraSmall = Radius(4);
+                Small      = Radius(8);
+                Medium     = Radius(12);
+                Large      = Radius(20);
+                ExtraLarge = Radius(28);
                 Full       = new CornerRadius(9999); // pill buttons
                 break;
         }

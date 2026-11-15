@@ -1,6 +1,6 @@
 using Xui.Core.Abstract;
 using Xui.Core.Math2D;
-using Xui.Middleware.Emulator.Devices;
+using Xui.Middleware.EmulatorLegacy.Devices;
 using Xui.Runtime.Test;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,7 +42,7 @@ public static class IntegrationRuntimeVariants
             ? desktopSize
             : new Size(
                 emulatorDevice.Value.LogicalResolution.Width + 48,
-                emulatorDevice.Value.LogicalResolution.Height + 88);
+                emulatorDevice.Value.LogicalResolution.Height + 64);
         var snapshotSet = ResolveSnapshotSet(runtimeVariant);
 
         return new TestSinglePageApp<TApplication, TWindow>(
