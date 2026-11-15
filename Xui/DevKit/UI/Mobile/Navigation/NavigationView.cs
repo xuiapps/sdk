@@ -1,6 +1,6 @@
 using Xui.Core.Animation;
 using Xui.Core.Canvas;
-using Xui.Core.Canvas.Filter;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.Core.UI.Input;
@@ -154,81 +154,45 @@ public class NavigationView : ViewCollection, INavigation, IFullScreenView
     }
 
     /// <inheritdoc/>
+    private readonly object viewportKey = new();
+    private readonly object shadeKey = new();
+
+    /// <inheritdoc/>
     protected override void RenderCore(IContext context)
     {
-        // One stationary background covers the display, including safe-area insets.
-        // Only the moving foreground page needs an additional surface and rounded clip.
-        context.Save();
-        try
+        using var viewport = context.Group(new GroupOptions
         {
-            ClipNavigationViewport(context);
-            context.Save();
-            try
-            {
-                if (IsTransitioning && UsesBackgroundTransitionShade)
-                    context.SetFilter(new Brightness(GetPreviousPageBrightness()));
-                context.SetFill(GetBackgroundColor());
-                context.FillRect(GetDisplayBounds());
-                if (outgoingPage is not null)
-                    RenderBackPage(context);
-            }
-            finally
-            {
-                context.Restore();
-            }
-            if (outgoingPage is null)
-            {
-                this.RenderChild(context, frontPageContent);
-                RenderOverlay(context);
-                return;
-            }
-
-            if (isForwardTransition)
-            {
-                DrawPageShadow(context, currentPage, frontPageContent.Transform.Tx);
-                this.RenderChild(context, frontPageContent);
-                RenderOverlay(context);
-                return;
-            }
-
-            DrawPageShadow(context, outgoingPage, frontPageContent.Transform.Tx);
-            this.RenderChild(context, frontPageContent);
-            RenderOverlay(context);
-        }
-        finally
+            Key = viewportKey, ViewBacking = true, Bounds = GetDisplayBounds(),
+            ClipToBounds = true, Background = GetBackgroundColor()
+        });
+        if (!viewport.NeedsRedraw) return;
+        if (outgoingPage is not null)
         {
-            context.Restore();
+            // Retain the complete back-page surface; the foreground covers its hidden portion.
+            this.RenderChild(context, backPageContent);
+            if (IsTransitioning && UsesBackgroundTransitionShade)
+            {
+                using var shade = context.Group(new GroupOptions
+                {
+                    Key = shadeKey, ViewBacking = true, Bounds = GetDisplayBounds(), HasUpdates = false,
+                    Background = new Color(0, 0, 0, 1 - GetPreviousPageBrightness())
+                });
+            }
         }
+        this.RenderChild(context, frontPageContent);
+        RenderOverlay(context);
     }
 
     private void RenderOverlay(IContext context)
     {
         if (overlayContent is not null)
-            this.RenderChild(context, overlayContent);
-    }
-
-    private void RenderBackPage(IContext context)
-    {
-        var exposedBounds = GetExposedBackPageBounds();
-        if (exposedBounds.Width <= 0 || exposedBounds.Height <= 0)
-            return;
-
-        context.Save();
-        try
         {
-            // The foreground page is opaque. Restricting both canvas clipping and
-            // traversal culling to its exposed leading edge avoids repainting page
-            // content that will be covered by the foreground surface.
-            context.BeginPath();
-            context.Rect(exposedBounds);
-            context.Clip();
-            this.RenderChild(context, backPageContent, exposedBounds);
-        }
-        finally
-        {
-            context.Restore();
+            using var overlay = context.Group(new GroupOptions { Key = overlayContent, ViewBacking = true, Bounds = overlayContent.Frame });
+            if (overlay.NeedsRedraw) this.RenderChild(context, overlayContent);
         }
     }
+
+
 
     /// <inheritdoc/>
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
@@ -487,101 +451,21 @@ public class NavigationView : ViewCollection, INavigation, IFullScreenView
         frontPageContent.ClipToPresentation = true;
     }
 
-    private void ClipPage(IContext context, PageClipMode clip)
-    {
-        if (clip == PageClipMode.None)
-            return;
-        context.BeginPath();
-        if (clip == PageClipMode.Device)
-            context.RoundRect(GetDisplayBounds(), GetScreenCornerRadius());
-        else
-            context.Rect(Frame);
-        context.Clip();
-    }
 
-    private void ClipNavigationViewport(IContext context)
-    {
-        context.BeginPath();
-        context.Rect(GetDisplayBounds());
-        context.Clip();
-    }
+
+
 
     private nfloat GetPreviousPageBrightness() => isForwardTransition
         ? 1 - transitionProgress * 0.2f
         : 0.5f + transitionProgress * 0.5f;
 
-    private void DrawPageShadow(IContext context, View topPage, nfloat xOffset)
-    {
-        if (!UsesRoundedPageTransitionShadow)
-            return;
 
-        var presentation = GetPresentation(topPage);
-        // Preserve the edge definition for nearly the whole motion. It fades only as
-        // the page settles, so an interactive pop retains its depth until completion.
-        nfloat opacity = 0.08f * GetPageShadowVisibility(transitionProgress);
-        nfloat extent = 45f;
-        if (!presentation.UsesTransitionShadow || opacity <= 0 || extent <= 0)
-            return;
 
-        var page = GetPresentationBounds(presentation);
-        page = new Rect(page.X + xOffset, page.Y, page.Width, page.Height);
-        var radius = presentation.Clip == PageClipMode.Device ? GetScreenCornerRadius() : 0;
-        radius = nfloat.Clamp(radius, 0, nfloat.Min(page.Width, page.Height) / 2);
-        var edgeColor = new Color(0, 0, 0, opacity);
-        var transparent = new Color(0, 0, 0, 0);
 
-        context.Save();
-        try
-        {
-            // Only the leading edge can be exposed inside the navigation viewport.
-            // The other patches are hidden by the foreground page or viewport clip.
-            var verticalLength = nfloat.Max(0, page.Height - radius * 2);
-            DrawShadowStrip(context, new Rect(page.X - extent, page.Y + radius, extent, verticalLength),
-                (page.X, page.Y), (page.X - extent, page.Y), edgeColor, transparent);
 
-            if (radius > 0)
-            {
-                // Continue the leading-edge falloff around its two visible corners.
-                DrawCornerShadow(context, new Point(page.X + radius, page.Y + radius), radius, extent, edgeColor, transparent, -1, -1);
-                DrawCornerShadow(context, new Point(page.X + radius, page.Bottom - radius), radius, extent, edgeColor, transparent, -1, 1);
-            }
-        }
-        finally { context.Restore(); }
-    }
 
-    private static nfloat GetPageShadowVisibility(nfloat progress)
-    {
-        progress = nfloat.Clamp(progress, 0, 1);
-        return 1 - Easing.EaseInQuad(progress);
-    }
 
-    private static void DrawShadowStrip(IContext context, Rect rect, Point edge, Point outer, Color edgeColor, Color transparent)
-    {
-        context.SetFill(new LinearGradient(edge, outer, [new(0, edgeColor), new(1, transparent)]));
-        context.FillRect(rect);
-    }
 
-    private static void DrawCornerShadow(
-        IContext context,
-        Point center,
-        nfloat radius,
-        nfloat extent,
-        Color edgeColor,
-        Color transparent,
-        nfloat horizontalDirection,
-        nfloat verticalDirection)
-    {
-        var outerRadius = radius + extent;
-        var patch = new Rect(
-            horizontalDirection < 0 ? center.X - outerRadius : center.X,
-            verticalDirection < 0 ? center.Y - outerRadius : center.Y,
-            outerRadius,
-            outerRadius);
-        var edgeStop = radius / outerRadius;
-        context.SetFill(new RadialGradient(center, outerRadius,
-            [new(0, edgeColor), new(edgeStop, edgeColor), new(1, transparent)]));
-        context.FillRect(patch);
-    }
 
     private PagePresentation GetPresentation(View page) => page is IPage pageInfo
         ? pageInfo.Presentation
@@ -635,21 +519,27 @@ public class NavigationView : ViewCollection, INavigation, IFullScreenView
         public bool ClipToPresentation { get; set; }
 
         /// <inheritdoc/>
-        protected override void RenderTransformedContent(IContext context)
+        protected override void RenderCore(IContext context)
         {
-            var page = this.Content;
-            if (page is null)
-                return;
-
+            var page = Content;
+            if (page is null) return;
             var presentation = owner.GetPresentation(page);
-            if (ClipToPresentation)
-                owner.ClipPage(context, presentation.Clip);
-            if (owner.IsTransitioning && ReferenceEquals(this, owner.frontPageContent))
+            var front = ReferenceEquals(this, owner.frontPageContent);
+            var radius = ClipToPresentation && presentation.Clip == PageClipMode.Device ? owner.GetScreenCornerRadius() : 0;
+            OutlineShadow? shadow = null;
+            if (front && owner.IsTransitioning && owner.UsesRoundedPageTransitionShadow && presentation.UsesTransitionShadow)
+                shadow = new OutlineShadow(new Color(0, 0, 0, (nfloat).12), 16, (-4, 0));
+            using var group = context.Group(new GroupOptions
             {
-                context.SetFill(presentation.Background ?? owner.DefaultPageBackground);
-                context.FillRect(owner.GetDisplayBounds());
-            }
-            base.RenderTransformedContent(context);
+                Key = page, ViewBacking = true, Bounds = owner.GetDisplayBounds(), Transform = Transform,
+                HasUpdates = page.RequiresRender(context),
+                ClipToBounds = ClipToPresentation, CornerRadius = radius, Shadow = shadow,
+                Background = owner.IsTransitioning && front ? presentation.Background ?? owner.DefaultPageBackground : null
+            });
+            // Record the whole surface: ancestor visibility changes as this cached page moves.
+            // Native bounds clipping handles exposure without baking a partial page into its cache.
+            if (group.NeedsRedraw) RenderChild(context, page, owner.GetDisplayBounds());
         }
+
     }
 }

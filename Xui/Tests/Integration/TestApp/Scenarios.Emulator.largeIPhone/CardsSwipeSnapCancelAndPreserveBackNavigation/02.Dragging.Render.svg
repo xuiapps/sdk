@@ -9,176 +9,116 @@
       <path d="M 68 24 H 410 A 44 44 0 0 1 454 68 V 912 A 44 44 0 0 1 410 956 H 68 A 44 44 0 0 1 24 912 V 68 A 44 44 0 0 1 68 24 Z " clip-rule="nonzero" />
     </clipPath>
     <clipPath id="clip1">
-      <path d="M 0 0 H 430 V 932 H 0 Z " clip-rule="nonzero" />
+      <path d="M 0 0 H 430 A 0 0 0 0 1 430 0 V 932 A 0 0 0 0 1 430 932 H 0 A 0 0 0 0 1 0 932 V 0 A 0 0 0 0 1 0 0 Z " clip-rule="nonzero" />
     </clipPath>
     <clipPath id="clip2">
-      <path d="M 0 107 H 430 V 898 H 0 Z " clip-rule="nonzero" />
+      <path d="M 0 107 H 430 A 0 0 0 0 1 430 107 V 898 A 0 0 0 0 1 430 898 H 0 A 0 0 0 0 1 0 898 V 107 A 0 0 0 0 1 0 107 Z " clip-rule="nonzero" />
     </clipPath>
-    <linearGradient id="grad1" x1="0" y1="0" x2="12" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0.06" />
-      <stop offset="50%" stop-color="#000000" stop-opacity="0.01" />
-      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
-    </linearGradient>
-    <radialGradient id="grad2" cx="0" cy="0" r="42" fx="0" fy="0" fr="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0.06" />
-      <stop offset="71.4%" stop-color="#000000" stop-opacity="0.06" />
-      <stop offset="85.7%" stop-color="#000000" stop-opacity="0.01" />
-      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
-    </radialGradient>
+    <filter id="surfaceShadow1" filterUnits="userSpaceOnUse" x="18" y="232.5" width="394" height="436" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
     <clipPath id="clip3">
       <path d="M 48 262.5 H 382 V 638.5 H 48 Z " clip-rule="nonzero" />
     </clipPath>
-    <linearGradient id="grad3" x1="0" y1="0" x2="12" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0.06" />
-      <stop offset="50%" stop-color="#000000" stop-opacity="0.01" />
-      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
-    </linearGradient>
-    <radialGradient id="grad4" cx="0" cy="0" r="42" fx="0" fy="0" fr="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0.06" />
-      <stop offset="71.4%" stop-color="#000000" stop-opacity="0.06" />
-      <stop offset="85.7%" stop-color="#000000" stop-opacity="0.01" />
-      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
-    </radialGradient>
+    <filter id="surfaceShadow2" filterUnits="userSpaceOnUse" x="18" y="232.5" width="394" height="436" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
     <clipPath id="clip4">
       <path d="M 48 262.5 H 382 V 638.5 H 48 Z " clip-rule="nonzero" />
     </clipPath>
+<linearGradient id="surfaceGlass3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.88"/><stop offset="1" stop-color="#DBE6FF" stop-opacity="0.72"/></linearGradient>
+<filter id="surfaceGlass3Soft" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="0.4"/></filter>
   </defs>
   <g clip-path="url(#clip0)">
     <g transform="translate(24,24)">
-      <g clip-path="url(#clip1)">
-        <rect x="0" y="0" width="430" height="932" fill="#FFFFFF" />
-        <g>
-          <g clip-path="url(#clip2)">
-            <g transform="translate(-151.33,53.57) scale(0.89,0.89)">
-              <g transform="translate(66,250.5)">
-                <g transform="matrix(0,-1,1,0,0,0)">
-                  <rect x="0" y="0" width="12" height="298" fill="url(#grad1)" />
-                </g>
-              </g>
-              <g transform="translate(394,280.5)">
-                <rect x="0" y="0" width="12" height="340" fill="url(#grad1)" />
-              </g>
-              <g transform="translate(364,650.5)">
-                <g transform="matrix(0,1,-1,0,0,0)">
-                  <rect x="0" y="0" width="12" height="298" fill="url(#grad1)" />
-                </g>
-              </g>
-              <g transform="translate(36,620.5)">
-                <g transform="matrix(-1,0,-0,-1,0,0)">
-                  <rect x="0" y="0" width="12" height="340" fill="url(#grad1)" />
-                </g>
-              </g>
-              <g transform="translate(66,280.5)">
-                <path d="M -42 0 A 42 42 0 0 1 -0 -42 L 0 -30 A 30 30 0 0 0 -30 0 Z " fill="url(#grad2)" fill-rule="nonzero" />
-              </g>
-              <g transform="translate(364,280.5)">
-                <path d="M -0 -42 A 42 42 0 0 1 42 -0 L 30 0 A 30 30 0 0 0 -0 -30 Z " fill="url(#grad2)" fill-rule="nonzero" />
-              </g>
-              <g transform="translate(364,620.5)">
-                <path d="M 42 0 A 42 42 0 0 1 0 42 L 0 30 A 30 30 0 0 0 30 0 Z " fill="url(#grad2)" fill-rule="nonzero" />
-              </g>
-              <g transform="translate(66,620.5)">
-                <path d="M 0 42 A 42 42 0 0 1 -42 0 L -30 0 A 30 30 0 0 0 0 30 Z " fill="url(#grad2)" fill-rule="nonzero" />
-              </g>
-              <path d="M 66 250.5 H 364 A 30 30 0 0 1 394 280.5 V 620.5 A 30 30 0 0 1 364 650.5 H 66 A 30 30 0 0 1 36 620.5 V 280.5 A 30 30 0 0 1 66 250.5 Z " fill="#F8F8F8" fill-rule="nonzero" />
-              <path d="M 66 250.5 H 364 A 30 30 0 0 1 394 280.5 V 620.5 A 30 30 0 0 1 364 650.5 H 66 A 30 30 0 0 1 36 620.5 V 280.5 A 30 30 0 0 1 66 250.5 Z " fill="none" stroke="#BDBDBD" />
-              <g clip-path="url(#clip3)">
-                <g transform="translate(48,262.5)">
-                  <text x="16" y="16" fill="#208B80" text-anchor="start" dominant-baseline="text-before-edge" font-size="10" font-family="Inter" font-weight="600" xml:space="preserve">CANVAS / COLOR</text>
-                  <text x="16" y="40" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" font-weight="600" xml:space="preserve">Color in one call.</text>
-                  <text x="16" y="76" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Simple rectangles. Endless compositions.</text>
-                  <g transform="translate(7.12,127.06) scale(0.89,0.89)">
-                    <rect x="10" y="10" width="100" height="80" fill="#FF0000" />
-                    <rect x="130" y="10" width="100" height="80" fill="#008000" />
-                    <rect x="250" y="10" width="100" height="80" fill="#0000FF" />
-                    <rect x="60" y="50" width="100" height="80" fill="#FFA500" />
-                    <rect x="10" y="150" width="20" height="20" fill="#000000" />
+      <g>
+<rect x="0" y="0" width="430" height="932" rx="0" fill="#FFFFFF" fill-opacity="1"/>
+        <g clip-path="url(#clip1)">
+          <g>
+            <g>
+              <g>
+                <g clip-path="url(#clip2)">
+                  <g transform="translate(-151.33,53.57) scale(0.89,0.89)">
+                    <text x="48" y="666.5" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="20" font-family="Inter" font-weight="600" xml:space="preserve">Fill Rect</text>
+                    <text x="48" y="698.5" fill="#757575" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">1 / 22</text>
+                    <g>
+<rect x="36" y="250.5" width="358" height="400" rx="42" transform="translate(0 2)" fill="#000000" fill-opacity="0.06" filter="url(#surfaceShadow1)"/>
+<rect x="36" y="250.5" width="358" height="400" rx="42" fill="#FDFDFD" fill-opacity="1"/>
+<rect x="36.5" y="251" width="357" height="399" rx="41.5" fill="none" stroke="#BDBDBD" stroke-opacity="1" stroke-width="1"/>
+                      <g clip-path="url(#clip3)">
+                        <g transform="translate(48,262.5)">
+                          <text x="16" y="16" fill="#208B80" text-anchor="start" dominant-baseline="text-before-edge" font-size="10" font-family="Inter" font-weight="600" xml:space="preserve">CANVAS / COLOR</text>
+                          <text x="16" y="40" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" font-weight="600" xml:space="preserve">Color in one call.</text>
+                          <text x="16" y="76" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">Simple rectangles. Endless compositions.</text>
+                          <g transform="translate(7.12,127.06) scale(0.89,0.89)">
+                            <rect x="10" y="10" width="100" height="80" fill="#FF0000" />
+                            <rect x="130" y="10" width="100" height="80" fill="#008000" />
+                            <rect x="250" y="10" width="100" height="80" fill="#0000FF" />
+                            <rect x="60" y="50" width="100" height="80" fill="#FFA500" />
+                            <rect x="10" y="150" width="20" height="20" fill="#000000" />
+                          </g>
+                          <text x="16" y="324" fill="#5266DE" text-anchor="start" dominant-baseline="text-before-edge" font-size="11" font-family="Inter" xml:space="preserve">C#: ctx.FillRect((0, 0, 100, 100));</text>
+                        </g>
+                      </g>
+                    </g>
                   </g>
-                  <text x="16" y="324" fill="#5266DE" text-anchor="start" dominant-baseline="text-before-edge" font-size="11" font-family="Inter" xml:space="preserve">C#: ctx.FillRect((0, 0, 100, 100));</text>
-                </g>
-              </g>
-              <text x="48" y="666.5" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="20" font-family="Inter" font-weight="600" xml:space="preserve">Fill Rect</text>
-              <text x="48" y="698.5" fill="#757575" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">1 / 22</text>
-            </g>
-            <g transform="translate(182.53,43.73) scale(0.91,0.91)">
-              <g transform="translate(66,250.5)">
-                <g transform="matrix(0,-1,1,0,0,0)">
-                  <rect x="0" y="0" width="12" height="298" fill="url(#grad3)" />
-                </g>
-              </g>
-              <g transform="translate(394,280.5)">
-                <rect x="0" y="0" width="12" height="340" fill="url(#grad3)" />
-              </g>
-              <g transform="translate(364,650.5)">
-                <g transform="matrix(0,1,-1,0,0,0)">
-                  <rect x="0" y="0" width="12" height="298" fill="url(#grad3)" />
-                </g>
-              </g>
-              <g transform="translate(36,620.5)">
-                <g transform="matrix(-1,0,-0,-1,0,0)">
-                  <rect x="0" y="0" width="12" height="340" fill="url(#grad3)" />
-                </g>
-              </g>
-              <g transform="translate(66,280.5)">
-                <path d="M -42 0 A 42 42 0 0 1 -0 -42 L 0 -30 A 30 30 0 0 0 -30 0 Z " fill="url(#grad4)" fill-rule="nonzero" />
-              </g>
-              <g transform="translate(364,280.5)">
-                <path d="M -0 -42 A 42 42 0 0 1 42 -0 L 30 0 A 30 30 0 0 0 -0 -30 Z " fill="url(#grad4)" fill-rule="nonzero" />
-              </g>
-              <g transform="translate(364,620.5)">
-                <path d="M 42 0 A 42 42 0 0 1 0 42 L 0 30 A 30 30 0 0 0 30 0 Z " fill="url(#grad4)" fill-rule="nonzero" />
-              </g>
-              <g transform="translate(66,620.5)">
-                <path d="M 0 42 A 42 42 0 0 1 -42 0 L -30 0 A 30 30 0 0 0 0 30 Z " fill="url(#grad4)" fill-rule="nonzero" />
-              </g>
-              <path d="M 66 250.5 H 364 A 30 30 0 0 1 394 280.5 V 620.5 A 30 30 0 0 1 364 650.5 H 66 A 30 30 0 0 1 36 620.5 V 280.5 A 30 30 0 0 1 66 250.5 Z " fill="#F8F8F8" fill-rule="nonzero" />
-              <path d="M 66 250.5 H 364 A 30 30 0 0 1 394 280.5 V 620.5 A 30 30 0 0 1 364 650.5 H 66 A 30 30 0 0 1 36 620.5 V 280.5 A 30 30 0 0 1 66 250.5 Z " fill="none" stroke="#BDBDBD" />
-              <g clip-path="url(#clip4)">
-                <g transform="translate(48,262.5)">
-                  <text x="16" y="16" fill="#208B80" text-anchor="start" dominant-baseline="text-before-edge" font-size="10" font-family="Inter" font-weight="600" xml:space="preserve">CANVAS / PATHS</text>
-                  <text x="16" y="40" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" font-weight="600" xml:space="preserve">Bend the line.</text>
-                  <text x="16" y="76" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">One control point shapes the whole curve.</text>
-                  <g transform="translate(5.83,88.81) scale(1.07,1.07)">
-                    <path d="M 30 200 Q 150 20, 270 200 " fill="none" stroke="#0000FF" stroke-width="3" />
-                    <path d="M 30 200 L 150 20 L 270 200 " fill="none" stroke="#D3D3D3" />
-                    <path d="M 34 200 A 4 4 0 0 1 26 200 A 4 4 0 0 1 34 200 " fill="#FF0000" fill-rule="nonzero" />
-                    <path d="M 274 200 A 4 4 0 0 1 266 200 A 4 4 0 0 1 274 200 " fill="#FF0000" fill-rule="nonzero" />
-                    <path d="M 154 20 A 4 4 0 0 1 146 20 A 4 4 0 0 1 154 20 " fill="#008000" fill-rule="nonzero" />
+                  <g transform="translate(182.53,43.73) scale(0.91,0.91)">
+                    <text x="48" y="666.5" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="20" font-family="Inter" font-weight="600" xml:space="preserve">Quadratic Curve</text>
+                    <text x="48" y="698.5" fill="#757575" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">2 / 22</text>
+                    <g>
+<rect x="36" y="250.5" width="358" height="400" rx="42" transform="translate(0 2)" fill="#000000" fill-opacity="0.06" filter="url(#surfaceShadow2)"/>
+<rect x="36" y="250.5" width="358" height="400" rx="42" fill="#FDFDFD" fill-opacity="1"/>
+<rect x="36.5" y="251" width="357" height="399" rx="41.5" fill="none" stroke="#BDBDBD" stroke-opacity="1" stroke-width="1"/>
+                      <g clip-path="url(#clip4)">
+                        <g transform="translate(48,262.5)">
+                          <text x="16" y="16" fill="#208B80" text-anchor="start" dominant-baseline="text-before-edge" font-size="10" font-family="Inter" font-weight="600" xml:space="preserve">CANVAS / PATHS</text>
+                          <text x="16" y="40" fill="#252B3A" text-anchor="start" dominant-baseline="text-before-edge" font-size="24" font-family="Inter" font-weight="600" xml:space="preserve">Bend the line.</text>
+                          <text x="16" y="76" fill="#727B8D" text-anchor="start" dominant-baseline="text-before-edge" font-size="12" font-family="Inter" xml:space="preserve">One control point shapes the whole curve.</text>
+                          <g transform="translate(5.83,88.81) scale(1.07,1.07)">
+                            <path d="M 30 200 Q 150 20, 270 200 " fill="none" stroke="#0000FF" stroke-width="3" />
+                            <path d="M 30 200 L 150 20 L 270 200 " fill="none" stroke="#D3D3D3" />
+                            <path d="M 34 200 A 4 4 0 0 1 26 200 A 4 4 0 0 1 34 200 " fill="#FF0000" fill-rule="nonzero" />
+                            <path d="M 274 200 A 4 4 0 0 1 266 200 A 4 4 0 0 1 274 200 " fill="#FF0000" fill-rule="nonzero" />
+                            <path d="M 154 20 A 4 4 0 0 1 146 20 A 4 4 0 0 1 154 20 " fill="#008000" fill-rule="nonzero" />
+                          </g>
+                          <text x="16" y="324" fill="#5266DE" text-anchor="start" dominant-baseline="text-before-edge" font-size="11" font-family="Inter" xml:space="preserve">C#: ctx.CurveTo((150, 20), (270, 200));</text>
+                        </g>
+                      </g>
+                    </g>
                   </g>
-                  <text x="16" y="324" fill="#5266DE" text-anchor="start" dominant-baseline="text-before-edge" font-size="11" font-family="Inter" xml:space="preserve">C#: ctx.CurveTo((150, 20), (270, 200));</text>
+                  <g>
+                    <path d="M 91.8 746.5 A 3.9 3.9 0 0 1 84 746.5 A 3.9 3.9 0 0 1 91.8 746.5 " fill="#999999" fill-rule="nonzero" />
+                    <path d="M 106 746.5 A 4.1 4.1 0 0 1 97.8 746.5 A 4.1 4.1 0 0 1 106 746.5 " fill="#939393" fill-rule="nonzero" />
+                    <path d="M 118 746.5 A 3 3 0 0 1 112 746.5 A 3 3 0 0 1 118 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 130 746.5 A 3 3 0 0 1 124 746.5 A 3 3 0 0 1 130 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 142 746.5 A 3 3 0 0 1 136 746.5 A 3 3 0 0 1 142 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 154 746.5 A 3 3 0 0 1 148 746.5 A 3 3 0 0 1 154 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 166 746.5 A 3 3 0 0 1 160 746.5 A 3 3 0 0 1 166 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 178 746.5 A 3 3 0 0 1 172 746.5 A 3 3 0 0 1 178 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 190 746.5 A 3 3 0 0 1 184 746.5 A 3 3 0 0 1 190 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 202 746.5 A 3 3 0 0 1 196 746.5 A 3 3 0 0 1 202 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 214 746.5 A 3 3 0 0 1 208 746.5 A 3 3 0 0 1 214 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 226 746.5 A 3 3 0 0 1 220 746.5 A 3 3 0 0 1 226 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 238 746.5 A 3 3 0 0 1 232 746.5 A 3 3 0 0 1 238 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 250 746.5 A 3 3 0 0 1 244 746.5 A 3 3 0 0 1 250 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 262 746.5 A 3 3 0 0 1 256 746.5 A 3 3 0 0 1 262 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 274 746.5 A 3 3 0 0 1 268 746.5 A 3 3 0 0 1 274 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 286 746.5 A 3 3 0 0 1 280 746.5 A 3 3 0 0 1 286 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 298 746.5 A 3 3 0 0 1 292 746.5 A 3 3 0 0 1 298 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 310 746.5 A 3 3 0 0 1 304 746.5 A 3 3 0 0 1 310 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 322 746.5 A 3 3 0 0 1 316 746.5 A 3 3 0 0 1 322 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 334 746.5 A 3 3 0 0 1 328 746.5 A 3 3 0 0 1 334 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                    <path d="M 346 746.5 A 3 3 0 0 1 340 746.5 A 3 3 0 0 1 346 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+                  </g>
                 </g>
               </g>
-              <text x="48" y="666.5" fill="#242529" text-anchor="start" dominant-baseline="text-before-edge" font-size="20" font-family="Inter" font-weight="600" xml:space="preserve">Quadratic Curve</text>
-              <text x="48" y="698.5" fill="#757575" text-anchor="start" dominant-baseline="text-before-edge" font-size="13" font-family="Inter" xml:space="preserve">2 / 22</text>
             </g>
-            <path d="M 91.8 746.5 A 3.9 3.9 0 0 1 84 746.5 A 3.9 3.9 0 0 1 91.8 746.5 " fill="#999999" fill-rule="nonzero" />
-            <path d="M 106 746.5 A 4.1 4.1 0 0 1 97.8 746.5 A 4.1 4.1 0 0 1 106 746.5 " fill="#939393" fill-rule="nonzero" />
-            <path d="M 118 746.5 A 3 3 0 0 1 112 746.5 A 3 3 0 0 1 118 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 130 746.5 A 3 3 0 0 1 124 746.5 A 3 3 0 0 1 130 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 142 746.5 A 3 3 0 0 1 136 746.5 A 3 3 0 0 1 142 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 154 746.5 A 3 3 0 0 1 148 746.5 A 3 3 0 0 1 154 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 166 746.5 A 3 3 0 0 1 160 746.5 A 3 3 0 0 1 166 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 178 746.5 A 3 3 0 0 1 172 746.5 A 3 3 0 0 1 178 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 190 746.5 A 3 3 0 0 1 184 746.5 A 3 3 0 0 1 190 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 202 746.5 A 3 3 0 0 1 196 746.5 A 3 3 0 0 1 202 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 214 746.5 A 3 3 0 0 1 208 746.5 A 3 3 0 0 1 214 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 226 746.5 A 3 3 0 0 1 220 746.5 A 3 3 0 0 1 226 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 238 746.5 A 3 3 0 0 1 232 746.5 A 3 3 0 0 1 238 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 250 746.5 A 3 3 0 0 1 244 746.5 A 3 3 0 0 1 250 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 262 746.5 A 3 3 0 0 1 256 746.5 A 3 3 0 0 1 262 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 274 746.5 A 3 3 0 0 1 268 746.5 A 3 3 0 0 1 274 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 286 746.5 A 3 3 0 0 1 280 746.5 A 3 3 0 0 1 286 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 298 746.5 A 3 3 0 0 1 292 746.5 A 3 3 0 0 1 298 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 310 746.5 A 3 3 0 0 1 304 746.5 A 3 3 0 0 1 310 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 322 746.5 A 3 3 0 0 1 316 746.5 A 3 3 0 0 1 322 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 334 746.5 A 3 3 0 0 1 328 746.5 A 3 3 0 0 1 334 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
-            <path d="M 346 746.5 A 3 3 0 0 1 340 746.5 A 3 3 0 0 1 346 746.5 " fill="#B2B2B2" fill-rule="nonzero" />
+            <g>
+<rect x="0" y="0" width="430" height="107" rx="0" data-xui-material="Blur" fill="url(#surfaceGlass3)" stroke="#FFFFFF" stroke-opacity="0.7" filter="url(#surfaceGlass3Soft)"/>
+              <path d="M 20.5 78 L 15.5 83 L 20.5 88 " fill="none" stroke="#030303" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <text x="31" y="83" fill="#030303" text-anchor="start" dominant-baseline="central" font-size="16" font-family="Inter" font-weight="500" xml:space="preserve">Back</text>
+              <text x="148" y="72.72" fill="#030303" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Canvas Drawing</text>
+              <path d="M 0 107 L 430 107 " fill="none" stroke="#BDBDBD" />
+            </g>
           </g>
-          <rect x="0" y="0" width="430" height="107" fill="#FFFFFF" />
-          <path d="M 20.5 78 L 15.5 83 L 20.5 88 " fill="none" stroke="#030303" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-          <text x="31" y="83" fill="#030303" text-anchor="start" dominant-baseline="central" font-size="16" font-family="Inter" font-weight="500" xml:space="preserve">Back</text>
-          <text x="148" y="72.72" fill="#030303" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Canvas Drawing</text>
-          <path d="M 0 107 L 430 107 " fill="none" stroke="#BDBDBD" />
+          <g>
+          </g>
         </g>
       </g>
     </g>

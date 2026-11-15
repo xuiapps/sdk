@@ -3,6 +3,7 @@ using Xui.Apps.TestApp.Examples;
 using Xui.Apps.TestApp.Pages.ThreeD.Tests;
 using Xui.Apps.TestApp.Pages.ThreeD.Tests.GpuHardwareCubeTest;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.DevKit.UI.Mobile.Navigation;
@@ -95,6 +96,17 @@ public class ThreeDExample : Example, IMobileExamplePresentation, INavigationAwa
             Add(demo);
             rendererButton.Text = software ? "Use hardware renderer" : "Use software renderer";
             Invalidate();
+        }
+
+        protected override void RenderCore(IContext context)
+        {
+            for (var i = 0; i < Count; i++)
+            {
+                var child = this[i];
+                using var group = context.Group(new GroupOptions
+                { Key = child, Bounds = child.Frame, ViewBacking = true });
+                RenderChild(context, child);
+            }
         }
 
         protected override Size MeasureCore(Size available, IMeasureContext context)

@@ -9,34 +9,44 @@
       <path d="M 68 24 H 410 A 44 44 0 0 1 454 68 V 912 A 44 44 0 0 1 410 956 H 68 A 44 44 0 0 1 24 912 V 68 A 44 44 0 0 1 68 24 Z " clip-rule="nonzero" />
     </clipPath>
     <clipPath id="clip1">
-      <path d="M 0 0 H 430 V 932 H 0 Z " clip-rule="nonzero" />
+      <path d="M 0 0 H 430 A 0 0 0 0 1 430 0 V 932 A 0 0 0 0 1 430 932 H 0 A 0 0 0 0 1 0 932 V 0 A 0 0 0 0 1 0 0 Z " clip-rule="nonzero" />
     </clipPath>
+<linearGradient id="surfaceGlass1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.88"/><stop offset="1" stop-color="#DBE6FF" stop-opacity="0.72"/></linearGradient>
+<filter id="surfaceGlass1Soft" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="0.4"/></filter>
   </defs>
   <g clip-path="url(#clip0)">
     <g transform="translate(24,24)">
-      <g clip-path="url(#clip1)">
-        <rect x="0" y="0" width="430" height="932" fill="#FFFFFF" />
-        <g>
-          <text x="215" y="172.5" fill="#D23D48" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Actual Glyph Box</text>
-          <text x="215" y="260.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
-          <rect x="36.31" y="214.06" width="358" height="46.56" fill="none" stroke="#D23D48" />
-          <text x="215" y="304.5" fill="#C57912" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Font Bounding Box</text>
-          <text x="215" y="392.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
-          <rect x="30.69" y="330.62" width="368.63" height="77.44" fill="none" stroke="#C57912" />
-          <text x="215" y="436.5" fill="#424851" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Alphabetic Baseline</text>
-          <text x="215" y="524.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
-          <path d="M 26.69 524.62 L 403.31 524.62 " fill="none" stroke="#424851" />
-          <text x="215" y="568.5" fill="#218354" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Ideographic Baseline</text>
-          <text x="215" y="656.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
-          <path d="M 26.69 672.06 L 403.31 672.06 " fill="none" stroke="#218354" />
-          <text x="215" y="700.5" fill="#3265CC" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Hanging Baseline</text>
-          <text x="215" y="788.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
-          <path d="M 26.69 737.42 L 403.31 737.42 " fill="none" stroke="#3265CC" />
-          <rect x="0" y="0" width="430" height="107" fill="#FFFFFF" />
-          <path d="M 20.5 78 L 15.5 83 L 20.5 88 " fill="none" stroke="#030303" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-          <text x="31" y="83" fill="#030303" text-anchor="start" dominant-baseline="central" font-size="16" font-family="Inter" font-weight="500" xml:space="preserve">Back</text>
-          <text x="163.95" y="72.72" fill="#030303" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Text Metrics</text>
-          <path d="M 0 107 L 430 107 " fill="none" stroke="#BDBDBD" />
+      <g>
+<rect x="0" y="0" width="430" height="932" rx="0" fill="#FFFFFF" fill-opacity="1"/>
+        <g clip-path="url(#clip1)">
+          <g>
+            <g>
+              <text x="215" y="172.5" fill="#D23D48" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Actual Glyph Box</text>
+              <text x="215" y="260.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
+              <rect x="36.31" y="214.06" width="358" height="46.56" fill="none" stroke="#D23D48" />
+              <text x="215" y="304.5" fill="#C57912" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Font Bounding Box</text>
+              <text x="215" y="392.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
+              <rect x="30.69" y="330.62" width="368.63" height="77.44" fill="none" stroke="#C57912" />
+              <text x="215" y="436.5" fill="#424851" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Alphabetic Baseline</text>
+              <text x="215" y="524.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
+              <path d="M 26.69 524.62 L 403.31 524.62 " fill="none" stroke="#424851" />
+              <text x="215" y="568.5" fill="#218354" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Ideographic Baseline</text>
+              <text x="215" y="656.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
+              <path d="M 26.69 672.06 L 403.31 672.06 " fill="none" stroke="#218354" />
+              <text x="215" y="700.5" fill="#3265CC" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Hanging Baseline</text>
+              <text x="215" y="788.62" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
+              <path d="M 26.69 737.42 L 403.31 737.42 " fill="none" stroke="#3265CC" />
+            </g>
+            <g>
+<rect x="0" y="0" width="430" height="107" rx="0" data-xui-material="Blur" fill="url(#surfaceGlass1)" stroke="#FFFFFF" stroke-opacity="0.7" filter="url(#surfaceGlass1Soft)"/>
+              <path d="M 20.5 78 L 15.5 83 L 20.5 88 " fill="none" stroke="#030303" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <text x="31" y="83" fill="#030303" text-anchor="start" dominant-baseline="central" font-size="16" font-family="Inter" font-weight="500" xml:space="preserve">Back</text>
+              <text x="163.95" y="72.72" fill="#030303" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Text Metrics</text>
+              <path d="M 0 107 L 430 107 " fill="none" stroke="#BDBDBD" />
+            </g>
+          </g>
+          <g>
+          </g>
         </g>
       </g>
     </g>

@@ -3,6 +3,7 @@ using Xui.Core.Abstract;
 using Xui.Core.Animation;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Math2D;
 using Xui.Core.DI;
 using Xui.Core.UI.Input;
@@ -100,6 +101,11 @@ public partial class ScrollView : View
     /// is allowed to paint underneath the system areas while it scrolls.
     /// </summary>
     public bool ClipToViewport { get; set; } = true;
+
+    /// <summary>Retains this viewport as a native composition surface where supported.</summary>
+    public bool UseCompositionGroup { get; set; }
+    private readonly object scrollbarGroupKey = new();
+
 
     /// <summary>
     /// Gets or sets which axis (or axes) this scroll view responds to.
@@ -228,6 +234,20 @@ public partial class ScrollView : View
     /// <inheritdoc/>
     protected override void RenderCore(IContext context)
     {
+        if (UseCompositionGroup)
+        {
+            using var group = context.Group(new GroupOptions
+            {
+                Key = this, ViewBacking = true, Bounds = !ClipToViewport && this.TryFindParent<RootView>(out var root) ? root.Window.DisplayArea : Frame, HasUpdates = RequiresRender(context),
+                ClipToBounds = ClipToViewport
+            });
+            if (group.NeedsRedraw) RenderViewport(context, nativeClip: true);
+        }
+        else RenderViewport(context);
+    }
+
+    private void RenderViewport(IContext context, bool nativeClip = false)
+    {
         context.Save();
         context.Translate(this.Frame.TopLeft);
 
@@ -239,9 +259,12 @@ public partial class ScrollView : View
         if (ClipToViewport)
         {
             var viewport = new Rect(0, 0, this.Frame.Width, this.Frame.Height);
-            context.BeginPath();
-            context.Rect(viewport);
-            context.Clip();
+            if (!nativeClip)
+            {
+                context.BeginPath();
+                context.Rect(viewport);
+                context.Clip();
+            }
             contentCullingFrame = contentCullingFrame is { } externalCulling
                 ? Intersect(externalCulling, viewport)
                 : viewport;
@@ -260,8 +283,21 @@ public partial class ScrollView : View
             }
         }
 
-        DrawScrollbarIndicatorV(context);
-        DrawScrollbarIndicatorH(context);
+        if (nativeClip)
+        {
+            using var indicators = context.Group(new GroupOptions
+            { Key = scrollbarGroupKey, ViewBacking = true, Bounds = (0, 0, Frame.Width, Frame.Height) });
+            if (indicators.NeedsRedraw)
+            {
+                DrawScrollbarIndicatorV(context);
+                DrawScrollbarIndicatorH(context);
+            }
+        }
+        else
+        {
+            DrawScrollbarIndicatorV(context);
+            DrawScrollbarIndicatorH(context);
+        }
 
         context.Restore();
         // base.RenderCore intentionally NOT called — would re-render content

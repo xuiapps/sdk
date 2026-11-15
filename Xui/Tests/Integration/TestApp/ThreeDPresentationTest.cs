@@ -130,6 +130,26 @@ public class ThreeDPresentationTest
         Assert.Equal(4, cube.Frames);
     }
 
+    [Fact]
+    public void NativePresentationInvalidatesPortableCaptureEvenWhileNavigationIsFrozen()
+    {
+        using var app = CreateApp(441);
+        app.Render();
+        var button = app.Window.RootView.FindViewById("Settings")!;
+        Assert.True(button.TryFindParent<NavigationView>(out var navigation));
+        var page = new MobileExamplePage<CountingExample>();
+        var cube = ((CountingExample)page[0]).Cube;
+        navigation.Push(page);
+        app.Render();
+        Assert.Equal(1, cube.Frames);
+        cube.NativeFramePresented();
+        Assert.False(cube.IsLive);
+        app.Render();
+        Assert.Equal(2, cube.Frames); // Capture must regenerate the image after native output changes.
+        app.Render();
+        Assert.Equal(2, cube.Frames);
+    }
+
     public sealed class CountingExample : Example, INavigationAware
     {
         public CountingCube Cube { get; } = new();
@@ -144,6 +164,7 @@ public class ThreeDPresentationTest
         protected override string BackendLabel => "Test";
         protected override bool RenderPixels(byte[] pixels) { Frames++; return true; }
         public void ChangeScene() => InvalidateScene();
+        public void NativeFramePresented() { NativeSceneRendered(); InvalidateRender(); }
     }
 
     private static TestSinglePageApp<Application, MainWindow> CreateApp(int width) =>

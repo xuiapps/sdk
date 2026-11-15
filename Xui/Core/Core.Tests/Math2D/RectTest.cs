@@ -3,6 +3,17 @@ namespace Xui.Core.Math2D;
 public class RectTest
 {
     [Fact]
+    public void InequalityIsTheComplementOfEquality()
+    {
+        var rect = new Rect(1, 2, 30, 40);
+        Assert.False(rect != new Rect(1, 2, 30, 40));
+        Assert.True(rect != new Rect(1, 2, 30, 41));
+        Assert.True(rect != new Rect(2, 2, 30, 40));
+        Assert.True(rect != new Rect(1, 3, 30, 40));
+        Assert.True(rect != new Rect(1, 2, 31, 40));
+    }
+
+    [Fact]
     public void Rect_Ctor_PointAndSize()
     {
         var rect = new Rect(new Point(2, 3), new Size(10, 5));

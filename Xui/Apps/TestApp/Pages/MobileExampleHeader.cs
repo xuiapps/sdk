@@ -1,4 +1,5 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.DevKit.UI.Design;
@@ -46,7 +47,7 @@ public sealed class MobileExampleHeader : ViewCollection
         var design = GetService(typeof(IDesignSystem)) as IDesignSystem;
         title.TextColor = design?.Colors.Surface.Foreground ?? Colors.Black;
 
-        // The header is laid out inside the safe area, but its opaque surface
+        // The header is laid out inside the safe area, but its blurred surface
         // belongs to the window chrome and must cover the area above it too.
         var background = this.Frame;
         if (this.TryFindParent<RootView>(out var rootView))
@@ -58,8 +59,12 @@ public sealed class MobileExampleHeader : ViewCollection
                 displayArea.Width,
                 this.Frame.Bottom - displayArea.Y);
         }
-        context.SetFill(Colors.White);
-        context.FillRect(background);
+        using var surface = context.Group(new GroupOptions
+        {
+            Key = this, ViewBacking = true, Bounds = background, Backdrop = BackdropMaterial.Blur,
+            HasUpdates = RequiresRender(context),
+        });
+        if (!surface.NeedsRedraw) return;
 
         this.RenderChild(context, backButton);
         this.RenderChild(context, title);

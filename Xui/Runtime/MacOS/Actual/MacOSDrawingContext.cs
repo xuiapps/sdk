@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System;
 using Xui.Core.Math2D;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Filter;
 using System.Collections.Generic;
 
@@ -16,6 +17,12 @@ namespace Xui.Runtime.MacOS.Actual;
 public partial class MacOSDrawingContext : IContext
 {
     private nint cgContextRef;
+    // This backend currently draws groups immediately; it never claims cached content.
+    private ImmediateCompositionContext? composition;
+    public CompositionGroup Group(scoped in GroupOptions options) =>
+        (composition ??= new ImmediateCompositionContext(this)).Group(in options);
+    public void EndGroup() => (composition ?? throw new InvalidOperationException("No composition group to close.")).EndGroup();
+
     private FilterState filter;
     private readonly Stack<(Paint Fill, Paint Stroke, FilterState Filter)> paintStates = new();
 

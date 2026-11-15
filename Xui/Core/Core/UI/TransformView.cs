@@ -1,4 +1,5 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Math2D;
 
 namespace Xui.Core.UI;
@@ -12,6 +13,9 @@ public class TransformView : View
 {
     private View? content;
     private AffineTransform transform = AffineTransform.Identity;
+
+    /// <summary>Retain the complete child drawing while only its native surface transform changes.</summary>
+    public bool UseCompositionGroup { get; set; }
 
     /// <summary>Gets or sets the single child presented by this host.</summary>
     public View? Content
@@ -46,7 +50,8 @@ public class TransformView : View
         ? content : throw new IndexOutOfRangeException();
 
     /// <inheritdoc/>
-    public override Rect CullingFrame => TransformBounds(transform, this.Frame);
+    public override Rect CullingFrame => TransformBounds(transform,
+        UseCompositionGroup && content is not null ? content.CullingFrame : this.Frame);
 
     /// <inheritdoc/>
     public override Point TransformPoint(Point point) => transform.Inverse * point;
@@ -66,6 +71,17 @@ public class TransformView : View
     /// <inheritdoc/>
     protected override void RenderCore(IContext context)
     {
+        if (UseCompositionGroup && content is not null)
+        {
+            var bounds = content.CullingFrame;
+            using var group = context.Group(new GroupOptions
+            {
+                Key = this, ViewBacking = true, Bounds = bounds, Transform = transform,
+                HasUpdates = content.RequiresRender(context), CacheWhenHidden = true,
+            });
+            if (group.NeedsRedraw) RenderChild(context, content, bounds);
+            return;
+        }
         context.Save();
         try
         {

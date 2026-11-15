@@ -11,7 +11,7 @@ using Xui.Core.UI;
 namespace Xui.Apps.TestApp;
 
 /// <summary>Organizes the mobile TestApp demos into touch-friendly categories.</summary>
-internal sealed class MobileDemoMenu : VerticalStack
+internal sealed class MobileDemoMenu : MobileSurfaceStack
 {
     public MobileDemoMenu()
     {

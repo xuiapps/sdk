@@ -1,6 +1,7 @@
 using Xui.Core.Animation;
 using Xui.Apps.TestApp.Pages.Canvas;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.DI;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
@@ -54,6 +55,7 @@ internal sealed class ExampleCardCarousel : ViewCollection
             var section = sections[i];
             var card = new TransformView
             {
+                UseCompositionGroup = true,
                 Id = $"CanvasCard.{section.Name}",
                 Content = new CardContent(section.Create(), DisplayName(section.Name), $"{i + 1} / {sections.Count}",
                     describe?.Invoke(section.Name), cardPadding, clipCardContent),
@@ -111,17 +113,18 @@ internal sealed class ExampleCardCarousel : ViewCollection
 
     protected override void RenderCore(IContext context)
     {
-        context.Save();
-        try
+        using var viewport = context.Group(new GroupOptions
+        { Key = this, ViewBacking = true, Bounds = Frame, ClipToBounds = true });
+        if (viewport.NeedsRedraw)
         {
-            context.BeginPath();
-            context.Rect(Frame);
-            context.Clip();
             foreach (var card in cards) RenderChild(context, card, Frame);
-            RenderIndicator(context);
+            using var indicator = context.Group(new GroupOptions
+            { Key = indicatorKey, ViewBacking = true, Bounds = (Frame.X, indicatorY - 10, Frame.Width, 20) });
+            if (indicator.NeedsRedraw) RenderIndicator(context);
         }
-        finally { context.Restore(); }
     }
+
+    private readonly object indicatorKey = new();
 
     private void RenderIndicator(IContext context)
     {
@@ -326,6 +329,7 @@ internal sealed class ExampleCardCarousel : ViewCollection
 
     private sealed class CardContent : ViewCollection
     {
+        public override Rect CullingFrame => Frame.Expand(12);
         private readonly Card card;
         private readonly Label title;
         private readonly Label counter;
@@ -333,7 +337,7 @@ internal sealed class ExampleCardCarousel : ViewCollection
         public CardContent(View example, string name, string count, ExampleCardDescription? description,
             NFloat? padding, bool clipContent)
         {
-            Add(card = new Card
+            Add(card = new MobileDemoCard
             {
                 ShadowExtent = 12,
                 Padding = padding,
@@ -362,6 +366,14 @@ internal sealed class ExampleCardCarousel : ViewCollection
             card.Arrange((rect.X, rect.Y, rect.Width, NFloat.Max(1, rect.Height - 72)), context);
             title.Arrange((rect.X + 12, rect.Bottom - 56, NFloat.Max(0, rect.Width - 24), 32), context);
             counter.Arrange((rect.X + 12, rect.Bottom - 24, NFloat.Max(0, rect.Width - 24), 24), context);
+        }
+
+        protected override void RenderCore(IContext context)
+        {
+            // These captions do not overlap the card. Keep direct drawing before its surface.
+            RenderChild(context, title);
+            RenderChild(context, counter);
+            RenderChild(context, card);
         }
     }
 

@@ -1,4 +1,5 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.DevKit.UI.Design;
@@ -57,6 +58,9 @@ public class Card : View, IDesignSystemChangeNotifications
     }
 
     private nfloat ContentInset => paddingOverride ?? padding;
+
+    /// <summary>Use a keyed native surface for this card's outline, shadow, and content.</summary>
+    public bool UseCompositionGroup { get; set; }
 
     /// <summary>Outer shadow fade distance. Zero disables the shadow; layout size is unchanged.</summary>
     public nfloat ShadowExtent
@@ -167,6 +171,21 @@ public class Card : View, IDesignSystemChangeNotifications
     protected override void RenderCore(IContext context)
     {
         ApplyDesignSystem();
+        var radius = cornerRadius;
+        if (UseCompositionGroup && radius.TopLeft == radius.TopRight &&
+            radius.TopLeft == radius.BottomLeft && radius.TopLeft == radius.BottomRight)
+        {
+            using var group = context.Group(new GroupOptions
+            {
+                Key = this, ViewBacking = true, Bounds = Frame, CornerRadius = radius.TopLeft,
+                Background = backgroundColor, Border = new OutlineBorder(outlineColor, 1),
+                Shadow = shadowExtent > 0 ? new OutlineShadow(shadowColor, shadowExtent / 2, (0, 2)) : null,
+                ClipToBounds = clipContent, HasUpdates = RequiresRender(context), CacheWhenHidden = true,
+            });
+            // Record the entire card once, including content initially outside the viewport.
+            if (group.NeedsRedraw && content is not null) RenderChild(context, content, Frame);
+            return;
+        }
         RoundedRectShadow.Draw(context, this.Frame, cornerRadius, shadowExtent, shadowColor);
         // Fill
         context.BeginPath();

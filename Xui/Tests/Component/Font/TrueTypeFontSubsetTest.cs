@@ -30,7 +30,7 @@ public sealed class TrueTypeFontSubsetTest
     {
         var original = LoadInter();
         var usage = new FontUsage();
-        const string text = "Hello World!";
+        const string text = "Hello World! AVATAR";
         usage.Add(text);
 
         var bytes = TrueTypeFontSubset.Create(original, usage);
@@ -38,6 +38,7 @@ public sealed class TrueTypeFontSubsetTest
         var font = new CanvasFont(32, "Inter");
 
         Assert.True(bytes.Length < original.Blob.Length);
+        Assert.Contains(usage.Pairs, pair => original.Kerning[pair.Left, pair.Right].XAdvance is not null and not 0);
         foreach (var character in usage.Characters)
         {
             Assert.NotNull(subset.GetGlyphIndex(character));
@@ -95,7 +96,7 @@ public sealed class TrueTypeFontSubsetTest
         using var stream = new MemoryStream();
         using (var context = new SvgDrawingContext(
             new Size(300, 100), stream, Xui.Core.Fonts.Inter.Source,
-            resolver: new EmbeddedInterResolver(), keepOpen: true))
+            resolver: SvgDrawingContext.SvgFontResolver.Embedded, keepOpen: true))
         {
             ((ITextMeasureContext)context).SetFont(new CanvasFont(32, "Inter"));
             ((ITextDrawingContext)context).FillText("Hello World!", (10, 50));
@@ -133,9 +134,4 @@ public sealed class TrueTypeFontSubsetTest
 
     private static Rune R(char value) => new(value);
 
-    private sealed class EmbeddedInterResolver : SvgDrawingContext.SvgFontResolver
-    {
-        public override SvgDrawingContext.Resolved Resolve(FontFace face, Uri? uri) =>
-            new(SvgDrawingContext.SvgFontMode.Embedded, null);
-    }
 }

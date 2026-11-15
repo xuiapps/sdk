@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Filter;
 using Xui.Core.Curves2D;
 using Xui.Core.Math2D;
@@ -12,6 +13,12 @@ namespace Xui.Runtime.Windows.Actual;
 
 public partial class Direct2DContext : IContext
 {
+    // This backend currently draws groups immediately; it never claims cached content.
+    private ImmediateCompositionContext? composition;
+    public CompositionGroup Group(scoped in GroupOptions options) =>
+        (composition ??= new ImmediateCompositionContext(this)).Group(in options);
+    public void EndGroup() => (composition ?? throw new InvalidOperationException("No composition group to close.")).EndGroup();
+
     private FilterState filter;
     public void SetFilter() => filter = default;
     public void SetFilter(Brightness brightness) => filter = new(brightness);

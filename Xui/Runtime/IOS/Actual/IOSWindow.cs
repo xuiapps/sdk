@@ -1,3 +1,4 @@
+using Xui.Core.Canvas.Composition.Commands;
 using System;
 using System.Runtime.InteropServices;
 using static Xui.Runtime.IOS.CoreGraphics;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using static Xui.Runtime.IOS.Foundation;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.DI;
 using Xui.Core.Math2D;
 
@@ -44,6 +46,9 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
     // The context owns cached CoreText fonts and paint state, while Bind captures
     // the UIKit CGContext that is valid only for the current drawRect callback.
     private readonly IOSDrawingContext drawingContext;
+    private readonly RetainedCanvasContext compositionContext;
+    private readonly IOSCompositionPresenter compositionPresenter;
+    private static readonly Sel CompositionScaleSel = new("scale");
     private readonly IFontSource? fontSource;
     private IOSTextMeasureContext? textMeasureContext;
     private readonly IOSDeviceInfo deviceInfo;
@@ -80,6 +85,9 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
         this.NextServiceProvider = nextServiceProvider;
         this.fontSource = nextServiceProvider.GetService(typeof(IFontSource)) as IFontSource;
         this.drawingContext = new IOSDrawingContext(fontSource);
+        this.compositionPresenter = new IOSCompositionPresenter(drawingContext,
+            () => GpuDevice as Xui.GPU.Hardware.Metal.IOSGpuDevice, Invalidate);
+        this.compositionContext = new RetainedCanvasContext(drawingContext, compositionPresenter, static () => new IOSGraphicsNode(), static () => new IOSGpuNode());
         this.Title = "";
         this.RootView = new IOSWindowRootView(this);
         this.deviceInfo = new IOSDeviceInfo(this.RootView);
@@ -328,6 +336,9 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
         textLoupe.Dispose();
         haptics.Dispose();
         vibration?.Dispose();
+        compositionContext.Dispose();
+        gpuDevice?.Dispose(); gpuDevice=null;
+        ((IDisposable)drawingContext).Dispose();
         ObjC.objc_msgSend(notificationCenter, new Sel("removeObserver:"), this);
         ObjC.objc_msgSend(displayLink, new Sel("invalidate"));
         ObjC.objc_msgSend(this, new Sel("setHidden:"), true);
@@ -360,11 +371,26 @@ public class IOSWindow : UIWindow, Xui.Core.Actual.IWindow, Xui.Core.Actual.ITex
     internal void Render(CGRect rect)
     {
         FrameEventRef frame = new (this.previousFrameTime, this.nextFrameTime);
-        var context = this.drawingContext.Bind();
-        RenderEventRef render = new (rect, frame, context);
+        var context = this.compositionContext;
+        var bounds = (Rect)this.RootView.Frame;
+        var scale = ObjC.objc_msgSend_retNFloat(this.Screen, CompositionScaleSel);
+        context.BeginFrame(bounds, scale);
+        // A composition frame describes the whole retained tree, even for a partial native repaint.
+        RenderEventRef render = new (bounds, frame, context);
 
         this.pendingInvalidate = false;
-        this.Abstract.Render(ref render);
+        try
+        {
+            this.Abstract.Render(ref render);
+            context.EndFrame();
+            compositionPresenter.Present(context.Root, this.RootView, scale);
+            context.AcceptFrame();
+        }
+        catch
+        {
+            context.AbortFrame();
+            throw;
+        }
         this.SoftKeyboard.RefreshSelectionGeometry();
     }
 

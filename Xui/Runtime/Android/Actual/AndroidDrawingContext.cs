@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Android.Graphics;
 using Android.Net;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Filter;
 using Xui.Core.Math2D;
 
@@ -12,6 +13,14 @@ namespace Xui.Runtime.Android.Actual;
 
 public class AndroidDrawingContext : IContext
 {
+    // Group isolation depends on Save/Restore, which this backend does not implement yet.
+    public CompositionGroup Group(scoped in GroupOptions options)
+    {
+        options.Validate();
+        throw new NotSupportedException("Canvas composition requires Android drawing-state Save/Restore support.");
+    }
+    public void EndGroup() => throw new NotSupportedException("Canvas composition is not implemented on Android.");
+
     private FilterState filter;
     public void SetFilter() => filter = default;
     public void SetFilter(Brightness brightness) => filter = new(brightness);

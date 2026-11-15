@@ -16,8 +16,10 @@ internal sealed unsafe class IOSCommandList : IGpuCommandList
     // Current frame state
     private nint _commandBuffer;     // id<MTLCommandBuffer>
     private nint _encoder;           // id<MTLRenderCommandEncoder>
+    private nint _depthStencilState;
+    private bool _depthTest, _depthWrite;
     private nint _pipelineState;     // id<MTLRenderPipelineState>
-    private IOSRenderTarget? _currentRenderTarget;
+    private IIOSRenderTarget? _currentRenderTarget;
     private IOSVertexShader? _currentVertexShader;
     private IOSFragmentShader? _currentFragmentShader;
     private nint _vertexBuffer;
@@ -36,7 +38,10 @@ internal sealed unsafe class IOSCommandList : IGpuCommandList
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        _currentRenderTarget = (IOSRenderTarget)renderTarget;
+        _currentRenderTarget = renderTarget as IIOSRenderTarget
+            ?? throw new ArgumentException("The target must belong to the iOS Metal backend.", nameof(renderTarget));
+        if (_currentRenderTarget.NativeTexture == 0)
+            throw new InvalidOperationException("The presentation target is only valid during its render callback.");
 
         // Create command buffer (autoreleased — must retain for our ownership)
         _commandBuffer = NativeMetal.Retain(NativeMetal.CommandQueue_CommandBuffer(_commandQueue));
@@ -70,6 +75,16 @@ internal sealed unsafe class IOSCommandList : IGpuCommandList
     public void SetPipeline(GpuPipelineDesc pipeline)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_pipelineState != 0 && ReferenceEquals(_currentVertexShader, pipeline.VertexShader) &&
+            ReferenceEquals(_currentFragmentShader, pipeline.FragmentShader) &&
+            _depthTest == pipeline.DepthTestEnabled && _depthWrite == pipeline.DepthWriteEnabled)
+        {
+            NativeMetal.Encoder_SetRenderPipelineState(_encoder, _pipelineState);
+            NativeMetal.Encoder_SetDepthStencilState(_encoder, _depthStencilState);
+            ApplyRasterState(pipeline);
+            return;
+        }
 
         _currentVertexShader = pipeline.VertexShader as IOSVertexShader;
         _currentFragmentShader = pipeline.FragmentShader as IOSFragmentShader;
@@ -117,11 +132,16 @@ internal sealed unsafe class IOSCommandList : IGpuCommandList
 
         // Create and set depth stencil state
         var dsDesc = NativeMetal.CreateDepthStencilDescriptor(pipeline.DepthTestEnabled, pipeline.DepthWriteEnabled);
-        var dsState = NativeMetal.Device_NewDepthStencilState(_device, dsDesc);
+        if (_depthStencilState != 0) NativeMetal.Release(_depthStencilState);
+        _depthStencilState = NativeMetal.Device_NewDepthStencilState(_device, dsDesc);
         NativeMetal.Release(dsDesc);
-        NativeMetal.Encoder_SetDepthStencilState(_encoder, dsState);
-        NativeMetal.Release(dsState);
+        _depthTest = pipeline.DepthTestEnabled; _depthWrite = pipeline.DepthWriteEnabled;
+        NativeMetal.Encoder_SetDepthStencilState(_encoder, _depthStencilState);
+        ApplyRasterState(pipeline);
+    }
 
+    private void ApplyRasterState(GpuPipelineDesc pipeline)
+    {
         // Set cull mode: GpuCullMode maps to MTLCullMode (None=0, Front=1, Back=2)
         ulong mtlCullMode = pipeline.CullMode switch
         {
@@ -200,10 +220,15 @@ internal sealed unsafe class IOSCommandList : IGpuCommandList
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
+        if (_encoder != 0) throw new InvalidOperationException("End the render pass before submitting it.");
+        if (_commandBuffer == 0) throw new InvalidOperationException("No render commands to submit.");
+        var drawable = _currentRenderTarget?.Drawable ?? 0;
+        if (drawable != 0) NativeMetal.CommandBuffer_PresentDrawable(_commandBuffer, drawable);
         NativeMetal.CommandBuffer_Commit(_commandBuffer);
-        NativeMetal.CommandBuffer_WaitUntilCompleted(_commandBuffer);
+        if (drawable == 0) NativeMetal.CommandBuffer_WaitUntilCompleted(_commandBuffer);
+        else _currentRenderTarget!.MarkPresented();
 
-        // Release command buffer after completion
+        // Submitted command buffers retain their resources until GPU completion.
         NativeMetal.Release(_commandBuffer);
         _commandBuffer = 0;
     }
@@ -217,6 +242,7 @@ internal sealed unsafe class IOSCommandList : IGpuCommandList
         if (_vertexBuffer != 0) NativeMetal.Release(_vertexBuffer);
         if (_constantBuffer != 0) NativeMetal.Release(_constantBuffer);
         if (_pipelineState != 0) NativeMetal.Release(_pipelineState);
+        if (_depthStencilState != 0) NativeMetal.Release(_depthStencilState);
         if (_commandBuffer != 0) NativeMetal.Release(_commandBuffer);
     }
 }

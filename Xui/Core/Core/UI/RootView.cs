@@ -1,6 +1,7 @@
 using Xui.Core.Abstract;
 using Xui.Core.Abstract.Events;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Debug;
 using Xui.Core.Math2D;
 using Xui.Core.UI.Input;
@@ -193,7 +194,10 @@ public class RootView : View, IContent, IFocus
 
             // Render in-window popup overlays on top of all content
             for (int i = 0; i < overlays.Count; i++)
-                overlays[i].Render(in frame);
+            {
+                using var overlay = context.Group(new GroupOptions { Key = overlays[i], ViewBacking = true, Bounds = this.Frame });
+                if (overlay.NeedsRedraw) overlays[i].Render(in frame);
+            }
 
             instruments.DumpVisualTree(this, LevelOfDetail.Diagnostic);
         }

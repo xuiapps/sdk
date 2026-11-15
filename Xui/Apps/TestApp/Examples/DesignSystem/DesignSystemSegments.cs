@@ -129,6 +129,10 @@ internal abstract class DesignSystemSegments : View
     private int HitIndex(Point point) => Frame.Contains(point) && Frame.Width > 8
         ? Math.Clamp((int)((point.X - Frame.X - 4) / ((Frame.Width - 8) / OptionCount)), 0, OptionCount - 1) : -1;
 
+    protected virtual bool DrawSurface => true;
+    protected virtual Color SelectionColor => Design!.Colors.Primary.Background;
+    protected virtual Color SelectedTextColor => Design!.Colors.Primary.Foreground;
+
     protected override void RenderCore(IContext context)
     {
         var ds = Design;
@@ -141,14 +145,14 @@ internal abstract class DesignSystemSegments : View
             outer = new CornerRadius(9999);
         outer = CornerRadius.Min(outer, new CornerRadius(NFloat.Min(Frame.Width, Frame.Height) / 2));
         var inner = CornerRadius.Max(0, outer - new CornerRadius(4));
-        Fill(context, Frame, outer, ds.Colors.Surface.Container);
+        if (DrawSurface) Fill(context, Frame, outer, ds.Colors.Surface.Container);
         var indicator = new Rect(Frame.X + 4 + SelectionPosition * width, Frame.Y + 4, width, Frame.Height - 8);
-        Fill(context, indicator, inner, ds.Colors.Primary.Background);
+        Fill(context, indicator, inner, SelectionColor);
         var lines = Compact ? 1 : TextLineCount;
         for (var i = 0; i < OptionCount; i++)
         {
             var cell = new Rect(Frame.X + 4 + i * width, Frame.Y + 4, width, Frame.Height - 8);
-            var color = i == selected ? ds.Colors.Primary.Foreground : ds.Colors.Surface.Foreground;
+            var color = i == selected ? SelectedTextColor : ds.Colors.Surface.Foreground;
             DrawIcon(context, Compact ? (cell.Center.X - 36, cell.Center.Y) : (cell.Center.X, cell.Top + Padding + 12), i, color);
             context.SetFill(color);
             var style = TextStyle;

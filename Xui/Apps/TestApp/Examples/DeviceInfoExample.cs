@@ -8,8 +8,12 @@ using NFloat = System.Runtime.InteropServices.NFloat;
 namespace Xui.Apps.TestApp.Examples;
 
 /// <summary>Displays device capabilities and a live diagram of the window's safe area.</summary>
-public sealed class DeviceInfoExample : Example
+public sealed class DeviceInfoExample : Example, IMobileExamplePresentation
 {
+    public void UseMobilePresentation()
+    {
+        if (Content is ScrollView scroll) { scroll.UseCompositionGroup = true; scroll.ClipToViewport = false; }
+    }
     public DeviceInfoExample()
     {
         Title = "Device Info";

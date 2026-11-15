@@ -11,6 +11,7 @@ internal sealed class MobileDemoCard : Card
 
     public MobileDemoCard()
     {
+        UseCompositionGroup = true;
         ShadowExtent = SharedShadowExtent;
         ShadowColor = SharedShadowColor;
     }

@@ -1,5 +1,6 @@
 using Xui.Core.Animation;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.DI;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
@@ -78,50 +79,71 @@ internal sealed class MobileDesignSystemView : View
     protected override Size MeasureCore(Size available, IMeasureContext context)
     {
         var toolbarSize = toolbar.Measure((available.Width - 40, available.Height), context);
-        var size = new Size(available.Width, NFloat.Max(0, available.Height - toolbarSize.Height - 20));
-        palettePage.Measure(size, context);
-        previewPage.Measure(size, context);
+        // The viewport extends behind the glass; trailing content can scroll clear of it.
+        SetTrailingSpace(palettePage, toolbarSize.Height + 36);
+        SetTrailingSpace(previewPage, toolbarSize.Height + 36);
+        palettePage.Measure(available, context);
+        previewPage.Measure(available, context);
         return available;
+    }
+
+    private static void SetTrailingSpace(DemoScroll page, NFloat bottom)
+    {
+        if (page.Content is { } content && content.Margin.Bottom != bottom)
+        {
+            var margin = content.Margin;
+            margin.Bottom = bottom;
+            content.Margin = margin;
+        }
     }
 
     protected override void ArrangeCore(Rect rect, IMeasureContext context)
     {
         var toolbarSize = toolbar.Measure((rect.Width - 40, rect.Height), context);
-        var page = new Rect(rect.X, rect.Y, rect.Width, NFloat.Max(0, rect.Height - toolbarSize.Height - 20));
+        var page = rect;
         palettePage.Arrange(page, context);
         previewPage.Arrange(page, context);
         toolbar.Arrange((rect.X + 20, rect.Bottom - toolbarSize.Height - 12, rect.Width - 40, toolbarSize.Height), context);
     }
 
+    private Rect BackdropBounds => this.TryFindParent<RootView>(out var root)
+        ? new Rect(Frame.X, root.Window.DisplayArea.Top, Frame.Width, root.Window.DisplayArea.Bottom - root.Window.DisplayArea.Top)
+        : Frame;
+
+    private readonly object pagesGroupKey = new();
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(design?.Colors.Application.Background ?? Colors.White);
-        context.FillRect(Frame);
-        context.Save();
-        context.BeginPath(); context.Rect(palettePage.Frame); context.Clip();
-        if (transitioning || dragging || position != pageIndex)
+        using (var pages = context.Group(new GroupOptions
+        { Key = pagesGroupKey, ViewBacking = true, Bounds = BackdropBounds, ClipToBounds = true,
+            Background = design?.Colors.Application.Background ?? Colors.White }))
         {
-            context.Save(); context.Translate((-position * Frame.Width, 0));
-            RenderChild(context, palettePage); context.Restore();
-            context.Save(); context.Translate(((1 - position) * Frame.Width, 0));
-            RenderChild(context, previewPage); context.Restore();
+            if (pages.NeedsRedraw)
+            {
+                if (transitioning || dragging || position != pageIndex)
+                {
+                    RenderPageGroup(context, palettePage, -position * Frame.Width);
+                    RenderPageGroup(context, previewPage, (1 - position) * Frame.Width);
+                }
+                else RenderPageGroup(context, pageIndex == 0 ? palettePage : previewPage, 0);
+            }
         }
-        else RenderChild(context, pageIndex == 0 ? palettePage : previewPage);
-        context.Restore();
+        using var glass = context.Group(new GroupOptions
+        {
+            Key = toolbar, ViewBacking = true, Bounds = toolbar.Frame, CornerRadius = toolbar.SurfaceRadius,
+            Backdrop = BackdropMaterial.LiquidGlass, Shadow = new OutlineShadow(new Color(0,0,0,(NFloat).12), 12, (0,4)),
+            HasUpdates = toolbar.RequiresRender(context)
+        });
+        if (glass.NeedsRedraw) RenderChild(context, toolbar);
+    }
 
-        // Match the header's opaque chrome, including the home-indicator safe area.
-        var display = this.TryFindParent<RootView>(out var root) ? root.Window.DisplayArea : Frame;
-        var footer = new Rect(display.Left, palettePage.Frame.Bottom, display.Width,
-            NFloat.Max(0, display.Bottom - palettePage.Frame.Bottom));
-        context.SetFill(design?.Colors.Surface.Background ?? Colors.White);
-        context.FillRect(footer);
-        context.BeginPath();
-        context.MoveTo((footer.Left, footer.Top + (NFloat)0.5));
-        context.LineTo((footer.Right, footer.Top + (NFloat)0.5));
-        context.SetStroke(design?.Colors.OutlineVariant ?? Colors.LightGray);
-        context.LineWidth = 1;
-        context.Stroke();
-        RenderChild(context, toolbar);
+    private void RenderPageGroup(IContext context, View page, NFloat offset)
+    {
+        using var group = context.Group(new GroupOptions
+        {
+            Key = page, ViewBacking = true, Bounds = page.Frame, Transform = AffineTransform.Translate((offset,0)),
+            HasUpdates = page.RequiresRender(context)
+        });
+        if (group.NeedsRedraw) RenderChild(context, page, BackdropBounds);
     }
 
     protected override void AnimateCore(TimeSpan previous, TimeSpan current)
@@ -176,7 +198,7 @@ internal sealed class MobileDesignSystemView : View
 
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
-        var inPage = palettePage.Frame.Contains(e.State.Position);
+        var inPage = palettePage.Frame.Contains(e.State.Position) && !toolbar.Frame.Contains(e.State.Position);
         var edge = this.TryFindParent<NavigationView>(out var navigation) && navigation.CanGoBack
             ? navigation.BackSwipeEdgeWidth : 0;
         if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down && inPage && e.State.Position.X > Frame.Left + edge)
@@ -259,7 +281,7 @@ internal sealed class MobileDesignSystemView : View
     private static DemoScroll CreatePalettePage() => new()
     {
         Id = "DesignSystem.PaletteScroll",
-        Content = new VerticalStack
+        Content = new MobileSurfaceStack
         {
             Margin = new Frame { Top = 20, Right = 16, Bottom = 24, Left = 16 },
             Content =
@@ -322,7 +344,7 @@ internal sealed class MobileDesignSystemView : View
         return new DemoScroll
         {
             Id = "DesignSystem.PreviewScroll",
-            Content = new VerticalStack
+            Content = new MobileSurfaceStack
             {
                 Margin = new Frame { Top = 20, Right = 16, Bottom = 24, Left = 16 },
                 Content =
@@ -392,7 +414,7 @@ internal sealed class MobileDesignSystemView : View
     {
         // These viewports end at flat header/footer chrome, not the device corners.
         // Content owns its spacing; the scrollbar spans the whole viewport.
-        public DemoScroll() => ScrollbarEndInset = 0;
+        public DemoScroll() { ScrollbarEndInset = 0; UseCompositionGroup = true; ClipToViewport = false; }
 
         public bool InputEnabled { get; set; } = true;
         public override bool HitTest(Point point) => InputEnabled && base.HitTest(point);

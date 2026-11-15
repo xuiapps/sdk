@@ -208,6 +208,8 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
 
     void IStateContext.Restore()
     {
+        if (compositionStateDepths.TryPeek(out var groupDepth) && stateStack.Count <= groupDepth)
+            throw new InvalidOperationException("Dispose the composition group before restoring its enclosing state.");
         if (stateStack.Count == 0)
             throw new InvalidOperationException("No saved state to restore.");
 
@@ -434,6 +436,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
 
     void IPathDrawing.Fill(FillRule rule)
     {
+        CheckCompositionDrawing();
         if (currentPath.Length == 0)
             return;
 
@@ -466,6 +469,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
 
     void IPathDrawing.Stroke()
     {
+        CheckCompositionDrawing();
         if (currentPath.Length == 0)
             return;
 
@@ -505,6 +509,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
 
     void IRectDrawingContext.StrokeRect(Rect rect)
     {
+        CheckCompositionDrawing();
         string stroke;
         nfloat? opacity = null;
 
@@ -523,6 +528,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
 
     void IRectDrawingContext.FillRect(Rect rect)
     {
+        CheckCompositionDrawing();
         string fill;
         nfloat? opacity = null;
 
@@ -544,6 +550,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
 
     void ITextDrawingContext.FillText(string text, Point pos)
     {
+        CheckCompositionDrawing();
         if (string.IsNullOrEmpty(text))
             return;
 
@@ -634,7 +641,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
         {
             WriteFontFace(fontFace, $"url('{resolved.WebUri}')");
         }
-        else if (resolved.Mode == SvgFontMode.Embedded && sourceUri is not null)
+        else if (resolved.Mode == SvgFontMode.Embedded)
         {
             var usage = fontUsage[fontFace];
             var data = TrueTypeFontSubset.Create(ttf, usage);
@@ -1043,7 +1050,15 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
     {
         public static readonly SvgFontResolver Default = new SvgFontResolver();
 
+        /// <summary>Embed only used glyphs and kerning pairs from each resolved font face.</summary>
+        public static readonly SvgFontResolver Embedded = new EmbeddedResolver();
+
         public virtual Resolved Resolve(FontFace face, Uri? uri) => new Resolved(SvgFontMode.System, null);
+
+        private sealed class EmbeddedResolver : SvgFontResolver
+        {
+            public override Resolved Resolve(FontFace face, Uri? uri) => new(SvgFontMode.Embedded, null);
+        }
     }
 
     public record struct Resolved (SvgFontMode Mode, Uri? WebUri);

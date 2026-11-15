@@ -1,5 +1,6 @@
 using Xui.Apps.TestApp.Examples;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.DevKit.UI.Mobile.Navigation;
@@ -60,13 +61,24 @@ public sealed class MobileExamplePage<T> : ViewCollection, IPage, INavigationAwa
         sectionMenu?.Arrange(rect, context);
     }
 
+    private void RenderSurface(IContext context, View view)
+    {
+        using var group = context.Group(new GroupOptions
+        {
+            Key = view, ViewBacking = true, Bounds = new Rect(view.Frame.X - 24, view.Frame.Y - 24, view.Frame.Width + 48, view.Frame.Height + 48),
+            HasUpdates = view.RequiresRender(context)
+        });
+        if (group.NeedsRedraw) RenderChild(context, view,
+            this.TryFindParent<RootView>(out var root) ? root.Window.DisplayArea : Frame);
+    }
+
     protected override void RenderCore(IContext context)
     {
-        this.RenderChild(context, content);
+        RenderSurface(context, content);
         if (sectionMenu is not null)
-            this.RenderChild(context, sectionMenu);
+            RenderSurface(context, sectionMenu);
         if (footer is not null)
-            this.RenderChild(context, footer);
-        this.RenderChild(context, header);
+            RenderSurface(context, footer);
+        RenderChild(context, header);
     }
 }

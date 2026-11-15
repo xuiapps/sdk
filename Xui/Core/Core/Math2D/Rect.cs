@@ -201,7 +201,7 @@ public struct Rect : INonEnumerableSet<Point>
     /// </summary>
     [DebuggerStepThrough]
     public static bool operator!=(Rect lhs, Rect rhs) =>
-        lhs.X != rhs.X || lhs.Y != rhs.Y || lhs.Width != rhs.Width || lhs.Height == rhs.Height;
+        lhs.X != rhs.X || lhs.Y != rhs.Y || lhs.Width != rhs.Width || lhs.Height != rhs.Height;
 
     /// <inheritdoc/>
     public override bool Equals(object? obj) =>

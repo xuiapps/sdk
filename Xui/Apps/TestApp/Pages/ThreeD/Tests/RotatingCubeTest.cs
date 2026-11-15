@@ -63,8 +63,8 @@ public class RotatingCubeTest : CubeSurface
             new Float4(F32.Zero, F32.Zero, F32.Zero, F32.One)
         );
 
-        var modelMatrix = Float4x4.CreateRotationY(new F32(rotY)) *
-                         Float4x4.CreateRotationX(new F32(rotX * 0.5f)) *
+        var modelMatrix = Float4x4.CreateRotationX(new F32(rotX)) *
+                         Float4x4.CreateRotationY(new F32(rotY)) *
                          scaleMatrix;
 
         var viewMatrix = Float4x4.CreateLookAt(

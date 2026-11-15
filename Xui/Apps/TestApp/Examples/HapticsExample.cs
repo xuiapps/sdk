@@ -10,8 +10,12 @@ using NFloat = System.Runtime.InteropServices.NFloat;
 namespace Xui.Apps.TestApp.Examples;
 
 /// <summary>A tactile sampler of the native haptic presets.</summary>
-public sealed class HapticsExample : Example
+public sealed class HapticsExample : Example, IMobileExamplePresentation
 {
+    public void UseMobilePresentation()
+    {
+        if (Content is ScrollView scroll) { scroll.UseCompositionGroup = true; scroll.ClipToViewport = false; }
+    }
     public HapticsExample()
     {
         Title = "Haptics";

@@ -17,6 +17,7 @@ public sealed class MobileTestAppShell : View, IFullScreenView
     {
         navigation = new MobileNavigation(new ScrollView
         {
+            UseCompositionGroup = true,
             Direction = ScrollDirection.Vertical,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch,

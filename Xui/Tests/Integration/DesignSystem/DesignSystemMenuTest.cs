@@ -411,42 +411,48 @@ public class DesignSystemMenuTest
         {
             scene.Reveal(shape);
             scene.TapCell(shape, index, 5);
-            var paths = RenderView(tabs).Descendants(ns + "path").Take(2).ToArray();
+            var glass = Assert.Single(RenderView(scene.Find("DesignSystem.Mobile")).Descendants(ns + "rect"),
+                r => (string?)r.Attribute("data-xui-material") == "LiquidGlass");
+            var highlight = RenderView(tabs).Descendants(ns + "path").First();
             var trackRadius = index == 4 ? tabs.Frame.Height / 2 : nfloat.Min(design.Shape.Full.TopLeft, tabs.Frame.Height / 2);
             var highlightRadius = nfloat.Max(0, trackRadius - 4);
             static double StartX(XElement path) => double.Parse(path.Attribute("d")!.Value.Split(' ')[1], System.Globalization.CultureInfo.InvariantCulture);
-            Assert.Equal((double)(tabs.Frame.Left + trackRadius), StartX(paths[0]), precision: 2);
-            Assert.Equal((double)(tabs.Frame.Left + 4 + highlightRadius), StartX(paths[1]), precision: 2);
+            Assert.Equal((double)trackRadius, (double?)glass.Attribute("rx") ?? 0, precision: 2);
+            Assert.Equal((double)(tabs.Frame.Left + 4 + highlightRadius), StartX(highlight), precision: 2);
         }
     }
 
     [Fact]
-    public void SurfacePresetsTintThePageAndFooterImmediately()
+    public void SurfacePresetsTintThePageAndCardsBeneathGlassImmediately()
     {
         using var scene = new Scene();
         var mobile = scene.Find("DesignSystem.Mobile");
         var surface = scene.Find("DesignSystem.Surface");
         XNamespace ns = "http://www.w3.org/2000/svg";
-        var fills = new List<(string? Page, string? Footer)>();
+        var fills = new List<(string? Page, string? Card)>();
         foreach (var index in new[] { 0, 1, 2, 3, 4 })
         {
             scene.Reveal(surface);
             scene.TapCell(surface, index, 5);
             var rectangles = RenderView(mobile).Descendants(ns + "rect").ToArray();
             var page = Assert.Single(rectangles, r => (double?)r.Attribute("width") == (double)mobile.Frame.Width &&
-                (double?)r.Attribute("height") == (double)mobile.Frame.Height && r.Attribute("fill") is not null);
-            var footer = Assert.Single(rectangles, r => (double?)r.Attribute("y") == (double)scene.Scroll.Frame.Bottom &&
-                (double?)r.Attribute("width") == (double)mobile.Frame.Width && r.Attribute("fill") is not null);
-            fills.Add(((string?)page.Attribute("fill"), (string?)footer.Attribute("fill")));
+                (double?)r.Attribute("height") == (double)scene.App.Window.DisplayArea.Height && r.Attribute("fill") is not null);
+            Assert.Single(rectangles, r => (string?)r.Attribute("data-xui-material") == "LiquidGlass");
+            var paletteCard = scene.Find("DesignSystem.Section.Palette");
+            var card = Assert.Single(RenderView(paletteCard).Descendants(ns + "rect"), r =>
+                (double?)r.Attribute("width") == (double)paletteCard.Frame.Width &&
+                (double?)r.Attribute("height") == (double)paletteCard.Frame.Height &&
+                (string?)r.Attribute("fill-opacity") == "1" && r.Attribute("filter") is null);
+            fills.Add(((string?)page.Attribute("fill"), (string?)card.Attribute("fill")));
         }
         Assert.NotEqual(fills[0].Page, fills[1].Page);
         Assert.NotEqual(fills[0].Page, fills[3].Page);
         Assert.Equal(fills[0].Page, fills[2].Page);
         Assert.Equal(fills[0].Page, fills[4].Page);
-        Assert.NotEqual(fills[0].Footer, fills[2].Footer);
-        Assert.NotEqual(fills[0].Footer, fills[4].Footer);
-        Assert.Equal(fills[0].Footer, fills[1].Footer);
-        Assert.Equal(fills[0].Footer, fills[3].Footer);
+        Assert.NotEqual(fills[0].Card, fills[2].Card);
+        Assert.NotEqual(fills[0].Card, fills[4].Card);
+        Assert.Equal(fills[0].Card, fills[1].Card);
+        Assert.Equal(fills[0].Card, fills[3].Card);
     }
 
     [Theory]
@@ -603,12 +609,10 @@ public class DesignSystemMenuTest
         var paletteSvg = XDocument.Parse(scene.App.Render());
         XNamespace svgNamespace = "http://www.w3.org/2000/svg";
         XNamespace xlink = "http://www.w3.org/1999/xlink";
-        var footerTop = scene.Scroll.Frame.Bottom;
-        var footerBackground = Assert.Single(paletteSvg.Descendants(svgNamespace + "rect"), rect =>
-            (double?)rect.Attribute("y") == (double)footerTop &&
-            (double?)rect.Attribute("width") == (double)scene.Scroll.Frame.Width);
-        Assert.Equal((double)scene.App.Window.DisplayArea.Bottom,
-            (double)footerTop + (double)footerBackground.Attribute("height")!, precision: 2);
+        var glass = Assert.Single(paletteSvg.Descendants(svgNamespace + "rect"),
+            rect => (string?)rect.Attribute("data-xui-material") == "LiquidGlass");
+        Assert.True((double)scene.Scroll.Frame.Bottom > (double)glass.Attribute("y")!,
+            "The scroll viewport must extend beneath the floating material.");
         var images = paletteSvg.Descendants(svgNamespace + "image").ToArray();
         Assert.Equal(2, images.Length);
         var wheelImage = Assert.Single(images, image => (string?)image.Attribute(xlink + "href") ==
@@ -684,11 +688,12 @@ public class DesignSystemMenuTest
         var document = RenderView(tabs);
         XNamespace ns = "http://www.w3.org/2000/svg";
         var paths = document.Descendants(ns + "path").ToArray();
-        // The track is followed by the selection; no second selection fill may
-        // appear at the pressed destination, even before the tap commits.
-        var highlight = Assert.Single(paths, path => (string?)path.Attribute("fill") == (string?)paths[1].Attribute("fill"));
-        var trackRadius = double.Parse(paths[0].Attribute("d")!.Value.Split(' ')[1], System.Globalization.CultureInfo.InvariantCulture) - (double)tabs.Frame.Left;
-        var radius = Math.Max(0, trackRadius - 4);
+        // The material is supplied by the parent group. The toolbar itself draws
+        // exactly one selection fill, followed by its icons and labels.
+        var highlight = Assert.Single(paths, path => (string?)path.Attribute("fill") == (string?)paths[0].Attribute("fill"));
+        var tokens = highlight.Attribute("d")!.Value.Split(' ');
+        var arc = Array.IndexOf(tokens, "A");
+        var radius = arc < 0 ? 0 : double.Parse(tokens[arc + 1], System.Globalization.CultureInfo.InvariantCulture);
         return double.Parse(highlight.Attribute("d")!.Value.Split(' ')[1], System.Globalization.CultureInfo.InvariantCulture) - (double)radius;
     }
 
@@ -763,7 +768,9 @@ public class DesignSystemMenuTest
                 var top = view.Parent!.LocalToGlobal(view.Frame.TopLeft).Y;
                 var bottom = view.Parent!.LocalToGlobal(new Point(view.Frame.Left, view.Frame.Bottom)).Y;
                 var viewportTop = scroll.Parent!.LocalToGlobal(scroll.Frame.TopLeft).Y;
-                var viewportBottom = scroll.Parent!.LocalToGlobal(new Point(scroll.Frame.Left, scroll.Frame.Bottom)).Y;
+                var tabs = Find("DesignSystem.Tabs");
+                var viewportBottom = nfloat.Min(scroll.Parent!.LocalToGlobal(new Point(scroll.Frame.Left, scroll.Frame.Bottom)).Y,
+                    tabs.Parent!.LocalToGlobal(tabs.Frame.TopLeft).Y);
                 if (top >= viewportTop + 8 && bottom <= viewportBottom - 8) return;
                 var delta = nfloat.Clamp((top + bottom) / 2 - (viewportTop + viewportBottom) / 2, -220, 220);
                 var start = scroll.Parent!.LocalToGlobal(new Point(scroll.Frame.Left + 5, scroll.Frame.Center.Y));

@@ -80,6 +80,7 @@ public sealed partial class SvgDrawingContext
 
     private void DrawImage(IImage image, Rect source, Rect dest, nfloat opacity)
     {
+        CheckCompositionDrawing();
         if (source.Width <= 0 || source.Height <= 0 || dest.Width <= 0 || dest.Height <= 0) return;
         var id = EmbedImage(ImageResource(image));
         Ident();

@@ -13,6 +13,11 @@ public static partial class Metal
     private const string FoundationLib = "/System/Library/Frameworks/Foundation.framework/Foundation";
     private const string MetalLib = "/System/Library/Frameworks/Metal.framework/Metal";
 
+    private static readonly ObjC.Sel PresentDrawableSel = new("presentDrawable:");
+
+    internal static void CommandBuffer_PresentDrawable(nint commandBuffer, nint drawable) =>
+        ObjC.objc_msgSend(commandBuffer, PresentDrawableSel, drawable);
+
     // ---- Objective-C runtime ----
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_getClass",

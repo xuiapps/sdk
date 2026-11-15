@@ -1,4 +1,5 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Filter;
 using Xui.Core.Math2D;
 
@@ -16,6 +17,10 @@ namespace Xui.Middleware.DevTools;
 /// </summary>
 internal sealed class OverlayContext(IContext inner, Point? pos, bool isTouch, string? label = null) : IContext
 {
+    public CompositionGroup Group(scoped in GroupOptions options) => inner.Group(in options);
+    public bool GpuSurface(scoped in GroupOptions options) => inner.GpuSurface(in options);
+    public void EndGroup() => inner.EndGroup();
+
     public void SetFilter() => inner.SetFilter();
     public void SetFilter(Brightness brightness) => inner.SetFilter(brightness);
 
@@ -83,8 +88,12 @@ internal sealed class OverlayContext(IContext inner, Point? pos, bool isTouch, s
     /// Drawing here (just before Dispose) ensures the overlay appears above all app content,
     /// and is captured in both the real window and any active SVG screenshot stream.
     /// </summary>
+    private static readonly object pointerOverlayKey = new();
     public void Dispose()
     {
+        var origin = pos ?? new Point(8, 8);
+        using var group = inner.Group(new GroupOptions
+        { Key = pointerOverlayKey, ViewBacking = true, Bounds = new Rect(origin.X - 32, origin.Y - 32, 340, 160) });
         inner.Save();
         if (pos is { } p)
         {

@@ -84,13 +84,13 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
 
     protected override void RenderCore(IContext context)
     {
-        this.RenderChild(context, header);
         this.RenderChild(context, title);
         this.RenderChild(context, description);
         this.RenderChild(context, performanceToggle);
         this.RenderChild(context, developerTitle);
         this.RenderChild(context, developerDescription);
         this.RenderChild(context, developerToggle);
+        this.RenderChild(context, header);
     }
 
     private static VerticalStack Description(string first, string second) => new()

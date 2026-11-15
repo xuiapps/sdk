@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Filter;
 using System.Collections.Generic;
 using Xui.Runtime.IOS;
@@ -16,8 +17,16 @@ namespace Xui.Runtime.IOS.Actual;
 public partial class IOSDrawingContext : IContext
 {
     private nint cgContextRef;
+    // This backend currently draws groups immediately; it never claims cached content.
+    private ImmediateCompositionContext? composition;
+    public CompositionGroup Group(scoped in GroupOptions options) =>
+        (composition ??= new ImmediateCompositionContext(this)).Group(in options);
+    public void EndGroup() => (composition ?? throw new InvalidOperationException("No composition group to close.")).EndGroup();
+
     private FilterState filter;
-    private readonly Stack<(Paint Fill, Paint Stroke, FilterState Filter)> paintStates = new();
+    private readonly Stack<(Paint Fill, Paint Stroke, FilterState Filter, Font Font, TextAlign Align, TextBaseline Baseline, IOSDrawingState.Snapshot Drawing)> paintStates = new();
+    private readonly IOSDrawingState drawingState = new();
+    private Font font = new();
 
     public void SetFilter() => filter = default;
     public void SetFilter(Brightness brightness) => filter = new(brightness);
@@ -30,6 +39,7 @@ public partial class IOSDrawingContext : IContext
             state.Stroke.Reset();
         }
         filter = default;
+        drawingState.Reset();
     }
 
     private Paint fill;
@@ -42,23 +52,27 @@ public partial class IOSDrawingContext : IContext
 
     public IOSDrawingContext(IFontSource? fontSource = null) => textMeasure = new IOSTextMeasureContext(fontSource);
 
-    NFloat IPenContext.GlobalAlpha { set => CGContextRef.CGContextSetAlpha(this.cgContextRef, value); }
+    NFloat IPenContext.GlobalAlpha
+    {
+        set
+        {
+            drawingState.GlobalAlpha = value;
+            CGContextRef.CGContextSetAlpha(this.cgContextRef, value);
+        }
+    }
 
     LineCap IPenContext.LineCap { set => CGContextRef.CGContextSetLineCap(this.cgContextRef, (CGLineCap)value); }
     LineJoin IPenContext.LineJoin { set => CGContextRef.CGContextSetLineJoin(this.cgContextRef, (CGLineJoin)value); }
     NFloat IPenContext.LineWidth { set => CGContextRef.CGContextSetLineWidth(this.cgContextRef, value); }
     NFloat IPenContext.MiterLimit { set => CGContextRef.CGContextSetMiterLimit(this.cgContextRef, value); }
 
-    private NFloat lineDashOffset;
-    private NFloat[] lineDashSegments = [];
-
     NFloat IPenContext.LineDashOffset
     {
         set
         {
-            if (lineDashOffset == value)
+            if (drawingState.LineDashOffset == value)
                 return;
-            lineDashOffset = value;
+            drawingState.LineDashOffset = value;
             ApplyLineDash();
         }
     }
@@ -67,17 +81,33 @@ public partial class IOSDrawingContext : IContext
 
     public TextBaseline TextBaseline { get; set; }
 
-    public IOSDrawingContext Bind()
+    public IOSDrawingContext Bind() => Bind(Xui.Runtime.IOS.UIKit.UIGraphicsGetCurrentContext());
+
+    // The CGContext is borrowed for this draw pass; UIKit retains ownership.
+    internal IOSDrawingContext Bind(nint context)
     {
-        // this.cgContextRef = NSGraphicsContext.CurrentCGContext.Self;
-        this.cgContextRef = Xui.Runtime.IOS.UIKit.UIGraphicsGetCurrentContext();
+        this.cgContextRef = context;
         this.fill.Reset();
         this.stroke.Reset();
         this.baseTransform = null;
         ResetPaintStates();
+        CGContextRef.CGContextSetAlpha(cgContextRef, 1);
+        ApplyLineDash();
         this.path2d.BeginPath();
 
         return this;
+    }
+
+    // A surface inherits open ancestor saves in its state tape. Close them before
+    // returning the borrowed drawRect context to UIKit, including on replay failure.
+    internal void Unbind()
+    {
+        while (paintStates.Count != 0)
+            ((IStateContext)this).Restore();
+        fill.Reset();
+        stroke.Reset();
+        baseTransform = null;
+        cgContextRef = 0;
     }
 
     void IStateContext.Restore()
@@ -86,14 +116,18 @@ public partial class IOSDrawingContext : IContext
             return;
         fill.Reset();
         stroke.Reset();
-        (fill, stroke, filter) = state;
+        (fill, stroke, filter) = (state.Fill, state.Stroke, state.Filter);
+        drawingState.Restore(state.Drawing);
+        ((ITextMeasureContext)this).SetFont(state.Font);
+        TextAlign = state.Align;
+        TextBaseline = state.Baseline;
         CGContextRef.CGContextRestoreGState(this.cgContextRef);
     }
 
     void IStateContext.Save()
     {
         // The native state saves solid paints; retain our gradient handles and text paint too.
-        paintStates.Push((fill, stroke, filter));
+        paintStates.Push((fill, stroke, filter, font, TextAlign, TextBaseline, drawingState.Save()));
         if (fill.cgGradientRef != 0) CFRetain(fill.cgGradientRef);
         if (stroke.cgGradientRef != 0) CFRetain(stroke.cgGradientRef);
         CGContextRef.CGContextSaveGState(this.cgContextRef);
@@ -101,29 +135,20 @@ public partial class IOSDrawingContext : IContext
 
     void IPenContext.SetLineDash(ReadOnlySpan<NFloat> segments)
     {
-        lineDashSegments = segments.ToArray();
+        drawingState.SetLineDash(segments);
         ApplyLineDash();
     }
 
     private void ApplyLineDash()
     {
-        var segments = lineDashSegments.AsSpan();
+        var segments = drawingState.LineDash;
         if (segments.IsEmpty)
         {
-            CGContextRef.CGContextSetLineDash(this.cgContextRef, lineDashOffset, nint.Zero, nint.Zero);
-        }
-        else if (segments.Length % 2 == 0)
-        {
-            CGContextRef.CGContextSetLineDash(this.cgContextRef, lineDashOffset, ref MemoryMarshal.GetReference(segments), segments.Length);
+            CGContextRef.CGContextSetLineDash(this.cgContextRef, drawingState.LineDashOffset, nint.Zero, nint.Zero);
         }
         else
         {
-            Span<NFloat> mirrored = stackalloc NFloat[segments.Length * 2];
-            for(var i = 0; i < segments.Length; i++)
-            {
-                mirrored[i] = mirrored[i + segments.Length] = segments[i];
-            }
-            CGContextRef.CGContextSetLineDash(this.cgContextRef, lineDashOffset, ref MemoryMarshal.GetReference(mirrored), mirrored.Length);
+            CGContextRef.CGContextSetLineDash(this.cgContextRef, drawingState.LineDashOffset, ref MemoryMarshal.GetReference(segments), segments.Length);
         }
     }
 
@@ -531,7 +556,11 @@ public partial class IOSDrawingContext : IContext
 
     TextMetrics ITextMeasureContext.MeasureText(string text) => textMeasure.MeasureText(text);
     TextMetrics ITextMeasureContext.MeasureText(ReadOnlySpan<char> text) => textMeasure.MeasureText(text);
-    void ITextMeasureContext.SetFont(Font font) => textMeasure.SetFont(font);
+    void ITextMeasureContext.SetFont(Font font)
+    {
+        this.font = font;
+        textMeasure.SetFont(font);
+    }
 
     private struct Paint
     {
@@ -685,8 +714,7 @@ public partial class IOSDrawingContext : IContext
     private void DrawCGImageFlipped(nint image, Rect destination, NFloat opacity)
     {
         CGContextRef.CGContextSaveGState(cgContextRef);
-        if (opacity != 1)
-            CGContextRef.CGContextSetAlpha(cgContextRef, opacity);
+        CGContextRef.CGContextSetAlpha(cgContextRef, drawingState.ImageAlpha(opacity));
         CGContextRef.CGContextTranslateCTM(cgContextRef, destination.X, destination.Y + destination.Height);
         CGContextRef.CGContextScaleCTM(cgContextRef, 1, -1);
         CGContextRef.CGContextDrawImage(cgContextRef, new CGRect(0, 0, destination.Width, destination.Height), image);

@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Filter;
 using System.Collections.Generic;
 using Xui.Core.Math2D;
@@ -10,6 +11,12 @@ namespace Xui.Runtime.Browser.Actual;
 
 public partial class BrowserDrawingContext : IContext
 {
+    // This backend currently draws groups immediately; it never claims cached content.
+    private ImmediateCompositionContext? composition;
+    public CompositionGroup Group(scoped in GroupOptions options) =>
+        (composition ??= new ImmediateCompositionContext(this)).Group(in options);
+    public void EndGroup() => (composition ?? throw new InvalidOperationException("No composition group to close.")).EndGroup();
+
     private FilterState filter;
     private readonly Stack<FilterState> filters = new();
 
