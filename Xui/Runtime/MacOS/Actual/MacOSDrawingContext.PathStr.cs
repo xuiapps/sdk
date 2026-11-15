@@ -102,7 +102,9 @@ public partial class MacOSDrawingContext
             CGContextRef.CGContextTranslateCTM(ctx, center.X, center.Y);
             CGContextRef.CGContextRotateCTM(ctx, rotation);
             CGContextRef.CGContextScaleCTM(ctx, rx, ry);
-            CGContextRef.CGContextAddArc(ctx, 0, 0, 1, e, s, (int)w);
+            // Keep endpoints in their original order for connected path segments;
+            // convert winding exactly as the circular Arc implementation does.
+            CGContextRef.CGContextAddArc(ctx, 0, 0, 1, s, e, 1 - (int)w);
             CGContextRef.CGContextRestoreGState(ctx);
         }
     }

@@ -65,7 +65,9 @@ public partial class IOSDrawingContext
             CGContextRef.CGContextTranslateCTM(context, center.X, center.Y);
             CGContextRef.CGContextRotateCTM(context, rotation);
             CGContextRef.CGContextScaleCTM(context, radiusX, radiusY);
-            CGContextRef.CGContextAddArc(context, 0, 0, 1, endAngle, startAngle, (int)winding);
+            // Preserve the start/end points so Quartz joins the preceding segment
+            // to the arc's start, just as Arc does. Only the direction flag differs.
+            CGContextRef.CGContextAddArc(context, 0, 0, 1, startAngle, endAngle, 1 - (int)winding);
             CGContextRef.CGContextRestoreGState(context);
         }
     }
