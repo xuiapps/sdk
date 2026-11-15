@@ -17,14 +17,14 @@ public class Toggle : View, IDesignSystemChangeNotifications
     private bool hover;
     private bool pressed;
 
-    private Color trackOnColor;
-    private Color trackOffColor;
-    private Color thumbColor;
-    private Color hoverTrackOnColor;
-    private Color hoverTrackOffColor;
-    private NFloat trackWidth;
-    private NFloat trackHeight;
-    private NFloat thumbRadius;
+    private Color trackOnColor => designSystem.Current?.Colors.Primary.Background ?? default;
+    private Color trackOffColor => designSystem.Current?.Colors.Surface.Container ?? default;
+    private Color thumbColor => designSystem.Current?.Colors.Surface.Background ?? default;
+    private Color hoverTrackOnColor => designSystem.Current?.Colors.Primary.ToggleHoverBackground ?? default;
+    private Color hoverTrackOffColor => designSystem.Current?.Colors.Outline ?? default;
+    private NFloat trackWidth => trackHeight * 2;
+    private NFloat trackHeight => designSystem.Current?.Spacing.Active.XL ?? 0;
+    private NFloat thumbRadius => (trackHeight - 4) / 2;
     private readonly DesignSystemCache designSystem = new();
 
     /// <summary>Gets or sets whether the toggle is on.</summary>
@@ -57,21 +57,12 @@ public class Toggle : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        trackOnColor = ds.Colors.Primary.Background;
-        trackOffColor = ds.Colors.Surface.Container;
-        thumbColor = ds.Colors.Surface.Background;
-        hoverTrackOnColor = ds.Colors.Primary.Ramp[ds.Colors.IsDark ? 0.85f : 0.48f];
-        hoverTrackOffColor = ds.Colors.Outline;
-
-        trackWidth = ds.Spacing.Passive.XXXL;
-        trackHeight = ds.Spacing.Passive.XL;
-        thumbRadius = (trackHeight - 4) / 2;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>
@@ -92,10 +83,9 @@ public class Toggle : View, IDesignSystemChangeNotifications
     protected override void RenderCore(IContext context)
     {
         ApplyDesignSystem();
-        var twoPi = (NFloat)(2 * Math.PI);
 
         var trackRect = new Rect(Frame.X, Frame.Y, trackWidth, trackHeight);
-        var trackRadius = trackHeight / 2;
+        var trackRadius = designSystem.Current?.Shape.Full ?? new CornerRadius(trackHeight / 2);
 
         // Track
         Color trackColor;
@@ -112,7 +102,7 @@ public class Toggle : View, IDesignSystemChangeNotifications
         // Outline
         context.BeginPath();
         context.RoundRect(trackRect, trackRadius);
-        context.SetStroke(isOn ? trackOnColor : new Color(0x99999966));
+        context.SetStroke(isOn ? trackOnColor : designSystem.Current?.Colors.Outline ?? default);
         context.LineWidth = 1;
         context.Stroke();
 
@@ -123,7 +113,9 @@ public class Toggle : View, IDesignSystemChangeNotifications
         var thumbY = Frame.Y + trackHeight / 2;
 
         context.BeginPath();
-        context.Arc(new Point(thumbX, thumbY), thumbRadius, 0, twoPi);
+        var outerRadius = CornerRadius.Min(trackRadius, new CornerRadius(trackHeight / 2));
+        var innerRadius = CornerRadius.Max(0, outerRadius - new CornerRadius(3));
+        context.RoundRect(new Rect(thumbX - thumbRadius, thumbY - thumbRadius, thumbRadius * 2, thumbRadius * 2), innerRadius);
         context.SetFill(thumbColor);
         context.Fill(FillRule.NonZero);
     }

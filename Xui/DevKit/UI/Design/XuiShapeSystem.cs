@@ -40,9 +40,9 @@ internal class XuiShapeSystem : IShapeSystem
                 ExtraSmall = Radius(2);
                 Small      = Radius(4);
                 Medium     = Radius(8);
-                Large      = Radius(14);
-                ExtraLarge = Radius(20);
-                Full       = Radius(4);   // small button radius
+                Large      = Radius(20);
+                ExtraLarge = Radius(28);
+                Full       = Radius(8);   // rounded controls
                 break;
 
             case ShapePreset.RoundedPill:
@@ -50,8 +50,9 @@ internal class XuiShapeSystem : IShapeSystem
                 ExtraSmall = Radius(2);
                 Small      = Radius(4);
                 Medium     = Radius(8);
-                Large      = Radius(14);
-                ExtraLarge = Radius(20);
+                // Share Soft's container geometry, with pill-shaped controls.
+                Large      = Radius(28);
+                ExtraLarge = Radius(36);
                 Full       = new CornerRadius(9999); // pill buttons
                 break;
 
@@ -61,9 +62,9 @@ internal class XuiShapeSystem : IShapeSystem
                 ExtraSmall = Radius(4);
                 Small      = Radius(8);
                 Medium     = Radius(12);
-                Large      = Radius(20);
-                ExtraLarge = Radius(28);
-                Full       = new CornerRadius(9999); // pill buttons
+                Large      = Radius(28);
+                ExtraLarge = Radius(36);
+                Full       = Radius(16); // soft controls; Pill is explicitly fully rounded
                 break;
         }
     }

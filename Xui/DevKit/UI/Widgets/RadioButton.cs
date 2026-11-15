@@ -17,11 +17,11 @@ public class RadioButton : View, IDesignSystemChangeNotifications
     private bool hover;
     private bool pressed;
 
-    private Color selectedFillColor;
-    private Color unselectedBorderColor;
-    private Color dotColor;
-    private Color hoverBorderColor;
-    private NFloat outerRadius;
+    private Color selectedFillColor => designSystem.Current?.Colors.Primary.Background ?? default;
+    private Color unselectedBorderColor => designSystem.Current?.Colors.Outline ?? default;
+    private Color dotColor => designSystem.Current?.Colors.Primary.Foreground ?? default;
+    private Color hoverBorderColor => designSystem.Current?.Colors.Primary.Background ?? default;
+    private NFloat outerRadius => (designSystem.Current?.Spacing.Active.XL ?? 0) / 2;
     private readonly DesignSystemCache designSystem = new();
 
     /// <summary>Gets or sets whether the radio button is selected.</summary>
@@ -54,17 +54,12 @@ public class RadioButton : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        selectedFillColor = ds.Colors.Primary.Background;
-        unselectedBorderColor = ds.Colors.Outline;
-        dotColor = ds.Colors.Primary.Foreground;
-        hoverBorderColor = ds.Colors.Primary.Background;
-        outerRadius = ds.Spacing.Passive.XL / 2;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>

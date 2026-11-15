@@ -13,29 +13,63 @@ public class XuiDesignSystem : IDesignSystem
     private XuiSpacingSystem spacing = null!;
     private XuiShapeSystem shape = null!;
     private XuiMotionSystem motion = null!;
+    private XuiDesignSystemOptions previousOptions;
+    private ColorScheme previousColorScheme;
+    private nfloat previousFontScale;
+    private bool previousReducedMotion, previousHighContrast;
 
     /// <summary>
     /// Creates a new design system from the given options and device info.
     /// </summary>
     public XuiDesignSystem(XuiDesignSystemOptions options, IDeviceInfo device)
     {
-        UpdateTokens(options, device);
+        UpdateTokens(options, device, DesignSystemChange.All);
     }
 
-    /// <summary>Replaces all derived token groups while preserving this provider's identity.</summary>
+    /// <summary>Updates the retained palette in place and rebuilds only other changed token groups.</summary>
     public void Update(XuiDesignSystemOptions options, IDeviceInfo device)
     {
-        UpdateTokens(options, device);
-        Changed?.Invoke();
+        var changes = GetChanges(options, device);
+        if (changes == DesignSystemChange.None) return;
+        UpdateTokens(options, device, changes);
+        Changed?.Invoke(changes);
     }
 
-    private void UpdateTokens(XuiDesignSystemOptions options, IDeviceInfo device)
+    private DesignSystemChange GetChanges(XuiDesignSystemOptions options, IDeviceInfo device)
     {
-        colors = new XuiColorSystem(options, device);
-        typography = new XuiTypographySystem(options, device);
-        spacing = new XuiSpacingSystem(options.Sizing);
-        shape = new XuiShapeSystem(options);
-        motion = new XuiMotionSystem(options, device);
+        var old = previousOptions;
+        var changes = DesignSystemChange.None;
+        if (old.PrimaryHue != options.PrimaryHue || old.SecondaryHue != options.SecondaryHue ||
+            old.TertiaryHue != options.TertiaryHue || old.NeutralHue != options.NeutralHue ||
+            old.PrimaryLightness != options.PrimaryLightness || old.Harmony != options.Harmony || old.Chroma != options.Chroma || old.NeutralStyle != options.NeutralStyle ||
+            previousColorScheme != device.ColorScheme || previousHighContrast != device.PrefersHighContrast)
+            changes |= DesignSystemChange.Colors;
+        if (old.DefaultFontFamily != options.DefaultFontFamily || previousFontScale != device.AccessibilityFontScale)
+            changes |= DesignSystemChange.Typography;
+        if (old.Sizing != options.Sizing) changes |= DesignSystemChange.Spacing;
+        if (old.Shape != options.Shape || old.RoundnessFactor != options.RoundnessFactor) changes |= DesignSystemChange.Shape;
+        if (old.Motion != options.Motion || old.MotionPreference != options.MotionPreference || previousReducedMotion != device.PrefersReducedMotion)
+            changes |= DesignSystemChange.Motion;
+        return changes;
+    }
+
+    private void UpdateTokens(XuiDesignSystemOptions options, IDeviceInfo device, DesignSystemChange changes)
+    {
+        if ((changes & DesignSystemChange.Colors) != 0)
+        {
+            if (colors is null) colors = new XuiColorSystem(options, device);
+            else colors.Update(options, device);
+        }
+        if ((changes & DesignSystemChange.Typography) != 0) typography = new XuiTypographySystem(options, device);
+        if ((changes & DesignSystemChange.Spacing) != 0) spacing = new XuiSpacingSystem(options.Sizing);
+        if ((changes & DesignSystemChange.Shape) != 0) shape = new XuiShapeSystem(options);
+        if ((changes & DesignSystemChange.Motion) != 0) motion = new XuiMotionSystem(options, device);
+        previousOptions = options;
+        // Device services are mutable: retain values, not the device object, for comparison.
+        previousColorScheme = device.ColorScheme;
+        previousFontScale = device.AccessibilityFontScale;
+        previousReducedMotion = device.PrefersReducedMotion;
+        previousHighContrast = device.PrefersHighContrast;
     }
 
     /// <inheritdoc/>
@@ -54,22 +88,25 @@ public class XuiDesignSystem : IDesignSystem
     public IMotionSystem Motion => motion;
 
     /// <inheritdoc/>
-    public event Action? Changed;
+    public event Action<DesignSystemChange>? Changed;
 
     /// <summary>
     /// Raises the <see cref="Changed"/> event, causing widgets to re-query tokens.
     /// </summary>
-    public void NotifyChanged()
+    public void NotifyChanged(DesignSystemChange changes = DesignSystemChange.All)
     {
-        Changed?.Invoke();
+        if (changes != DesignSystemChange.None) Changed?.Invoke(changes);
     }
 }
 
 /// <summary>
-/// Options for constructing a <see cref="XuiDesignSystem"/>.
+/// Value-type options for constructing or updating a <see cref="XuiDesignSystem"/> without allocating a configuration object.
 /// </summary>
-public class XuiDesignSystemOptions
+public readonly struct XuiDesignSystemOptions
 {
+    /// <summary>Initializes the default design-system settings.</summary>
+    public XuiDesignSystemOptions() { }
+
     /// <summary>Primary brand hue in degrees (0–360). Required.</summary>
     public nfloat PrimaryHue { get; init; }
 
@@ -87,6 +124,9 @@ public class XuiDesignSystemOptions
 
     /// <summary>Target chroma for the primary palette (typical range 0.10–0.35). Default: 0.15.</summary>
     public nfloat Chroma { get; init; } = (nfloat)0.15;
+
+    /// <summary>Optional primary action lightness (0–1). Null uses the appearance's default action tone.</summary>
+    public nfloat? PrimaryLightness { get; init; }
 
     /// <summary>Global corner-radius multiplier (0.0 = square, 1.0 = default, 2.0 = very round). Default: 1.0.</summary>
     public nfloat RoundnessFactor { get; init; } = 1;

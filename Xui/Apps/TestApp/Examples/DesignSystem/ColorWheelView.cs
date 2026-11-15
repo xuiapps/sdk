@@ -9,15 +9,18 @@ using Xui.DevKit.UI.Design;
 namespace Xui.Apps.TestApp.Examples.DesignSystem;
 
 /// <summary>
-/// The color wheel with annular ring and hue indicators.
+/// A thin hue ring surrounding a white/black/hue shade triangle.
 /// </summary>
 internal class ColorWheelView : View
 {
     private IImage? wheelImage;
-    private bool dragging;
+    private IImage? triangleImage;
+    private int pointer = -1;
+    private bool draggingShade;
 
     private static readonly NFloat WheelSize = 230;
-    private static readonly NFloat InnerFraction = 0.35f;
+    private static readonly NFloat InnerFraction = 0.83f;
+    private static readonly NFloat HueHitWidth = 48;
     private static readonly NFloat IndicatorRadius = 8;
     private static readonly NFloat SmallIndicatorRadius = 5;
 
@@ -29,13 +32,20 @@ internal class ColorWheelView : View
         base.OnActivate();
         wheelImage = this.GetService<IImage>();
         wheelImage?.Load("asset://ColorWheel.png");
+        triangleImage = this.GetService<IImage>();
+        triangleImage?.Load("asset://ColorTriangle.png");
     }
 
-    protected override void OnDeactivate() => wheelImage = null;
+    protected override void OnDeactivate()
+    {
+        wheelImage = triangleImage = null;
+        pointer = -1;
+        base.OnDeactivate();
+    }
 
     private (Point center, NFloat outerR, NFloat innerR) WheelGeometry()
     {
-        var outerR = WheelSize / 2;
+        var outerR = NFloat.Max(0, NFloat.Min(WheelSize, this.Frame.Width - 16)) / 2;
         var cx = this.Frame.X + 8 + outerR;
         var cy = this.Frame.Y + 8 + outerR;
         return (new Point(cx, cy), outerR, outerR * InnerFraction);
@@ -43,38 +53,84 @@ internal class ColorWheelView : View
 
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
-        if (phase != EventPhase.Tunnel)
+        if (phase != EventPhase.Tunnel && e.Type != PointerEventType.LostCapture) return;
+        var (center, outerR, innerR) = WheelGeometry();
+        if (outerR <= 16) return;
+        var dx = e.State.Position.X - center.X;
+        var dy = e.State.Position.Y - center.Y;
+        if (e.Type == PointerEventType.Down && pointer < 0)
         {
-            base.OnPointerEvent(ref e, phase);
-            return;
-        }
-
-        if (e.Type == PointerEventType.Down)
-        {
-            var (center, outerR, innerR) = WheelGeometry();
-            var dx = e.State.Position.X - center.X;
-            var dy = e.State.Position.Y - center.Y;
             var dist = NFloat.Sqrt(dx * dx + dy * dy);
-
-            if (dist >= innerR && dist <= outerR)
+            var triangle = TriangleBounds(center, innerR);
+            var (white, black) = Weights(triangle, e.State.Position);
+            draggingShade = white >= 0 && black >= 0 && white + black <= 1;
+            // Use the existing 8-point outer margin and extend inward for thumbs.
+            // The triangle keeps priority wherever the touch regions overlap.
+            var hitOuterR = outerR + 8;
+            var hitInnerR = NFloat.Max(0, hitOuterR - HueHitWidth);
+            if (!draggingShade && (dist < hitInnerR || dist > hitOuterR)) return;
+            pointer = e.PointerId;
+            CapturePointer(pointer, PointerGestures.Drag);
+            if (draggingShade) UpdateShade(triangle, e.State.Position);
+            else UpdateHue(dx, dy);
+        }
+        else if (e.PointerId == pointer)
+        {
+            if (e.Type == PointerEventType.Move)
             {
-                UpdateHue(dx, dy);
-                dragging = true;
-                this.CapturePointer(e.PointerId, PointerGestures.Drag);
+                if (draggingShade) UpdateShade(TriangleBounds(center, innerR), e.State.Position);
+                else UpdateHue(dx, dy);
+            }
+            else if (e.Type is PointerEventType.Up or PointerEventType.Cancel or PointerEventType.LostCapture)
+            {
+                pointer = -1;
+                if (e.Type != PointerEventType.LostCapture) ReleasePointer(e.PointerId);
             }
         }
-        else if (e.Type == PointerEventType.Move && dragging)
-        {
-            var (center, _, _) = WheelGeometry();
-            UpdateHue(e.State.Position.X - center.X, e.State.Position.Y - center.Y);
-        }
-        else if (e.Type == PointerEventType.Up && dragging)
-        {
-            dragging = false;
-            this.ReleasePointer(e.PointerId);
-        }
+    }
 
-        base.OnPointerEvent(ref e, phase);
+    internal static Color HueColor(NFloat hue) => new Oklch(0.70f, Oklch.MaxSrgbChroma(0.70f, hue), hue).ToColor();
+
+    private static Rect TriangleBounds(Point center, NFloat innerR)
+    {
+        var radius = NFloat.Max(0, innerR - 12);
+        var halfHeight = NFloat.Sqrt(3) * radius / 2;
+        return new Rect(center.X - radius / 2, center.Y - halfHeight, radius * 1.5f, halfHeight * 2);
+    }
+
+    private static (NFloat white, NFloat black) Weights(Rect triangle, Point point)
+    {
+        var hue = (point.X - triangle.Left) / triangle.Width;
+        var white = (1 - hue) / 2 - (point.Y - triangle.Center.Y) / triangle.Height;
+        return (white, 1 - hue - white);
+    }
+
+    private void UpdateShade(Rect triangle, Point point)
+    {
+        var (white, black) = Weights(triangle, point);
+        if (white < 0 || black < 0 || white + black > 1)
+        {
+            // Project to the nearest edge, preserving smooth drags outside the triangle.
+            var a = triangle.TopLeft;
+            var b = new Point(triangle.Left, triangle.Bottom);
+            var c = new Point(triangle.Right, triangle.Center.Y);
+            var ab = Closest(point, a, b);
+            var bc = Closest(point, b, c);
+            var ca = Closest(point, c, a);
+            var nearest = DistanceSquared(point, ab) < DistanceSquared(point, bc) ? ab : bc;
+            if (DistanceSquared(point, ca) < DistanceSquared(point, nearest)) nearest = ca;
+            (white, black) = Weights(triangle, nearest);
+        }
+        this.GetService<IDesignSystemEditor>()?.SetShade(white, black);
+    }
+
+    private static NFloat DistanceSquared(Point a, Point b) => (a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y);
+
+    private static Point Closest(Point p, Point a, Point b)
+    {
+        var ab = b - a;
+        var t = NFloat.Clamp(((p.X - a.X) * ab.X + (p.Y - a.Y) * ab.Y) / DistanceSquared(a, b), 0, 1);
+        return a + ab * t;
     }
 
     private void UpdateHue(NFloat dx, NFloat dy)
@@ -87,7 +143,7 @@ internal class ColorWheelView : View
         editor.SetHue(hue);
     }
 
-    protected override Size MeasureCore(Size available, IMeasureContext context) => new Size(WheelSize + 16, WheelSize + 16);
+    protected override Size MeasureCore(Size available, IMeasureContext context) => new Size(NFloat.Min(WheelSize + 16, available.Width), NFloat.Min(WheelSize + 16, available.Width));
 
     protected override void RenderCore(IContext context)
     {
@@ -102,7 +158,7 @@ internal class ColorWheelView : View
         {
             context.Save();
             context.Translate(new Vector(center.X - outerR, center.Y - outerR));
-            context.Scale(new Vector(WheelSize / wheelImage.Size.Width, WheelSize / wheelImage.Size.Height));
+            context.Scale(new Vector(outerR * 2 / wheelImage.Size.Width, outerR * 2 / wheelImage.Size.Height));
 
             context.SetFill(new ImagePattern(wheelImage, PatternRepeat.NoRepeat));
             context.BeginPath();
@@ -110,15 +166,35 @@ internal class ColorWheelView : View
                 new Point(wheelImage.Size.Width / 2, wheelImage.Size.Height / 2),
                 wheelImage.Size.Width / 2,
                 0, twoPi);
-            context.Fill(FillRule.NonZero);
+            context.MoveTo((wheelImage.Size.Width / 2 + wheelImage.Size.Width / 2 * InnerFraction, wheelImage.Size.Height / 2));
+            context.Arc((wheelImage.Size.Width / 2, wheelImage.Size.Height / 2), wheelImage.Size.Width / 2 * InnerFraction, 0, twoPi);
+            context.Fill(FillRule.EvenOdd);
             context.Restore();
 
-            // Punch out inner circle
-            context.BeginPath();
-            context.Arc(center, innerR, 0, twoPi);
-            context.SetFill(ds.Colors.Application.Background);
-            context.Fill(FillRule.NonZero);
         }
+
+        var triangle = TriangleBounds(center, innerR);
+        context.Save();
+        context.BeginPath();
+        context.MoveTo(triangle.TopLeft);
+        context.LineTo((triangle.Right, triangle.Center.Y));
+        context.LineTo((triangle.Left, triangle.Bottom));
+        context.ClosePath();
+        context.Clip();
+        context.SetFill(HueColor(editor.PrimaryHue));
+        context.FillRect(triangle);
+        if (triangleImage is not null && triangleImage.Size != Size.Empty)
+        {
+            context.Translate(new Vector(triangle.X, triangle.Y));
+            context.Scale(new Vector(triangle.Width / triangleImage.Size.Width, triangle.Height / triangleImage.Size.Height));
+            context.SetFill(new ImagePattern(triangleImage, PatternRepeat.NoRepeat));
+            context.FillRect(new Rect(0, 0, triangleImage.Size.Width, triangleImage.Size.Height));
+        }
+        context.Restore();
+        var hueWeight = 1 - editor.WhiteWeight - editor.BlackWeight;
+        var selectedPoint = new Point(triangle.Left + hueWeight * triangle.Width,
+            triangle.Top + (editor.BlackWeight + hueWeight / 2) * triangle.Height);
+        DrawHueIndicator(context, selectedPoint, 0, 0, 6, ds.Colors.Primary.Background, true);
 
         // Ring strokes
         context.SetStroke(new Color(0x99999966));

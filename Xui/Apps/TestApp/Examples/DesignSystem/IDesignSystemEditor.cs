@@ -10,6 +10,9 @@ namespace Xui.Apps.TestApp.Examples.DesignSystem;
 internal interface IDesignSystemEditor
 {
     NFloat PrimaryHue { get; }
+    NFloat WhiteWeight { get; }
+    NFloat BlackWeight { get; }
+    void SetShade(NFloat white, NFloat black);
     ColorHarmony Harmony { get; }
     ShapePreset ShapePreset { get; }
     SizingPreset SizingPreset { get; }

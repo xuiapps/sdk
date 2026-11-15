@@ -65,10 +65,16 @@ public readonly struct Oklch
         var labA = C * (nfloat)Math.Cos(hRad);
         var labB = C * (nfloat)Math.Sin(hRad);
 
-        // Oklab → LMS (cube roots)
-        var l_ = L + 0.3963377774f * labA + 0.2158037573f * labB;
-        var m_ = L - 0.1055613458f * labA - 0.0638541728f * labB;
-        var s_ = L - 0.0894841775f * labA - 1.2914855480f * labB;
+        var (lr, lg, lb) = ToLinearRgb(L, labA, labB);
+        return new Color(LinearToSrgb(lr), LinearToSrgb(lg), LinearToSrgb(lb), 1);
+    }
+
+    private static (nfloat r, nfloat g, nfloat b) ToLinearRgb(nfloat lightness, nfloat labA, nfloat labB)
+    {
+        // Oklab → LMS (cube roots), before any output clamping.
+        var l_ = lightness + 0.3963377774f * labA + 0.2158037573f * labB;
+        var m_ = lightness - 0.1055613458f * labA - 0.0638541728f * labB;
+        var s_ = lightness - 0.0894841775f * labA - 1.2914855480f * labB;
 
         // Undo cube root
         var l = l_ * l_ * l_;
@@ -80,12 +86,7 @@ public readonly struct Oklch
         var lg = -1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s;
         var lb = -0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s;
 
-        return new Color(
-            LinearToSrgb(lr),
-            LinearToSrgb(lg),
-            LinearToSrgb(lb),
-            1
-        );
+        return (lr, lg, lb);
     }
 
     /// <summary>
@@ -101,11 +102,14 @@ public readonly struct Oklch
         nfloat lo = 0;
         nfloat hi = (nfloat)0.5;
 
+        var radians = hueDegrees * nfloat.Pi / 180;
+        var cos = nfloat.Cos(radians);
+        var sin = nfloat.Sin(radians);
         for (int i = 0; i < 20; i++)
         {
             var mid = (lo + hi) / 2;
-            var test = new Oklch(lightness, mid, hueDegrees).ToColor();
-            if (IsInGamut(test))
+            var (r, g, b) = ToLinearRgb(lightness, mid * cos, mid * sin);
+            if (r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1)
                 lo = mid;
             else
                 hi = mid;
@@ -123,15 +127,6 @@ public readonly struct Oklch
     /// Converts an sRGB <see cref="Color"/> to OKLCH.
     /// </summary>
     public static implicit operator Oklch(Color color) => new Oklch(color);
-
-    private static bool IsInGamut(Color c)
-    {
-        nfloat eps = (nfloat)(-0.001);
-        nfloat max = (nfloat)1.001;
-        return c.Red >= eps && c.Red <= max
-            && c.Green >= eps && c.Green <= max
-            && c.Blue >= eps && c.Blue <= max;
-    }
 
     private static nfloat SrgbToLinear(nfloat c)
     {

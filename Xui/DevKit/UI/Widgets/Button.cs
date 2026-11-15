@@ -21,17 +21,17 @@ public partial class Button : View, IDesignSystemChangeNotifications
         VerticalAlignment = VerticalAlignment.Top;
     }
 
-    private Color fillColor;
-    private Color outlineColor;
-    private Color textColor;
-    private Color hoverFillColor;
-    private Color pressedFillColor;
-    private Color hoverTextBgColor;
-    private Color pressedTextBgColor;
-    private CornerRadius cornerRadius;
-    private nfloat paddingH;
-    private nfloat paddingV;
-    private TextStyle textStyle;
+    private Color fillColor => group?.Background ?? default;
+    private Color outlineColor => group?.Background ?? default;
+    private Color textColor => Variant == ButtonVariant.Outline ? group?.Background ?? default : Variant == ButtonVariant.Text ? group?.OnContainer ?? default : group?.Foreground ?? default;
+    private Color hoverFillColor => group?.HoverBackground ?? default;
+    private Color pressedFillColor => group?.PressedBackground ?? default;
+    private Color hoverTextBgColor => group?.Container ?? default;
+    private Color pressedTextBgColor => group?.PressedContainer ?? default;
+    private CornerRadius cornerRadius => designSystem.Current?.Shape.Full ?? default;
+    private nfloat paddingH => designSystem.Current?.Spacing.Active.L ?? 0;
+    private nfloat paddingV => designSystem.Current?.Spacing.Active.S ?? 0;
+    private TextStyle textStyle => designSystem.Current?.Typography.Label.L ?? default;
     private string text = "";
     private readonly DesignSystemCache designSystem = new();
 
@@ -65,6 +65,8 @@ public partial class Button : View, IDesignSystemChangeNotifications
     /// <inheritdoc/>
     public override View this[int index] => throw new IndexOutOfRangeException();
 
+    private ColorGroup? group => designSystem.Current is { } ds ? ResolveGroup(ds.Colors) : null;
+
     private ColorGroup ResolveGroup(IColorSystem colors) => Role switch
     {
         ColorRole.Secondary => colors.Secondary,
@@ -81,42 +83,12 @@ public partial class Button : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        var group = ResolveGroup(ds.Colors);
-        var isDark = ds.Colors.IsDark;
-
-        // Filled variant colors
-        fillColor = group.Background;
-        outlineColor = group.Background;
-        textColor = group.Foreground;
-        // Compute hover/pressed relative to the base lightness
-        var baseL = group.BackgroundLightness;
-        var hoverOffset = isDark ? 0.08f : -0.06f;
-        var pressedOffset = isDark ? 0.15f : -0.12f;
-        hoverFillColor = group.Ramp[nfloat.Clamp(baseL + hoverOffset, 0, 1)];
-        pressedFillColor = group.Ramp[nfloat.Clamp(baseL + pressedOffset, 0, 1)];
-        hoverTextBgColor = group.Container;
-        pressedTextBgColor = group.Ramp[nfloat.Clamp(baseL + (isDark ? -0.06f : 0.06f), 0, 1)];
-
-        // Override text/outline colors based on variant
-        if (Variant == ButtonVariant.Outline)
-        {
-            textColor = group.Background; // use the group's strong color for text
-        }
-        else if (Variant == ButtonVariant.Text)
-        {
-            textColor = group.OnContainer;
-        }
-
-        cornerRadius = ds.Shape.Full;
-        paddingH = ds.Spacing.Active.L;
-        paddingV = ds.Spacing.Active.S;
-        textStyle = ds.Typography.Label.L;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>

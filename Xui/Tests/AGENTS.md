@@ -15,6 +15,10 @@ repository-root `AGENTS.md` first.
 - Integration tests: `Xui/Tests/Integration`. Boot the real TestApp application
   through `TestSinglePageApp`, drive input/animation synchronously, and compare
   multi-step scenarios without an OS window.
+- Design system suite: `Xui/Tests/Integration/DesignSystem`, within the Integration
+  project. Owns palette math, retained-token
+  and allocation checks, widget invalidation, and deterministic mobile design-system
+  scenarios. SVG galleries and their README specifications live beside the tests.
 - E2E tests: `Xui/Tests/E2E`. Launch a real Debug desktop app and control it
   through the DevTools named-pipe protocol. Use only when a real platform
   process/window or DevTools behavior matters.

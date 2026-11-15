@@ -22,10 +22,8 @@ internal sealed class MobileDemoCategoryPanel : VerticalStack
             TextColor = new Color(0x24, 0x25, 0x29, 0xFF),
             Margin = (8, 0, 10, 32),
         });
-        Add(new Card
+        Add(new MobileDemoCard
         {
-            ShadowExtent = 12,
-            ShadowColor = new Color(0f, 0f, 0f, 0.06f),
             Content = items,
         });
     }

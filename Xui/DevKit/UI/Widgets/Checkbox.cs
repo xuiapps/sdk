@@ -17,13 +17,13 @@ public class Checkbox : View, IDesignSystemChangeNotifications
     private bool hover;
     private bool pressed;
 
-    private Color checkedFillColor;
-    private Color uncheckedFillColor;
-    private Color checkmarkColor;
-    private Color borderColor;
-    private Color hoverBorderColor;
-    private CornerRadius cornerRadius;
-    private NFloat boxSize;
+    private Color checkedFillColor => designSystem.Current?.Colors.Primary.Background ?? default;
+    private Color uncheckedFillColor => designSystem.Current?.Colors.Surface.Background ?? default;
+    private Color checkmarkColor => designSystem.Current?.Colors.Primary.Foreground ?? default;
+    private Color borderColor => designSystem.Current?.Colors.Outline ?? default;
+    private Color hoverBorderColor => designSystem.Current?.Colors.Primary.Background ?? default;
+    private CornerRadius cornerRadius => designSystem.Current?.Shape.ExtraSmall ?? default;
+    private NFloat boxSize => designSystem.Current?.Spacing.Active.XL ?? 0;
     private readonly DesignSystemCache designSystem = new();
 
     /// <summary>Gets or sets whether the checkbox is checked.</summary>
@@ -56,19 +56,12 @@ public class Checkbox : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        checkedFillColor = ds.Colors.Primary.Background;
-        uncheckedFillColor = ds.Colors.Surface.Background;
-        checkmarkColor = ds.Colors.Primary.Foreground;
-        borderColor = ds.Colors.Outline;
-        hoverBorderColor = ds.Colors.Primary.Background;
-        cornerRadius = ds.Shape.ExtraSmall;
-        boxSize = ds.Spacing.Passive.XL;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>

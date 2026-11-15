@@ -21,16 +21,16 @@ public interface IDesignSystem
     /// <summary>Motion tokens (curves and springs).</summary>
     IMotionSystem Motion { get; }
 
-    /// <summary>Raised when any design token has changed (e.g. dark mode toggle, font scale change).</summary>
-    event Action? Changed;
+    /// <summary>Raised with the affected token groups after an update; consumers invalidate only the required passes.</summary>
+    event Action<DesignSystemChange>? Changed;
 }
 
 /// <summary>
 /// Receives a design-token update after a view has resolved its <see cref="IDesignSystem"/>.
-/// Implementations should copy every token they use into local fields from the cached provider.
+/// Implementations read shared tokens from the retained provider and invalidate only affected passes.
 /// </summary>
 public interface IDesignSystemChangeNotifications
 {
-    /// <summary>Copies the latest design tokens into the view's local state.</summary>
-    void OnDesignTokenChange();
+    /// <summary>Responds to the changed token groups without duplicating theme state on the view.</summary>
+    void OnDesignTokenChange(DesignSystemChange changes);
 }

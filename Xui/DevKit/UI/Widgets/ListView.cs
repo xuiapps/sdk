@@ -18,12 +18,19 @@ public class ListView : View, IDesignSystemChangeNotifications
     private readonly ScrollView scrollView;
     private readonly ListViewContent content;
 
-    private Color selectedFillColor;
-    private Color selectedOutlineColor;
-    private Color hoverFillColor;
-    private Color outlineColor;
-    private CornerRadius itemRadius;
+    private Color selectedFillColor => group?.Container ?? default;
+    private Color selectedOutlineColor => group?.Background ?? default;
+    private Color hoverFillColor => designSystem.Current?.Colors.Surface.Container ?? default;
+    private Color outlineColor => designSystem.Current?.Colors.Outline ?? default;
+    private CornerRadius itemRadius => designSystem.Current?.Shape.Small ?? default;
     private readonly DesignSystemCache designSystem = new();
+
+    private ColorGroup? group => designSystem.Current is not { } ds ? null : Role switch
+    {
+        ColorRole.Secondary => ds.Colors.Secondary,
+        ColorRole.Tertiary => ds.Colors.Tertiary,
+        _ => ds.Colors.Primary,
+    };
 
     /// <summary>Gets or sets the selected item index (-1 for no selection).</summary>
     public int SelectedIndex
@@ -70,24 +77,12 @@ public class ListView : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        var group = Role switch
-        {
-            ColorRole.Secondary => ds.Colors.Secondary,
-            ColorRole.Tertiary => ds.Colors.Tertiary,
-            _ => ds.Colors.Primary,
-        };
-
-        selectedFillColor = group.Container;
-        selectedOutlineColor = group.Background;
-        hoverFillColor = ds.Colors.Surface.Container;
-        outlineColor = ds.Colors.Outline;
-        itemRadius = ds.Shape.Small;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>
@@ -182,7 +177,7 @@ public class ListViewItem : View, IDesignSystemChangeNotifications
 {
     private View? content;
     private bool hover;
-    private nfloat itemPadding;
+    private nfloat itemPadding => designSystem.Current?.Spacing.Passive.S ?? 0;
     private readonly DesignSystemCache designSystem = new();
 
     /// <summary>The content view displayed inside this item.</summary>
@@ -205,13 +200,12 @@ public class ListViewItem : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        itemPadding = ds.Spacing.Passive.S;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>

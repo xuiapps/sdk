@@ -12,7 +12,13 @@ namespace Xui.Runtime.Software
         public static void SaveRGBA(string path, byte[] rgbaPixels, int width, int height)
         {
             using var file = File.Create(path);
-            using var writer = new BinaryWriter(file);
+            SaveRGBA(file, rgbaPixels, width, height);
+        }
+
+        /// <summary>Encodes PNG data without closing the caller's stream.</summary>
+        public static void SaveRGBA(Stream stream, byte[] rgbaPixels, int width, int height)
+        {
+            using var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true);
 
             writer.Write(PngSignature);
 

@@ -21,16 +21,16 @@ public class Expander : View, IDesignSystemChangeNotifications
     private nfloat animTo;
     private string title = "";
 
-    // Cached design tokens
-    private Color backgroundColor;
-    private Color outlineColor;
-    private Color titleColor;
-    private Color glyphColor;
-    private CornerRadius cornerRadius;
-    private nfloat padding;
-    private nfloat titleHeight;
-    private TextStyle titleStyle;
-    private CurveToken curve;
+    // Read tokens from the shared provider; keep only interaction state on the view.
+    private Color backgroundColor => designSystem.Current?.Colors.Surface.Background ?? default;
+    private Color outlineColor => designSystem.Current?.Colors.OutlineVariant ?? default;
+    private Color titleColor => designSystem.Current?.Colors.Surface.Foreground ?? default;
+    private Color glyphColor => designSystem.Current?.Colors.Outline ?? default;
+    private CornerRadius cornerRadius => designSystem.Current?.Shape.Large ?? default;
+    private nfloat padding => designSystem.Current?.Spacing.Passive.L ?? 0;
+    private nfloat titleHeight => designSystem.Current?.Spacing.Passive.XXL ?? 0;
+    private TextStyle titleStyle => designSystem.Current?.Typography.Label.L ?? default;
+    private CurveToken curve => designSystem.Current?.Motion.EmphasizedDecelerate ?? default;
     private readonly DesignSystemCache designSystem = new();
 
     /// <summary>The title text shown in the header.</summary>
@@ -86,21 +86,12 @@ public class Expander : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        backgroundColor = ds.Colors.Surface.Background;
-        outlineColor = ds.Colors.OutlineVariant;
-        titleColor = ds.Colors.Surface.Foreground;
-        glyphColor = ds.Colors.Outline;
-        cornerRadius = ds.Shape.Large;
-        padding = ds.Spacing.Passive.L;
-        titleHeight = ds.Spacing.Passive.XXL;
-        titleStyle = ds.Typography.Label.L;
-        curve = ds.Motion.EmphasizedDecelerate; // 400ms, smooth settle
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>

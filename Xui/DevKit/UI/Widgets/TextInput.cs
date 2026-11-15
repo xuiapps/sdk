@@ -123,32 +123,37 @@ public class TextInput : LayerView<View, FocusBorderLayer<View, TextInputLayer>>
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
         var ds = designSystem.Current;
         if (ds is null) return;
 
-        var textStyle = ds.Typography.Body.M;
-
-        // Typography
-        Layer.Border.Child.Font = new Font(textStyle.FontSize, textStyle.FontFamily, textStyle.FontWeight, textStyle.FontStyle);
+        if ((changes & DesignSystemChange.Typography) != 0)
+        {
+            var textStyle = ds.Typography.Body.M;
+            Layer.Border.Child.Font = new Font(textStyle.FontSize, textStyle.FontFamily, textStyle.FontWeight, textStyle.FontStyle);
+        }
         Layer.Border.Child.SelectAllOnFocus = true;
 
         // Colors
-        Layer.Border.Child.Color = ds.Colors.Surface.Foreground;
-        Layer.Border.Child.SelectedColor = ds.Colors.Primary.Foreground;
-        Layer.Border.Child.SelectionBackgroundColor = ds.Colors.Primary.Background;
-
-        // Border & background
-        Layer.BackgroundColor = ds.Colors.Surface.Background;
-        Layer.BorderColor = ds.Colors.Outline;
-        Layer.FocusedBorderColor = ds.Colors.Primary.Background;
+        if ((changes & DesignSystemChange.Colors) != 0)
+        {
+            Layer.Border.Child.Color = ds.Colors.Surface.Foreground;
+            Layer.Border.Child.SelectedColor = ds.Colors.Primary.Foreground;
+            Layer.Border.Child.SelectionBackgroundColor = ds.Colors.Primary.Background;
+            Layer.BackgroundColor = ds.Colors.Surface.Background;
+            Layer.BorderColor = ds.Colors.Outline;
+            Layer.FocusedBorderColor = ds.Colors.Primary.Background;
+        }
         Layer.BorderThickness = 1;
-        Layer.CornerRadius = ds.Shape.Small;
+        if ((changes & DesignSystemChange.Shape) != 0) Layer.CornerRadius = ds.Shape.Small;
 
         // Spacing — active scale for interactive element
-        Layer.Padding = ds.Spacing.Active.S;
-        this.Invalidate();
+        if ((changes & DesignSystemChange.Spacing) != 0) Layer.Padding = ds.Spacing.Active.S;
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>

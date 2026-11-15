@@ -13,7 +13,7 @@ internal sealed class DesignSystemCache
     public IDesignSystem? Current => designSystem;
 
     /// <summary>
-    /// Resolves the provider once and applies its tokens through <paramref name="listener"/>.
+    /// Resolves the provider once and notifies <paramref name="listener"/> of the initial theme.
     /// Later changes are delivered directly by <see cref="IDesignSystem.Changed"/>.
     /// </summary>
     public void Resolve(View view, IDesignSystemChangeNotifications listener)
@@ -25,7 +25,7 @@ internal sealed class DesignSystemCache
         if (designSystem is null) return;
 
         designSystem.Changed += listener.OnDesignTokenChange;
-        listener.OnDesignTokenChange();
+        listener.OnDesignTokenChange(DesignSystemChange.All);
     }
 
     /// <summary>Stops observing the provider while the owning view is inactive.</summary>

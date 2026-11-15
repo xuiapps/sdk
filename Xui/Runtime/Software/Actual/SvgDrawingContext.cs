@@ -14,7 +14,7 @@ using Xui.Runtime.Software.Font;
 
 namespace Xui.Runtime.Software.Actual;
 
-public sealed class SvgDrawingContext : IContext, IDisposable
+public sealed partial class SvgDrawingContext : IContext, IDisposable
 {
     private FilterState filter;
     public void SetFilter() => filter = default;
@@ -187,6 +187,8 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         {
             Filter = filter,
             FillColor = currentFillColor,
+            FillImage = currentFillImage,
+            StrokeImage = currentStrokeImage,
             FillGradientId = currentFillGradientId,
             StrokeColor = currentStrokeColor,
             StrokeGradientId = currentStrokeGradientId,
@@ -215,6 +217,8 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         filter = state.Filter;
         currentFillColor = state.FillColor;
+        currentFillImage = state.FillImage;
+        currentStrokeImage = state.StrokeImage;
         currentFillGradientId = state.FillGradientId;
         currentStrokeColor = state.StrokeColor;
         currentStrokeGradientId = state.StrokeGradientId;
@@ -248,12 +252,14 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetStroke(Color color)
     {
+        currentStrokeImage = null;
         currentStrokeColor = filter.Apply(color);
         currentStrokeGradientId = null; // clear gradient
     }
 
     void IPenContext.SetStroke(LinearGradient gradient)
     {
+        currentStrokeImage = null;
         currentStrokeColor = null;
         currentStrokeGradientId = $"grad{gradientIdCounter++}";
 
@@ -276,6 +282,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetStroke(RadialGradient radial)
     {
+        currentStrokeImage = null;
         currentStrokeColor = null;
         currentStrokeGradientId = $"grad{gradientIdCounter++}";
 
@@ -298,12 +305,14 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetFill(Color color)
     {
+        currentFillImage = null;
         currentFillColor = filter.Apply(color);
         currentFillGradientId = null; // clear previous gradient
     }
 
     void IPenContext.SetFill(LinearGradient gradient)
     {
+        currentFillImage = null;
         currentFillColor = null;
         currentFillGradientId = $"grad{gradientIdCounter++}";
 
@@ -326,6 +335,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetFill(RadialGradient radial)
     {
+        currentFillImage = null;
         currentFillColor = null;
         currentFillGradientId = $"grad{gradientIdCounter++}";
 
@@ -345,21 +355,6 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         defsWriter.WriteLine("    </radialGradient>");
     }
-
-    void IPenContext.SetFill(ImagePattern pattern) =>
-        throw new NotImplementedException("SVG context does not support image pattern fill.");
-
-    void IPenContext.SetStroke(ImagePattern pattern) =>
-        throw new NotImplementedException("SVG context does not support image pattern stroke.");
-
-    void IImageDrawingContext.DrawImage(IImage image, Rect dest) =>
-        throw new NotImplementedException("SVG context does not support DrawImage.");
-
-    void IImageDrawingContext.DrawImage(IImage image, Rect dest, nfloat opacity) =>
-        throw new NotImplementedException("SVG context does not support DrawImage.");
-
-    void IImageDrawingContext.DrawImage(IImage image, Rect source, Rect dest, nfloat opacity) =>
-        throw new NotImplementedException("SVG context does not support DrawImage.");
 
     void IPathBuilder.BeginPath()
     {
@@ -445,9 +440,9 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         string fill;
         nfloat? opacity = null;
 
-        if (currentFillGradientId != null)
+        if (PaintId(currentFillImage, currentFillGradientId) is { } paintId)
         {
-            fill = $"url(#{currentFillGradientId})";
+            fill = $"url(#{paintId})";
         }
         else if (currentFillColor.HasValue)
         {
@@ -477,8 +472,8 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         string stroke;
         nfloat? opacity = null;
 
-        if (currentStrokeGradientId != null)
-            stroke = $"url(#{currentStrokeGradientId})";
+        if (PaintId(currentStrokeImage, currentStrokeGradientId) is { } paintId)
+            stroke = $"url(#{paintId})";
         else if (currentStrokeColor.HasValue)
             stroke = ToSvgColor(currentStrokeColor.Value, out opacity);
         else
@@ -513,8 +508,8 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         string stroke;
         nfloat? opacity = null;
 
-        if (currentStrokeGradientId != null)
-            stroke = $"url(#{currentStrokeGradientId})";
+        if (PaintId(currentStrokeImage, currentStrokeGradientId) is { } paintId)
+            stroke = $"url(#{paintId})";
         else if (currentStrokeColor.HasValue)
             stroke = ToSvgColor(currentStrokeColor.Value, out opacity);
         else
@@ -531,8 +526,8 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         string fill;
         nfloat? opacity = null;
 
-        if (currentFillGradientId != null)
-            fill = $"url(#{currentFillGradientId})";
+        if (PaintId(currentFillImage, currentFillGradientId) is { } paintId)
+            fill = $"url(#{paintId})";
         else if (currentFillColor.HasValue)
             fill = ToSvgColor(currentFillColor.Value, out opacity);
         else
@@ -983,6 +978,8 @@ public sealed class SvgDrawingContext : IContext, IDisposable
     private struct DrawingState
     {
         public FilterState Filter;
+        public ImagePaint? FillImage;
+        public ImagePaint? StrokeImage;
         public Color? FillColor;
         public string? FillGradientId;
 

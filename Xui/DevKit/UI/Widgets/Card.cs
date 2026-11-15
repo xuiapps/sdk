@@ -14,15 +14,26 @@ public class Card : View, IDesignSystemChangeNotifications
 {
     private View? content;
 
-    private Color backgroundColor;
-    private Color outlineColor;
-    private CornerRadius cornerRadius;
-    private nfloat padding;
+    private Color backgroundColor => group?.Container ?? designSystem.Current?.Colors.Surface.Background ?? default;
+    private Color outlineColor => group?.Background ?? designSystem.Current?.Colors.OutlineVariant ?? default;
+    private CornerRadius cornerRadius => designSystem.Current?.Shape.Large ?? default;
+    private nfloat padding => designSystem.Current?.Spacing.Passive.L ?? 0;
     private nfloat? paddingOverride;
     private bool clipContent;
     private nfloat shadowExtent;
     private Color shadowColor = new(0f, 0f, 0f, 0.12f);
     private readonly DesignSystemCache designSystem = new();
+
+    private ColorGroup? group => designSystem.Current is not { } ds ? null : Role switch
+    {
+        ColorRole.Secondary => ds.Colors.Secondary,
+        ColorRole.Tertiary => ds.Colors.Tertiary,
+        ColorRole.Warning => ds.Colors.Warning,
+        ColorRole.Error => ds.Colors.Error,
+        ColorRole.Neutral => ds.Colors.Neutral,
+        null => null,
+        _ => ds.Colors.Primary,
+    };
 
     /// <summary>Content inset. Null uses the design system spacing; zero allows content to reach the card edges.</summary>
     public nfloat? Padding
@@ -103,35 +114,12 @@ public class Card : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        if (Role.HasValue)
-        {
-            var group = Role.Value switch
-            {
-                ColorRole.Primary => ds.Colors.Primary,
-                ColorRole.Secondary => ds.Colors.Secondary,
-                ColorRole.Tertiary => ds.Colors.Tertiary,
-                ColorRole.Warning => ds.Colors.Warning,
-                ColorRole.Error => ds.Colors.Error,
-                ColorRole.Neutral => ds.Colors.Neutral,
-                _ => ds.Colors.Primary,
-            };
-            backgroundColor = group.Container;
-            outlineColor = group.Background;
-        }
-        else
-        {
-            backgroundColor = ds.Colors.Surface.Background;
-            outlineColor = ds.Colors.OutlineVariant;
-        }
-
-        cornerRadius = ds.Shape.Large;
-        padding = ds.Spacing.Passive.L;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>
