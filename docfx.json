@@ -9,7 +9,7 @@
             "Xui/Core/Core/Xui.Core.csproj",
             "Xui/Core/Core.DI/Xui.Core.DI.csproj",
             "Xui/Core/Fonts/Xui.Core.Fonts.csproj",
-            "Xui/Middleware/Emulator/Emulator.csproj",
+            "Xui/Middleware/EmulatorLegacy/Xui.Middleware.EmulatorLegacy.csproj",
             "Xui/Runtime/Android/Android.csproj",
             "Xui/Runtime/Browser/Browser.csproj",
             "Xui/Runtime/IOS/IOS.csproj",

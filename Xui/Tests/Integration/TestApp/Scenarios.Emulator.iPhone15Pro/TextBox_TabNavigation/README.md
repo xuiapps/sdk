@@ -2,17 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Traverse editable controls with Tab and Shift+Tab.
-
-- Tab to NameBox, then PasswordBox, NumberBox, ColorBox.
-- Tab wraps to NameBox.
-- Shift+Tab moves focus backward.
+# TextBox_TabNavigation
 
 ### 01. Tab.NameBox
 

@@ -1,23 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0-android</TargetFrameworks>
-
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <LangVersion>13</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Xui.Runtime.Android</RootNamespace>
     <AssemblyName>Xui.Runtime.Android</AssemblyName>
-    
-    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
-  </PropertyGroup>
-
   <ItemGroup>
+    <Compile Remove="Host/**/*.cs" />
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
+    <InternalsVisibleTo Include="Xui.Tests.Component" />
   </ItemGroup>
-
 </Project>

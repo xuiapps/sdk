@@ -41,7 +41,9 @@ public interface IGpuCommandList : IDisposable
     void Draw(int vertexCount);
 
     /// <summary>
-    /// Submits all recorded commands for execution and waits for completion.
+    /// Submits all recorded commands. Native presentation targets schedule presentation
+    /// asynchronously; submission does not mean that the frame has finished displaying.
+    /// Offscreen readback uses the backend's completion/synchronization mechanism.
     /// </summary>
     void Commit();
 }

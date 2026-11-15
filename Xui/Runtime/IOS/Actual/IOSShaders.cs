@@ -70,7 +70,15 @@ internal sealed class IOSFragmentShader : IGpuFragmentShader
 /// <summary>
 /// Metal render target backed by a texture.
 /// </summary>
-internal sealed class IOSRenderTarget : IGpuRenderTarget
+internal interface IIOSRenderTarget
+{
+    nint NativeTexture { get; }
+    nint NativeDepthTexture { get; }
+    nint Drawable { get; }
+    void MarkPresented();
+}
+
+internal sealed class IOSRenderTarget : IGpuRenderTarget, IIOSRenderTarget
 {
     private readonly nint _texture;       // id<MTLTexture> — color
     private readonly nint _depthTexture;  // id<MTLTexture> — depth (Depth32Float)
@@ -80,8 +88,11 @@ internal sealed class IOSRenderTarget : IGpuRenderTarget
     public int Width { get; }
     public int Height { get; }
     public IGpuTexture Texture => new IOSTexture(_texture, Width, Height);
-    internal nint NativeTexture => _texture;
-    internal nint NativeDepthTexture => _depthTexture;
+    public nint NativeTexture => _texture;
+    public nint NativeDepthTexture => _depthTexture;
+
+    public nint Drawable => 0;
+    public void MarkPresented() { }
 
     internal IOSRenderTarget(int width, int height, nint device)
     {

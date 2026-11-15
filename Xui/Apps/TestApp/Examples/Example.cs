@@ -2,6 +2,8 @@ using Xui.Core.UI;
 
 public class Example : View
 {
+    public Example() => Id = $"Example.{GetType().Name}";
+
     private View? content;
 
     public string Title { init; get; } = "Example";

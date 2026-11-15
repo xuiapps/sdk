@@ -119,7 +119,7 @@ from the diff.
 accuracy of AI-generated code.
 
 **Action:** Audit and fill XML doc comments in:
-- `Xui.Middleware.Emulator.*`
+- `Xui.Middleware.EmulatorLegacy.*`
 - `Xui.Runtime.Software.*`
 - `Xui.Core.UI.*` (View subclasses, layout primitives)
 

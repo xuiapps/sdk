@@ -26,16 +26,9 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     /// Resolves platform and middleware services through the actual-window chain, then
     /// falls back to this window's DI scope. The chain is strictly forward: actual
     /// windows must never consult their abstract event receiver for services.
-    /// For <see cref="IOverlay"/>, falls back to the cross-platform in-window overlay
-    /// when neither DI nor the platform provide one.
+    /// <see cref="IOverlay"/> belongs to this window's root rather than a middleware host window.
     public virtual object? GetService(Type serviceType)
     {
-        var service = this.Actual.GetService(serviceType);
-
-        if (service is not null)
-            return service;
-
-        // Provide in-window overlay fallback when no platform implementation is registered.
         if (serviceType == typeof(IOverlay))
         {
             var overlay = new PopupOverlay(this.RootView);
@@ -43,7 +36,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
             return overlay;
         }
 
-        return null;
+        return this.Actual.GetService(serviceType);
     }
 
     /// <summary>A list of disposables disposed when the window closes.</summary>
@@ -195,6 +188,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
 
         if (disposing)
         {
+            this.RootView.FocusedView = null;
             if (!platformClosed)
                 this.Actual.Close();
 
@@ -256,6 +250,7 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     /// <inheritdoc/>
     public virtual void OnTouch(ref TouchEventRef e)
     {
+        e.TextMeasure = this.TextMeasureContext;
         ((IContent)this.RootView).OnTouch(ref e);
     }
 
@@ -278,12 +273,35 @@ public class Window : Abstract.IWindow, Abstract.IWindow.ISoftKeyboard, IService
     }
 
     /// <inheritdoc/>
+    public virtual bool HasText => this.RootView.FocusedView is ITextInputClient { HasText: true };
+
+    /// <inheritdoc/>
+    public virtual bool IsSecureTextEntry => this.RootView.FocusedView is ITextInputClient { IsPassword: true };
+
+    /// <inheritdoc/>
     public virtual void InsertText(ref InsertTextEventRef eventRef)
     {
+        if (this.RootView.FocusedView is ITextEditingClient client)
+        {
+            if (eventRef.Text is "\n" or "\r" or "\r\n")
+            {
+                client.PerformInputAction(Xui.Core.UI.Input.TextInputAction.Default);
+                return;
+            }
+            client.Editor.Insert(eventRef.Text);
+            return;
+        }
+        foreach (var character in eventRef.Text)
+        {
+            var e = new KeyEventRef { Character = character };
+            ((IContent)this.RootView).OnChar(ref e);
+        }
     }
 
     /// <inheritdoc/>
     public virtual void DeleteBackwards(ref DeleteBackwardsEventRef eventRef)
     {
+        var e = new KeyEventRef { Key = VirtualKey.Back };
+        ((IContent)this.RootView).OnKeyDown(ref e);
     }
 }

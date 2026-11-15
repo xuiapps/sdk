@@ -17,6 +17,12 @@ public partial interface IWindow
     /// </remarks>
     public interface ISoftKeyboard
     {
+        /// <summary>Whether the focused text client contains text.</summary>
+        bool HasText => false;
+
+        /// <summary>Whether the focused text client requires password entry.</summary>
+        bool IsSecureTextEntry => false;
+
         /// <summary>
         /// Requests insertion of one or more characters into the current input context.
         /// </summary>

@@ -14,13 +14,13 @@ public class ButtonGroup : ViewCollection, IDesignSystemChangeNotifications
 {
     private int selectedIndex;
 
-    private Color fillColor;
-    private Color selectedFillColor;
-    private Color selectedFilledBgColor;
-    private Color outlineColor;
-    private Color hoverFillColor;
-    private Color pressedFillColor;
-    private CornerRadius cornerRadius;
+    private Color fillColor => designSystem.Current?.Colors.Surface.Background ?? default;
+    private Color selectedFillColor => group?.Container ?? default;
+    private Color selectedFilledBgColor => group?.Background ?? default;
+    private Color outlineColor => group?.Background ?? default;
+    private Color hoverFillColor => designSystem.Current?.Colors.Surface.Container ?? default;
+    private Color pressedFillColor => group?.SelectedPressedBackground ?? default;
+    private CornerRadius cornerRadius => designSystem.Current?.Shape.Full ?? default;
     private readonly DesignSystemCache designSystem = new();
 
     /// <summary>Gets or sets the selected button index (0-based).</summary>
@@ -39,6 +39,8 @@ public class ButtonGroup : ViewCollection, IDesignSystemChangeNotifications
     /// <summary>Visual style. Default is Outline.</summary>
     public ButtonVariant Variant { get; set; } = ButtonVariant.Outline;
 
+    private ColorGroup? group => designSystem.Current is { } ds ? ResolveGroup(ds) : null;
+
     private ColorGroup ResolveGroup(IDesignSystem ds) => Role switch
     {
         ColorRole.Secondary => ds.Colors.Secondary,
@@ -52,21 +54,12 @@ public class ButtonGroup : ViewCollection, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        var group = ResolveGroup(ds);
-
-        fillColor = ds.Colors.Surface.Background;
-        selectedFillColor = group.Container;
-        selectedFilledBgColor = group.Background;
-        outlineColor = group.Background;
-        hoverFillColor = ds.Colors.Surface.Container;
-        pressedFillColor = group.Ramp[ds.Colors.IsDark ? 0.40f : 0.85f];
-        cornerRadius = ds.Shape.Full;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>
@@ -200,9 +193,9 @@ public class ButtonGroupItem : View, IDesignSystemChangeNotifications
     internal bool IsHovered;
     internal bool IsPressed;
     private bool pressed;
-    private TextStyle textStyle;
-    private nfloat paddingH;
-    private nfloat paddingV;
+    private TextStyle textStyle => designSystem.Current?.Typography.Label.M ?? default;
+    private nfloat paddingH => designSystem.Current?.Spacing.Active.M ?? 0;
+    private nfloat paddingV => designSystem.Current?.Spacing.Active.S ?? 0;
     private string text = "";
     private readonly DesignSystemCache designSystem = new();
 
@@ -230,15 +223,12 @@ public class ButtonGroupItem : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        textStyle = ds.Typography.Label.M;
-        paddingH = ds.Spacing.Active.M;
-        paddingV = ds.Spacing.Active.S;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>

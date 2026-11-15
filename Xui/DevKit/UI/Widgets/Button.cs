@@ -3,6 +3,7 @@ using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.Core.UI.Input;
 using Xui.DevKit.UI.Design;
+using Xui.DevKit.UI.Layer;
 
 namespace Xui.DevKit.UI.Widgets;
 
@@ -10,10 +11,9 @@ namespace Xui.DevKit.UI.Widgets;
 /// A button that consumes design system tokens for colors, shape, and typography.
 /// Supports <see cref="ButtonVariant"/> (Filled, Outline, Text) and hover/pressed states.
 /// </summary>
-public class Button : View, IDesignSystemChangeNotifications
+public partial class Button : View, IDesignSystemChangeNotifications
 {
     private bool hover;
-    private bool pressed;
 
     /// <summary>Creates a new button with content-sized alignment.</summary>
     public Button()
@@ -22,17 +22,17 @@ public class Button : View, IDesignSystemChangeNotifications
         VerticalAlignment = VerticalAlignment.Top;
     }
 
-    private Color fillColor;
-    private Color outlineColor;
-    private Color textColor;
-    private Color hoverFillColor;
-    private Color pressedFillColor;
-    private Color hoverTextBgColor;
-    private Color pressedTextBgColor;
-    private CornerRadius cornerRadius;
-    private nfloat paddingH;
-    private nfloat paddingV;
-    private TextStyle textStyle;
+    private Color fillColor => group?.Background ?? default;
+    private Color outlineColor => group?.Background ?? default;
+    private Color textColor => Variant == ButtonVariant.Outline ? group?.Background ?? default : Variant == ButtonVariant.Text ? group?.OnContainer ?? default : group?.Foreground ?? default;
+    private Color hoverFillColor => group?.HoverBackground ?? default;
+    private Color pressedFillColor => group?.PressedBackground ?? default;
+    private Color hoverTextBgColor => group?.Container ?? default;
+    private Color pressedTextBgColor => group?.PressedContainer ?? default;
+    private CornerRadius cornerRadius => designSystem.Current?.Shape.Full ?? default;
+    private nfloat paddingH => designSystem.Current?.Spacing.Active.L ?? 0;
+    private nfloat paddingV => designSystem.Current?.Spacing.Active.S ?? 0;
+    private TextStyle textStyle => designSystem.Current?.Typography.Label.L ?? default;
     private string text = "";
     private readonly DesignSystemCache designSystem = new();
 
@@ -54,6 +54,9 @@ public class Button : View, IDesignSystemChangeNotifications
     /// <summary>Visual weight of the button. Default is Filled.</summary>
     public ButtonVariant Variant { get; set; } = ButtonVariant.Filled;
 
+    /// <summary>Horizontal alignment of the button label. Default is centered.</summary>
+    public TextAlign LabelTextAlign { get; set; } = TextAlign.Center;
+
     /// <summary>Invoked when the button is clicked.</summary>
     public Action? Clicked { get; set; }
 
@@ -62,6 +65,8 @@ public class Button : View, IDesignSystemChangeNotifications
 
     /// <inheritdoc/>
     public override View this[int index] => throw new IndexOutOfRangeException();
+
+    private ColorGroup? group => designSystem.Current is { } ds ? ResolveGroup(ds.Colors) : null;
 
     private ColorGroup ResolveGroup(IColorSystem colors) => Role switch
     {
@@ -79,47 +84,22 @@ public class Button : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        var group = ResolveGroup(ds.Colors);
-        var isDark = ds.Colors.IsDark;
-
-        // Filled variant colors
-        fillColor = group.Background;
-        outlineColor = group.Background;
-        textColor = group.Foreground;
-        // Compute hover/pressed relative to the base lightness
-        var baseL = group.BackgroundLightness;
-        var hoverOffset = isDark ? 0.08f : -0.06f;
-        var pressedOffset = isDark ? 0.15f : -0.12f;
-        hoverFillColor = group.Ramp[nfloat.Clamp(baseL + hoverOffset, 0, 1)];
-        pressedFillColor = group.Ramp[nfloat.Clamp(baseL + pressedOffset, 0, 1)];
-        hoverTextBgColor = group.Container;
-        pressedTextBgColor = group.Ramp[nfloat.Clamp(baseL + (isDark ? -0.06f : 0.06f), 0, 1)];
-
-        // Override text/outline colors based on variant
-        if (Variant == ButtonVariant.Outline)
-        {
-            textColor = group.Background; // use the group's strong color for text
-        }
-        else if (Variant == ButtonVariant.Text)
-        {
-            textColor = group.Background;
-        }
-
-        cornerRadius = ds.Shape.Full;
-        paddingH = ds.Spacing.Active.L;
-        paddingV = ds.Spacing.Active.S;
-        textStyle = ds.Typography.Label.L;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>
     protected override void OnDeactivate()
     {
+        // Navigation may immediately attach this button under another page host.
+        // Cancel live input, but let completed taps finish on their original clock.
+        var pointer = pressedPointer;
+        if (pointer != -1) { EndPress(false); ReleasePointer(pointer); }
+        hover = false;
         designSystem.Deactivate(this);
         base.OnDeactivate();
     }
@@ -159,12 +139,13 @@ public class Button : View, IDesignSystemChangeNotifications
                 break;
         }
 
+        RenderRipples(context);
         RenderLabel(context);
     }
 
     private void RenderFilled(IContext context)
     {
-        var fill = pressed ? pressedFillColor : hover ? hoverFillColor : fillColor;
+        var fill = Blend(hover ? hoverFillColor : fillColor, pressedFillColor, FeedbackOpacity);
         context.BeginPath();
         context.RoundRect(this.Frame, cornerRadius);
         context.SetFill(fill);
@@ -173,20 +154,7 @@ public class Button : View, IDesignSystemChangeNotifications
 
     private void RenderOutline(IContext context)
     {
-        if (pressed)
-        {
-            context.BeginPath();
-            context.RoundRect(this.Frame, cornerRadius);
-            context.SetFill(pressedTextBgColor);
-            context.Fill();
-        }
-        else if (hover)
-        {
-            context.BeginPath();
-            context.RoundRect(this.Frame, cornerRadius);
-            context.SetFill(hoverTextBgColor);
-            context.Fill();
-        }
+        RenderStateLayer(context);
 
         // Always draw outline
         context.BeginPath();
@@ -198,22 +166,21 @@ public class Button : View, IDesignSystemChangeNotifications
 
     private void RenderText(IContext context)
     {
-        // Only show background on hover or press
-        if (pressed)
-        {
-            context.BeginPath();
-            context.RoundRect(this.Frame, cornerRadius);
-            context.SetFill(pressedTextBgColor);
-            context.Fill();
-        }
-        else if (hover)
-        {
-            context.BeginPath();
-            context.RoundRect(this.Frame, cornerRadius);
-            context.SetFill(hoverTextBgColor);
-            context.Fill();
-        }
+        RenderStateLayer(context);
     }
+
+    private void RenderStateLayer(IContext context)
+    {
+        var opacity = FeedbackOpacity;
+        if (!hover && opacity <= 0) return;
+        var color = hover ? Blend(hoverTextBgColor, pressedTextBgColor, opacity) : pressedTextBgColor;
+        if (!hover) color.Alpha *= opacity;
+        context.BeginPath(); context.RoundRect(Frame, cornerRadius);
+        context.SetFill(color); context.Fill();
+    }
+
+    /// <summary>The area available to the label, before applying the design system's padding.</summary>
+    protected virtual Rect LabelBounds => Frame;
 
     private void RenderLabel(IContext context)
     {
@@ -226,48 +193,49 @@ public class Button : View, IDesignSystemChangeNotifications
         context.TextBaseline = TextBaseline.Top;
         context.SetFill(textColor);
 
+        var bounds = LabelBounds;
         var textMeasure = context.MeasureText(Text);
-        var tx = this.Frame.X + (this.Frame.Width - textMeasure.Size.Width) / 2;
-        var ty = this.Frame.Y + (this.Frame.Height - textMeasure.Size.Height) / 2;
+        var tx = LabelTextAlign switch
+        {
+            TextAlign.Left or TextAlign.Start => bounds.X + paddingH,
+            TextAlign.Right or TextAlign.End => bounds.Right - paddingH - textMeasure.Size.Width,
+            _ => bounds.X + (bounds.Width - textMeasure.Size.Width) / 2,
+        };
+        var ty = bounds.Y + (bounds.Height - textMeasure.Size.Height) / 2;
         context.FillText(Text, new Point(tx, ty));
     }
 
     /// <inheritdoc/>
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
-        if (e.Type == PointerEventType.Enter)
+        if (e.Type == PointerEventType.Enter && e.State.PointerType == PointerType.Mouse)
         {
             hover = true;
-            this.InvalidateRender();
+            InvalidateRender();
         }
         else if (e.Type == PointerEventType.Leave)
         {
             hover = false;
-            this.InvalidateRender();
+            InvalidateRender();
         }
-        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down && pressedPointer == -1)
         {
-            this.CapturePointer(e.PointerId, PointerGestures.Tap);
-            pressed = true;
-            this.InvalidateRender();
+            hover = e.State.PointerType == PointerType.Mouse && hover;
+            var delay = PressFeedbackLayer<Button>.ShouldDelay(this, ref e);
+            BeginPress(e.PointerId, e.State.Position, delay);
+            CapturePointer(e.PointerId, PointerGestures.Tap);
         }
-        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up && pressedPointer == e.PointerId)
         {
-            // Snapshot before release: ReleasePointer fires LostCapture synchronously,
-            // and the LostCapture handler below clears `pressed`.
-            var wasPressed = pressed;
-            pressed = false;
-            this.ReleasePointer(e.PointerId);
-            if (wasPressed && this.Frame.Contains(e.State.Position))
-                Clicked?.Invoke();
-            this.InvalidateRender();
+            var tapped = HitTest(e.State.Position);
+            EndPress(tapped);
+            ReleasePointer(e.PointerId);
+            if (tapped) Clicked?.Invoke();
         }
-        else if (e.Type == PointerEventType.LostCapture)
+        else if (e.Type is PointerEventType.Cancel or PointerEventType.LostCapture && pressedPointer == e.PointerId)
         {
-            // Another view (e.g. ScrollView) stole the pointer — cancel press.
-            pressed = false;
+            EndPress(false);
             hover = false;
-            this.InvalidateRender();
         }
 
         base.OnPointerEvent(ref e, phase);

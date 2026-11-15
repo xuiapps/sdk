@@ -74,11 +74,4 @@ public class GapsGridTest : View
         NFloat y = rect.Y + (rect.Height - gridH) / 2;
         grid.Arrange(new Rect(x, y, gridW, gridH), context);
     }
-
-    protected override void RenderCore(IContext context)
-    {
-        context.SetFill(new Color(0xF5, 0xF5, 0xF5, 0xFF));
-        context.FillRect(Frame);
-        base.RenderCore(context);
-    }
 }

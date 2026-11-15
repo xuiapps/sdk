@@ -1,45 +1,18 @@
-using System;
 using Xui.Core.Abstract;
 using Xui.Core.Actual;
+
 namespace Xui.Runtime.Android.Actual;
 
-public class AndroidPlatform : IRuntime
+/// <summary>Android runtime independent of Microsoft Android bindings and MAUI.</summary>
+public sealed class AndroidPlatform : IRuntime
 {
-
-    public AndroidDrawingContext AndroidDrawingContext { get; set; } = new AndroidDrawingContext();
-
-    public IDispatcher MainDispatcher => throw new System.NotImplementedException();
-
-    public IRunLoop CreateRunloop(Application applicationAbstract)
+    private sealed class Dispatcher : IDispatcher { public void Post(Action callback) => AndroidWindow.Pending.Enqueue(callback); }
+    private sealed class RunLoop(Application app) : IRunLoop { public int Run() { app.Start(); return 0; } public void Quit() => AndroidWindow.Current?.Close(); }
+    public IDispatcher MainDispatcher { get; } = new Dispatcher();
+    public IRunLoop CreateRunloop(Application applicationAbstract) => new RunLoop(applicationAbstract);
+    public Xui.Core.Actual.IWindow CreateWindow(Xui.Core.Abstract.IWindow windowAbstract, IServiceProvider applicationServices)
     {
-        if (XuiApplication.Instance == null)
-        {
-            throw new Exception($"No instance of a {nameof(XuiApplication)} had been created.");            
-        }
-
-        if (XuiApplication.Instance.Abstract != null)
-        {
-            throw new Exception("Android platform can create only one run loop.");
-        }
-
-        XuiApplication.Instance.Abstract = applicationAbstract;
-        return XuiApplication.Instance;
-    }
-
-    public Core.Actual.IWindow CreateWindow(Core.Abstract.IWindow windowAbstract, IServiceProvider applicationServices)
-    {
-        if (XuiActivity.Instance == null)
-        {
-            throw new Exception($"No instance of a {nameof(XuiActivity)} had been created.");            
-        }
-
-        if (XuiActivity.Instance?.Abstract != null)
-        {
-            throw new Exception("Android platform can create only one window.");
-        }
-
-        XuiActivity.Instance!.Abstract = windowAbstract;
-        XuiActivity.Instance.SetNextServiceProvider(applicationServices);
-        return XuiActivity.Instance;
+        var window = AndroidWindow.Current ?? throw new InvalidOperationException("Create AndroidWindow from the native Activity before starting Xui.");
+        window.Attach(windowAbstract, applicationServices); return window;
     }
 }

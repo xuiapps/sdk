@@ -17,13 +17,13 @@ public class Checkbox : View, IDesignSystemChangeNotifications
     private bool hover;
     private bool pressed;
 
-    private Color checkedFillColor;
-    private Color uncheckedFillColor;
-    private Color checkmarkColor;
-    private Color borderColor;
-    private Color hoverBorderColor;
-    private CornerRadius cornerRadius;
-    private NFloat boxSize;
+    private Color checkedFillColor => designSystem.Current?.Colors.Primary.Background ?? default;
+    private Color uncheckedFillColor => designSystem.Current?.Colors.Surface.Background ?? default;
+    private Color checkmarkColor => designSystem.Current?.Colors.Primary.Foreground ?? default;
+    private Color borderColor => designSystem.Current?.Colors.Outline ?? default;
+    private Color hoverBorderColor => designSystem.Current?.Colors.Primary.Background ?? default;
+    private CornerRadius cornerRadius => designSystem.Current?.Shape.ExtraSmall ?? default;
+    private NFloat boxSize => designSystem.Current?.Spacing.Active.XL ?? 0;
     private readonly DesignSystemCache designSystem = new();
 
     /// <summary>Gets or sets whether the checkbox is checked.</summary>
@@ -43,7 +43,11 @@ public class Checkbox : View, IDesignSystemChangeNotifications
         VerticalAlignment = VerticalAlignment.Top;
     }
 
+    /// <summary>Gets the number of child views, which is always zero.</summary>
     public override int Count => 0;
+
+    /// <summary>Gets a child view by index.</summary>
+    /// <exception cref="IndexOutOfRangeException">Always thrown because a checkbox has no child views.</exception>
     public override View this[int index] => throw new IndexOutOfRangeException();
 
     private void ApplyDesignSystem()
@@ -52,19 +56,12 @@ public class Checkbox : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        checkedFillColor = ds.Colors.Primary.Background;
-        uncheckedFillColor = ds.Colors.Surface.Background;
-        checkmarkColor = ds.Colors.Primary.Foreground;
-        borderColor = ds.Colors.Outline;
-        hoverBorderColor = ds.Colors.Primary.Background;
-        cornerRadius = ds.Shape.ExtraSmall;
-        boxSize = ds.Spacing.Passive.XL;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>
@@ -74,12 +71,14 @@ public class Checkbox : View, IDesignSystemChangeNotifications
         base.OnDeactivate();
     }
 
+    /// <summary>Measures the checkbox using its design-system-defined square size.</summary>
     protected override Size MeasureCore(Size available, IMeasureContext context)
     {
         ApplyDesignSystem();
         return new Size(boxSize, boxSize);
     }
 
+    /// <summary>Renders the checkbox box, border, and optional checkmark.</summary>
     protected override void RenderCore(IContext context)
     {
         ApplyDesignSystem();
@@ -116,6 +115,7 @@ public class Checkbox : View, IDesignSystemChangeNotifications
         }
     }
 
+    /// <summary>Updates pointer feedback and toggles the checked state on a completed tap.</summary>
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
         if (e.Type == PointerEventType.Enter) { hover = true; InvalidateRender(); }

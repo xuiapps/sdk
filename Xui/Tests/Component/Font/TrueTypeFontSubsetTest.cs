@@ -30,7 +30,7 @@ public sealed class TrueTypeFontSubsetTest
     {
         var original = LoadInter();
         var usage = new FontUsage();
-        const string text = "Hello World!";
+        const string text = "Hello World! AVATAR";
         usage.Add(text);
 
         var bytes = TrueTypeFontSubset.Create(original, usage);
@@ -38,6 +38,7 @@ public sealed class TrueTypeFontSubsetTest
         var font = new CanvasFont(32, "Inter");
 
         Assert.True(bytes.Length < original.Blob.Length);
+        Assert.Contains(usage.Pairs, pair => original.Kerning[pair.Left, pair.Right].XAdvance is not null and not 0);
         foreach (var character in usage.Characters)
         {
             Assert.NotNull(subset.GetGlyphIndex(character));
@@ -94,8 +95,8 @@ public sealed class TrueTypeFontSubsetTest
     {
         using var stream = new MemoryStream();
         using (var context = new SvgDrawingContext(
-            new Size(300, 100), stream, Xui.Core.Fonts.Inter.URIs,
-            resolver: new EmbeddedInterResolver(), keepOpen: true))
+            new Size(300, 100), stream, Xui.Core.Fonts.Inter.Source,
+            resolver: SvgDrawingContext.SvgFontResolver.Embedded, keepOpen: true))
         {
             ((ITextMeasureContext)context).SetFont(new CanvasFont(32, "Inter"));
             ((ITextDrawingContext)context).FillText("Hello World!", (10, 50));
@@ -114,17 +115,48 @@ public sealed class TrueTypeFontSubsetTest
         Assert.NotNull(subset.GetGlyphIndex(R('!')));
     }
 
+    [Fact]
+    public void FontSource_ResolvesDeclaredFaceWithoutEagerLoading()
+    {
+        var request = new CanvasFont(16, "Inter", FontWeight.Normal);
+        Assert.True(Xui.Core.Fonts.Inter.Source.TryGet(in request, out var resource));
+        Assert.Equal("Inter", resource.Face.Family);
+
+        var catalog = new Catalog(Xui.Core.Fonts.Inter.Source);
+        Assert.NotNull(catalog.FontForFace(new FontFace("Inter", FontWeight.Normal, FontStyle.Normal, FontStretch.Normal)));
+    }
+
     private static TrueTypeFont LoadInter()
     {
         var catalog = new Catalog(Xui.Core.Fonts.Inter.URIs);
         return catalog.FontForFace(new FontFace("Inter", FontWeight.Normal, FontStyle.Normal, FontStretch.Normal))!;
     }
 
+    [Theory]
+    [InlineData(100)]
+    [InlineData(200)]
+    [InlineData(300)]
+    [InlineData(400)]
+    [InlineData(500)]
+    [InlineData(600)]
+    [InlineData(700)]
+    [InlineData(800)]
+    [InlineData(900)]
+    public void UriCatalog_ResolvesAndMeasuresEveryInterWeight(int weight)
+    {
+        var catalog = new Catalog(Xui.Core.Fonts.Inter.URIs);
+        foreach (var style in new[] { FontStyle.Normal, FontStyle.Italic })
+        {
+            var face = new FontFace("Inter", new FontWeight(weight), style, FontStretch.Normal);
+            var resolved = catalog.FontForFace(face);
+            Assert.NotNull(resolved);
+            Assert.True(FontFace.Comparer.Equals(face, resolved.Face));
+            var metrics = catalog.MeasureText(new CanvasFont(20, "Inter", face.Weight, style), "Hello World!");
+            Assert.True(metrics.Size.Width > 0);
+            Assert.True(metrics.Size.Height > 0);
+        }
+    }
+
     private static Rune R(char value) => new(value);
 
-    private sealed class EmbeddedInterResolver : SvgDrawingContext.SvgFontResolver
-    {
-        public override SvgDrawingContext.Resolved Resolve(FontFace face, Uri? uri) =>
-            new(SvgDrawingContext.SvgFontMode.Embedded, null);
-    }
 }

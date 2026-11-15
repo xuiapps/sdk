@@ -9,8 +9,7 @@ namespace Xui.GPU.Hardware.Metal;
 /// </summary>
 /// <remarks>
 /// This backend uses the Metal framework for rendering and the Metal shader compiler
-/// for MSL shader compilation. Rendering is done off-screen to a texture that can be
-/// read back to CPU memory for display via the 2D canvas pipeline.
+/// for MSL shader compilation. Supports offscreen readback targets and native MTKView presentation targets.
 /// </remarks>
 public sealed class IOSGpuDevice : IGpuDevice
 {
@@ -20,6 +19,8 @@ public sealed class IOSGpuDevice : IGpuDevice
 
     /// <inheritdoc/>
     public string BackendName => "Metal";
+
+    internal nint NativeDevice => _device;
 
     /// <inheritdoc/>
     public bool IsDisposed => _disposed;

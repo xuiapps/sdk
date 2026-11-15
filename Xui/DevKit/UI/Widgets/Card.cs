@@ -1,7 +1,9 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.DevKit.UI.Design;
+using Xui.DevKit.UI.Drawing;
 
 namespace Xui.DevKit.UI.Widgets;
 
@@ -13,11 +15,82 @@ public class Card : View, IDesignSystemChangeNotifications
 {
     private View? content;
 
-    private Color backgroundColor;
-    private Color outlineColor;
-    private CornerRadius cornerRadius;
-    private nfloat padding;
+    private Color backgroundColor => group?.Container ?? designSystem.Current?.Colors.Surface.Background ?? default;
+    private Color outlineColor => group?.Background ?? designSystem.Current?.Colors.OutlineVariant ?? default;
+    private CornerRadius cornerRadius => designSystem.Current?.Shape.Large ?? default;
+    private nfloat padding => designSystem.Current?.Spacing.Passive.L ?? 0;
+    private nfloat? paddingOverride;
+    private bool clipContent;
+    private nfloat shadowExtent;
+    private Color shadowColor = new(0f, 0f, 0f, 0.12f);
     private readonly DesignSystemCache designSystem = new();
+
+    private ColorGroup? group => designSystem.Current is not { } ds ? null : Role switch
+    {
+        ColorRole.Secondary => ds.Colors.Secondary,
+        ColorRole.Tertiary => ds.Colors.Tertiary,
+        ColorRole.Warning => ds.Colors.Warning,
+        ColorRole.Error => ds.Colors.Error,
+        ColorRole.Neutral => ds.Colors.Neutral,
+        null => null,
+        _ => ds.Colors.Primary,
+    };
+
+    /// <summary>Content inset. Null uses the design system spacing; zero allows content to reach the card edges.</summary>
+    public nfloat? Padding
+    {
+        get => paddingOverride;
+        set
+        {
+            if (value is { } inset && (!nfloat.IsFinite(inset) || inset < 0))
+                throw new ArgumentOutOfRangeException(nameof(value));
+            if (paddingOverride == value) return;
+            paddingOverride = value;
+            Invalidate();
+        }
+    }
+
+    /// <summary>Clips content to the rounded card outline, useful for content that reaches the edges.</summary>
+    public bool ClipContent
+    {
+        get => clipContent;
+        set => SetViewRenderProperty(ref clipContent, value);
+    }
+
+    private nfloat ContentInset => paddingOverride ?? padding;
+
+    /// <summary>Use a keyed native surface for this card's outline, shadow, and content.</summary>
+    public bool UseCompositionGroup { get; set; }
+
+    /// <summary>Outer shadow fade distance. Zero disables the shadow; layout size is unchanged.</summary>
+    public nfloat ShadowExtent
+    {
+        get => shadowExtent;
+        set
+        {
+            if (!nfloat.IsFinite(value) || value < 0)
+                throw new ArgumentOutOfRangeException(nameof(value));
+            SetViewRenderProperty(ref shadowExtent, value);
+        }
+    }
+
+    /// <summary>Color and opacity at the shadow's inner edge.</summary>
+    public Color ShadowColor
+    {
+        get => shadowColor;
+        set => SetViewRenderProperty(ref shadowColor, value);
+    }
+
+    /// <inheritdoc/>
+    public override Rect CullingFrame
+    {
+        get
+        {
+            var extent = shadowColor.Alpha > 0 ? shadowExtent : 0;
+            return new Rect(Frame.X - extent, Frame.Y - extent,
+                Frame.Width + extent * 2, Frame.Height + extent * 2);
+        }
+    }
 
     /// <summary>The content view inside the card.</summary>
     public View? Content
@@ -45,35 +118,12 @@ public class Card : View, IDesignSystemChangeNotifications
     }
 
     /// <inheritdoc/>
-    public void OnDesignTokenChange()
+    public void OnDesignTokenChange(DesignSystemChange changes)
     {
-        var ds = designSystem.Current;
-        if (ds is null) return;
-
-        if (Role.HasValue)
-        {
-            var group = Role.Value switch
-            {
-                ColorRole.Primary => ds.Colors.Primary,
-                ColorRole.Secondary => ds.Colors.Secondary,
-                ColorRole.Tertiary => ds.Colors.Tertiary,
-                ColorRole.Warning => ds.Colors.Warning,
-                ColorRole.Error => ds.Colors.Error,
-                ColorRole.Neutral => ds.Colors.Neutral,
-                _ => ds.Colors.Primary,
-            };
-            backgroundColor = group.Container;
-            outlineColor = group.Background;
-        }
-        else
-        {
-            backgroundColor = ds.Colors.Surface.Background;
-            outlineColor = ds.Colors.OutlineVariant;
-        }
-
-        cornerRadius = ds.Shape.Large;
-        padding = ds.Spacing.Passive.L;
-        this.Invalidate();
+        if ((changes & (DesignSystemChange.Typography | DesignSystemChange.Spacing)) != 0)
+            this.Invalidate();
+        else if (changes != DesignSystemChange.None)
+            this.InvalidateRender();
     }
 
     /// <inheritdoc/>
@@ -87,6 +137,7 @@ public class Card : View, IDesignSystemChangeNotifications
     protected override Size MeasureCore(Size available, IMeasureContext context)
     {
         ApplyDesignSystem();
+        var padding = ContentInset;
         if (content == null)
             return new Size(padding * 2, padding * 2);
 
@@ -105,6 +156,7 @@ public class Card : View, IDesignSystemChangeNotifications
     protected override void ArrangeCore(Rect rect, IMeasureContext context)
     {
         if (content == null) return;
+        var padding = ContentInset;
 
         var inner = new Rect(
             this.Frame.X + padding,
@@ -119,6 +171,22 @@ public class Card : View, IDesignSystemChangeNotifications
     protected override void RenderCore(IContext context)
     {
         ApplyDesignSystem();
+        var radius = cornerRadius;
+        if (UseCompositionGroup && radius.TopLeft == radius.TopRight &&
+            radius.TopLeft == radius.BottomLeft && radius.TopLeft == radius.BottomRight)
+        {
+            using var group = context.Group(new GroupOptions
+            {
+                Key = this, ViewBacking = true, Bounds = Frame, CornerRadius = radius.TopLeft,
+                Background = backgroundColor, Border = new OutlineBorder(outlineColor, 1),
+                Shadow = shadowExtent > 0 ? new OutlineShadow(shadowColor, shadowExtent / 2, (0, 2)) : null,
+                ClipToBounds = clipContent, HasUpdates = RequiresRender(context), CacheWhenHidden = true,
+            });
+            // Record the entire card once, including content initially outside the viewport.
+            if (group.NeedsRedraw && content is not null) RenderChild(context, content, Frame);
+            return;
+        }
+        RoundedRectShadow.Draw(context, this.Frame, cornerRadius, shadowExtent, shadowColor);
         // Fill
         context.BeginPath();
         context.RoundRect(this.Frame, cornerRadius);
@@ -132,7 +200,19 @@ public class Card : View, IDesignSystemChangeNotifications
         context.LineWidth = 1;
         context.Stroke();
 
-        if (content != null)
-            content.Render(context);
+        if (content != null && !clipContent)
+            this.RenderChild(context, content);
+        else if (content != null)
+        {
+            context.Save();
+            try
+            {
+                context.BeginPath();
+                context.RoundRect(this.Frame, cornerRadius);
+                context.Clip();
+                this.RenderChild(context, content);
+            }
+            finally { context.Restore(); }
+        }
     }
 }

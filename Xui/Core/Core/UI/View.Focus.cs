@@ -19,6 +19,9 @@ public partial class View
     /// </summary>
     public virtual bool Focusable => false;
 
+    /// <summary>Whether focusing this view requests the platform's software keyboard.</summary>
+    public virtual bool RequiresKeyboard => this is ITextInputClient;
+
     /// <summary>
     /// Gets whether this view currently has keyboard focus.
     /// </summary>

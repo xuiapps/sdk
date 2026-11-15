@@ -1,13 +1,6 @@
-using System.Runtime.InteropServices;
-using Xui.Core.Canvas;
-using Xui.Core.DI;
-using Xui.Core.Math2D;
-using Xui.Core.UI;
-using Xui.Core.UI.Input;
 using Xui.GPU.Shaders;
 using Xui.GPU.Shaders.Types;
 using Xui.GPU.Software;
-using static Xui.Core.Canvas.Colors;
 using CubeMesh = Xui.Apps.TestApp.Pages.ThreeD.Tests.GpuHardwareCubeTest.CubeMesh;
 
 namespace Xui.Apps.TestApp.Pages.ThreeD.Tests;
@@ -17,78 +10,24 @@ namespace Xui.Apps.TestApp.Pages.ThreeD.Tests;
 /// Uses the same shaders and mesh as GpuHardwareCubeTest but runs entirely on the CPU.
 /// Features click-and-drag rotation interaction.
 /// </summary>
-public class RotatingCubeTest : View
+public class RotatingCubeTest : CubeSurface
 {
-    private NFloat rotationX = 0.3f;
-    private NFloat rotationY = 0.3f;
-    private Point? dragStart = null;
-    private NFloat dragStartRotX = 0;
-    private NFloat dragStartRotY = 0;
+    private unsafe Framebuffer? framebuffer;
 
-    private unsafe Framebuffer? framebuffer = null;
-    private IImage? platformImage = null;
-    private byte[]? bgraBuffer = null;
-    private bool isInitialized = false;
+    protected override string BackendLabel => "Software · developer preview";
 
-    public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
+    protected override unsafe bool RenderPixels(byte[] pixels)
     {
-        if (e.State.PointerType == PointerType.Mouse)
-        {
-            if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
-            {
-                this.CapturePointer(e.PointerId);
-                dragStart = e.State.Position;
-                dragStartRotX = rotationX;
-                dragStartRotY = rotationY;
-            }
-            else if (e.Type == PointerEventType.Move && dragStart != null)
-            {
-                var delta = e.State.Position - dragStart.Value;
-                rotationY = dragStartRotY + delta.X * 0.01f;
-                rotationX = dragStartRotX + delta.Y * 0.01f;
-                this.InvalidateRender();
-            }
-            else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
-            {
-                this.ReleasePointer(e.PointerId);
-                dragStart = null;
-            }
-        }
-
-        base.OnPointerEvent(ref e, phase);
-    }
-
-    protected override Size MeasureCore(Size availableBorderEdgeSize, IMeasureContext context)
-    {
-        return new Size(300, 300);
-    }
-
-    protected override unsafe void RenderCore(IContext context)
-    {
-        if (!isInitialized || framebuffer == null)
-        {
-            framebuffer?.Dispose();
-            framebuffer = new Framebuffer(300, 300, withDepthBuffer: true);
-            bgraBuffer = new byte[300 * 300 * 4];
-            platformImage = this.GetService<IImage>();
-            isInitialized = true;
-        }
-
+        framebuffer ??= new Framebuffer(300, 300, withDepthBuffer: true);
         RenderCube(framebuffer.Value);
-        ConvertToBgra(framebuffer.Value, bgraBuffer!);
+        ConvertToBgra(framebuffer.Value, pixels);
+        return true;
+    }
 
-        platformImage?.LoadPixels(300, 300, bgraBuffer);
-        var destRect = new Rect(this.Frame.X, this.Frame.Y, 300, 300);
-        if (platformImage != null)
-            context.DrawImage(platformImage, destRect);
-
-        context.SetStroke(Black);
-        context.StrokeRect(destRect);
-
-        // Draw label
-        context.SetFill(new Color(0x00, 0x00, 0x00, 0xCC));
-        context.SetFont(new Font(11, "Inter"));
-        context.FillText("Software", new Point(this.Frame.X + 6, this.Frame.Y + 16));
+    protected override unsafe void OnDeactivate()
+    {
+        framebuffer?.Dispose(); framebuffer = null;
+        base.OnDeactivate();
     }
 
     private unsafe void RenderCube(Framebuffer fb)
@@ -124,8 +63,8 @@ public class RotatingCubeTest : View
             new Float4(F32.Zero, F32.Zero, F32.Zero, F32.One)
         );
 
-        var modelMatrix = Float4x4.CreateRotationY(new F32(rotY)) *
-                         Float4x4.CreateRotationX(new F32(rotX * 0.5f)) *
+        var modelMatrix = Float4x4.CreateRotationX(new F32(rotX)) *
+                         Float4x4.CreateRotationY(new F32(rotY)) *
                          scaleMatrix;
 
         var viewMatrix = Float4x4.CreateLookAt(

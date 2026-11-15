@@ -1,10 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
-  <text x="300" y="200" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="64" font-family="Inter" xml:space="preserve">Hello World!</text>
-  <path d="M 100 148.8 L 500 148.8 " fill="none" stroke="#0000FF" stroke-width="2" />
-  <path d="M 100 200 L 500 200 " fill="none" stroke="#000000" stroke-width="2" />
-  <path d="M 100 215.44 L 500 215.44 " fill="none" stroke="#008000" stroke-width="2" />
-  <rect x="115.69" y="138" width="368.63" height="77.44" fill="none" stroke="#008000" stroke-width="5" />
-  <rect x="115.69" y="138" width="368.63" height="77.44" fill="none" stroke="#FFA500" stroke-width="3" />
-  <rect x="121.31" y="153.44" width="358" height="46.56" fill="none" stroke="#FF0000" />
-  <path d="M 295 200 L 305 200 M 300 195 L 300 205 " fill="none" stroke="#FF0000" stroke-width="3" />
+  <text x="300" y="12" fill="#D23D48" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Actual Glyph Box</text>
+  <text x="300" y="65.9" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="32.19" font-family="Inter" xml:space="preserve">Hello World!</text>
+  <rect x="210.12" y="42.48" width="180.08" height="23.42" fill="none" stroke="#D23D48" />
+  <text x="300" y="87.2" fill="#C57912" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Font Bounding Box</text>
+  <text x="300" y="141.1" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="32.19" font-family="Inter" xml:space="preserve">Hello World!</text>
+  <rect x="207.29" y="109.91" width="185.42" height="38.95" fill="none" stroke="#C57912" />
+  <text x="300" y="162.4" fill="#424851" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Alphabetic Baseline</text>
+  <text x="300" y="216.3" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="32.19" font-family="Inter" xml:space="preserve">Hello World!</text>
+  <path d="M 203.29 216.3 L 396.71 216.3 " fill="none" stroke="#424851" />
+  <text x="300" y="237.6" fill="#218354" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Ideographic Baseline</text>
+  <text x="300" y="291.5" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="32.19" font-family="Inter" xml:space="preserve">Hello World!</text>
+  <path d="M 203.29 299.26 L 396.71 299.26 " fill="none" stroke="#218354" />
+  <text x="300" y="312.8" fill="#3265CC" text-anchor="middle" dominant-baseline="text-before-edge" font-size="14" font-family="Inter" xml:space="preserve">Hanging Baseline</text>
+  <text x="300" y="366.7" fill="#000000" text-anchor="middle" dominant-baseline="alphabetic" font-size="32.19" font-family="Inter" xml:space="preserve">Hello World!</text>
+  <path d="M 203.29 340.94 L 396.71 340.94 " fill="none" stroke="#3265CC" />
 </svg>

@@ -178,7 +178,10 @@ public partial class TrueTypeFont
     /// <returns>A constructed <see cref="FontFace"/>.</returns>
     public static FontFace FontFace(HeaderTable? head, NameTable? name, OS2Table? os2)
     {
-        string family = name?.FamilyName ?? "Unknown";
+        // Legacy families group only regular/bold/italic faces; intermediate
+        // weights may be named "Inter SemiBold" there. The typographic family
+        // groups all weights under the family requested by canvas callers.
+        string family = name?.PreferredFamily ?? name?.FamilyName ?? "Unknown";
 
         var weight = os2 != null
             ? new FontWeight(os2.WeightClass)

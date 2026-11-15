@@ -91,8 +91,10 @@ Each primary runtime implements the Actual contracts and references only Core:
   wrappers.
 - `Xui/Runtime/IOS/IOS.csproj` — UIKit and Objective-C interop with
   CoreFoundation, CoreGraphics, CoreText, CoreAnimation, and Metal wrappers.
-- `Xui/Runtime/Android/Android.csproj` — Android Activity/View integration and
-  Android Canvas bindings. This runtime targets `net10.0-android`.
+- `Xui/Runtime/Android/Android.csproj` — binding-free Android retained composition
+  targeting `net10.0`, with a C/JNI bridge and Java Canvas player.
+  `Xui/Runtime/Android/Host/Android.Host.csproj` is the optional `net10.0-android`
+  bootstrap/packaging adapter.
 - `Xui/Runtime/Browser/Browser.csproj` — browser/WASM runtime backed by DOM and
   Canvas APIs.
 - `Xui/Runtime/Software/Xui.Runtime.Software.csproj` — deterministic managed
@@ -108,7 +110,7 @@ Supporting runtimes:
 
 ### Middleware and developer tooling
 
-- `Xui/Middleware/Emulator/Xui.Middleware.Emulator.csproj` — wraps a desktop
+- `Xui/Middleware/EmulatorLegacy/Xui.Middleware.EmulatorLegacy.csproj` — wraps a desktop
   runtime, draws mobile device chrome/safe areas, and translates desktop input
   into emulated mobile input.
 - `Xui/Middleware/DevTools/Xui.Middleware.DevTools.csproj` — runtime middleware

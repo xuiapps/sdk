@@ -34,7 +34,8 @@ public readonly struct OklchRamp
     {
         get
         {
-            var maxC = Oklch.MaxSrgbChroma(t, Hue);
+            // Achromatic colors already fit the gamut; no chroma search is necessary.
+            var maxC = TargetChroma == 0 ? 0 : Oklch.MaxSrgbChroma(t, Hue);
             return new Oklch(t, nfloat.Min(TargetChroma, maxC), Hue).ToColor();
         }
     }

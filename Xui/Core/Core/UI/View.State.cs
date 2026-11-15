@@ -105,6 +105,23 @@ public partial class View
     /// </summary>
     public ViewFlags Flags { get; private set; }
 
+    private bool renderHasUpdates;
+    private Xui.Core.Canvas.IContext? lastRenderContext;
+
+    /// <summary>Whether graphics changed, or this view last rendered into a different context.</summary>
+    /// <remarks>Use when declaring a retained child surface before calling the child's Render method.</remarks>
+    public bool RequiresRender(Xui.Core.Canvas.IContext context) =>
+        HasRenderUpdates || !ReferenceEquals(lastRenderContext, context);
+
+    /// <summary>
+    /// Whether this view or its descendants have graphics updates for the current render.
+    /// Unlike Flags, this remains available inside RenderCore after the render shell clears
+    /// the incoming invalidation flags. Suitable for GroupOptions.HasUpdates; the context
+    /// still decides whether content must be drawn, including on first use or SVG export.
+    /// </summary>
+    protected bool HasRenderUpdates => renderHasUpdates ||
+        (Flags & (ViewFlags.RenderChanged | ViewFlags.DescendantRenderChanged)) != 0;
+
     /// <summary>
     /// Invalidates every phase affected by a change to the view's layout contract.
     /// Used by the base layout properties so cached measurements cannot survive a

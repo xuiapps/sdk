@@ -2,11 +2,11 @@ namespace Xui.GPU.Hardware;
 
 /// <summary>
 /// Represents a GPU render target backed by a texture.
-/// Rendered output can be read back to CPU for display.
+/// Offscreen targets support readback; borrowed native presentation targets may forbid it.
 /// </summary>
 public interface IGpuRenderTarget : IDisposable
 {
-    /// <summary>Gets the underlying texture.</summary>
+    /// <summary>Gets the underlying texture. Framebuffer-only presentation targets may throw NotSupportedException.</summary>
     IGpuTexture Texture { get; }
 
     /// <summary>Gets the width of the render target in pixels.</summary>
@@ -17,6 +17,7 @@ public interface IGpuRenderTarget : IDisposable
 
     /// <summary>
     /// Reads back the rendered pixels to a CPU byte array.
+    /// Native presentation targets may throw NotSupportedException.
     /// The pixel format is BGRA (Blue, Green, Red, Alpha), 4 bytes per pixel.
     /// </summary>
     /// <param name="destination">

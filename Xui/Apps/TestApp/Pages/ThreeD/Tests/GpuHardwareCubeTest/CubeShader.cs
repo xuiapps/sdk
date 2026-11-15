@@ -7,8 +7,8 @@ namespace Xui.Apps.TestApp.Pages.ThreeD.Tests.GpuHardwareCubeTest;
 /// <summary>
 /// Cube shader program defined as C# types.
 /// The [ShaderProgram] attribute marks this for source generation — a Roslyn source generator
-/// will read the Execute methods, build the IR, and emit HLSL/MSL as compile-time constants.
-/// Until the source generator is built, CubeShader.Generated.cs provides a hand-written equivalent.
+/// reads the Execute methods, builds the IR, and emits HLSL/MSL as compile-time constants.
+/// The Android build compiles the generated HLSL into validated SPIR-V for Vulkan.
 /// </summary>
 [ShaderProgram]
 public partial struct CubeShader

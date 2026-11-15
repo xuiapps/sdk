@@ -1,4 +1,6 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.Graphics;
+using Xui.Core.Canvas.Filter;
 using Xui.Core.Math2D;
 
 namespace Xui.Middleware.DevTools;
@@ -10,6 +12,46 @@ namespace Xui.Middleware.DevTools;
 /// </summary>
 internal sealed class SplicingContext(IContext real, IContext capture) : IContext
 {
+    private int groupDepth;
+
+    // A capture needs portable pixels. Ask the application for its explicit fallback
+    // on both branches so the screenshot and the live frame describe the same content.
+    public bool GpuSurface(scoped in GroupOptions options)
+    {
+        ICompositionContext.ValidateGpuSurface(in options);
+        return false;
+    }
+
+    public CompositionGroup Group(scoped in GroupOptions options)
+    {
+        // Both branches receive the same commands. A fresh capture cannot reuse on-screen
+        // pixels, so force both branches to accept fresh content for this pass.
+        var redraw = options with { HasUpdates = true };
+        real.Group(in redraw);
+        try
+        {
+            capture.Group(in redraw);
+        }
+        catch
+        {
+            real.EndGroup();
+            throw;
+        }
+        groupDepth++;
+        return new CompositionGroup(this, needsRedraw: true);
+    }
+
+    public void EndGroup()
+    {
+        if (groupDepth == 0)
+            throw new InvalidOperationException("No composition group to close.");
+        try { capture.EndGroup(); }
+        finally { real.EndGroup(); groupDepth--; }
+    }
+
+    public void SetFilter() { real.SetFilter(); capture.SetFilter(); }
+    public void SetFilter(Brightness brightness) { real.SetFilter(brightness); capture.SetFilter(brightness); }
+
     public void Save()
     {
         real.Save();

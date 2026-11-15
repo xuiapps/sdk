@@ -12,9 +12,11 @@ public class SdkExamplePage<T> : ViewCollection
     private T content;
     private View header;
 
-    public SdkExamplePage()
+    public SdkExamplePage() : this(new T()) { }
+
+    public SdkExamplePage(T content)
     {
-        this.content = new T();
+        this.content = content;
 
         this.header = new Border()
         {

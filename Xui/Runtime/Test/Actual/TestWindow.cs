@@ -7,6 +7,7 @@ public class TestWindow : Xui.Core.Actual.IWindow
     public Xui.Core.Abstract.IWindow Abstract { get; }
     internal bool Invalid { get; set; }
     private readonly TestPlatform platform;
+    private readonly Xui.Runtime.Software.Actual.SoftwareImagePipeline images = new();
 
     public TestWindow(TestPlatform platform, Xui.Core.Abstract.IWindow abstractWindow, IServiceProvider nextServiceProvider)
     {
@@ -34,6 +35,8 @@ public class TestWindow : Xui.Core.Actual.IWindow
 
     public object? GetService(Type serviceType)
     {
+        if (serviceType == typeof(IImage)) return images.CreateImage();
+        if (serviceType == typeof(Xui.Core.Actual.IImagePipeline)) return images;
         return this.NextServiceProvider.GetService(serviceType);
     }
 }

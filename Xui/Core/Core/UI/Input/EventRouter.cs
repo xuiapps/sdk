@@ -10,7 +10,9 @@ namespace Xui.Core.UI.Input
     public class EventRouter
     {
         private readonly View _rootView;
-        private readonly Dictionary<int, PointerTracking> _pointerTracking = new();
+        // Pointer state is created on the first contact and then retained for
+        // reuse. Reserve a multi-touch-sized table so a gesture never resizes it.
+        private readonly Dictionary<int, PointerTracking> _pointerTracking = new(capacity: 10);
         private readonly List<View> _route = new List<View>(64);
 
         /// <summary>Initializes a new <see cref="EventRouter"/> rooted at the given view.</summary>
@@ -30,6 +32,7 @@ namespace Xui.Core.UI.Input
                     TouchPhase.Start => PointerEventType.Down,
                     TouchPhase.Move => PointerEventType.Move,
                     TouchPhase.End => PointerEventType.Up,
+                    TouchPhase.Cancel => PointerEventType.Cancel,
                     _ => throw new InvalidOperationException()
                 };
 
@@ -55,7 +58,8 @@ namespace Xui.Core.UI.Input
                     isPrimary: true,
                     state,
                     ReadOnlySpan<PointerState>.Empty,
-                    ReadOnlySpan<PointerState>.Empty);
+                    ReadOnlySpan<PointerState>.Empty,
+                    touchEvent.TextMeasure);
 
                 DispatchPointer(ref pointerEvent);
             }
@@ -248,11 +252,17 @@ namespace Xui.Core.UI.Input
             // Route event to target
             BuildRoute(targetView);
 
+            PointerGestureBuffer potentialGestures = default;
             for (int i = _route.Count - 1; i >= 0; i--)
-                DispatchToView(_route[i], ref e, EventPhase.Tunnel);
+                DispatchToView(_route[i], ref e, EventPhase.Tunnel, potentialGestures);
 
             for (int i = 0; i < _route.Count; i++)
-                DispatchToView(_route[i], ref e, EventPhase.Bubble);
+                DispatchToView(_route[i], ref e, EventPhase.Bubble, potentialGestures);
+
+            // System cancellation ends capture even for controls which only
+            // reset their pressed state in LostCapture.
+            if (e.Type == PointerEventType.Cancel && _pointerTracking[e.PointerId].Captured is { } captured)
+                ReleasePointer(captured, e.PointerId);
 
             tracking = _pointerTracking[e.PointerId];
             tracking.LastPosition = e.State.Position;
@@ -380,10 +390,10 @@ namespace Xui.Core.UI.Input
             return view;
         }
 
-        private static void DispatchToView(View view, ref PointerEventRef e, EventPhase phase)
+        private static void DispatchToView(View view, scoped ref PointerEventRef e, EventPhase phase, scoped Span<PointerGestureCandidate> potentialGestures = default)
         {
             var localState = e.State.WithPosition(view.GlobalToLocal(e.State.Position));
-            var localEvent = new PointerEventRef(
+            scoped PointerEventRef localEvent = new(
                 e.Type,
                 e.PointerId,
                 e.PersistentDeviceId,
@@ -392,6 +402,8 @@ namespace Xui.Core.UI.Input
                 e.CoalescedStates,
                 e.PredictedStates,
                 e.TextMeasure);
+            localEvent.PotentialGestureStorage = potentialGestures;
+            localEvent.CanPushPotentialGesture = phase == EventPhase.Tunnel && e.Type == PointerEventType.Down;
             view.OnPointerEvent(ref localEvent, phase);
         }
 

@@ -7,6 +7,42 @@ namespace Xui.Core.UI.Input
     /// </summary>
     public ref struct PointerEventRef
     {
+        internal Span<PointerGestureCandidate> PotentialGestureStorage;
+        internal bool CanPushPotentialGesture;
+
+        /// <summary>
+        /// Up to eight handlers pushed earlier during this event's down tunnel,
+        /// oldest first. Storage is shared by the routed event copies and exists
+        /// only for this dispatch; do not retain this span across events.
+        /// </summary>
+        public readonly ReadOnlySpan<PointerGestureCandidate> PotentialGestures
+        {
+            get
+            {
+                var count = 0;
+                while (count < PotentialGestureStorage.Length && PotentialGestureStorage[count].Handler is not null) count++;
+                return PotentialGestureStorage[..count];
+            }
+        }
+
+        /// <summary>
+        /// Advertises a possible gesture without capturing the pointer. Call during
+        /// Down/Tunnel so descendants can adapt feedback while recognition is pending.
+        /// When full, drops the oldest handler and retains the newest eight.
+        /// This does not change capture or the handler's recognition rules.
+        /// </summary>
+        public readonly void PushPotentialGesture(View handler, IPointerGesture gesture)
+        {
+            if (!CanPushPotentialGesture || PotentialGestureStorage.IsEmpty) return;
+            var count = PotentialGestures.Length;
+            if (count == PotentialGestureStorage.Length)
+            {
+                PotentialGestureStorage[1..].CopyTo(PotentialGestureStorage);
+                count--;
+            }
+            PotentialGestureStorage[count] = new(handler, gesture);
+        }
+
         /// <summary>
         /// Gets the type of pointer event (e.g., Down, Move, Up, Enter, Leave).
         /// </summary>

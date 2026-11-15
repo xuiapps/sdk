@@ -7,14 +7,19 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Filter;
 using Xui.Core.Curves2D;
 using Xui.Core.Math2D;
 using Xui.Runtime.Software.Font;
 
 namespace Xui.Runtime.Software.Actual;
 
-public sealed class SvgDrawingContext : IContext, IDisposable
+public sealed partial class SvgDrawingContext : IContext, IDisposable
 {
+    private FilterState filter;
+    public void SetFilter() => filter = default;
+    public void SetFilter(Brightness brightness) => filter = new(brightness);
+
     private readonly Stream stream;
 
     private readonly MemoryStream styleBuffer;
@@ -81,6 +86,12 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     public SvgDrawingContext(Size canvasSize, Stream output, IEnumerable<Uri> fontUris, SvgFontResolver? resolver = null, NumericFormat? numericFormat = null, bool keepOpen = false)
         : this(canvasSize, output, new Catalog(fontUris), resolver, numericFormat, keepOpen)
+    {
+    }
+
+    /// <summary>Creates an SVG context with lazily loaded application font resources.</summary>
+    public SvgDrawingContext(Size canvasSize, Stream output, IFontSource fontSource, SvgFontResolver? resolver = null, NumericFormat? numericFormat = null, bool keepOpen = false)
+        : this(canvasSize, output, new Catalog(fontSource), resolver, numericFormat, keepOpen)
     {
     }
 
@@ -174,7 +185,10 @@ public sealed class SvgDrawingContext : IContext, IDisposable
     {
         stateStack.Push(new DrawingState
         {
+            Filter = filter,
             FillColor = currentFillColor,
+            FillImage = currentFillImage,
+            StrokeImage = currentStrokeImage,
             FillGradientId = currentFillGradientId,
             StrokeColor = currentStrokeColor,
             StrokeGradientId = currentStrokeGradientId,
@@ -194,6 +208,8 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IStateContext.Restore()
     {
+        if (compositionStateDepths.TryPeek(out var groupDepth) && stateStack.Count <= groupDepth)
+            throw new InvalidOperationException("Dispose the composition group before restoring its enclosing state.");
         if (stateStack.Count == 0)
             throw new InvalidOperationException("No saved state to restore.");
 
@@ -201,7 +217,10 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         this.PopGroupsUntilDepth(state.GroupDepth);
 
+        filter = state.Filter;
         currentFillColor = state.FillColor;
+        currentFillImage = state.FillImage;
+        currentStrokeImage = state.StrokeImage;
         currentFillGradientId = state.FillGradientId;
         currentStrokeColor = state.StrokeColor;
         currentStrokeGradientId = state.StrokeGradientId;
@@ -235,12 +254,14 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetStroke(Color color)
     {
-        currentStrokeColor = color;
+        currentStrokeImage = null;
+        currentStrokeColor = filter.Apply(color);
         currentStrokeGradientId = null; // clear gradient
     }
 
     void IPenContext.SetStroke(LinearGradient gradient)
     {
+        currentStrokeImage = null;
         currentStrokeColor = null;
         currentStrokeGradientId = $"grad{gradientIdCounter++}";
 
@@ -249,11 +270,11 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         foreach (var stop in gradient.GradientStops)
         {
-            var color = ToSvgColor(stop.Color, out var opacity);
-            var offset = $"{stop.Offset * 100:0.#}%";
+            var color = ToSvgColor(filter.Apply(stop.Color), out var opacity);
+            var offset = FormattableString.Invariant($"{stop.Offset * 100:0.#}%");
 
             defsWriter.Write($"      <stop offset=\"{offset}\" stop-color=\"{color}\"");
-            if (opacity.HasValue && opacity.Value > 0f && opacity.Value < 1f)
+            if (opacity.HasValue)
                 defsWriter.Write($" stop-opacity=\"{F(opacity.Value)}\"");
             defsWriter.WriteLine(" />");
         }
@@ -263,6 +284,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetStroke(RadialGradient radial)
     {
+        currentStrokeImage = null;
         currentStrokeColor = null;
         currentStrokeGradientId = $"grad{gradientIdCounter++}";
 
@@ -271,11 +293,11 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         foreach (var stop in radial.GradientStops)
         {
-            var color = ToSvgColor(stop.Color, out var opacity);
-            var offset = $"{stop.Offset * 100:0.#}%";
+            var color = ToSvgColor(filter.Apply(stop.Color), out var opacity);
+            var offset = FormattableString.Invariant($"{stop.Offset * 100:0.#}%");
 
             defsWriter.Write($"      <stop offset=\"{offset}\" stop-color=\"{color}\"");
-            if (opacity.HasValue && opacity.Value > 0f && opacity.Value < 1f)
+            if (opacity.HasValue)
                 defsWriter.Write($" stop-opacity=\"{F(opacity.Value)}\"");
             defsWriter.WriteLine(" />");
         }
@@ -285,12 +307,14 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetFill(Color color)
     {
-        currentFillColor = color;
+        currentFillImage = null;
+        currentFillColor = filter.Apply(color);
         currentFillGradientId = null; // clear previous gradient
     }
 
     void IPenContext.SetFill(LinearGradient gradient)
     {
+        currentFillImage = null;
         currentFillColor = null;
         currentFillGradientId = $"grad{gradientIdCounter++}";
 
@@ -299,11 +323,11 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         foreach (var stop in gradient.GradientStops)
         {
-            var color = ToSvgColor(stop.Color, out var opacity);
-            var offset = $"{stop.Offset * 100:0.#}%";
+            var color = ToSvgColor(filter.Apply(stop.Color), out var opacity);
+            var offset = FormattableString.Invariant($"{stop.Offset * 100:0.#}%");
 
             defsWriter.Write($"      <stop offset=\"{offset}\" stop-color=\"{color}\"");
-            if (opacity.HasValue && opacity.Value > 0f && opacity.Value < 1f)
+            if (opacity.HasValue)
                 defsWriter.Write($" stop-opacity=\"{F(opacity.Value)}\"");
             defsWriter.WriteLine(" />");
         }
@@ -313,6 +337,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPenContext.SetFill(RadialGradient radial)
     {
+        currentFillImage = null;
         currentFillColor = null;
         currentFillGradientId = $"grad{gradientIdCounter++}";
 
@@ -321,32 +346,17 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
         foreach (var stop in radial.GradientStops)
         {
-            var color = ToSvgColor(stop.Color, out var opacity);
-            var offset = $"{stop.Offset * 100:0.#}%";
+            var color = ToSvgColor(filter.Apply(stop.Color), out var opacity);
+            var offset = FormattableString.Invariant($"{stop.Offset * 100:0.#}%");
 
             defsWriter.Write($"      <stop offset=\"{offset}\" stop-color=\"{color}\"");
-            if (opacity.HasValue && opacity.Value > 0f && opacity.Value < 1f)
+            if (opacity.HasValue)
                 defsWriter.Write($" stop-opacity=\"{F(opacity.Value)}\"");
             defsWriter.WriteLine(" />");
         }
 
         defsWriter.WriteLine("    </radialGradient>");
     }
-
-    void IPenContext.SetFill(ImagePattern pattern) =>
-        throw new NotImplementedException("SVG context does not support image pattern fill.");
-
-    void IPenContext.SetStroke(ImagePattern pattern) =>
-        throw new NotImplementedException("SVG context does not support image pattern stroke.");
-
-    void IImageDrawingContext.DrawImage(IImage image, Rect dest) =>
-        throw new NotImplementedException("SVG context does not support DrawImage.");
-
-    void IImageDrawingContext.DrawImage(IImage image, Rect dest, nfloat opacity) =>
-        throw new NotImplementedException("SVG context does not support DrawImage.");
-
-    void IImageDrawingContext.DrawImage(IImage image, Rect source, Rect dest, nfloat opacity) =>
-        throw new NotImplementedException("SVG context does not support DrawImage.");
 
     void IPathBuilder.BeginPath()
     {
@@ -426,15 +436,16 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPathDrawing.Fill(FillRule rule)
     {
+        CheckCompositionDrawing();
         if (currentPath.Length == 0)
             return;
 
         string fill;
         nfloat? opacity = null;
 
-        if (currentFillGradientId != null)
+        if (PaintId(currentFillImage, currentFillGradientId) is { } paintId)
         {
-            fill = $"url(#{currentFillGradientId})";
+            fill = $"url(#{paintId})";
         }
         else if (currentFillColor.HasValue)
         {
@@ -458,14 +469,15 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IPathDrawing.Stroke()
     {
+        CheckCompositionDrawing();
         if (currentPath.Length == 0)
             return;
 
         string stroke;
         nfloat? opacity = null;
 
-        if (currentStrokeGradientId != null)
-            stroke = $"url(#{currentStrokeGradientId})";
+        if (PaintId(currentStrokeImage, currentStrokeGradientId) is { } paintId)
+            stroke = $"url(#{paintId})";
         else if (currentStrokeColor.HasValue)
             stroke = ToSvgColor(currentStrokeColor.Value, out opacity);
         else
@@ -497,11 +509,12 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IRectDrawingContext.StrokeRect(Rect rect)
     {
+        CheckCompositionDrawing();
         string stroke;
         nfloat? opacity = null;
 
-        if (currentStrokeGradientId != null)
-            stroke = $"url(#{currentStrokeGradientId})";
+        if (PaintId(currentStrokeImage, currentStrokeGradientId) is { } paintId)
+            stroke = $"url(#{paintId})";
         else if (currentStrokeColor.HasValue)
             stroke = ToSvgColor(currentStrokeColor.Value, out opacity);
         else
@@ -515,11 +528,12 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void IRectDrawingContext.FillRect(Rect rect)
     {
+        CheckCompositionDrawing();
         string fill;
         nfloat? opacity = null;
 
-        if (currentFillGradientId != null)
-            fill = $"url(#{currentFillGradientId})";
+        if (PaintId(currentFillImage, currentFillGradientId) is { } paintId)
+            fill = $"url(#{paintId})";
         else if (currentFillColor.HasValue)
             fill = ToSvgColor(currentFillColor.Value, out opacity);
         else
@@ -536,6 +550,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     void ITextDrawingContext.FillText(string text, Point pos)
     {
+        CheckCompositionDrawing();
         if (string.IsNullOrEmpty(text))
             return;
 
@@ -626,7 +641,7 @@ public sealed class SvgDrawingContext : IContext, IDisposable
         {
             WriteFontFace(fontFace, $"url('{resolved.WebUri}')");
         }
-        else if (resolved.Mode == SvgFontMode.Embedded && sourceUri is not null)
+        else if (resolved.Mode == SvgFontMode.Embedded)
         {
             var usage = fontUsage[fontFace];
             var data = TrueTypeFontSubset.Create(ttf, usage);
@@ -969,6 +984,9 @@ public sealed class SvgDrawingContext : IContext, IDisposable
 
     private struct DrawingState
     {
+        public FilterState Filter;
+        public ImagePaint? FillImage;
+        public ImagePaint? StrokeImage;
         public Color? FillColor;
         public string? FillGradientId;
 
@@ -1032,7 +1050,15 @@ public sealed class SvgDrawingContext : IContext, IDisposable
     {
         public static readonly SvgFontResolver Default = new SvgFontResolver();
 
+        /// <summary>Embed only used glyphs and kerning pairs from each resolved font face.</summary>
+        public static readonly SvgFontResolver Embedded = new EmbeddedResolver();
+
         public virtual Resolved Resolve(FontFace face, Uri? uri) => new Resolved(SvgFontMode.System, null);
+
+        private sealed class EmbeddedResolver : SvgFontResolver
+        {
+            public override Resolved Resolve(FontFace face, Uri? uri) => new(SvgFontMode.Embedded, null);
+        }
     }
 
     public record struct Resolved (SvgFontMode Mode, Uri? WebUri);

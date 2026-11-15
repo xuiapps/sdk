@@ -5,8 +5,18 @@ namespace Xui.Core.Canvas;
 /// <summary>
 /// Represents a color using red, green, blue, and alpha components, all normalized to the range [0, 1].
 /// </summary>
-public struct Color
+public struct Color : IEquatable<Color>
 {
+    /// <inheritdoc/>
+    public readonly bool Equals(Color other) =>
+        Red.Equals(other.Red) && Green.Equals(other.Green) && Blue.Equals(other.Blue) && Alpha.Equals(other.Alpha);
+
+    /// <inheritdoc/>
+    public override readonly bool Equals(object? obj) => obj is Color other && Equals(other);
+
+    /// <inheritdoc/>
+    public override readonly int GetHashCode() => HashCode.Combine(Red, Green, Blue, Alpha);
+
     /// <summary>
     /// Red component of the color, in the range [0, 1].
     /// </summary>

@@ -1,90 +1,36 @@
-using Xui.Apps.TestApp;
-using Xui.Core.Math2D;
 using Xui.Core.UI;
+using Xui.Apps.TestApp;
+using Xui.Apps.TestApp.Pages.Grid;
 using Xui.Runtime.Test;
-using System.Runtime.CompilerServices;
 
 namespace Xui.Tests.Integration.TestApp;
 
-/// <summary>
-/// Integration tests that navigate to the Grid Layout example and snapshot
-/// each of the individual grid scenarios.
-/// </summary>
 public class GridLayoutTest
 {
-    private static Size WindowSize = (800, 560);
-    private static TestSinglePageApp<Application, MainWindow> CreateApp(
-        TestRuntimeVariant runtimeVariant,
-        [CallerFilePath] string callerPath = "",
-        [CallerMemberName] string testName = "") =>
-        IntegrationRuntimeVariants.CreateApp<Application, MainWindow>(
-            WindowSize, runtimeVariant, callerPath, testName);
-
-    private static void AddTestAppIntro(TestSinglePageApp<Application, MainWindow> app)
-    {
-        app.MarkdownHeading("TestApp", level: 1);
-        app.MarkdownParagraph("Open the test app to see the menu with SDK examples.");
-    }
-
-    private static readonly string[] Scenarios =
-    [
-        "Basic fixed grid",
-        "Grid with gaps",
-        "Fractional units",
-        "Auto tracks",
-        "Spanning cells",
-        "Named areas",
-        "Auto flow",
-        "Alignment",
-        "Fixed container",
-        "Scrollable grid",
-        "Nested grids",
-        "MinMax tracks",
-    ];
-
-    /// <summary>
-    /// Navigates to the Grid Layout example and snapshots each scenario in sequence.
-    /// </summary>
-    [Theory]
-    [MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
+    [Theory, MemberData(nameof(IntegrationRuntimeVariants.All), MemberType = typeof(IntegrationRuntimeVariants))]
     public void Grid_Scenarios(TestRuntimeVariant runtimeVariant)
     {
-        using var app = CreateApp(runtimeVariant);
-        AddTestAppIntro(app);
-        app.MarkdownHeading("Scenario");
-        app.MarkdownParagraph("Navigate to Grid Layout and capture each scenario variant.");
-        app.MarkdownList(Scenarios);
-
-        // Render first so the home page is laid out and buttons are hit-testable
-        app.Render();
-
-        // Navigate to Grid Layout
-        var gridButton = app.Window.RootView.FindViewById("GridLayout");
-        Assert.NotNull(gridButton);
-        app.MouseMove(gridButton);
-        app.MouseDown(gridButton);
-        app.MouseUp(gridButton);
-        app.Render();
-        app.Snapshot("GridLayout.Home");
-
-        // Snapshot each scenario by clicking its nav button
-        foreach (var scenario in Scenarios)
+        using var app = IntegrationRuntimeVariants.CreateApp<Application, MainWindow>((800, 560), runtimeVariant,
+            SourcePath(), nameof(Grid_Scenarios));
+        app.Run(() =>
         {
-            app.MarkdownHeading($"Grid Scenario: {scenario}", level: 3);
-            var navButton = app.Window.RootView.FindViewById(scenario);
-            Assert.NotNull(navButton);
-            app.MouseMove(navButton);
-            app.MouseDown(navButton);
-            app.MouseUp(navButton);
-            app.Snapshot(scenario.Replace(" ", "."));
-        }
-
-        // Navigate back home
-        var back = app.Window.RootView.FindViewById("Back");
-        Assert.NotNull(back);
-        app.MouseMove(back);
-        app.MouseDown(back);
-        app.MouseUp(back);
-        app.Snapshot("HomePage");
+            app.Prepare();
+            app.MarkdownHeading("Grid Layout scenarios", 1);
+            var grid = app.Open<GridExample>("GridLayout");
+            app.Snapshot("GridLayout.Home");
+            for (var index = 0; index < grid.SectionCount; index++)
+            {
+                // Sidebar navigation belongs to desktop. Mobile sections use the carousel,
+                // whose routed swipe/scroll negotiation is covered by GridCardsTest.
+                if (runtimeVariant == TestRuntimeVariant.Desktop) app.Tap(grid.GetSectionName(index));
+                else { grid.SelectSection(index); app.Advance(TimeSpan.FromMilliseconds(400)); }
+                Assert.Equal(index, grid.SelectedSectionIndex);
+                app.Snapshot(grid.GetSectionName(index).Replace(" ", "."));
+            }
+            app.Back();
+            Assert.Null(app.Window.RootView.FindViewById("Example.GridExample"));
+            app.Snapshot("HomePage");
+        });
     }
+    private static string SourcePath([System.Runtime.CompilerServices.CallerFilePath] string path = "") => path;
 }

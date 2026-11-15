@@ -91,6 +91,9 @@ public static partial class ObjC
     [LibraryImport(LibObjCLib, EntryPoint = "objc_msgSend")]
     public static partial void objc_msgSend(nint obj, nint sel, nint id1);
 
+    [LibraryImport(LibObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial void objc_msgSend(nint obj, nint sel, nint a1, nint a2, nint a3, nint a4);
+
     [LibraryImport(LibObjCLib, EntryPoint = "objc_msgSendSuper")]
     public static partial void objc_msgSendSuper(ref Super obj, nint sel);
 
@@ -127,7 +130,7 @@ public static partial class ObjC
     public static partial bool objc_msgSend_retBool(nint obj, nint sel, nint int1);
 
     [LibraryImport(LibObjCLib)]
-    public static partial nint objc_allocateClassPair(nint superclass, nint name, int extrabytes);
+    public static partial nint objc_allocateClassPair(nint superclass, nint name, nuint extrabytes);
 
     [LibraryImport(LibObjCLib)]
     public static partial void objc_registerClassPair(nint @class);

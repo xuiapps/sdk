@@ -178,6 +178,7 @@ public partial class View
         }
 
         measurements.ArrangedRect = new Rect(x, y, width, height) - this.Margin;
+        if (this.Frame != measurements.ArrangedRect) this.InvalidateRender();
         this.Frame = measurements.ArrangedRect;
         frame.Instruments.Log(Scope.ViewArrange, LevelOfDetail.Info,
             $"Arrange {this.GetType().Name} Anchor({constraints.Anchor.X:F1}, {constraints.Anchor.Y:F1}) Desired({constraints.DesiredSize.Width:F1}, {constraints.DesiredSize.Height:F1}) -> Frame({this.Frame.X:F1}, {this.Frame.Y:F1}, {this.Frame.Width:F1}, {this.Frame.Height:F1})");
@@ -219,14 +220,24 @@ public partial class View
         this.Instruments.TrackView(Scope.ViewRendering, this);
         var context = frame.RenderContext!;
         context.Save();
+        var previousRenderHasUpdates = this.renderHasUpdates;
+        this.renderHasUpdates = this.HasRenderUpdates;
         try
         {
             this.ValidateRender();
             this.SetDefaultRenderState(context);
             this.RenderCore(context);
+            this.lastRenderContext = context;
+        }
+        catch
+        {
+            // A failed content update must not be offered to a retained group as clean.
+            this.InvalidateRender();
+            throw;
         }
         finally
         {
+            this.renderHasUpdates = previousRenderHasUpdates;
             context.Restore();
             this.renderCullingFrame = previousCullingFrame;
         }
@@ -281,11 +292,15 @@ public partial class View
     }
 
     /// <summary>Renders a child while preserving this view's active culling rectangle.</summary>
-    internal void RenderChild(IContext context, View child)
+    protected internal void RenderChild(IContext context, View child)
     {
         if (this.renderCullingFrame is { } cullingFrame)
             child.Render(context, cullingFrame);
         else
             child.Render(context);
     }
+
+    /// <summary>Renders a child using an explicit culling rectangle in this view's coordinate space.</summary>
+    protected internal void RenderChild(IContext context, View child, Rect cullingFrame) =>
+        child.Render(context, cullingFrame);
 }

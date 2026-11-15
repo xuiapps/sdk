@@ -15,6 +15,9 @@ internal class XuiColorSystem : IColorSystem
     private static readonly nfloat NeutralChroma = (nfloat)0.015;
 
     public XuiColorSystem(XuiDesignSystemOptions options, IDeviceInfo device)
+        => Update(options, device);
+
+    internal void Update(XuiDesignSystemOptions options, IDeviceInfo device)
     {
         IsDark = device.ColorScheme == ColorScheme.Dark;
 
@@ -33,14 +36,17 @@ internal class XuiColorSystem : IColorSystem
         var accentRamp    = new OklchRamp(tertiaryHue, chroma);
         var warningRamp   = new OklchRamp(WarningHue, WarningChroma);
         var errorRamp     = new OklchRamp(ErrorHue, ErrorChroma);
-        var neutralRamp   = new OklchRamp(neutralHue, NeutralChroma);
 
-        // Build semantic groups.
-        Primary   = ColorGroup.FromRamp(primaryRamp, IsDark);
-        Secondary = ColorGroup.FromRamp(secondaryRamp, IsDark);
-        Tertiary    = ColorGroup.FromRamp(accentRamp, IsDark);
-        Warning   = ColorGroup.FromRamp(warningRamp, IsDark);
-        Error     = ColorGroup.FromRamp(errorRamp, IsDark);
+        // Update the retained groups before notifying consumers; no palette objects are replaced.
+        var primaryLightness = nfloat.Clamp(options.PrimaryLightness ?? (IsDark ? 0.75f : 0.56f), 0, 1);
+        var primary = primaryRamp[primaryLightness];
+        // Choose black or white by actual luminance, including very light/dark picker shades.
+        Primary.Update(primaryRamp, IsDark, primaryLightness, ColorGroup.ContrastingTone(primary),
+            IsDark ? 0.30f : 0.90f, IsDark ? 0.90f : 0.10f);
+        Secondary.Update(secondaryRamp, IsDark);
+        Tertiary.Update(accentRamp, IsDark);
+        Warning.Update(warningRamp, IsDark);
+        Error.Update(errorRamp, IsDark);
 
         // Application and Surface: neutral by default, optionally tinted by NeutralStyle.
         var pureNeutralRamp = new OklchRamp(neutralHue, 0);
@@ -61,9 +67,9 @@ internal class XuiColorSystem : IColorSystem
             _                             => pureNeutralRamp,
         };
 
-        Application = BuildNeutralGroup(appRamp, IsDark, application: true);
-        Surface     = BuildNeutralGroup(surfaceRamp, IsDark, application: false);
-        Neutral     = BuildNeutralInteractiveGroup(pureNeutralRamp, IsDark);
+        UpdateNeutralGroup(Application, appRamp, IsDark, application: true);
+        UpdateNeutralGroup(Surface, surfaceRamp, IsDark, application: false);
+        UpdateNeutralInteractiveGroup(Neutral, pureNeutralRamp, IsDark);
 
         // Outlines from pure neutral ramp at mid-tones.
         Outline        = IsDark ? pureNeutralRamp[0.60f] : pureNeutralRamp[0.50f];
@@ -73,40 +79,40 @@ internal class XuiColorSystem : IColorSystem
     }
 
     /// <inheritdoc/>
-    public ColorGroup Application { get; }
+    public ColorGroup Application { get; } = new();
 
     /// <inheritdoc/>
-    public ColorGroup Surface { get; }
+    public ColorGroup Surface { get; } = new();
 
     /// <inheritdoc/>
-    public ColorGroup Neutral { get; }
+    public ColorGroup Neutral { get; } = new();
 
     /// <inheritdoc/>
-    public Color Outline { get; }
+    public Color Outline { get; private set; }
 
     /// <inheritdoc/>
-    public Color OutlineVariant { get; }
+    public Color OutlineVariant { get; private set; }
 
     /// <inheritdoc/>
-    public ColorGroup Primary { get; }
+    public ColorGroup Primary { get; } = new();
 
     /// <inheritdoc/>
-    public ColorGroup Secondary { get; }
+    public ColorGroup Secondary { get; } = new();
 
     /// <inheritdoc/>
-    public ColorGroup Tertiary { get; }
+    public ColorGroup Tertiary { get; } = new();
 
     /// <inheritdoc/>
-    public ColorGroup Warning { get; }
+    public ColorGroup Warning { get; } = new();
 
     /// <inheritdoc/>
-    public ColorGroup Error { get; }
+    public ColorGroup Error { get; } = new();
 
     /// <inheritdoc/>
-    public Color FocusRing { get; }
+    public Color FocusRing { get; private set; }
 
     /// <inheritdoc/>
-    public bool IsDark { get; }
+    public bool IsDark { get; private set; }
 
     /// <inheritdoc/>
     public OklchRamp GetTonalRamp(nfloat hueDegrees, nfloat chroma)
@@ -151,63 +157,17 @@ internal class XuiColorSystem : IColorSystem
         return (Normalize(secondary), Normalize(tertiary));
     }
 
-    private static ColorGroup BuildNeutralGroup(OklchRamp ramp, bool isDark, bool application)
+    private static void UpdateNeutralGroup(ColorGroup group, OklchRamp ramp, bool isDark, bool application)
     {
-        var bgL = isDark ? (application ? 0.06f : 0.12f) : (application ? 0.99f : 0.98f);
-
-        if (isDark)
-        {
-            return new ColorGroup
-            {
-                Background  = ramp[bgL],
-                Foreground  = ramp[0.90f],
-                Container   = ramp[application ? 0.12f : 0.30f],
-                OnContainer = ramp[application ? 0.90f : 0.80f],
-                Ramp        = ramp,
-                BackgroundLightness = bgL,
-            };
-        }
-
-        return new ColorGroup
-        {
-            Background  = ramp[bgL],
-            Foreground  = ramp[0.10f],
-            Container   = ramp[application ? 0.98f : 0.90f],
-            OnContainer = ramp[application ? 0.10f : 0.30f],
-            Ramp        = ramp,
-            BackgroundLightness = bgL,
-        };
+        var bg = isDark ? (application ? 0.14f : 0.23f) : (application ? 0.94f : 0.995f);
+        group.Update(ramp, isDark, bg, isDark ? 0.90f : 0.10f,
+            isDark ? (application ? 0.23f : 0.34f) : (application ? 0.995f : 0.88f),
+            isDark ? (application ? 0.90f : 0.80f) : (application ? 0.10f : 0.30f));
     }
 
-    /// <summary>
-    /// Builds a low-contrast interactive group — sits between Surface background and mid-tone.
-    /// Think GitHub gray buttons, VS Code toolbar buttons, quiet controls.
-    /// </summary>
-    private static ColorGroup BuildNeutralInteractiveGroup(OklchRamp ramp, bool isDark)
-    {
-        if (isDark)
-        {
-            return new ColorGroup
-            {
-                Background  = ramp[0.25f],
-                Foreground  = ramp[0.90f],
-                Container   = ramp[0.20f],
-                OnContainer = ramp[0.85f],
-                Ramp        = ramp,
-                BackgroundLightness = 0.25f,
-            };
-        }
-
-        return new ColorGroup
-        {
-            Background  = ramp[0.88f],
-            Foreground  = ramp[0.15f],
-            Container   = ramp[0.92f],
-            OnContainer = ramp[0.25f],
-            Ramp        = ramp,
-            BackgroundLightness = 0.88f,
-        };
-    }
+    private static void UpdateNeutralInteractiveGroup(ColorGroup group, OklchRamp ramp, bool isDark) =>
+        group.Update(ramp, isDark, isDark ? 0.25f : 0.88f, isDark ? 0.90f : 0.15f,
+            isDark ? 0.20f : 0.92f, isDark ? 0.85f : 0.25f);
 
     private static nfloat Normalize(nfloat hue)
     {

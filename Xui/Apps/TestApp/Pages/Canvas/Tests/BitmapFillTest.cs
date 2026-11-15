@@ -1,4 +1,3 @@
-using System.IO;
 using System.Runtime.InteropServices;
 using Xui.Core.Canvas;
 using Xui.Core.DI;
@@ -13,12 +12,13 @@ namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 /// <c>SetFill(new ImagePattern(image))</c> — the Canvas API equivalent of
 /// <c>ctx.fillStyle = ctx.createPattern(img, "repeat")</c>.
 /// </summary>
-public class BitmapFillTest : View
+public class BitmapFillTest : View, ICanvasDrawingExample
 {
+    Rect ICanvasDrawingExample.GetArtworkBounds(IMeasureContext context) => new(35, 29, 230, 220);
+
     private IImage? image;
 
-    private static string ImagePath =>
-        Path.Combine(AppContext.BaseDirectory, "Assets", "test.png");
+    private const string ImagePath = "asset://test-512.png";
 
     protected override void OnAttach(ref AttachEventRef e)
     {
@@ -33,9 +33,6 @@ public class BitmapFillTest : View
 
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(White);
-        context.FillRect(this.Frame);
-
         NFloat cx = this.Frame.X + 150;
         NFloat cy = this.Frame.Y + 150;
 

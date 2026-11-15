@@ -1,6 +1,7 @@
 using Xui.Core.Abstract;
+using Xui.Core.Canvas;
 using Xui.Core.Math2D;
-using Xui.Middleware.Emulator.Devices;
+using Xui.Middleware.EmulatorLegacy.Devices;
 using Xui.Runtime.Test;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -33,7 +34,8 @@ public static class IntegrationRuntimeVariants
         Size desktopSize,
         TestRuntimeVariant runtimeVariant,
         string callerPath,
-        string testName)
+        string testName,
+        IFontSource? fontSource = null)
         where TApplication : Application
         where TWindow : Window
     {
@@ -42,7 +44,7 @@ public static class IntegrationRuntimeVariants
             ? desktopSize
             : new Size(
                 emulatorDevice.Value.LogicalResolution.Width + 48,
-                emulatorDevice.Value.LogicalResolution.Height + 88);
+                emulatorDevice.Value.LogicalResolution.Height + 64);
         var snapshotSet = ResolveSnapshotSet(runtimeVariant);
 
         return new TestSinglePageApp<TApplication, TWindow>(
@@ -59,7 +61,8 @@ public static class IntegrationRuntimeVariants
             emulatorDevice: emulatorDevice,
             snapshotSet: snapshotSet,
             callerPath: callerPath,
-            testName: testName);
+            testName: testName,
+            fontSource: fontSource);
     }
 
     private static string? ResolveSnapshotSet(TestRuntimeVariant runtimeVariant) =>

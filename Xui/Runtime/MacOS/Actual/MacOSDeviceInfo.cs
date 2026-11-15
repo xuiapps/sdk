@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 using Xui.Core.DI;
 
@@ -6,6 +7,7 @@ namespace Xui.Runtime.MacOS.Actual;
 internal sealed class MacOSDeviceInfo : IDeviceInfo
 {
     public static readonly MacOSDeviceInfo Instance = new();
+    public event Action? Changed { add { } remove { } }
 
     public DevicePlatform Platform => DevicePlatform.MacOS;
     public DeviceFormFactor FormFactor => DeviceFormFactor.Desktop;

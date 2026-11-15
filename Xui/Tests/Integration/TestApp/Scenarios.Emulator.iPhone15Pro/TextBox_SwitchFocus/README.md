@@ -2,13 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Move focus from NameBox to PasswordBox and verify independent values.
+# TextBox_SwitchFocus
 
 ### 01. NameFilled
 

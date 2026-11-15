@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(MSBuildProjectDirectory)/obj/xui-generated/$(Configuration)/$(TargetFramework)/$(RuntimeIdentifier)</CompilerGeneratedFilesOutputPath>
+    <XuiShaderTools>$(MSBuildThisFileDirectory)</XuiShaderTools>
+    <XuiShaderCompiler Condition="'$(XuiShaderCompiler)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">$(AndroidNdkDirectory)/shader-tools/darwin-x86_64/glslc</XuiShaderCompiler>
+    <XuiShaderCompiler Condition="'$(XuiShaderCompiler)' == ''">$(AndroidNdkDirectory)/shader-tools/linux-x86_64/glslc</XuiShaderCompiler>
+  </PropertyGroup>
+  <Target Name="CompileXuiVulkanShaders" AfterTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Exec Command="python3 &quot;$(XuiShaderTools)compile.py&quot; &quot;$(CompilerGeneratedFilesOutputPath)&quot; &quot;$(IntermediateOutputPath)xui-spirv&quot; &quot;$(XuiShaderCompiler)&quot;" />
+    <ItemGroup>
+      <_XuiSpirv Include="$(IntermediateOutputPath)xui-spirv/*.spv" />
+      <_AndroidResolvedAssets Include="@(_XuiSpirv)" />
+      <_AndroidAssetsDest Include="@(_XuiSpirv->'$(MonoAndroidAssetsDirIntermediate)xui-shaders/%(Filename)%(Extension)')" />
+      <FileWrites Include="$(IntermediateOutputPath)xui-spirv/*.spv" />
+    </ItemGroup>
+    <!-- Android resolves ordinary assets before C# source generation. Add these
+         late generated assets to the APK inputs and its already prepared directory. -->
+    <Copy SourceFiles="@(_XuiSpirv)" DestinationFiles="@(_XuiSpirv->'$(MonoAndroidAssetsDirIntermediate)xui-shaders/%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

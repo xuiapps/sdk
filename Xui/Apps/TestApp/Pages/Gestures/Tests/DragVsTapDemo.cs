@@ -1,60 +1,88 @@
-using System.Runtime.InteropServices;
 using Xui.Core.Canvas;
+using Xui.Core.Animation;
+using Xui.Apps.TestApp.Pages.Gestures.Widgets;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
 using Xui.DevKit.UI.Widgets;
-using static Xui.Core.Canvas.FontWeight;
+using static Xui.Apps.TestApp.Pages.Layout.LayoutPreviewStyle;
+using NFloat = System.Runtime.InteropServices.NFloat;
 
 namespace Xui.Apps.TestApp.Pages.Gestures.Tests;
 
-/// <summary>
-/// Vertical ScrollView with a mix of <see cref="Button"/> (captures ITap; the
-/// ScrollView steals after 8pt of motion) and <see cref="ScratchPad"/> widgets
-/// (capture IDrag; the ScrollView stands down for the whole gesture). Drag
-/// across a button → the page scrolls. Drag across a ScratchPad → a stroke is
-/// drawn and the page does not scroll.
-/// </summary>
-public class DragVsTapDemo : View
+/// <summary>Real tap controls and firm drawing gestures negotiate with their scrolling parent.</summary>
+public class DragVsTapDemo : ViewCollection
 {
     private readonly ScrollView scroller;
-
+    private struct TapBubble
+    {
+        public bool Visible;
+        public Point Origin;
+        public NFloat Age;
+    }
+    private readonly TapBubble[] tapBubbles = new TapBubble[8];
+    private int nextBubble;
     public DragVsTapDemo()
     {
-        var stack = new VerticalStack
+        var stack = new VerticalStack { Margin = InputDemoCard.ContentInset };
+        var status = Text("Your ideas, saved with a tap.", 12, color: Muted);
+        status.Id = "SketchStatus"; status.Margin = (0, 0, 12, 0); stack.Add(status);
+        for (var i = 0; i < 3; i++)
         {
-            Margin = 16,
-            Content =
-            [
-                new Label { Text = "Drag vs Tap", FontFamily = "Inter", FontSize = 18, FontWeight = SemiBold, Margin = (0, 0, 8, 0) },
-                new Label { Text = "Buttons capture ITap → ScrollView steals after 8pt. ScratchPads capture IDrag → ScrollView stands down.", FontFamily = "Inter", FontSize = 13, Margin = (0, 0, 12, 0) },
-            ]
-        };
-
-        for (int i = 0; i < 6; i++)
-        {
-            stack.Add(new Button { Text = $"Button #{i + 1}  (drag me — page scrolls)", Margin = (0, 0, 8, 0) });
-            stack.Add(new ScratchPad { Margin = (0, 0, 16, 0) });
+            var number = i + 1;
+            var button = new Button { Id = $"SaveSketch{number}", Text = $"Save idea {number}", Margin = (0, 0, 10, 0) };
+            button.Clicked = () =>
+            {
+                status.Text = $"Idea {number} saved. Keep creating.";
+                var origin = GlobalToLocal(button.Parent!.LocalToGlobal(button.Frame.Center));
+                tapBubbles[nextBubble] = new TapBubble { Visible = true, Origin = origin, Age = -1 };
+                nextBubble = (nextBubble + 1) % tapBubbles.Length;
+                InvalidateRender(); RequestAnimationFrame();
+            };
+            stack.Add(button);
+            stack.Add(new ScratchPad { Id = $"SketchPad{number}", MinimumHeight = 156, MaximumHeight = 156, Margin = (0, 0, 18, 0) });
         }
+        Add(scroller = new ScrollView { Id = "SketchFeed", Direction = ScrollDirection.Vertical,
+            ScrollbarEndInset = 0, Content = stack });
+    }
+    protected override Size MeasureCore(Size available, IMeasureContext context) { scroller.Measure(available, context); return available; }
+    protected override void ArrangeCore(Rect rect, IMeasureContext context) => scroller.Arrange(rect, context);
 
-        scroller = new ScrollView
+    protected override void AnimateCore(TimeSpan previous, TimeSpan current)
+    {
+        base.AnimateCore(previous, current);
+        var active = false;
+        var dt = NFloat.Max(0, (NFloat)(current - previous).TotalSeconds);
+        foreach (ref var bubble in tapBubbles.AsSpan())
         {
-            Direction = ScrollDirection.Vertical,
-            Content = stack,
-        };
-        AddProtectedChild(scroller);
+            if (!bubble.Visible) continue;
+            bubble.Age = bubble.Age < 0 ? 0 : bubble.Age + dt;
+            bubble.Visible = bubble.Age < 1.2f;
+            active |= bubble.Visible;
+            InvalidateRender();
+        }
+        if (active) RequestAnimationFrame();
     }
 
-    public override int Count => 1;
-    public override View this[int index] => index == 0 ? scroller : throw new IndexOutOfRangeException();
-
-    protected override Size MeasureCore(Size available, IMeasureContext context)
+    protected override void RenderCore(IContext context)
     {
-        scroller.Measure(available, context);
-        return available;
+        base.RenderCore(context);
+        // Paint above the feed so scrolling content cannot cover the tap feedback.
+        foreach (ref var bubble in tapBubbles.AsSpan())
+        {
+            if (!bubble.Visible) continue;
+            var t = NFloat.Clamp(bubble.Age / 1.2f, 0, 1);
+            var center = bubble.Origin + new Vector(0, -18 - 64 * Easing.EaseOutCubic(t));
+            context.Save();
+            context.GlobalAlpha = 1 - Easing.EaseInCubic(t);
+            InputDrawing.Panel(context, new Rect(center.X - 48, center.Y - 17, 96, 34), Teal, 17);
+            InputDrawing.Text(context, "Tapped!", center, 14, Colors.White, true, TextAlign.Center);
+            context.Restore();
+        }
     }
 
-    protected override void ArrangeCore(Rect rect, IMeasureContext context)
+    protected override void OnDeactivate()
     {
-        scroller.Arrange(rect, context);
+        Array.Clear(tapBubbles);
+        base.OnDeactivate();
     }
 }

@@ -1,0 +1,30 @@
+{
+  "title": "Comprehensive Commercial Office Layout",
+  "publisher": "Open CAD Library",
+  "sourcePage": "https://opencadlibrary.com/c10145-commercial-office-layout-cad-block/",
+  "licenseDeclaredByPublisher": "CC0",
+  "licenseReference": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "retrievedOn": "2026-11-14",
+  "archive": {
+    "url": "https://assets.opencadlibrary.com/c10145Comprehensive%20Commercial%20Office%20Layout%20CAD%20Block944Yrd9y.zip",
+    "bytes": 491064,
+    "sha256": "9e3d2e82a35981a27070e3b777bfaea874d01f4debb4c93eafa2846889f0734b"
+  },
+  "files": [
+    {
+      "path": "floor-plan.dwg",
+      "archiveEntry": "c10145Comprehensive Commercial Office Layout CAD Block944Yrd9y.dwg",
+      "bytes": 546848,
+      "sha256": "69e44571f5ada9d29b29112697f30e0c159e6b2123ca10b6f67874d6fda70e6d",
+      "dwgHeader": "AC1021",
+      "changes": "Filename shortened; original bytes unchanged."
+    },
+    {
+      "path": "preview.webp",
+      "url": "https://images.opencadlibrary.com/c10145Comprehensive-Commercial-Office-Layout-CAD-BlockqmcqVzjv.webp",
+      "bytes": 85282,
+      "sha256": "a1995708bc65273d6faeede50afaf34eb86f9b340e92226ca0ce1a508450a602",
+      "changes": "Filename shortened; original bytes unchanged."
+    }
+  ]
+}

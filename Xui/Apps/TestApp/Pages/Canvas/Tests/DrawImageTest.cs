@@ -1,4 +1,3 @@
-using System.IO;
 using System.Runtime.InteropServices;
 using Xui.Core.Canvas;
 using Xui.Core.DI;
@@ -9,15 +8,25 @@ using static Xui.Core.Canvas.Colors;
 namespace Xui.Apps.TestApp.Pages.Canvas.Tests;
 
 /// <summary>
-/// Demonstrates <see cref="IImageDrawingContext.DrawImage"/> — draws a loaded image
+/// Demonstrates <see cref="IImageDrawingContext.DrawImage(IImage, Rect)"/> — draws a loaded image
 /// scaled to fit the canvas area with a small margin.
 /// </summary>
-public class DrawImageTest : View
+public class DrawImageTest : View, ICanvasDrawingExample
 {
+    Rect ICanvasDrawingExample.GetArtworkBounds(IMeasureContext context)
+    {
+        if (image is not null && image.Size != Size.Empty)
+        {
+            var scale = NFloat.Min(580 / image.Size.Width, 280 / image.Size.Height);
+            var size = new Size(image.Size.Width * scale, image.Size.Height * scale);
+            return new Rect(300 - size.Width / 2, 150 - size.Height / 2, size.Width, size.Height);
+        }
+        return new Rect(160, 10, 280, 280);
+    }
+
     private IImage? image;
 
-    private static string ImagePath =>
-        Path.Combine(AppContext.BaseDirectory, "Assets", "test.png");
+    private const string ImagePath = "asset://test-512.png";
 
     protected override void OnAttach(ref AttachEventRef e)
     {
@@ -32,9 +41,6 @@ public class DrawImageTest : View
 
     protected override void RenderCore(IContext context)
     {
-        context.SetFill(White);
-        context.FillRect(this.Frame);
-
         NFloat margin = 10f;
 
         if (image is not null && image.Size != Size.Empty)

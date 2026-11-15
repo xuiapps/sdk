@@ -2,13 +2,7 @@
 
 ## Timeline
 
-# TestApp
-
-Open the test app to see the menu with SDK examples.
-
-## Scenario
-
-Drag-select text range in NameBox with mouse.
+# TextBox_MouseSelection
 
 ### 01. MouseDown
 

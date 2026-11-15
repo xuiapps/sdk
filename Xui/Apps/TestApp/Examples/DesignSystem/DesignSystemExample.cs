@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Xui.Apps.TestApp.Examples;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
 using Xui.Core.UI;
@@ -15,21 +16,23 @@ namespace Xui.Apps.TestApp.Examples.DesignSystem;
 /// Root view for the Design System demo. Owns the design system state and
 /// provides IDesignSystem and IDesignSystemEditor to all descendants via GetService.
 /// </summary>
-public class DesignSystemExample : Example, IDesignSystemEditor
+public class DesignSystemExample : Example, IDesignSystemEditor, IMobileExamplePresentation
 {
     private NFloat primaryHue = 240;
+    private NFloat whiteWeight = 0.02f, blackWeight = 0.12f;
     private ColorHarmony harmony = ColorHarmony.SplitComplementary;
     private ShapePreset shapePreset = ShapePreset.Soft;
     private NeutralStyle neutralStyle = NeutralStyle.Monochrome;
     private SizingPreset sizingPreset = SizingPreset.Mobile;
     private MotionPreset motionPreset = MotionPreset.Normal;
     private XuiDesignSystem? designSystem;
+    private readonly DesignSystemResponsiveContent responsiveContent;
 
     public DesignSystemExample()
     {
         Title = "Design System";
 
-        Content = new Grid
+        Content = responsiveContent = new DesignSystemResponsiveContent(new Grid
         {
             TemplateColumns = [Px(460), Fr(1)],
             TemplateRows = [Fr(1)],
@@ -143,10 +146,25 @@ public class DesignSystemExample : Example, IDesignSystemEditor
                     ]
                 },
             ]
-        };
+        });
     }
 
+    /// <inheritdoc/>
+    public void UseMobilePresentation() => responsiveContent.UseMobilePresentation();
+
     NFloat IDesignSystemEditor.PrimaryHue => primaryHue;
+    NFloat IDesignSystemEditor.WhiteWeight => whiteWeight;
+    NFloat IDesignSystemEditor.BlackWeight => blackWeight;
+
+    void IDesignSystemEditor.SetShade(NFloat white, NFloat black)
+    {
+        white = NFloat.Clamp(white, 0, 1);
+        black = NFloat.Clamp(black, 0, 1 - white);
+        if (whiteWeight == white && blackWeight == black) return;
+        whiteWeight = white;
+        blackWeight = black;
+        RebuildDesignSystem();
+    }
     ColorHarmony IDesignSystemEditor.Harmony => harmony;
     ShapePreset IDesignSystemEditor.ShapePreset => shapePreset;
     SizingPreset IDesignSystemEditor.SizingPreset => sizingPreset;
@@ -170,6 +188,7 @@ public class DesignSystemExample : Example, IDesignSystemEditor
 
     void IDesignSystemEditor.SetHue(NFloat hue)
     {
+        if (primaryHue == hue) return;
         primaryHue = hue;
         RebuildDesignSystem();
     }
@@ -209,11 +228,18 @@ public class DesignSystemExample : Example, IDesignSystemEditor
         var device = this.GetService(typeof(IDeviceInfo)) as IDeviceInfo;
         if (device == null) return;
 
+        var hueColor = ColorWheelView.HueColor(primaryHue);
+        var hueWeight = 1 - whiteWeight - blackWeight;
+        var shade = new Oklch(new Color(
+            hueColor.Red * hueWeight + whiteWeight,
+            hueColor.Green * hueWeight + whiteWeight,
+            hueColor.Blue * hueWeight + whiteWeight, 1));
         var options = new XuiDesignSystemOptions
         {
-            PrimaryHue = primaryHue,
+            PrimaryHue = shade.C > 0.0001f ? shade.H : primaryHue,
+            PrimaryLightness = shade.L,
             Harmony = harmony,
-            Chroma = 0.15f,
+            Chroma = shade.C < 0.0001f ? 0 : shade.C,
             Shape = shapePreset,
             Sizing = sizingPreset,
             NeutralStyle = neutralStyle,

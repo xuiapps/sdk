@@ -15,6 +15,10 @@ repository-root `AGENTS.md` first.
 - Integration tests: `Xui/Tests/Integration`. Boot the real TestApp application
   through `TestSinglePageApp`, drive input/animation synchronously, and compare
   multi-step scenarios without an OS window.
+- Design system suite: `Xui/Tests/Integration/DesignSystem`, within the Integration
+  project. Owns palette math, retained-token
+  and allocation checks, widget invalidation, and deterministic mobile design-system
+  scenarios. SVG galleries and their README specifications live beside the tests.
 - E2E tests: `Xui/Tests/E2E`. Launch a real Debug desktop app and control it
   through the DevTools named-pipe protocol. Use only when a real platform
   process/window or DevTools behavior matters.
@@ -76,6 +80,44 @@ the test that owns it.
 - Advance animations through `AnimationFrame`; avoid `Task.Delay`.
 - A change to TestApp navigation, IDs, layout, safe areas, text metrics, focus,
   or input may legitimately affect multiple scenario sets. Review all of them.
+
+### Targeting elements and gestures
+
+- Resolve interactive targets by stable view ID. Assert that the target exists
+  before sending input, with a failure message that includes the requested ID,
+  the expected page, and the action being attempted. Do not use a null-forgiving
+  operator to turn a missing target into an unrelated input or snapshot failure.
+- Do not hardcode absolute screen coordinates for buttons, fields, navigation,
+  or other identifiable controls. A navigation change should fail with a message
+  such as `Cannot find element 'TextBox' on the home page while opening Text Input`,
+  rather than clicking an old location and comparing the wrong screen.
+- Finding a view in the tree does not mean it is visible or interactive. Scroll
+  the target into its viewport, finish pending navigation with the deterministic
+  frame clock, and verify the destination by ID before continuing. Do not accept
+  a snapshot of the home page as the new baseline for a destination-page test.
+- Derive pointer positions from the target's current bounds and convert them
+  through the view's coordinate transforms into window coordinates. Raw
+  `Frame.Center` can be wrong inside scrolling or transformed containers. Check
+  existing harness overloads rather than assuming they apply this conversion.
+- Pan, swipe, pinch, zoom, selection, and outside-dismiss tests may use fixed
+  relative offsets, distances, or fractions of the target bounds. Anchor these
+  values to an identified view or viewport, document their purpose, and keep
+  gesture points inside the intended interaction region. Absolute coordinates
+  are reserved for tests explicitly verifying window-coordinate geometry.
+- Invoke a control's action directly only when navigation is setup for another
+  behavior under test. Tests of tapping, hit testing, scrolling, or gesture
+  negotiation must exercise routed pointer input.
+- Assert behavior as well as appearance: the destination ID, focused field,
+  selected card, scroll offset, text value, or overlay state should establish
+  that the intended interaction occurred before taking its snapshot.
+- Snapshot reporting and cleanup must not hide an earlier missing-target or
+  behavior assertion. Preserve the original failure and include snapshot
+  diagnostics as additional evidence. Wrap scenario assertions and snapshots in
+  `app.Run(() => { ... })` so disposal writes its report without replacing the
+  original scenario exception.
+- Use `RequireView(id, action)` for descriptive lookup failures and `Advance`
+  for deterministic animation progress. A scroll gesture may need one move to
+  negotiate capture before subsequent moves scroll; model both phases.
 
 ## E2E tests
 

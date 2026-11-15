@@ -14,8 +14,7 @@ public class SdkExampleButton<TPage> : Label
     bool pressed = false;
 
     /// <summary>
-    /// When set, the button is visually muted outside this platform while
-    /// remaining available for cross-platform example navigation.
+    /// When set, the button is unavailable outside this platform.
     /// </summary>
     public DevicePlatform? RequiredPlatform { get; set; }
 
@@ -26,42 +25,45 @@ public class SdkExampleButton<TPage> : Label
 
     private void NavigateToExample()
     {
-        if (this.TryFindParent<SdkNavigation>(out var navigation))
-        {
-            navigation.PushExamplePage<TPage>();
-        }
+        this.TryFindExampleNavigation(out var navigation);
+        navigation?.PushExamplePage<TPage>();
     }
+
+    private bool IsUnavailable => this.RequiredPlatform is { } requiredPlatform &&
+        this.GetService(typeof(IDeviceInfo)) is IDeviceInfo device &&
+        device.Platform != requiredPlatform;
 
     public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
     {
-        if (e.State.PointerType == PointerType.Mouse)
+        if (this.IsUnavailable)
         {
-            if (e.Type == PointerEventType.Enter)
-            {
-                hover = true;
-                this.InvalidateRender();
-            }
-            else if (e.Type == PointerEventType.Leave)
-            {
-                hover = false;
-                this.InvalidateRender();
-            }
-            else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
-            {
-                this.CapturePointer(e.PointerId);
+            return;
+        }
 
-                pressed = true;
-                this.InvalidateRender();
-            }
-            else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
-            {
-                this.ReleasePointer(e.PointerId);
-
+        if (e.State.PointerType == PointerType.Mouse && e.Type == PointerEventType.Enter)
+        {
+            hover = true;
+            this.InvalidateRender();
+        }
+        else if (e.State.PointerType == PointerType.Mouse && e.Type == PointerEventType.Leave)
+        {
+            hover = false;
+            this.InvalidateRender();
+        }
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down)
+        {
+            this.CapturePointer(e.PointerId, PointerGestures.Tap);
+            pressed = true;
+            this.InvalidateRender();
+        }
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Up)
+        {
+            var wasPressed = pressed;
+            pressed = false;
+            this.ReleasePointer(e.PointerId);
+            if (wasPressed)
                 this.NavigateToExample();
-
-                pressed = false;
-                this.InvalidateRender();
-            }
+            this.InvalidateRender();
         }
 
         base.OnPointerEvent(ref e, phase);
@@ -69,16 +71,17 @@ public class SdkExampleButton<TPage> : Label
 
     protected override void RenderCore(IContext context)
     {
-        var isUnavailable = this.RequiredPlatform is { } requiredPlatform &&
-            this.GetService(typeof(IDeviceInfo)) is IDeviceInfo device &&
-            device.Platform != requiredPlatform;
-
-        if (isUnavailable)
+        if (this.IsUnavailable)
         {
+            context.SetFont(this.Font);
+            context.TextBaseline = TextBaseline.Top;
+            context.TextAlign = TextAlign.Left;
             context.SetFill(LightGray);
-            context.FillRect(this.Frame);
+            context.FillText(this.Text, this.Frame.TopLeft);
+            return;
         }
-        else if (this.pressed)
+
+        if (this.pressed)
         {
             context.SetFill(Yellow);
             context.FillRect(this.Frame);

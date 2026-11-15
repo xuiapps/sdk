@@ -136,10 +136,15 @@ internal sealed class DirectXImageFactory : IImagePipeline, IDisposable
 
     // ── Internals ─────────────────────────────────────────────────────────────
 
-    private static string Resolve(string uri) =>
-        System.IO.Path.IsPathRooted(uri)
+    private static string Resolve(string uri)
+    {
+        if (AssetUri.TryGetRelativePath(uri, out var assetPath))
+            return System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", assetPath);
+
+        return System.IO.Path.IsPathRooted(uri)
             ? uri
             : System.IO.Path.Combine(AppContext.BaseDirectory, uri);
+    }
 
     private unsafe (D2D1.Bitmap1 bitmap, D3D11.Texture2D? texture, uint w, uint h) Upload(string resolvedPath)
     {

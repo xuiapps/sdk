@@ -115,7 +115,7 @@ public class MainWindow : Window
 
                     this.mousePoint = this.touchPoint;
                 }
-                else if (touch.Phase == TouchPhase.End)
+                else if (touch.Phase is TouchPhase.End or TouchPhase.Cancel)
                 {
                     this.scrollInertia *= 0.6f - 0.4f * NFloat.Cos(NFloat.Clamp(this.scrollInertia.Magnitude * 0.2f, 0, NFloat.Pi));
 
