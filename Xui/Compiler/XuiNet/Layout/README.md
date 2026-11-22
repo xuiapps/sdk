@@ -1,0 +1,15 @@
+# Value-type layout
+
+`LayoutResolver.Classify(typeHandle)` separately reports `StorageKind.LinearMemory` for instance storage without managed references, or `ContainsManagedReferences` for direct or nested object references and managed byrefs. It follows same-module value-type fields, recognizes NFloat, and ignores static fields. Strings, objects, arrays, class and interface fields require reference tracking. Unresolved external value types and generics throw instead of being assumed reference-free. Results are cached independently from layout and do not depend on pointer size.
+
+Classification describes reference-tracking requirements, not a final WASM allocation strategy. `LinearMemory` does not promise that `Resolve` supports the type's layout (for example, auto layout remains unsupported). `ContainsManagedReferences` does not mean boxing or force a GC allocation: lowering may use separate locals, GC fields, or handles. A managed byref can point to stack storage rather than a heap object. No pointer-sized byte layout is assigned to an externref.
+
+`new LayoutResolver(module, TargetLayout.Wasm32).Resolve(typeHandle)` calculates an unboxed struct's size, alignment, and instance-field offsets and sizes. Results are cached per resolver; the target is explicit and never inferred from the host process. `TargetLayout.X64` supplies the corresponding 64-bit scalar rules for comparison. These profiles are data-layout rules, not complete calling conventions or managed object models.
+
+Sequential fields retain metadata order, with each offset aligned to the smaller of its natural alignment and the packing limit. Nested structs contribute their own size and alignment. Explicit layouts use the declared field offsets and permit overlap for supported storage types. With no declared size, the final extent is rounded to the struct alignment. A nonzero metadata size sets a minimum extent without implicit tail rounding. Empty structs occupy at least one byte. Static fields do not contribute to instance layout.
+
+Supported storage includes primitive numeric fields, one-byte managed Boolean, two-byte managed Char, native integers, enums, same-module nested structs, and the well-known `System.Runtime.InteropServices.NFloat` type. WASM32 uses four-byte native integers and NFloat; X64 uses eight bytes. These are managed storage sizes, not marshalled representations: `MarshalAs` and character-set transformations are outside this resolver.
+
+Reference fields, classes, auto-layout structs, generic structs, inline arrays, and other unresolved external value types throw `NotSupportedException`. This deliberately leaves reference storage undecided while the backend uses host strings. It does not enable struct WASM emission.
+
+The PE views expose `TypeDefinition.DeclaredLayout` and `FieldDefinition.DeclaredOffset` separately from calculated layout. A sequential field usually has no declared offset. Assembly snapshots report the selected layout target, struct alignment and size, and field offsets and sizes; unsupported struct layouts retain an explicit diagnostic.

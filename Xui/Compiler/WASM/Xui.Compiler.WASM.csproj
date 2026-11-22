@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../XuiNet/Xui.Compiler.XuiNet.csproj" />
+  </ItemGroup>
+</Project>

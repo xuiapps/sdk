@@ -1,0 +1,7 @@
+# Classes and GC struct values
+
+[Unit](Snapshots/Unit.md) is the minimal class example: a private string `name` and a private `Point position`. Its WASM GC object contains a runtime type-descriptor header followed by three flattened source fields: `externref`, `i32`, and `i32`. Construction and `MoveTo` use direct calls; class aliases share identity. Reading the point copies it to linear memory, and assigning it back copies its fields into the object. Later changes to that local copy leave the object unchanged. The demo uses integer coordinates to isolate storage from the still-unsupported `NFloat` conversion calls.
+
+[Objects](Snapshots/Objects.md) compiles the same C# fixture for CLR and Node execution, in Debug and Release. The snapshot shows Release source, output, exit code, and WAT. It demonstrates class aliases, independent struct copies, shallow copying of embedded class references, recursive flattening of struct fields, and numeric values moving between linear memory and GC fields. The [assembly dump](../../XuiNet/DotNet/Snapshots/Objects.md) shows its source metadata and IL.
+
+The other tests cover constructors, arguments and results, direct instance methods, nulls and traps, GC struct conditionals and loops, default initialization, field widths, and preserving an inline field address across assignment. The [polymorphism tests](../Polymorphism/README.md) cover inheritance and virtual dispatch.
