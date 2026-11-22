@@ -49,4 +49,5 @@ final class DrawOp {
     static final int Image = 44;
     static final int ImageCrop = 45;
     static final int TextResource = 46;
+    static final int Symbol = 47;
 }

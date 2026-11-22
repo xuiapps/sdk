@@ -34,6 +34,13 @@ public class ThreeDPresentationTest
         Settle(app);
         var performance = Assert.IsType<Toggle>(app.Window.RootView.FindViewById("PerformanceOverlayToggle"));
         var developer = Assert.IsType<Toggle>(app.Window.RootView.FindViewById("DeveloperFeaturesToggle"));
+        var symbols = Assert.IsType<Toggle>(app.RequireView("FloorplanSymbolsToggle", "checking the floorplan rendering preference"));
+        var exampleSettings = Assert.IsAssignableFrom<IExampleSettings>(symbols.GetService(typeof(IExampleSettings)));
+        Assert.True(symbols.IsOn);
+        Tap(app, symbols);
+        Assert.False(exampleSettings.UseFloorplanSymbols);
+        Tap(app, symbols);
+        Assert.True(exampleSettings.UseFloorplanSymbols);
         var settings = Assert.IsType<ExampleSettings>(developer.GetService(typeof(ExampleSettings)));
         Assert.False(settings.ShowDeveloperFeatures);
         Assert.True(developer.Frame.Top > performance.Frame.Bottom);
@@ -41,6 +48,7 @@ public class ThreeDPresentationTest
         {
             Assert.False(Overlaps(label.Frame, performance.Frame), label.Text);
             Assert.False(Overlaps(label.Frame, developer.Frame), label.Text);
+            Assert.False(Overlaps(label.Frame, symbols.Frame), label.Text);
         }
         Tap(app, performance);
         Assert.True(performance.IsOn);

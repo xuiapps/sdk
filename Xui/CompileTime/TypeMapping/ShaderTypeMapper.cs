@@ -42,6 +42,9 @@ internal class ShaderTypeMapper
             "Xui.GPU.Shaders.Types.Float4" => new IrVectorType(F32, 4),
             "Xui.GPU.Shaders.Types.Color4" => new IrVectorType(F32, 4), // Color4 is float4 in shaders
 
+            "Xui.GPU.Shaders.Types.Texture2D<Xui.GPU.Shaders.Types.Color4>" => new IrTextureType(new IrVectorType(F32, 4)),
+            "Xui.GPU.Shaders.Types.Sampler" => IrSamplerType.Instance,
+
             "Xui.GPU.Shaders.Types.Float4x4" => new IrMatrixType(F32, 4, 4),
 
             _ => MapStructType(type)

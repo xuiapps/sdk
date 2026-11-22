@@ -49,4 +49,5 @@ internal enum DrawOp
     Image = 44,
     ImageCrop = 45,
     TextResource = 46,
+    Symbol = 47,
 }

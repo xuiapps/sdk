@@ -33,6 +33,9 @@ public unsafe class RenderContext
     private bool _blendEnabled;
     private CullMode _cullMode;
 
+    /// <summary>Uses premultiplied source-over when blending is enabled.</summary>
+    public bool PremultipliedAlpha { get; set; }
+
     /// <summary>
     /// Gets the framebuffer associated with this render context.
     /// </summary>
@@ -134,7 +137,7 @@ public unsafe class RenderContext
         TBindings bindings)
         where TVertex : unmanaged
         where TVarying : unmanaged
-        where TBindings : unmanaged
+        where TBindings : struct
     {
         if (_topology != PrimitiveTopology.TriangleList)
             throw new NotImplementedException("Only TriangleList topology is currently supported");
@@ -170,7 +173,7 @@ public unsafe class RenderContext
         IFragmentShader<TVarying, FragmentOutput, TBindings> fragmentShader,
         TBindings bindings)
         where TVarying : unmanaged
-        where TBindings : unmanaged
+        where TBindings : struct
     {
         // Extract positions from varyings
         // For now, we assume the first field of TVarying is a Float4 position
@@ -252,7 +255,9 @@ public unsafe class RenderContext
                     if (_blendEnabled)
                     {
                         var existing = _framebuffer.GetColor(x, y);
-                        colorRgba32 = ColorTarget.BlendRgba32(colorRgba32, existing);
+                        colorRgba32 = PremultipliedAlpha
+                            ? ColorTarget.ToRgba32(output.Color + ColorTarget.FromRgba32(existing) * (1 - (float)output.Color.A))
+                            : ColorTarget.BlendRgba32(colorRgba32, existing);
                     }
 
                     _framebuffer.SetColor(x, y, colorRgba32);
@@ -293,7 +298,15 @@ public unsafe class RenderContext
         w2 = 1.0f - w0 - w1;
 
         // Point is inside if all weights are non-negative
-        return w0 >= 0 && w1 >= 0 && w2 >= 0;
+        return Inside(w0, x1, y1, x2, y2) && Inside(w1, x2, y2, x0, y0) && Inside(w2, x0, y0, x1, y1);
+
+        bool Inside(float weight, float ax, float ay, float bx, float by)
+        {
+            if (weight != 0) return weight > 0;
+            if (area < 0) { (ax, bx) = (bx, ax); (ay, by) = (by, ay); }
+            // Top-left fill rule: a shared quad diagonal belongs to exactly one triangle.
+            return by < ay || (by == ay && bx > ax);
+        }
     }
 
     /// <summary>

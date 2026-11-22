@@ -20,6 +20,8 @@ internal sealed class MobileNavigation : NavigationView, IExampleNavigation
 
     public bool IsPerformanceOverlayEnabled => performanceOverlay.IsEnabled;
 
+    internal MobileFrameRate FrameRate => performanceMetrics.FrameRate;
+
     public void SetPerformanceOverlayEnabled(bool enabled)
     {
         performanceMetrics.IsEnabled = enabled;

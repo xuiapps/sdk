@@ -15,6 +15,87 @@ namespace Xui.Tests.Integration.TestApp;
 
 public class ButtonPressFeedbackTest
 {
+    [Theory]
+    [InlineData(16)]
+    [InlineData(1000)] // A stalled UI must not expire feedback and strand the committed click.
+    public void CommittedQuickClickWaitsForAHighlightedRenderThenTheNextFrame(int delay)
+    {
+        using var scene = new Scene(scroll: true);
+        scene.Button.WaitForPressFeedback = true;
+        var events = new List<string>();
+        scene.Button.ClickMaybe += () => events.Add("maybe");
+        scene.Button.ClickFarFetch += () => events.Add("far");
+        scene.Button.Click += () => events.Add("click");
+        scene.Down();
+        Assert.Empty(events);
+        scene.Up();
+        Assert.Equal(new[] { "maybe", "far" }, events);
+        Assert.Equal(0, scene.Clicks);
+        scene.App.AnimationFrame(TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(400 + delay));
+        Assert.Equal(0, scene.Clicks); // A tick alone is insufficient: feedback has not been drawn.
+        scene.App.Render();
+        Assert.Equal(0, scene.Clicks); // Never navigate while traversing the render tree.
+        scene.App.AnimationFrame(TimeSpan.FromMilliseconds(400 + delay), TimeSpan.FromMilliseconds(416 + delay));
+        Assert.Equal(new[] { "maybe", "far", "click" }, events);
+        Assert.Equal(1, scene.Clicks);
+        scene.Advance(100);
+        Assert.Equal(1, scene.Clicks);
+    }
+
+    [Fact]
+    public void MaybeFollowsHighlightRecognitionAndMayBeCancelledByScrolling()
+    {
+        using var scene = new Scene(scroll: true);
+        scene.Button.WaitForPressFeedback = true;
+        var events = new List<string>();
+        scene.Button.ClickMaybe += () => events.Add("maybe");
+        scene.Button.ClickFarFetch += () => events.Add("far");
+        scene.Button.Click += () => events.Add("click");
+        scene.Down(); scene.Advance(99);
+        Assert.Empty(events);
+        scene.Advance(2);
+        Assert.Equal(new[] { "maybe" }, events);
+        var point = scene.Center;
+        scene.App.PointerMove(point + new Vector(0, -80));
+        scene.App.PointerUp(point + new Vector(0, -80));
+        scene.Advance(400);
+        Assert.Equal(new[] { "maybe" }, events);
+        Assert.Equal(0, scene.Clicks);
+    }
+
+    [Fact]
+    public void AlreadyRenderedHighlightAllowsClickOnRelease()
+    {
+        using var scene = new Scene(scroll: true);
+        scene.Button.WaitForPressFeedback = true;
+        var events = new List<string>();
+        scene.Button.ClickMaybe += () => events.Add("maybe");
+        scene.Button.ClickFarFetch += () => events.Add("far");
+        scene.Button.Click += () => events.Add("click");
+        scene.Down(); scene.Advance(110);
+        scene.Up();
+        Assert.Equal(new[] { "maybe", "far", "click" }, events);
+        Assert.Equal(1, scene.Clicks);
+    }
+
+    [Fact]
+    public void CommittedClickStillRunsIfFarFetchRemovesTheButton()
+    {
+        using var scene = new Scene();
+        scene.Button.WaitForPressFeedback = true;
+        var events = new List<string>();
+        scene.Button.ClickFarFetch += () =>
+        {
+            events.Add("far");
+            scene.Surface.Remove(scene.Button);
+        };
+        scene.Button.ClickFarFetch += () => events.Add("far-second-subscriber");
+        scene.Button.Click += () => events.Add("click");
+        scene.Down(); scene.Up();
+        Assert.Equal(new[] { "far", "far-second-subscriber", "click" }, events);
+        Assert.Equal(1, scene.Clicks);
+    }
+
     [Fact]
     public void HomeNavigationKeepsReleasedHighlightAcrossPageReparenting()
     {
@@ -24,6 +105,7 @@ public class ButtonPressFeedbackTest
         app.Render();
         var button = Assert.IsAssignableFrom<Button>(app.Window.RootView.FindViewById("CanvasTests"));
         Assert.True(button.TryFindParent<NavigationView>(out var navigation));
+        navigation.TransitionDuration = TimeSpan.FromMilliseconds(600); // Keep the source attached through the fade assertion.
         string Draw()
         {
             using var stream = new MemoryStream();
@@ -35,10 +117,12 @@ public class ButtonPressFeedbackTest
         app.PointerDown(point);
         app.AnimationFrame(TimeSpan.Zero, TimeSpan.FromMilliseconds(50));
         app.PointerUp(point);
-        Assert.True(navigation.IsTransitioning);
+        Assert.False(navigation.IsTransitioning);
         app.Render();
+        app.AnimationFrame(TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(66));
+        Assert.True(navigation.IsTransitioning);
         Assert.NotEqual(idle, Draw());
-        app.AnimationFrame(TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(200));
+        app.AnimationFrame(TimeSpan.FromMilliseconds(66), TimeSpan.FromMilliseconds(200));
         Assert.NotEqual(idle, Draw());
         app.AnimationFrame(TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(500));
         Assert.Equal(idle, Draw());

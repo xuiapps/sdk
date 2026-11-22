@@ -19,15 +19,23 @@ public sealed partial class FloorplanDrawing
     private sealed class Loader(XElement root)
     {
         private readonly Dictionary<string, XElement> ids = root.DescendantsAndSelf().Where(e => e.Attribute("id") != null).ToDictionary(e => e.Attribute("id")!.Value);
-        private readonly SvgStyles styles = new(root);
         private readonly Dictionary<XElement, Path2D> paths = new();
-        private readonly List<XElement> ancestry = new();
+        private readonly Dictionary<XElement, Region> regions = new();
         private readonly HashSet<XElement> references = new();
         private readonly List<Item> output = new();
         private bool markersOnly;
+        private int symbolDepth;
+        private readonly Dictionary<(XElement, SvgPresentation, NFloat), SymbolDefinition> symbols = new();
+        private readonly (XElement Element, string[] Attributes)[] variants = root.DescendantsAndSelf()
+            .Where(e => e.Attribute("data-state-attrs") is not null)
+            .Select(e => (e, e.Attribute("data-state-attrs")!.Value.Split(' '))).ToArray();
         private static readonly Rect Building = new(0, 120, 1000, 760);
         public FloorplanDrawing Build()
         {
+            // Fail fast on stale authored input instead of silently drawing unstyled geometry.
+            if (root.DescendantsAndSelf().Any(e => e.Name.LocalName == "style" || e.Attribute("style") is not null
+                || e.Attributes().Any(a => a.Value.Contains("var(", StringComparison.Ordinal))))
+                throw new NotSupportedException("Compile the floorplan SVG with preview.py export before loading it; CSS is not supported.");
             var levels = new Item[4][];
             for (int i = 0; i < 4; i++)
                 levels[i] = Compile(i, false);
@@ -38,16 +46,18 @@ public sealed partial class FloorplanDrawing
         {
             markersOnly = markers;
             output.Clear();
-            ancestry.Clear();
-            foreach (var room in root.DescendantsAndSelf().Where(e => e.Attribute("data-lod") != null))
-                room.SetAttributeValue("data-lod", $"L{level}");
-            root.SetAttributeValue("data-wall-lod", level == 0 ? "L0" : "L1");
-            root.SetAttributeValue("data-constellations", "true");
-            root.SetAttributeValue("data-room-labels", "true");
-            Walk(root, new() { ["fill"] = "#000", ["stroke"] = "none", ["font-size"] = "16", ["stroke-width"] = "1" }, AffineTransform.Identity, Building, 1, false);
+            var prefix = $"data-l{level}w{(level == 0 ? 0 : 1)}-";
+            foreach (var (element, attributes) in variants)
+                foreach (var name in attributes)
+                    element.SetAttributeValue(name, element.Attribute(prefix + name)?.Value
+                        ?? throw new FormatException($"Missing floorplan state attribute {prefix + name}."));
+            // Marker visibility is animated by FloorplanView, independently of furniture LoD.
+            if (ids.TryGetValue("building-constellations", out var marker))
+                marker.SetAttributeValue("opacity", "1");
+            Walk(root, SvgPresentation.Default, AffineTransform.Identity, Building, 1, false);
             return output.ToArray();
         }
-        private void Walk(XElement element, Dictionary<string, string> inherited, AffineTransform transform, Rect bounds, NFloat alpha, bool insideMarkers)
+        private void Walk(XElement element, SvgPresentation inherited, AffineTransform transform, Rect bounds, NFloat alpha, bool insideMarkers, Region? region = null)
         {
             string tag = element.Name.LocalName;
             if (tag is "defs" or "style" or "title" or "desc")
@@ -58,16 +68,21 @@ public sealed partial class FloorplanDrawing
             if (markerRoot && !markersOnly)
                 return;
             insideMarkers |= markerRoot;
-            ancestry.Add(element);
-            var style = styles.Resolve(ancestry, inherited);
-            string Get(string key, string fallback = "") => SvgStyles.Get(style, key, fallback);
-            if (Get("display") == "none")
-            { ancestry.RemoveAt(ancestry.Count - 1); return; }
-            alpha *= Number(Get("opacity", "1"));
+            if (element.Attribute("display")?.Value == "none") return;
+            var style = inherited.Resolve(element);
+            alpha *= Attr(element, "opacity", 1);
             transform *= Transform(element.Attribute("transform")?.Value);
             // Room bounds are building coordinates; symbol bounds must not replace them.
             if (element.Attribute("data-bounds") is { } box)
+            {
                 bounds = RectFrom(box.Value);
+                if (!markersOnly && symbolDepth == 0)
+                {
+                    if (!regions.TryGetValue(element, out region))
+                        regions[element] = region = new(element.Attribute("id")?.Value ?? "floorplan", bounds,
+                            element.Attribute("data-kind")?.Value == "room");
+                }
+            }
             if (insideMarkers)
                 bounds = Building; // Halos intentionally extend beyond room footprints.
             if (tag == "use")
@@ -87,13 +102,31 @@ public sealed partial class FloorplanDrawing
                     m *= AffineTransform.Translate(((w - vb.Width * scale) / 2, (h - vb.Height * scale) / 2))
                         * AffineTransform.Scale((scale, scale)) * AffineTransform.Translate((-vb.X, -vb.Y));
                 }
-                Walk(target, style, transform * m, bounds, alpha, insideMarkers);
+                if (target.Name.LocalName == "symbol" && !insideMarkers && !markersOnly && symbolDepth == 0)
+                {
+                    // The key contains presentation values only, never placement IDs or geometry.
+                    var signature = (target, style, alpha);
+                    if (!symbols.TryGetValue(signature, out var symbol))
+                    {
+                        var start = output.Count;
+                        var localBounds = RectFrom(target.Attribute("viewBox")!.Value).Expand(8);
+                        symbolDepth++;
+                        try { Walk(target, style, AffineTransform.Identity, localBounds, alpha, false); }
+                        finally { symbolDepth--; }
+                        var items = output.GetRange(start, output.Count - start).ToArray();
+                        output.RemoveRange(start, output.Count - start);
+                        symbols[signature] = symbol = new(items, localBounds, target.Attribute("data-source-id")?.Value ?? target.Attribute("id")!.Value);
+                    }
+                    output.Add(new Item(null, null, default, default, default, transform * m, bounds,
+                        null, null, 0, default, default, default, 1, false, false, symbol, region));
+                }
+                else Walk(target, style, transform * m, bounds, alpha, insideMarkers, region);
                 references.Remove(target);
             }
             else if (tag is "svg" or "g" or "symbol")
             {
                 foreach (var child in element.Elements())
-                    Walk(child, style, transform, bounds, alpha, insideMarkers);
+                    Walk(child, style, transform, bounds, alpha, insideMarkers, region);
             }
             else if (!markersOnly || insideMarkers)
             {
@@ -102,17 +135,17 @@ public sealed partial class FloorplanDrawing
                 Path2D? path = null;
                 if (tag != "text" && !paths.TryGetValue(element, out path))
                     paths[element] = path = Shape(element);
-                var fill = PaintFor(Get("fill", "#000"), Number(Get("fill-opacity", "1")), element, style);
-                var stroke = PaintFor(Get("stroke", "none"), Number(Get("stroke-opacity", "1")), element, style);
-                var weight = Get("font-weight", "400") switch { "normal" => (NFloat)400, "bold" => 700, var value => Number(value) };
-                var font = new Font(Number(Get("font-size", "16")), "Inter", new FontWeight(weight));
+                var fill = PaintFor(style.Fill, Number(style.FillOpacity), element, style);
+                var stroke = PaintFor(style.Stroke, Number(style.StrokeOpacity), element, style);
+                var weight = style.FontWeight switch { "normal" => (NFloat)400, "bold" => 700, var value => Number(value) };
+                var font = new Font(Number(style.FontSize), "Inter", new FontWeight(weight));
                 var item = new Item(path, tag == "text" ? element.Value : null, (Attr(element, "x"), Attr(element, "y")), font,
-                    Get("text-anchor") == "middle" ? TextAlign.Center : Get("text-anchor") == "end" ? TextAlign.Right : TextAlign.Left,
-                    transform, bounds, fill, stroke, Number(Get("stroke-width", "1")),
-                    Get("stroke-linecap") == "round" ? LineCap.Round : Get("stroke-linecap") == "square" ? LineCap.Square : LineCap.Butt,
-                    Get("stroke-linejoin") == "round" ? LineJoin.Round : Get("stroke-linejoin") == "bevel" ? LineJoin.Bevel : LineJoin.Miter,
-                    Get("fill-rule") == "evenodd" ? FillRule.EvenOdd : FillRule.NonZero, alpha,
-                    Get("paint-order").StartsWith("stroke"), tag == "text" && !insideMarkers);
+                    style.TextAnchor == "middle" ? TextAlign.Center : style.TextAnchor == "end" ? TextAlign.Right : TextAlign.Left,
+                    transform, bounds, fill, stroke, Number(style.StrokeWidth),
+                    style.LineCap == "round" ? LineCap.Round : style.LineCap == "square" ? LineCap.Square : LineCap.Butt,
+                    style.LineJoin == "round" ? LineJoin.Round : style.LineJoin == "bevel" ? LineJoin.Bevel : LineJoin.Miter,
+                    style.FillRule == "evenodd" ? FillRule.EvenOdd : FillRule.NonZero, alpha,
+                    style.PaintOrder.StartsWith("stroke"), tag == "text" && !insideMarkers, Region: region);
                 if (tag == "text" && element.HasElements)
                 {
                     // The study uses explicitly positioned tspan lines, not inline text layout.
@@ -128,14 +161,13 @@ public sealed partial class FloorplanDrawing
                 else
                     output.Add(item);
             }
-            ancestry.RemoveAt(ancestry.Count - 1);
         }
-        private Paint? PaintFor(string value, NFloat opacity, XElement shape, Dictionary<string, string> style)
+        private Paint? PaintFor(string value, NFloat opacity, XElement shape, SvgPresentation style)
         {
             if (value == "none")
                 return null;
             if (value == "currentColor")
-                value = SvgStyles.Get(style, "color", "#000");
+                value = style.Color;
             if (!value.StartsWith("url("))
             { var color = ColorOf(value); color.Alpha *= opacity; return new(color); }
             var gradient = ids[value[5..^1]];

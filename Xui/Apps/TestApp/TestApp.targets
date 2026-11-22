@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Assets/FloorplanGpu/atlas.bin.gz;Assets/FloorplanGpu/quads-l*.bin;Assets/FloorplanGpu/structure-l*.bin;Assets/FloorplanGpu/atlas.json" LogicalName="TestApp.FloorplanGpu.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Assets/Floorplan/Office.svg" LogicalName="TestApp.Floorplan.Office.svg" />
   </ItemGroup>
 </Project>

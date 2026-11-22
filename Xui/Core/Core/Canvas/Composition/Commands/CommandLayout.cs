@@ -12,7 +12,7 @@ internal static class CommandLayout
     internal static CanvasOp Op<T>(in T command) where T : unmanaged => Read<Command, T>(in command).Op;
 
     internal static bool Draws(CanvasOp op) => op is CanvasOp.Stroke or CanvasOp.FillRect or
-        CanvasOp.StrokeRect or CanvasOp.Fill or CanvasOp.Text or CanvasOp.TextResource or CanvasOp.Image or CanvasOp.ImageCrop;
+        CanvasOp.Symbol or CanvasOp.StrokeRect or CanvasOp.Fill or CanvasOp.Text or CanvasOp.TextResource or CanvasOp.Image or CanvasOp.ImageCrop;
 
     // The fixed header is followed by Length unmanaged elements for variable-size records.
     internal static int Size(ReadOnlySpan<byte> record)
@@ -37,6 +37,7 @@ internal static class CommandLayout
 
     internal static int Size(CanvasOp op) => op switch
     {
+        CanvasOp.Symbol => Unsafe.SizeOf<SymbolCommand>(),
         CanvasOp.Save => Unsafe.SizeOf<SaveCommand>(),
         CanvasOp.Restore => Unsafe.SizeOf<RestoreCommand>(),
         CanvasOp.BeginPath => Unsafe.SizeOf<BeginPathCommand>(),

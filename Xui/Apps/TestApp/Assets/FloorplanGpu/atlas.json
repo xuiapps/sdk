@@ -1,0 +1,8992 @@
+{
+  "Version": 1,
+  "SourceSha256": "7606FDEEFB5F119DB81FB0B1BA72C57667CA689B2EA100D16E83B54AE68BA89D",
+  "Width": 2048,
+  "Height": 2048,
+  "MipCount": 5,
+  "Padding": 16,
+  "Sprites": [
+    {
+      "Id": "structure-color-5E606073",
+      "Level": -1,
+      "X": 1072,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-21322B73",
+      "Level": -1,
+      "X": 1168,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-69696973",
+      "Level": -1,
+      "X": 1264,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-64646473",
+      "Level": -1,
+      "X": 1360,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-6A9FB9FF",
+      "Level": -1,
+      "X": 1456,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-9EA7ABFF",
+      "Level": -1,
+      "X": 1552,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-A6AAA9FF",
+      "Level": -1,
+      "X": 1648,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-C5C9C8FF",
+      "Level": -1,
+      "X": 1744,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "treadmill",
+      "Level": 0,
+      "X": 272,
+      "Y": 16,
+      "Width": 92,
+      "Height": 232,
+      "LocalBounds": [
+        -23,
+        -58,
+        46,
+        116
+      ]
+    },
+    {
+      "Id": "exercise-bike",
+      "Level": 0,
+      "X": 832,
+      "Y": 16,
+      "Width": 76,
+      "Height": 216,
+      "LocalBounds": [
+        -19,
+        -54,
+        38,
+        108
+      ]
+    },
+    {
+      "Id": "locker",
+      "Level": 0,
+      "X": 1568,
+      "Y": 1600,
+      "Width": 196,
+      "Height": 44,
+      "LocalBounds": [
+        -49,
+        -11,
+        98,
+        22
+      ]
+    },
+    {
+      "Id": "bench",
+      "Level": 0,
+      "X": 1088,
+      "Y": 1600,
+      "Width": 200,
+      "Height": 44,
+      "LocalBounds": [
+        -50,
+        -11,
+        100,
+        22
+      ]
+    },
+    {
+      "Id": "visitor-chair",
+      "Level": 0,
+      "X": 864,
+      "Y": 656,
+      "Width": 104,
+      "Height": 120,
+      "LocalBounds": [
+        -26,
+        -30,
+        52,
+        60
+      ]
+    },
+    {
+      "Id": "big-display",
+      "Level": 0,
+      "X": 816,
+      "Y": 1680,
+      "Width": 204,
+      "Height": 20,
+      "LocalBounds": [
+        -51,
+        -5,
+        102,
+        10
+      ]
+    },
+    {
+      "Id": "conference-table",
+      "Level": 0,
+      "X": 1648,
+      "Y": 480,
+      "Width": 200,
+      "Height": 120,
+      "LocalBounds": [
+        -50,
+        -30,
+        100,
+        60
+      ]
+    },
+    {
+      "Id": "plant",
+      "Level": 0,
+      "X": 256,
+      "Y": 656,
+      "Width": 120,
+      "Height": 120,
+      "LocalBounds": [
+        -30,
+        -30,
+        60,
+        60
+      ]
+    },
+    {
+      "Id": "conference-table-compact",
+      "Level": 0,
+      "X": 240,
+      "Y": 1392,
+      "Width": 176,
+      "Height": 64,
+      "LocalBounds": [
+        -44,
+        -16,
+        88,
+        32
+      ]
+    },
+    {
+      "Id": "bench-short",
+      "Level": 0,
+      "X": 16,
+      "Y": 1680,
+      "Width": 128,
+      "Height": 44,
+      "LocalBounds": [
+        -32,
+        -11,
+        64,
+        22
+      ]
+    },
+    {
+      "Id": "round-table",
+      "Level": 0,
+      "X": 928,
+      "Y": 288,
+      "Width": 148,
+      "Height": 148,
+      "LocalBounds": [
+        -37,
+        -37,
+        74,
+        74
+      ]
+    },
+    {
+      "Id": "auditorium-seat",
+      "Level": 0,
+      "X": 576,
+      "Y": 656,
+      "Width": 112,
+      "Height": 120,
+      "LocalBounds": [
+        -28,
+        -31,
+        56,
+        60
+      ]
+    },
+    {
+      "Id": "stool",
+      "Level": 0,
+      "X": 464,
+      "Y": 1120,
+      "Width": 100,
+      "Height": 100,
+      "LocalBounds": [
+        -25,
+        -25,
+        50,
+        50
+      ]
+    },
+    {
+      "Id": "task-chair",
+      "Level": 0,
+      "X": 1200,
+      "Y": 816,
+      "Width": 104,
+      "Height": 116,
+      "LocalBounds": [
+        -26,
+        -32,
+        52,
+        58
+      ]
+    },
+    {
+      "Id": "desk",
+      "Level": 0,
+      "X": 1488,
+      "Y": 816,
+      "Width": 196,
+      "Height": 112,
+      "LocalBounds": [
+        -49,
+        -28,
+        98,
+        56
+      ]
+    },
+    {
+      "Id": "monitor",
+      "Level": 0,
+      "X": 1184,
+      "Y": 1264,
+      "Width": 132,
+      "Height": 80,
+      "LocalBounds": [
+        -33,
+        -20,
+        66,
+        40
+      ]
+    },
+    {
+      "Id": "keyboard",
+      "Level": 0,
+      "X": 1360,
+      "Y": 1504,
+      "Width": 172,
+      "Height": 60,
+      "LocalBounds": [
+        -39,
+        -15,
+        86,
+        30
+      ]
+    },
+    {
+      "Id": "cabinet",
+      "Level": 0,
+      "X": 416,
+      "Y": 1264,
+      "Width": 176,
+      "Height": 96,
+      "LocalBounds": [
+        -44,
+        -24,
+        88,
+        48
+      ]
+    },
+    {
+      "Id": "workstation-desk",
+      "Level": 0,
+      "X": 1728,
+      "Y": 816,
+      "Width": 196,
+      "Height": 112,
+      "LocalBounds": [
+        -49,
+        -46,
+        98,
+        56
+      ]
+    },
+    {
+      "Id": "workstation-chair",
+      "Level": 0,
+      "X": 1536,
+      "Y": 1264,
+      "Width": 72,
+      "Height": 80,
+      "LocalBounds": [
+        -18,
+        22,
+        36,
+        40
+      ]
+    },
+    {
+      "Id": "toilet",
+      "Level": 0,
+      "X": 1728,
+      "Y": 16,
+      "Width": 104,
+      "Height": 154,
+      "LocalBounds": [
+        -26,
+        -37,
+        52,
+        77
+      ]
+    },
+    {
+      "Id": "basin",
+      "Level": 0,
+      "X": 1392,
+      "Y": 976,
+      "Width": 140,
+      "Height": 112,
+      "LocalBounds": [
+        -35,
+        -28,
+        70,
+        56
+      ]
+    },
+    {
+      "Id": "refreshment-bar",
+      "Level": 0,
+      "X": 1552,
+      "Y": 1120,
+      "Width": 356,
+      "Height": 96,
+      "LocalBounds": [
+        -89,
+        -24,
+        178,
+        48
+      ]
+    },
+    {
+      "Id": "rect-table",
+      "Level": 0,
+      "X": 976,
+      "Y": 976,
+      "Width": 176,
+      "Height": 112,
+      "LocalBounds": [
+        -44,
+        -28,
+        88,
+        56
+      ]
+    },
+    {
+      "Id": "curved-desk",
+      "Level": 0,
+      "X": 1792,
+      "Y": 288,
+      "Width": 190,
+      "Height": 134,
+      "LocalBounds": [
+        -47,
+        -40,
+        95,
+        67
+      ]
+    },
+    {
+      "Id": "printer",
+      "Level": 0,
+      "X": 400,
+      "Y": 288,
+      "Width": 136,
+      "Height": 152,
+      "LocalBounds": [
+        -34,
+        -38,
+        68,
+        76
+      ]
+    },
+    {
+      "Id": "counter",
+      "Level": 0,
+      "X": 16,
+      "Y": 976,
+      "Width": 196,
+      "Height": 112,
+      "LocalBounds": [
+        -49,
+        -28,
+        98,
+        56
+      ]
+    },
+    {
+      "Id": "structure-color-D2D5D6FF",
+      "Level": -1,
+      "X": 1840,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-496F60FF",
+      "Level": -1,
+      "X": 1936,
+      "Y": 1392,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-B6C4CBFF",
+      "Level": -1,
+      "X": 16,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-9CA3A6FF",
+      "Level": -1,
+      "X": 112,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-D8EFFFFF",
+      "Level": -1,
+      "X": 208,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-000000FF",
+      "Level": -1,
+      "X": 304,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-FFFFFFFF",
+      "Level": -1,
+      "X": 400,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-333333FF",
+      "Level": -1,
+      "X": 496,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-444444FF",
+      "Level": -1,
+      "X": 592,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-B8B8B8FF",
+      "Level": -1,
+      "X": 688,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "treadmill",
+      "Level": 1,
+      "X": 400,
+      "Y": 16,
+      "Width": 92,
+      "Height": 232,
+      "LocalBounds": [
+        -23,
+        -58,
+        46,
+        116
+      ]
+    },
+    {
+      "Id": "exercise-bike",
+      "Level": 1,
+      "X": 944,
+      "Y": 16,
+      "Width": 76,
+      "Height": 216,
+      "LocalBounds": [
+        -19,
+        -54,
+        38,
+        108
+      ]
+    },
+    {
+      "Id": "locker",
+      "Level": 1,
+      "X": 1808,
+      "Y": 1600,
+      "Width": 196,
+      "Height": 44,
+      "LocalBounds": [
+        -49,
+        -11,
+        98,
+        22
+      ]
+    },
+    {
+      "Id": "bench",
+      "Level": 1,
+      "X": 1328,
+      "Y": 1600,
+      "Width": 200,
+      "Height": 44,
+      "LocalBounds": [
+        -50,
+        -11,
+        100,
+        22
+      ]
+    },
+    {
+      "Id": "visitor-chair",
+      "Level": 1,
+      "X": 1008,
+      "Y": 656,
+      "Width": 104,
+      "Height": 120,
+      "LocalBounds": [
+        -26,
+        -30,
+        52,
+        60
+      ]
+    },
+    {
+      "Id": "big-display",
+      "Level": 1,
+      "X": 1056,
+      "Y": 1680,
+      "Width": 204,
+      "Height": 20,
+      "LocalBounds": [
+        -51,
+        -5,
+        102,
+        10
+      ]
+    },
+    {
+      "Id": "conference-table",
+      "Level": 1,
+      "X": 16,
+      "Y": 656,
+      "Width": 200,
+      "Height": 120,
+      "LocalBounds": [
+        -50,
+        -30,
+        100,
+        60
+      ]
+    },
+    {
+      "Id": "plant",
+      "Level": 1,
+      "X": 416,
+      "Y": 656,
+      "Width": 120,
+      "Height": 120,
+      "LocalBounds": [
+        -30,
+        -30,
+        60,
+        60
+      ]
+    },
+    {
+      "Id": "conference-table-compact",
+      "Level": 1,
+      "X": 448,
+      "Y": 1392,
+      "Width": 176,
+      "Height": 64,
+      "LocalBounds": [
+        -44,
+        -16,
+        88,
+        32
+      ]
+    },
+    {
+      "Id": "bench-short",
+      "Level": 1,
+      "X": 176,
+      "Y": 1680,
+      "Width": 128,
+      "Height": 44,
+      "LocalBounds": [
+        -32,
+        -11,
+        64,
+        22
+      ]
+    },
+    {
+      "Id": "round-table",
+      "Level": 1,
+      "X": 1120,
+      "Y": 288,
+      "Width": 148,
+      "Height": 148,
+      "LocalBounds": [
+        -37,
+        -37,
+        74,
+        74
+      ]
+    },
+    {
+      "Id": "auditorium-seat",
+      "Level": 1,
+      "X": 720,
+      "Y": 656,
+      "Width": 112,
+      "Height": 120,
+      "LocalBounds": [
+        -28,
+        -31,
+        56,
+        60
+      ]
+    },
+    {
+      "Id": "stool",
+      "Level": 1,
+      "X": 608,
+      "Y": 1120,
+      "Width": 100,
+      "Height": 100,
+      "LocalBounds": [
+        -25,
+        -25,
+        50,
+        50
+      ]
+    },
+    {
+      "Id": "task-chair",
+      "Level": 1,
+      "X": 1344,
+      "Y": 816,
+      "Width": 104,
+      "Height": 116,
+      "LocalBounds": [
+        -26,
+        -32,
+        52,
+        58
+      ]
+    },
+    {
+      "Id": "desk",
+      "Level": 1,
+      "X": 256,
+      "Y": 976,
+      "Width": 196,
+      "Height": 112,
+      "LocalBounds": [
+        -49,
+        -28,
+        98,
+        56
+      ]
+    },
+    {
+      "Id": "monitor",
+      "Level": 1,
+      "X": 1360,
+      "Y": 1264,
+      "Width": 132,
+      "Height": 80,
+      "LocalBounds": [
+        -33,
+        -20,
+        66,
+        40
+      ]
+    },
+    {
+      "Id": "keyboard",
+      "Level": 1,
+      "X": 1568,
+      "Y": 1504,
+      "Width": 172,
+      "Height": 60,
+      "LocalBounds": [
+        -39,
+        -15,
+        86,
+        30
+      ]
+    },
+    {
+      "Id": "cabinet",
+      "Level": 1,
+      "X": 624,
+      "Y": 1264,
+      "Width": 176,
+      "Height": 96,
+      "LocalBounds": [
+        -44,
+        -24,
+        88,
+        48
+      ]
+    },
+    {
+      "Id": "workstation-desk",
+      "Level": 1,
+      "X": 496,
+      "Y": 976,
+      "Width": 196,
+      "Height": 112,
+      "LocalBounds": [
+        -49,
+        -46,
+        98,
+        56
+      ]
+    },
+    {
+      "Id": "workstation-chair",
+      "Level": 1,
+      "X": 1648,
+      "Y": 1264,
+      "Width": 72,
+      "Height": 80,
+      "LocalBounds": [
+        -18,
+        22,
+        36,
+        40
+      ]
+    },
+    {
+      "Id": "toilet",
+      "Level": 1,
+      "X": 1872,
+      "Y": 16,
+      "Width": 104,
+      "Height": 154,
+      "LocalBounds": [
+        -26,
+        -37,
+        52,
+        77
+      ]
+    },
+    {
+      "Id": "basin",
+      "Level": 1,
+      "X": 1568,
+      "Y": 976,
+      "Width": 140,
+      "Height": 112,
+      "LocalBounds": [
+        -35,
+        -28,
+        70,
+        56
+      ]
+    },
+    {
+      "Id": "refreshment-bar",
+      "Level": 1,
+      "X": 16,
+      "Y": 1264,
+      "Width": 356,
+      "Height": 96,
+      "LocalBounds": [
+        -89,
+        -24,
+        178,
+        48
+      ]
+    },
+    {
+      "Id": "rect-table",
+      "Level": 1,
+      "X": 1184,
+      "Y": 976,
+      "Width": 176,
+      "Height": 112,
+      "LocalBounds": [
+        -44,
+        -28,
+        88,
+        56
+      ]
+    },
+    {
+      "Id": "curved-desk",
+      "Level": 1,
+      "X": 16,
+      "Y": 480,
+      "Width": 190,
+      "Height": 134,
+      "LocalBounds": [
+        -47,
+        -40,
+        95,
+        67
+      ]
+    },
+    {
+      "Id": "printer",
+      "Level": 1,
+      "X": 576,
+      "Y": 288,
+      "Width": 136,
+      "Height": 152,
+      "LocalBounds": [
+        -34,
+        -38,
+        68,
+        76
+      ]
+    },
+    {
+      "Id": "counter",
+      "Level": 1,
+      "X": 736,
+      "Y": 976,
+      "Width": 196,
+      "Height": 112,
+      "LocalBounds": [
+        -49,
+        -28,
+        98,
+        56
+      ]
+    },
+    {
+      "Id": "structure-color-C8D1D5FF",
+      "Level": -1,
+      "X": 784,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-677981FF",
+      "Level": -1,
+      "X": 880,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-48565DFF",
+      "Level": -1,
+      "X": 976,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-D9DDDFFF",
+      "Level": -1,
+      "X": 1072,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "structure-color-596268FF",
+      "Level": -1,
+      "X": 1168,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "treadmill",
+      "Level": 2,
+      "X": 16,
+      "Y": 16,
+      "Width": 96,
+      "Height": 236,
+      "LocalBounds": [
+        -24,
+        -59,
+        48,
+        118
+      ]
+    },
+    {
+      "Id": "exercise-bike",
+      "Level": 2,
+      "X": 688,
+      "Y": 16,
+      "Width": 100,
+      "Height": 220,
+      "LocalBounds": [
+        -25,
+        -55,
+        50,
+        110
+      ]
+    },
+    {
+      "Id": "locker",
+      "Level": 2,
+      "X": 1776,
+      "Y": 1504,
+      "Width": 200,
+      "Height": 48,
+      "LocalBounds": [
+        -50,
+        -12,
+        100,
+        24
+      ]
+    },
+    {
+      "Id": "bench",
+      "Level": 2,
+      "X": 256,
+      "Y": 1600,
+      "Width": 204,
+      "Height": 46,
+      "LocalBounds": [
+        -51,
+        -11.5,
+        102,
+        23
+      ]
+    },
+    {
+      "Id": "visitor-chair",
+      "Level": 2,
+      "X": 1504,
+      "Y": 480,
+      "Width": 108,
+      "Height": 122,
+      "LocalBounds": [
+        -27,
+        -31,
+        54,
+        61
+      ]
+    },
+    {
+      "Id": "big-display",
+      "Level": 2,
+      "X": 336,
+      "Y": 1680,
+      "Width": 208,
+      "Height": 24,
+      "LocalBounds": [
+        -52,
+        -6,
+        104,
+        12
+      ]
+    },
+    {
+      "Id": "conference-table",
+      "Level": 2,
+      "X": 384,
+      "Y": 480,
+      "Width": 204,
+      "Height": 124,
+      "LocalBounds": [
+        -51,
+        -31,
+        102,
+        62
+      ]
+    },
+    {
+      "Id": "plant",
+      "Level": 2,
+      "X": 864,
+      "Y": 480,
+      "Width": 124,
+      "Height": 124,
+      "LocalBounds": [
+        -31,
+        -31,
+        62,
+        62
+      ]
+    },
+    {
+      "Id": "conference-table-compact",
+      "Level": 2,
+      "X": 1760,
+      "Y": 1264,
+      "Width": 180,
+      "Height": 66,
+      "LocalBounds": [
+        -45,
+        -16.5,
+        90,
+        33
+      ]
+    },
+    {
+      "Id": "bench-short",
+      "Level": 2,
+      "X": 736,
+      "Y": 1600,
+      "Width": 132,
+      "Height": 46,
+      "LocalBounds": [
+        -33,
+        -11.5,
+        66,
+        23
+      ]
+    },
+    {
+      "Id": "round-table",
+      "Level": 2,
+      "X": 16,
+      "Y": 288,
+      "Width": 152,
+      "Height": 152,
+      "LocalBounds": [
+        -38,
+        -38,
+        76,
+        76
+      ]
+    },
+    {
+      "Id": "auditorium-seat",
+      "Level": 2,
+      "X": 1184,
+      "Y": 480,
+      "Width": 128,
+      "Height": 122,
+      "LocalBounds": [
+        -32,
+        -32,
+        64,
+        61
+      ]
+    },
+    {
+      "Id": "stool",
+      "Level": 2,
+      "X": 1744,
+      "Y": 976,
+      "Width": 104,
+      "Height": 104,
+      "LocalBounds": [
+        -26,
+        -26,
+        52,
+        52
+      ]
+    },
+    {
+      "Id": "task-chair",
+      "Level": 2,
+      "X": 1056,
+      "Y": 816,
+      "Width": 108,
+      "Height": 116,
+      "LocalBounds": [
+        -27,
+        -32,
+        54,
+        58
+      ]
+    },
+    {
+      "Id": "desk",
+      "Level": 2,
+      "X": 1152,
+      "Y": 656,
+      "Width": 200,
+      "Height": 116,
+      "LocalBounds": [
+        -50,
+        -29,
+        100,
+        58
+      ]
+    },
+    {
+      "Id": "monitor",
+      "Level": 2,
+      "X": 832,
+      "Y": 1264,
+      "Width": 136,
+      "Height": 84,
+      "LocalBounds": [
+        -34,
+        -21,
+        68,
+        42
+      ]
+    },
+    {
+      "Id": "keyboard",
+      "Level": 2,
+      "X": 656,
+      "Y": 1392,
+      "Width": 176,
+      "Height": 64,
+      "LocalBounds": [
+        -40,
+        -16,
+        88,
+        32
+      ]
+    },
+    {
+      "Id": "cabinet",
+      "Level": 2,
+      "X": 16,
+      "Y": 1120,
+      "Width": 180,
+      "Height": 100,
+      "LocalBounds": [
+        -45,
+        -25,
+        90,
+        50
+      ]
+    },
+    {
+      "Id": "toilet",
+      "Level": 2,
+      "X": 1056,
+      "Y": 16,
+      "Width": 104,
+      "Height": 158,
+      "LocalBounds": [
+        -26,
+        -38,
+        52,
+        79
+      ]
+    },
+    {
+      "Id": "basin",
+      "Level": 2,
+      "X": 704,
+      "Y": 816,
+      "Width": 144,
+      "Height": 116,
+      "LocalBounds": [
+        -36,
+        -29,
+        72,
+        58
+      ]
+    },
+    {
+      "Id": "refreshment-bar",
+      "Level": 2,
+      "X": 752,
+      "Y": 1120,
+      "Width": 358,
+      "Height": 98,
+      "LocalBounds": [
+        -89.5,
+        -24.5,
+        179,
+        49
+      ]
+    },
+    {
+      "Id": "rect-table",
+      "Level": 2,
+      "X": 256,
+      "Y": 816,
+      "Width": 180,
+      "Height": 116,
+      "LocalBounds": [
+        -45,
+        -29,
+        90,
+        58
+      ]
+    },
+    {
+      "Id": "curved-desk",
+      "Level": 2,
+      "X": 1312,
+      "Y": 288,
+      "Width": 194,
+      "Height": 138,
+      "LocalBounds": [
+        -48,
+        -41,
+        97,
+        69
+      ]
+    },
+    {
+      "Id": "printer",
+      "Level": 2,
+      "X": 1552,
+      "Y": 16,
+      "Width": 140,
+      "Height": 156,
+      "LocalBounds": [
+        -35,
+        -39,
+        70,
+        78
+      ]
+    },
+    {
+      "Id": "counter",
+      "Level": 2,
+      "X": 1392,
+      "Y": 656,
+      "Width": 200,
+      "Height": 116,
+      "LocalBounds": [
+        -50,
+        -29,
+        100,
+        58
+      ]
+    },
+    {
+      "Id": "structure-color-747D81FF",
+      "Level": -1,
+      "X": 1264,
+      "Y": 1504,
+      "Width": 64,
+      "Height": 64,
+      "LocalBounds": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Id": "treadmill",
+      "Level": 3,
+      "X": 144,
+      "Y": 16,
+      "Width": 96,
+      "Height": 236,
+      "LocalBounds": [
+        -24,
+        -59,
+        48,
+        118
+      ]
+    },
+    {
+      "Id": "exercise-bike",
+      "Level": 3,
+      "X": 528,
+      "Y": 16,
+      "Width": 120,
+      "Height": 220,
+      "LocalBounds": [
+        -30,
+        -55,
+        60,
+        110
+      ]
+    },
+    {
+      "Id": "locker",
+      "Level": 3,
+      "X": 16,
+      "Y": 1600,
+      "Width": 200,
+      "Height": 48,
+      "LocalBounds": [
+        -50,
+        -12,
+        100,
+        24
+      ]
+    },
+    {
+      "Id": "bench",
+      "Level": 3,
+      "X": 496,
+      "Y": 1600,
+      "Width": 204,
+      "Height": 46,
+      "LocalBounds": [
+        -51,
+        -11.5,
+        102,
+        23
+      ]
+    },
+    {
+      "Id": "visitor-chair",
+      "Level": 3,
+      "X": 240,
+      "Y": 480,
+      "Width": 108,
+      "Height": 134,
+      "LocalBounds": [
+        -27,
+        -31,
+        54,
+        67
+      ]
+    },
+    {
+      "Id": "big-display",
+      "Level": 3,
+      "X": 576,
+      "Y": 1680,
+      "Width": 208,
+      "Height": 24,
+      "LocalBounds": [
+        -52,
+        -6,
+        104,
+        12
+      ]
+    },
+    {
+      "Id": "conference-table",
+      "Level": 3,
+      "X": 624,
+      "Y": 480,
+      "Width": 204,
+      "Height": 124,
+      "LocalBounds": [
+        -51,
+        -31,
+        102,
+        62
+      ]
+    },
+    {
+      "Id": "plant",
+      "Level": 3,
+      "X": 1024,
+      "Y": 480,
+      "Width": 124,
+      "Height": 124,
+      "LocalBounds": [
+        -31,
+        -31,
+        62,
+        62
+      ]
+    },
+    {
+      "Id": "conference-table-compact",
+      "Level": 3,
+      "X": 16,
+      "Y": 1392,
+      "Width": 180,
+      "Height": 66,
+      "LocalBounds": [
+        -45,
+        -16.5,
+        90,
+        33
+      ]
+    },
+    {
+      "Id": "bench-short",
+      "Level": 3,
+      "X": 912,
+      "Y": 1600,
+      "Width": 132,
+      "Height": 46,
+      "LocalBounds": [
+        -33,
+        -11.5,
+        66,
+        23
+      ]
+    },
+    {
+      "Id": "round-table",
+      "Level": 3,
+      "X": 208,
+      "Y": 288,
+      "Width": 152,
+      "Height": 152,
+      "LocalBounds": [
+        -38,
+        -38,
+        76,
+        76
+      ]
+    },
+    {
+      "Id": "auditorium-seat",
+      "Level": 3,
+      "X": 1344,
+      "Y": 480,
+      "Width": 128,
+      "Height": 122,
+      "LocalBounds": [
+        -32,
+        -32,
+        64,
+        61
+      ]
+    },
+    {
+      "Id": "stool",
+      "Level": 3,
+      "X": 1888,
+      "Y": 976,
+      "Width": 104,
+      "Height": 104,
+      "LocalBounds": [
+        -26,
+        -26,
+        52,
+        52
+      ]
+    },
+    {
+      "Id": "task-chair",
+      "Level": 3,
+      "X": 752,
+      "Y": 288,
+      "Width": 130,
+      "Height": 151,
+      "LocalBounds": [
+        -32.5,
+        -32,
+        65,
+        75.5
+      ]
+    },
+    {
+      "Id": "desk",
+      "Level": 3,
+      "X": 1632,
+      "Y": 656,
+      "Width": 200,
+      "Height": 116,
+      "LocalBounds": [
+        -50,
+        -29,
+        100,
+        58
+      ]
+    },
+    {
+      "Id": "monitor",
+      "Level": 3,
+      "X": 1008,
+      "Y": 1264,
+      "Width": 136,
+      "Height": 84,
+      "LocalBounds": [
+        -34,
+        -21,
+        68,
+        42
+      ]
+    },
+    {
+      "Id": "keyboard",
+      "Level": 3,
+      "X": 864,
+      "Y": 1392,
+      "Width": 176,
+      "Height": 64,
+      "LocalBounds": [
+        -40,
+        -16,
+        88,
+        32
+      ]
+    },
+    {
+      "Id": "cabinet",
+      "Level": 3,
+      "X": 240,
+      "Y": 1120,
+      "Width": 180,
+      "Height": 100,
+      "LocalBounds": [
+        -45,
+        -25,
+        90,
+        50
+      ]
+    },
+    {
+      "Id": "toilet",
+      "Level": 3,
+      "X": 1200,
+      "Y": 16,
+      "Width": 104,
+      "Height": 158,
+      "LocalBounds": [
+        -26,
+        -38,
+        52,
+        79
+      ]
+    },
+    {
+      "Id": "basin",
+      "Level": 3,
+      "X": 880,
+      "Y": 816,
+      "Width": 144,
+      "Height": 116,
+      "LocalBounds": [
+        -36,
+        -29,
+        72,
+        58
+      ]
+    },
+    {
+      "Id": "refreshment-bar",
+      "Level": 3,
+      "X": 1152,
+      "Y": 1120,
+      "Width": 358,
+      "Height": 98,
+      "LocalBounds": [
+        -89.5,
+        -24.5,
+        179,
+        49
+      ]
+    },
+    {
+      "Id": "rect-table",
+      "Level": 3,
+      "X": 480,
+      "Y": 816,
+      "Width": 180,
+      "Height": 116,
+      "LocalBounds": [
+        -45,
+        -29,
+        90,
+        58
+      ]
+    },
+    {
+      "Id": "curved-desk",
+      "Level": 3,
+      "X": 1552,
+      "Y": 288,
+      "Width": 194,
+      "Height": 138,
+      "LocalBounds": [
+        -48,
+        -41,
+        97,
+        69
+      ]
+    },
+    {
+      "Id": "printer",
+      "Level": 3,
+      "X": 1344,
+      "Y": 16,
+      "Width": 167,
+      "Height": 156,
+      "LocalBounds": [
+        -40,
+        -39,
+        83.5,
+        78
+      ]
+    },
+    {
+      "Id": "counter",
+      "Level": 3,
+      "X": 16,
+      "Y": 816,
+      "Width": 200,
+      "Height": 116,
+      "LocalBounds": [
+        -50,
+        -29,
+        100,
+        58
+      ]
+    }
+  ],
+  "QuadCounts": [
+    683,
+    683,
+    877,
+    877
+  ],
+  "StructureQuadCounts": [
+    2937,
+    11442,
+    15482,
+    18162
+  ],
+  "Labels": [
+    [
+      {
+        "Text": "Fitness",
+        "X": 123,
+        "Y": 243,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          154,
+          266,
+          175
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Women",
+        "X": 225,
+        "Y": 242,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          225,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Changing",
+        "X": 225,
+        "Y": 247.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          225,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Men",
+        "X": 225,
+        "Y": 287,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          270,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Changing",
+        "X": 225,
+        "Y": 292.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          270,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Boardroom",
+        "X": 401,
+        "Y": 258,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          287,
+          154,
+          216,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting",
+        "X": 345,
+        "Y": 318,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          287,
+          257,
+          114,
+          72
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair N",
+        "X": 437,
+        "Y": 330,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          387,
+          257,
+          110,
+          84
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North corridor",
+        "X": 523,
+        "Y": 199,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          324,
+          722
+        ],
+        "Bounds": [
+          489,
+          154,
+          68,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Reception",
+        "X": 612,
+        "Y": 258,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          543,
+          154,
+          148,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting 04",
+        "X": 750,
+        "Y": 205,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          545,
+          955
+        ],
+        "Bounds": [
+          677,
+          154,
+          90,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Presentation hall",
+        "X": 855,
+        "Y": 253,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          602,
+          1108
+        ],
+        "Bounds": [
+          753,
+          154,
+          214,
+          223
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North lobby",
+        "X": 647,
+        "Y": 334,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          483,
+          257,
+          284,
+          120
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office A",
+        "X": 84.5,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          359,
+          99,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office B",
+        "X": 167,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          120,
+          359,
+          94,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office C",
+        "X": 234.5,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          200,
+          359,
+          69,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace B",
+        "X": 103,
+        "Y": 608,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          439,
+          136,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace A",
+        "X": 213,
+        "Y": 608,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          157,
+          439,
+          112,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace D",
+        "X": 103,
+        "Y": 776,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          607,
+          136,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace C",
+        "X": 213,
+        "Y": 776,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          157,
+          607,
+          112,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office D",
+        "X": 78,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          775,
+          86,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office E",
+        "X": 160.5,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          107,
+          775,
+          107,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office F",
+        "X": 234.5,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          200,
+          775,
+          69,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting",
+        "X": 324,
+        "Y": 432,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          359,
+          82,
+          86
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Equipment",
+        "X": 326,
+        "Y": 485,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          431,
+          82,
+          67
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Document store",
+        "X": 324,
+        "Y": 639,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          513,
+          82,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC",
+        "X": 391,
+        "Y": 485,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          351,
+          359,
+          81,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC",
+        "X": 391,
+        "Y": 639,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          351,
+          513,
+          81,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair",
+        "X": 465.5,
+        "Y": 484,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          418,
+          327,
+          95,
+          177
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair",
+        "X": 465.5,
+        "Y": 614,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          418,
+          490,
+          95,
+          144
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 1",
+        "X": 527,
+        "Y": 413,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          363,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 2",
+        "X": 527,
+        "Y": 462,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          412,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 3",
+        "X": 527,
+        "Y": 511,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          461,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 4",
+        "X": 527,
+        "Y": 560,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          510,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 5",
+        "X": 651,
+        "Y": 413,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          363,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 6",
+        "X": 651,
+        "Y": 462,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          412,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 7",
+        "X": 651,
+        "Y": 511,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          461,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 8",
+        "X": 651,
+        "Y": 560,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          510,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift lobby",
+        "X": 613,
+        "Y": 625,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          363,
+          138,
+          294
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting access",
+        "X": 573.5,
+        "Y": 697,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          507,
+          670,
+          133,
+          51
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lounge passage",
+        "X": 305,
+        "Y": 743,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          -438,
+          1048
+        ],
+        "Bounds": [
+          283,
+          670,
+          44,
+          143
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "South passage",
+        "X": 514,
+        "Y": 662.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          620,
+          462,
+          64
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Storage",
+        "X": 360,
+        "Y": 516,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          484,
+          149,
+          43
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "West passage",
+        "X": 276,
+        "Y": 605.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          -329.5,
+          881.5
+        ],
+        "Bounds": [
+          255,
+          359,
+          42,
+          490
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North passage",
+        "X": 384,
+        "Y": 351.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          255,
+          327,
+          258,
+          46
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Fitness passage",
+        "X": 152,
+        "Y": 337,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          315,
+          234,
+          58
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 1",
+        "X": 684,
+        "Y": 391,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          363,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 2",
+        "X": 684,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          412,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 3",
+        "X": 684,
+        "Y": 489,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          461,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 4",
+        "X": 684,
+        "Y": 538,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          510,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift access",
+        "X": 684,
+        "Y": 612,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          559,
+          122,
+          98
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Core passage",
+        "X": 717,
+        "Y": 490,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          226.99999999999994,
+          1207
+        ],
+        "Bounds": [
+          689,
+          363,
+          56,
+          294
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Conference",
+        "X": 849,
+        "Y": 490,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          731,
+          363,
+          236,
+          148
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Cafeteria",
+        "X": 849,
+        "Y": 568,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          731,
+          491,
+          236,
+          358
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Discussion",
+        "X": 353,
+        "Y": 790,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          313,
+          670,
+          74,
+          143
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting 06",
+        "X": 447,
+        "Y": 740,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          670,
+          148,
+          85
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Copy / print",
+        "X": 483,
+        "Y": 774,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          741,
+          148,
+          48
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Breakout",
+        "X": 448,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          775,
+          148,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Breakout 2",
+        "X": 335,
+        "Y": 811,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          799,
+          104,
+          50
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting lounge A",
+        "X": 543.75,
+        "Y": 835,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          507,
+          707,
+          73.5,
+          142
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting lounge B",
+        "X": 603.25,
+        "Y": 835,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          566.5,
+          707,
+          73.5,
+          142
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Pantry",
+        "X": 657,
+        "Y": 706,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          626,
+          670,
+          65,
+          47
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Storage",
+        "X": 704,
+        "Y": 705,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          677,
+          670,
+          68,
+          47
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Kitchen",
+        "X": 690,
+        "Y": 800,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          626,
+          703,
+          119,
+          146
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      }
+    ],
+    [
+      {
+        "Text": "Fitness",
+        "X": 123,
+        "Y": 243,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          154,
+          266,
+          175
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Women",
+        "X": 225,
+        "Y": 242,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          225,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Changing",
+        "X": 225,
+        "Y": 247.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          225,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Men",
+        "X": 225,
+        "Y": 287,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          270,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Changing",
+        "X": 225,
+        "Y": 292.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          270,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Boardroom",
+        "X": 401,
+        "Y": 258,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          287,
+          154,
+          216,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting",
+        "X": 345,
+        "Y": 318,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          287,
+          257,
+          114,
+          72
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair N",
+        "X": 437,
+        "Y": 330,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          387,
+          257,
+          110,
+          84
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North corridor",
+        "X": 523,
+        "Y": 199,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          324,
+          722
+        ],
+        "Bounds": [
+          489,
+          154,
+          68,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Reception",
+        "X": 612,
+        "Y": 258,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          543,
+          154,
+          148,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting 04",
+        "X": 750,
+        "Y": 205,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          545,
+          955
+        ],
+        "Bounds": [
+          677,
+          154,
+          90,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Presentation hall",
+        "X": 855,
+        "Y": 253,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          602,
+          1108
+        ],
+        "Bounds": [
+          753,
+          154,
+          214,
+          223
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North lobby",
+        "X": 647,
+        "Y": 334,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          483,
+          257,
+          284,
+          120
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office A",
+        "X": 84.5,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          359,
+          99,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office B",
+        "X": 167,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          120,
+          359,
+          94,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office C",
+        "X": 234.5,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          200,
+          359,
+          69,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace B",
+        "X": 103,
+        "Y": 608,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          439,
+          136,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace A",
+        "X": 213,
+        "Y": 608,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          157,
+          439,
+          112,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace D",
+        "X": 103,
+        "Y": 776,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          607,
+          136,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace C",
+        "X": 213,
+        "Y": 776,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          157,
+          607,
+          112,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office D",
+        "X": 78,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          775,
+          86,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office E",
+        "X": 160.5,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          107,
+          775,
+          107,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office F",
+        "X": 234.5,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          200,
+          775,
+          69,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting",
+        "X": 324,
+        "Y": 432,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          359,
+          82,
+          86
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Equipment",
+        "X": 326,
+        "Y": 485,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          431,
+          82,
+          67
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Document store",
+        "X": 324,
+        "Y": 639,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          513,
+          82,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC",
+        "X": 391,
+        "Y": 485,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          351,
+          359,
+          81,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC",
+        "X": 391,
+        "Y": 639,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          351,
+          513,
+          81,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair",
+        "X": 465.5,
+        "Y": 484,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          418,
+          327,
+          95,
+          177
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair",
+        "X": 465.5,
+        "Y": 614,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          418,
+          490,
+          95,
+          144
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 1",
+        "X": 527,
+        "Y": 413,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          363,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 2",
+        "X": 527,
+        "Y": 462,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          412,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 3",
+        "X": 527,
+        "Y": 511,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          461,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 4",
+        "X": 527,
+        "Y": 560,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          510,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 5",
+        "X": 651,
+        "Y": 413,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          363,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 6",
+        "X": 651,
+        "Y": 462,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          412,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 7",
+        "X": 651,
+        "Y": 511,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          461,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 8",
+        "X": 651,
+        "Y": 560,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          510,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift lobby",
+        "X": 613,
+        "Y": 625,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          363,
+          138,
+          294
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting access",
+        "X": 573.5,
+        "Y": 697,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          507,
+          670,
+          133,
+          51
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lounge passage",
+        "X": 305,
+        "Y": 743,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          -438,
+          1048
+        ],
+        "Bounds": [
+          283,
+          670,
+          44,
+          143
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "South passage",
+        "X": 514,
+        "Y": 662.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          620,
+          462,
+          64
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Storage",
+        "X": 360,
+        "Y": 516,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          484,
+          149,
+          43
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "West passage",
+        "X": 276,
+        "Y": 605.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          -329.5,
+          881.5
+        ],
+        "Bounds": [
+          255,
+          359,
+          42,
+          490
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North passage",
+        "X": 384,
+        "Y": 351.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          255,
+          327,
+          258,
+          46
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Fitness passage",
+        "X": 152,
+        "Y": 337,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          315,
+          234,
+          58
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 1",
+        "X": 684,
+        "Y": 391,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          363,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 2",
+        "X": 684,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          412,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 3",
+        "X": 684,
+        "Y": 489,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          461,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 4",
+        "X": 684,
+        "Y": 538,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          510,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift access",
+        "X": 684,
+        "Y": 612,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          559,
+          122,
+          98
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Core passage",
+        "X": 717,
+        "Y": 490,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          226.99999999999994,
+          1207
+        ],
+        "Bounds": [
+          689,
+          363,
+          56,
+          294
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Conference",
+        "X": 849,
+        "Y": 490,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          731,
+          363,
+          236,
+          148
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Cafeteria",
+        "X": 849,
+        "Y": 568,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          731,
+          491,
+          236,
+          358
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Discussion",
+        "X": 353,
+        "Y": 790,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          313,
+          670,
+          74,
+          143
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting 06",
+        "X": 447,
+        "Y": 740,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          670,
+          148,
+          85
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Copy / print",
+        "X": 483,
+        "Y": 774,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          741,
+          148,
+          48
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Breakout",
+        "X": 448,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          775,
+          148,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Breakout 2",
+        "X": 335,
+        "Y": 811,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          799,
+          104,
+          50
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting lounge A",
+        "X": 543.75,
+        "Y": 835,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          507,
+          707,
+          73.5,
+          142
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting lounge B",
+        "X": 603.25,
+        "Y": 835,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          566.5,
+          707,
+          73.5,
+          142
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Pantry",
+        "X": 657,
+        "Y": 706,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          626,
+          670,
+          65,
+          47
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Storage",
+        "X": 704,
+        "Y": 705,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          677,
+          670,
+          68,
+          47
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Kitchen",
+        "X": 690,
+        "Y": 800,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          626,
+          703,
+          119,
+          146
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      }
+    ],
+    [
+      {
+        "Text": "Fitness",
+        "X": 123,
+        "Y": 243,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          154,
+          266,
+          175
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Women",
+        "X": 225,
+        "Y": 242,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          225,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Changing",
+        "X": 225,
+        "Y": 247.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          225,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Men",
+        "X": 225,
+        "Y": 287,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          270,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Changing",
+        "X": 225,
+        "Y": 292.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          270,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Boardroom",
+        "X": 401,
+        "Y": 258,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          287,
+          154,
+          216,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting",
+        "X": 345,
+        "Y": 318,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          287,
+          257,
+          114,
+          72
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair N",
+        "X": 437,
+        "Y": 330,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          387,
+          257,
+          110,
+          84
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North corridor",
+        "X": 523,
+        "Y": 199,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          324,
+          722
+        ],
+        "Bounds": [
+          489,
+          154,
+          68,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Reception",
+        "X": 612,
+        "Y": 258,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          543,
+          154,
+          148,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting 04",
+        "X": 750,
+        "Y": 205,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          545,
+          955
+        ],
+        "Bounds": [
+          677,
+          154,
+          90,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Presentation hall",
+        "X": 855,
+        "Y": 253,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          602,
+          1108
+        ],
+        "Bounds": [
+          753,
+          154,
+          214,
+          223
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North lobby",
+        "X": 647,
+        "Y": 334,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          483,
+          257,
+          284,
+          120
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office A",
+        "X": 84.5,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          359,
+          99,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office B",
+        "X": 167,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          120,
+          359,
+          94,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office C",
+        "X": 234.5,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          200,
+          359,
+          69,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace B",
+        "X": 103,
+        "Y": 608,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          439,
+          136,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace A",
+        "X": 213,
+        "Y": 608,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          157,
+          439,
+          112,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace D",
+        "X": 103,
+        "Y": 776,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          607,
+          136,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace C",
+        "X": 213,
+        "Y": 776,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          157,
+          607,
+          112,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office D",
+        "X": 78,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          775,
+          86,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office E",
+        "X": 160.5,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          107,
+          775,
+          107,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office F",
+        "X": 234.5,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          200,
+          775,
+          69,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting",
+        "X": 324,
+        "Y": 432,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          359,
+          82,
+          86
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Equipment",
+        "X": 326,
+        "Y": 485,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          431,
+          82,
+          67
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Document store",
+        "X": 324,
+        "Y": 639,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          513,
+          82,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC",
+        "X": 391,
+        "Y": 485,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          351,
+          359,
+          81,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC",
+        "X": 391,
+        "Y": 639,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          351,
+          513,
+          81,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair",
+        "X": 465.5,
+        "Y": 484,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          418,
+          327,
+          95,
+          177
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair",
+        "X": 465.5,
+        "Y": 614,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          418,
+          490,
+          95,
+          144
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 1",
+        "X": 527,
+        "Y": 413,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          363,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 2",
+        "X": 527,
+        "Y": 462,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          412,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 3",
+        "X": 527,
+        "Y": 511,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          461,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 4",
+        "X": 527,
+        "Y": 560,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          510,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 5",
+        "X": 651,
+        "Y": 413,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          363,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 6",
+        "X": 651,
+        "Y": 462,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          412,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 7",
+        "X": 651,
+        "Y": 511,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          461,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 8",
+        "X": 651,
+        "Y": 560,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          510,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift lobby",
+        "X": 613,
+        "Y": 625,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          363,
+          138,
+          294
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting access",
+        "X": 573.5,
+        "Y": 697,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          507,
+          670,
+          133,
+          51
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lounge passage",
+        "X": 305,
+        "Y": 743,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          -438,
+          1048
+        ],
+        "Bounds": [
+          283,
+          670,
+          44,
+          143
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "South passage",
+        "X": 514,
+        "Y": 662.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          620,
+          462,
+          64
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Storage",
+        "X": 360,
+        "Y": 516,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          484,
+          149,
+          43
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "West passage",
+        "X": 276,
+        "Y": 605.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          -329.5,
+          881.5
+        ],
+        "Bounds": [
+          255,
+          359,
+          42,
+          490
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North passage",
+        "X": 384,
+        "Y": 351.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          255,
+          327,
+          258,
+          46
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Fitness passage",
+        "X": 152,
+        "Y": 337,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          315,
+          234,
+          58
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 1",
+        "X": 684,
+        "Y": 391,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          363,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 2",
+        "X": 684,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          412,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 3",
+        "X": 684,
+        "Y": 489,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          461,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 4",
+        "X": 684,
+        "Y": 538,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          510,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift access",
+        "X": 684,
+        "Y": 612,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          559,
+          122,
+          98
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Core passage",
+        "X": 717,
+        "Y": 490,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          226.99999999999994,
+          1207
+        ],
+        "Bounds": [
+          689,
+          363,
+          56,
+          294
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Conference",
+        "X": 849,
+        "Y": 490,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          731,
+          363,
+          236,
+          148
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Cafeteria",
+        "X": 849,
+        "Y": 568,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          731,
+          491,
+          236,
+          358
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Discussion",
+        "X": 353,
+        "Y": 790,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          313,
+          670,
+          74,
+          143
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting 06",
+        "X": 447,
+        "Y": 740,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          670,
+          148,
+          85
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Copy / print",
+        "X": 483,
+        "Y": 774,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          741,
+          148,
+          48
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Breakout",
+        "X": 448,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          775,
+          148,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Breakout 2",
+        "X": 335,
+        "Y": 811,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          799,
+          104,
+          50
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting lounge A",
+        "X": 543.75,
+        "Y": 835,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          507,
+          707,
+          73.5,
+          142
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting lounge B",
+        "X": 603.25,
+        "Y": 835,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          566.5,
+          707,
+          73.5,
+          142
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Pantry",
+        "X": 657,
+        "Y": 706,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          626,
+          670,
+          65,
+          47
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Storage",
+        "X": 704,
+        "Y": 705,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          677,
+          670,
+          68,
+          47
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Kitchen",
+        "X": 690,
+        "Y": 800,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          626,
+          703,
+          119,
+          146
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      }
+    ],
+    [
+      {
+        "Text": "Fitness",
+        "X": 123,
+        "Y": 243,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          154,
+          266,
+          175
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Women",
+        "X": 225,
+        "Y": 242,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          225,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Changing",
+        "X": 225,
+        "Y": 247.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          225,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Men",
+        "X": 225,
+        "Y": 287,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          270,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Changing",
+        "X": 225,
+        "Y": 292.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          197,
+          270,
+          104,
+          59
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Boardroom",
+        "X": 401,
+        "Y": 258,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          287,
+          154,
+          216,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting",
+        "X": 345,
+        "Y": 318,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          287,
+          257,
+          114,
+          72
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair N",
+        "X": 437,
+        "Y": 330,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          387,
+          257,
+          110,
+          84
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North corridor",
+        "X": 523,
+        "Y": 199,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          324,
+          722
+        ],
+        "Bounds": [
+          489,
+          154,
+          68,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Reception",
+        "X": 612,
+        "Y": 258,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          543,
+          154,
+          148,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting 04",
+        "X": 750,
+        "Y": 205,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          545,
+          955
+        ],
+        "Bounds": [
+          677,
+          154,
+          90,
+          117
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Presentation hall",
+        "X": 855,
+        "Y": 253,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          602,
+          1108
+        ],
+        "Bounds": [
+          753,
+          154,
+          214,
+          223
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North lobby",
+        "X": 647,
+        "Y": 334,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          483,
+          257,
+          284,
+          120
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office A",
+        "X": 84.5,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          359,
+          99,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office B",
+        "X": 167,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          120,
+          359,
+          94,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office C",
+        "X": 234.5,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          200,
+          359,
+          69,
+          94
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace B",
+        "X": 103,
+        "Y": 608,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          439,
+          136,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace A",
+        "X": 213,
+        "Y": 608,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          157,
+          439,
+          112,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace D",
+        "X": 103,
+        "Y": 776,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          607,
+          136,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Workspace C",
+        "X": 213,
+        "Y": 776,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          157,
+          607,
+          112,
+          182
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office D",
+        "X": 78,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          775,
+          86,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office E",
+        "X": 160.5,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          107,
+          775,
+          107,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Office F",
+        "X": 234.5,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          200,
+          775,
+          69,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting",
+        "X": 324,
+        "Y": 432,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          359,
+          82,
+          86
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Equipment",
+        "X": 326,
+        "Y": 485,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          431,
+          82,
+          67
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Document store",
+        "X": 324,
+        "Y": 639,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          513,
+          82,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC",
+        "X": 391,
+        "Y": 485,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          351,
+          359,
+          81,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC",
+        "X": 391,
+        "Y": 639,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          351,
+          513,
+          81,
+          139
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair",
+        "X": 465.5,
+        "Y": 484,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          418,
+          327,
+          95,
+          177
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Stair",
+        "X": 465.5,
+        "Y": 614,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          418,
+          490,
+          95,
+          144
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 1",
+        "X": 527,
+        "Y": 413,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          363,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 2",
+        "X": 527,
+        "Y": 462,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          412,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 3",
+        "X": 527,
+        "Y": 511,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          461,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 4",
+        "X": 527,
+        "Y": 560,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          510,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 5",
+        "X": 651,
+        "Y": 413,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          363,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 6",
+        "X": 651,
+        "Y": 462,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          412,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 7",
+        "X": 651,
+        "Y": 511,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          461,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift 8",
+        "X": 651,
+        "Y": 560,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          510,
+          56,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift lobby",
+        "X": 613,
+        "Y": 625,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          499,
+          363,
+          138,
+          294
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting access",
+        "X": 573.5,
+        "Y": 697,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          507,
+          670,
+          133,
+          51
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lounge passage",
+        "X": 305,
+        "Y": 743,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          -438,
+          1048
+        ],
+        "Bounds": [
+          283,
+          670,
+          44,
+          143
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "South passage",
+        "X": 514,
+        "Y": 662.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          620,
+          462,
+          64
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Storage",
+        "X": 360,
+        "Y": 516,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          484,
+          149,
+          43
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "West passage",
+        "X": 276,
+        "Y": 605.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          -329.5,
+          881.5
+        ],
+        "Bounds": [
+          255,
+          359,
+          42,
+          490
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "North passage",
+        "X": 384,
+        "Y": 351.5,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          255,
+          327,
+          258,
+          46
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Fitness passage",
+        "X": 152,
+        "Y": 337,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          35,
+          315,
+          234,
+          58
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 1",
+        "X": 684,
+        "Y": 391,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          363,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 2",
+        "X": 684,
+        "Y": 440,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          412,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 3",
+        "X": 684,
+        "Y": 489,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          461,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "WC 4",
+        "X": 684,
+        "Y": 538,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          665,
+          510,
+          38,
+          63
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Lift access",
+        "X": 684,
+        "Y": 612,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          623,
+          559,
+          122,
+          98
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Core passage",
+        "X": 717,
+        "Y": 490,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          6.123233995736766E-17,
+          -1,
+          1,
+          6.123233995736766E-17,
+          226.99999999999994,
+          1207
+        ],
+        "Bounds": [
+          689,
+          363,
+          56,
+          294
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Conference",
+        "X": 849,
+        "Y": 490,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          731,
+          363,
+          236,
+          148
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Cafeteria",
+        "X": 849,
+        "Y": 568,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          731,
+          491,
+          236,
+          358
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Discussion",
+        "X": 353,
+        "Y": 790,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          313,
+          670,
+          74,
+          143
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting 06",
+        "X": 447,
+        "Y": 740,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          670,
+          148,
+          85
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Copy / print",
+        "X": 483,
+        "Y": 774,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          741,
+          148,
+          48
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Breakout",
+        "X": 448,
+        "Y": 837,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          373,
+          775,
+          148,
+          74
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Breakout 2",
+        "X": 335,
+        "Y": 811,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          283,
+          799,
+          104,
+          50
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting lounge A",
+        "X": 543.75,
+        "Y": 835,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          507,
+          707,
+          73.5,
+          142
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Meeting lounge B",
+        "X": 603.25,
+        "Y": 835,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          566.5,
+          707,
+          73.5,
+          142
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Pantry",
+        "X": 657,
+        "Y": 706,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          626,
+          670,
+          65,
+          47
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Storage",
+        "X": 704,
+        "Y": 705,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          677,
+          670,
+          68,
+          47
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      },
+      {
+        "Text": "Kitchen",
+        "X": 690,
+        "Y": 800,
+        "Size": 4.5,
+        "Weight": 400,
+        "Align": 4,
+        "Transform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "Bounds": [
+          626,
+          703,
+          119,
+          146
+        ],
+        "Color": [
+          0.27058823529411763,
+          0.39215686274509803,
+          0.3176470588235294,
+          1
+        ]
+      }
+    ]
+  ]
+}

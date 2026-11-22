@@ -9,7 +9,7 @@ namespace Xui.GPU.Shaders;
 public interface IVertexShader<TInput, TOutput, TBindings> : IShaderStage
     where TInput : unmanaged
     where TOutput : unmanaged
-    where TBindings : unmanaged
+    where TBindings : struct
 {
     /// <summary>
     /// Executes the vertex shader for a single vertex.

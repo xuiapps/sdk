@@ -21,6 +21,48 @@ namespace Xui.Tests.Integration.TestApp;
 public class MarketPerformanceTest
 {
     [Fact]
+    public void OpeningMarketDefersRowsAndOpeningStockLoadsOnlyItsDetails()
+    {
+        _ = new MarketData(42); // Exclude static/JIT initialization from the allocation budget.
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var data = new MarketData(42);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.InRange(allocated, 0, 100_000);
+        Assert.Equal(0, data.LoadedCount);
+        var last = data[4999];
+        var first = data[0];
+        Assert.Equal(2, data.LoadedCount);
+        Assert.False(first.HasDetails);
+        Assert.False(last.HasDetails);
+        Assert.Same(last, data[4999]);
+        var detail = new MarketDetailExample(last);
+        Assert.Same(last, detail.Stock);
+        Assert.True(last.HasDetails);
+        Assert.False(first.HasDetails);
+        Assert.Equal(2, data.LoadedCount);
+        var bars = last.Bars;
+        _ = new MarketDetailExample(last);
+        Assert.Same(bars, last.Bars);
+    }
+
+    [Theory]
+    [InlineData(0, "$54.80", "-21.85%", "Vol 24.9M · XSIM")]
+    [InlineData(1, "$61.54", "+25.67%", "Vol 66.9M · XSIM")]
+    [InlineData(42, "$17.80", "-18.03%", "Vol 4.3M · XSIM")]
+    [InlineData(100, "$131.23", "-25.56%", "Vol 28.0M · XSIM")]
+    [InlineData(4999, "$209.80", "-18.97%", "Vol 99.1M · XSIM")]
+    public void DirectAccessPreservesOriginalSeedSequence(int index, string price, string change, string volume)
+    {
+        var data = new MarketData(0x584D4152);
+        var stock = data[index];
+        Assert.Equal(price, stock.Price);
+        Assert.Equal(change, stock.Change);
+        Assert.Equal(volume, stock.Volume);
+        Assert.Equal(1, data.LoadedCount);
+        Assert.False(stock.HasDetails);
+    }
+
+    [Fact]
     public void FreshDownReplacesUnfinishedRowPress()
     {
         using var scene = new Scene();
@@ -157,6 +199,8 @@ public class MarketPerformanceTest
         Assert.Equal(5000, first.Count);
         var symbols = new HashSet<string>();
         var names = new HashSet<string>();
+        // Random access must not change the seeded data or require loading earlier rows.
+        for (var i = again.Count - 1; i >= 0; i--) _ = again[i];
         for (var i = 0; i < first.Count; i++)
         {
             var a = first[i]; var b = again[i];
@@ -177,20 +221,24 @@ public class MarketPerformanceTest
     [InlineData(320, 568)]
     [InlineData(430, 932)]
     [InlineData(1024, 768)]
-    public void RenderingNewRowsRecordsZeroManagedBytesAndWorkStaysViewportBound(int width, int height)
+    public void LoadingRowsStaysViewportBoundAndCachedFramesRecordZeroManagedBytes(int width, int height)
     {
         using var measure = new SvgDrawingContext((width, height), Stream.Null, Xui.Core.Fonts.Inter.Source);
         using var recorder = new RetainedCanvasContext(measure);
-        var grid = new MarketGrid(MarketData.Shared);
+        var data = new MarketData(0x584D4152);
+        var grid = new MarketGrid(data);
         var scroll = new ScrollView { Content = grid };
         scroll.Measure((width, height), measure);
         scroll.Arrange((0, 0, width, height), measure);
+        Assert.Equal(0, data.LoadedCount);
         void Frame()
         {
             recorder.BeginFrame((0, 0, width, height), 1);
             scroll.Render(recorder);
             recorder.EndFrame(); recorder.AcceptFrame();
         }
+        Frame();
+        Assert.Equal(grid.RenderedRowCount, data.LoadedCount);
         // Warm reusable command/storage buffers, including the maximum partially visible row count.
         for (var i = 0; i < 32; i++)
         {
@@ -203,6 +251,11 @@ public class MarketPerformanceTest
             // Move far enough to encounter entirely new text, logos and paths on every frame.
             var wheel = new ScrollWheelEventRef { Delta = (0, -1307) };
             scroll.OnScrollWheel(ref wheel);
+            var loaded = data.LoadedCount;
+            Frame(); // First visibility prepares only this viewport's missing row data.
+            Assert.InRange(data.LoadedCount - loaded, 0, grid.RenderedRowCount);
+            for (var row = grid.FirstRenderedRow; row < grid.FirstRenderedRow + grid.RenderedRowCount; row++)
+                Assert.False(data[row].HasDetails);
             var before = GC.GetAllocatedBytesForCurrentThread();
             Frame();
             allocated += GC.GetAllocatedBytesForCurrentThread() - before;
@@ -261,7 +314,7 @@ public class MarketPerformanceTest
         scene.App.MarkdownHeading("Market Pulse: a layer-composed 5,000-row grid", 1);
         scene.App.MarkdownParagraph("Fixed-seed fictional companies, compiled vector logos, 60-session sparklines and OHLC candles. " +
             "One grid view composes struct layers for visible rows. No row views or recycler. " +
-            "Allocation tests measure the warmed managed canvas recording path, including newly revealed rows; native rasterization is outside that measurement.");
+            "Rows load on first visibility; full details load when opened. Allocation tests measure the managed canvas recording path for cached rows; native rasterization is outside that measurement.");
         scene.App.Snapshot("MarketList");
         var scroll = scene.List.Scroller;
         var p = scroll.Parent!.LocalToGlobal((scroll.Frame.X + 100, scroll.Frame.Y + MarketGrid.IntroHeight + 50));

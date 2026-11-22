@@ -8,7 +8,7 @@ namespace Xui.GPU.Hardware.Metal;
 /// <summary>
 /// Metal GPU command list for recording and executing rendering commands.
 /// </summary>
-internal sealed unsafe class MacOSCommandList : IGpuCommandList
+internal sealed unsafe partial class MacOSCommandList : IGpuResourceCommandList
 {
     private readonly nint _device;
     private readonly nint _commandQueue;
@@ -16,13 +16,14 @@ internal sealed unsafe class MacOSCommandList : IGpuCommandList
     // Current frame state
     private nint _commandBuffer;     // id<MTLCommandBuffer>
     private nint _encoder;           // id<MTLRenderCommandEncoder>
+    private nint _depthStencilState;
+    private bool _depthTest, _depthWrite;
     private nint _pipelineState;     // id<MTLRenderPipelineState>
     private MacOSRenderTarget? _currentRenderTarget;
     private MacOSVertexShader? _currentVertexShader;
     private MacOSFragmentShader? _currentFragmentShader;
     private nint _vertexBuffer;
     private int _vertexCount;
-    private nint _constantBuffer;
     private bool _disposed;
 
     internal MacOSCommandList(nint device, nint commandQueue)
@@ -34,6 +35,7 @@ internal sealed unsafe class MacOSCommandList : IGpuCommandList
     /// <inheritdoc/>
     public void BeginRenderPass(IGpuRenderTarget renderTarget, Color4 clearColor)
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _currentRenderTarget = (MacOSRenderTarget)renderTarget;
@@ -69,8 +71,21 @@ internal sealed unsafe class MacOSCommandList : IGpuCommandList
     /// <inheritdoc/>
     public void SetPipeline(GpuPipelineDesc pipeline)
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
 
+        if (_pipelineState != 0 && ReferenceEquals(_currentVertexShader, pipeline.VertexShader) &&
+            ReferenceEquals(_currentFragmentShader, pipeline.FragmentShader) &&
+            _depthTest == pipeline.DepthTestEnabled && _depthWrite == pipeline.DepthWriteEnabled &&
+            _blend == pipeline.PremultipliedAlpha && _components.AsSpan().SequenceEqual(pipeline.VertexComponents.AsSpan()))
+        {
+            NativeMetal.Encoder_SetRenderPipelineState(_encoder, _pipelineState);
+            NativeMetal.Encoder_SetDepthStencilState(_encoder, _depthStencilState);
+            ApplyRasterState(pipeline);
+            return;
+        }
+
+        _blend = pipeline.PremultipliedAlpha; _components = pipeline.VertexComponents is null ? null : (int[])pipeline.VertexComponents.Clone();
         _currentVertexShader = pipeline.VertexShader as MacOSVertexShader;
         _currentFragmentShader = pipeline.FragmentShader as MacOSFragmentShader;
 
@@ -79,19 +94,23 @@ internal sealed unsafe class MacOSCommandList : IGpuCommandList
         if (_currentFragmentShader == null)
             throw new InvalidOperationException("Pipeline requires a MacOSFragmentShader.");
 
-        // Create vertex descriptor for CubeVertex: Float3 Position (12 bytes) + Color4 Color (16 bytes)
-        // This tells the hardware vertex fetch unit how to read tightly-packed C# data.
-        var vertexDesc = NativeMetal.CreateVertexDescriptor(
-            [
-                new() { Format = 30, Offset = 0, BufferIndex = 0 },   // MTLVertexFormatFloat3 at offset 0
-                new() { Format = 31, Offset = 12, BufferIndex = 0 },  // MTLVertexFormatFloat4 at offset 12
-            ],
-            stride: 28);
+        var components = pipeline.VertexComponents ?? [3, 4];
+        if (components.Length is < 1 or > 16) throw new ArgumentException("Expected 1–16 vertex attributes.");
+        var attributes = new NativeMetal.VertexAttributeDesc[components.Length];
+        ulong stride = 0;
+        for (int i = 0; i < components.Length; i++)
+        {
+            if (components[i] < 1 || components[i] > 4) throw new ArgumentException("Vertex attributes need 1–4 float components.");
+            attributes[i] = new() { Format = (ulong)(27 + components[i]), Offset = stride, BufferIndex = 0 };
+            stride += (ulong)components[i] * 4;
+        }
+        var vertexDesc = NativeMetal.CreateVertexDescriptor(attributes, stride);
 
         // Create render pipeline state with vertex descriptor, vertex and fragment functions
         // MTLPixelFormatDepth32Float = 252
         var pipelineDesc = NativeMetal.CreateRenderPipelineDescriptor(
             _currentVertexShader.Function, _currentFragmentShader.Function, vertexDesc, depthPixelFormat: 252);
+        NativeMetal.ConfigurePremultipliedBlend(pipelineDesc, pipeline.PremultipliedAlpha);
         NativeMetal.Release(vertexDesc);
 
         // Release old pipeline state if any
@@ -117,11 +136,16 @@ internal sealed unsafe class MacOSCommandList : IGpuCommandList
 
         // Create and set depth stencil state
         var dsDesc = NativeMetal.CreateDepthStencilDescriptor(pipeline.DepthTestEnabled, pipeline.DepthWriteEnabled);
-        var dsState = NativeMetal.Device_NewDepthStencilState(_device, dsDesc);
+        if (_depthStencilState != 0) NativeMetal.Release(_depthStencilState);
+        _depthStencilState = NativeMetal.Device_NewDepthStencilState(_device, dsDesc);
         NativeMetal.Release(dsDesc);
-        NativeMetal.Encoder_SetDepthStencilState(_encoder, dsState);
-        NativeMetal.Release(dsState);
+        _depthTest = pipeline.DepthTestEnabled; _depthWrite = pipeline.DepthWriteEnabled;
+        NativeMetal.Encoder_SetDepthStencilState(_encoder, _depthStencilState);
+        ApplyRasterState(pipeline);
+    }
 
+    private void ApplyRasterState(GpuPipelineDesc pipeline)
+    {
         // Set cull mode: GpuCullMode maps to MTLCullMode (None=0, Front=1, Back=2)
         ulong mtlCullMode = pipeline.CullMode switch
         {
@@ -166,25 +190,8 @@ internal sealed unsafe class MacOSCommandList : IGpuCommandList
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        // Release old constant buffer
-        if (_constantBuffer != 0)
-        {
-            NativeMetal.Release(_constantBuffer);
-            _constantBuffer = 0;
-        }
-
-        if (data != null && sizeInBytes > 0)
-        {
-            // Create constant buffer
-            _constantBuffer = NativeMetal.Device_NewBufferWithBytes(
-                _device, (nint)data, (nuint)sizeInBytes, 0);
-
-            if (_constantBuffer == 0)
-                throw new InvalidOperationException("Failed to create Metal constant buffer.");
-
-            // Bind to vertex shader buffer slot 1 (slot 0 is vertex data)
-            NativeMetal.Encoder_SetVertexBuffer(_encoder, _constantBuffer, 0, 1);
-        }
+        if (data == null || sizeInBytes <= 0 || sizeInBytes > 4096) throw new ArgumentOutOfRangeException(nameof(sizeInBytes));
+        NativeMetal.Encoder_SetBytes(_encoder, (nint)data, (nuint)sizeInBytes);
     }
 
     /// <inheritdoc/>
@@ -198,6 +205,7 @@ internal sealed unsafe class MacOSCommandList : IGpuCommandList
     /// <inheritdoc/>
     public void Commit()
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         NativeMetal.CommandBuffer_Commit(_commandBuffer);
@@ -213,10 +221,12 @@ internal sealed unsafe class MacOSCommandList : IGpuCommandList
         if (_disposed) return;
         _disposed = true;
 
+        foreach (var sampler in _samplers.Values) NativeMetal.Release(sampler);
+        _samplers.Clear();
         if (_encoder != 0) NativeMetal.Release(_encoder);
         if (_vertexBuffer != 0) NativeMetal.Release(_vertexBuffer);
-        if (_constantBuffer != 0) NativeMetal.Release(_constantBuffer);
         if (_pipelineState != 0) NativeMetal.Release(_pipelineState);
+        if (_depthStencilState != 0) NativeMetal.Release(_depthStencilState);
         if (_commandBuffer != 0) NativeMetal.Release(_commandBuffer);
     }
 }

@@ -24,7 +24,8 @@ public partial class MacOSDrawingContext : IContext
     public void EndGroup() => (composition ?? throw new InvalidOperationException("No composition group to close.")).EndGroup();
 
     private FilterState filter;
-    private readonly Stack<(Paint Fill, Paint Stroke, FilterState Filter)> paintStates = new();
+    private Font currentFont = new();
+    private readonly Stack<(Paint Fill, Paint Stroke, FilterState Filter, Font Font, TextAlign Align, TextBaseline Baseline)> paintStates = new();
 
     public void SetFilter() => filter = default;
     public void SetFilter(Brightness brightness) => filter = new(brightness);
@@ -50,7 +51,8 @@ public partial class MacOSDrawingContext : IContext
     private NFloat lineDashOffset = 0f;
     private NFloat[] lineDashSegments = [];
 
-    public MacOSDrawingContext(IFontSource? fontSource = null) => textMeasure = new MacOSTextMeasureContext(fontSource);
+    private readonly IFontSource? symbolFontSource;
+    public MacOSDrawingContext(IFontSource? fontSource = null) { symbolFontSource=fontSource; textMeasure = new MacOSTextMeasureContext(fontSource); }
 
     NFloat IPenContext.GlobalAlpha { set => CGContextRef.CGContextSetAlpha(this.cgContextRef, value); }
 
@@ -93,14 +95,15 @@ public partial class MacOSDrawingContext : IContext
             return;
         fill.Reset();
         stroke.Reset();
-        (fill, stroke, filter) = state;
+        (fill, stroke, filter) = (state.Fill, state.Stroke, state.Filter);
+        ((IContext)this).SetFont(state.Font); TextAlign=state.Align; TextBaseline=state.Baseline;
         CGContextRef.CGContextRestoreGState(this.cgContextRef);
     }
 
     void IStateContext.Save()
     {
         // The native state saves solid paints; retain our gradient handles and text paint too.
-        paintStates.Push((fill, stroke, filter));
+        paintStates.Push((fill, stroke, filter, currentFont, TextAlign, TextBaseline));
         if (fill.cgGradientRef != 0) CFRetain(fill.cgGradientRef);
         if (stroke.cgGradientRef != 0) CFRetain(stroke.cgGradientRef);
         CGContextRef.CGContextSaveGState(this.cgContextRef);
@@ -171,6 +174,7 @@ public partial class MacOSDrawingContext : IContext
         this.baseTransform = null;
         ResetPaintStates();
 
+        DisposeSymbols();
         textMeasure.Dispose();
     }
 
@@ -625,7 +629,7 @@ public partial class MacOSDrawingContext : IContext
 
     TextMetrics ITextMeasureContext.MeasureText(ReadOnlySpan<char> text) => textMeasure.MeasureText(text);
 
-    void ITextMeasureContext.SetFont(Font font) => textMeasure.SetFont(font);
+    void ITextMeasureContext.SetFont(Font font) { currentFont=font; textMeasure.SetFont(font); }
 
     private struct Paint
     {

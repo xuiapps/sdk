@@ -7,6 +7,7 @@ namespace Xui.Core.Canvas.Composition.Commands;
 
 public sealed partial class RetainedCanvasContext
 {
+    public void DrawSymbol(Xui.Core.Canvas.Symbols.SymbolContent content) => Emit(new SymbolCommand(), resource: content);
     public void Save() => Emit(new SaveCommand());
     public void Restore() => Emit(new RestoreCommand());
     public void BeginPath() => Emit(new BeginPathCommand());

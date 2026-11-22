@@ -39,5 +39,26 @@ public static partial class D2D1
 
         public void SetTarget(Bitmap1? d2dTargetBitmap) =>
             ((delegate* unmanaged[MemberFunction]<void*, void*, void> )this[74])(this, d2dTargetBitmap);
+
+        public void SetImageTarget(Image? image) =>
+            ((delegate* unmanaged[MemberFunction]<void*, void*, void>)this[74])(this, image);
+
+        public Device GetDevice()
+        {
+            void* value;
+            ((delegate* unmanaged[MemberFunction]<void*, void**, void>)this[73])(this, &value);
+            return new Device(value);
+        }
+
+        public CommandList CreateCommandList()
+        {
+            void* value;
+            Marshal.ThrowExceptionForHR(((delegate* unmanaged[MemberFunction]<void*, void**, int>)this[67])(this, &value));
+            return new CommandList(value);
+        }
+
+        public void DrawImage(Image image) =>
+            ((delegate* unmanaged[MemberFunction]<void*, void*, void*, void*, uint, uint, void>)this[83])
+                (this, image, null, null, 1, 0); // linear interpolation, source-over
     }
 }

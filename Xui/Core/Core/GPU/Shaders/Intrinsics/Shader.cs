@@ -546,11 +546,17 @@ public static class Shader
     /// </remarks>
     public static Color4 Sample(Texture2D<Color4> texture, Sampler sampler, Float2 uv)
     {
+        if (texture.Data is ISampledTexture<Color4> sampled) return sampled.Sample(sampler, uv, F32.Zero);
         throw new NotImplementedException(
             "Texture sampling can only be performed within shader execution context. " +
             "This intrinsic will be implemented by the renderer backend."
         );
     }
+
+    /// <summary>Samples a texture at an explicit mip level, interpolating adjacent levels.</summary>
+    public static Color4 SampleLevel(Texture2D<Color4> texture, Sampler sampler, Float2 uv, F32 level) =>
+        texture.Data is ISampledTexture<Color4> sampled ? sampled.Sample(sampler, uv, level)
+            : throw new NotSupportedException("The texture has no CPU sampling implementation.");
 
     /// <summary>
     /// Loads a texel from a 2D texture at the specified integer coordinates.

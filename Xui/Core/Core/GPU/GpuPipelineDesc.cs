@@ -5,6 +5,12 @@ namespace Xui.GPU.Hardware;
 /// </summary>
 public sealed class GpuPipelineDesc
 {
+    /// <summary>Enables premultiplied source-over blending. Requires the resource-device capability.</summary>
+    public bool PremultipliedAlpha { get; set; }
+
+    /// <summary>Vertex attribute component counts in location order; null selects Float3 + Float4.</summary>
+    public int[]? VertexComponents { get; set; }
+
     /// <summary>Gets or sets the compiled vertex shader.</summary>
     public IGpuVertexShader? VertexShader { get; set; }
 

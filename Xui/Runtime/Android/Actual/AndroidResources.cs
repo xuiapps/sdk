@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using Xui.Core.Canvas.Symbols;
 using System.Buffers.Binary;
 using Xui.Core.Actual;
 using Xui.Core.Canvas;
@@ -12,7 +14,30 @@ internal sealed class AndroidResources(nint host, IFontSource? fonts) : IImagePi
     private readonly Dictionary<Font, int> faces = new();
     private readonly Dictionary<string, (int Id, Size Size)> images = new();
     private readonly WireBuffer request = new();
-    private int nextFont, nextImage;
+    private int nextFont, nextImage, nextSymbol;
+    private readonly ConditionalWeakTable<SymbolContent, SymbolId> symbols = new();
+    private readonly List<(WeakReference<SymbolContent> Content, int Id)> symbolLifetimes = new();
+    private readonly WireBuffer symbolRequest = new();
+    private sealed record SymbolId(int Value);
+    public int Symbol(SymbolContent content)
+    {
+        if (symbols.TryGetValue(content, out var found)) return found.Value;
+        // Recorded frames hold strong references to definitions. Only collect native records
+        // once neither callers nor any display list can still use them.
+        for (int i=symbolLifetimes.Count-1; i>=0; i--)
+        {
+            if (symbolLifetimes[i].Content.TryGetTarget(out _)) continue;
+            request.Clear(); request.Int(symbolLifetimes[i].Id); AndroidBridge.Invoke(host, 11, request);
+            symbolLifetimes.RemoveAt(i);
+        }
+        int id=++nextSymbol;
+        symbolRequest.Clear(); symbolRequest.Int(id); symbolRequest.Rect(content.Bounds);
+        // Font registration uses request; it must not overwrite this definition packet.
+        content.Replay(new AndroidCommandWriter(symbolRequest, this));
+        AndroidBridge.Invoke(host, 10, symbolRequest);
+        symbols.Add(content, new(id)); symbolLifetimes.Add((new(content), id));
+        return id;
+    }
     public int Font(Font font)
     {
         var face = font with { FontSize = 1, LineHeight = 1 };
@@ -51,5 +76,5 @@ internal sealed class AndroidResources(nint host, IFontSource? fonts) : IImagePi
         request.Clear(); request.Int(id); request.Int(width); request.Int(height); request.Bytes(pixels);
         AndroidBridge.Invoke(host, 4, request); return id;
     }
-    public void Dispose() { request.Dispose(); faces.Clear(); images.Clear(); }
+    public void Dispose() { request.Dispose(); symbolRequest.Dispose(); symbols.Clear(); symbolLifetimes.Clear(); faces.Clear(); images.Clear(); }
 }

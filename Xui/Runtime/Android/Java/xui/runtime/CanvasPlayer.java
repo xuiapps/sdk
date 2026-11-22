@@ -137,13 +137,15 @@ final class CanvasPlayer {
         int alpha=p.getAlpha();p.setAlpha(Math.round(alpha*clamp(state.alpha)));
         if(rectangle)c.drawRect(rect,p);else c.drawPath(path,p); p.setAlpha(alpha);
     }
-    void replay(Canvas c, ByteBuffer b) {
-        replayCount++; state.reset(); depth=0; path.reset(); px=py=sx=sy=0;
+    void replay(Canvas c, ByteBuffer b) { replay(c,b,1); }
+    void replay(Canvas c, ByteBuffer b, float brightness) {
+        replayCount++; state.reset(); state.brightness=brightness; depth=0; path.reset(); px=py=sx=sy=0;
         int save=c.save(); b.position(0);
         try {
             while(b.hasRemaining()) {
                 int op=b.getInt();
                 switch(op) {
+                    case DrawOp.Symbol:host.drawSymbol(c,b.getInt(),state.brightness);path.reset();px=py=sx=sy=0;break;
                     case DrawOp.Save: if(depth==stack.size())stack.add(new State());stack.get(depth++).copy(state);c.save();break;
                     case DrawOp.Restore: if(depth==0)throw new IllegalArgumentException("Unbalanced Restore");old.set(state.transform);c.restore();state.copy(stack.get(--depth));rebase(c);break;
                     case DrawOp.BeginPath:path.reset();px=py=sx=sy=0;break;

@@ -1,3 +1,4 @@
+using Xui.Core.Canvas.Symbols;
 using Xui.Core.Canvas.Composition.Commands.Records;
 using System.Runtime.InteropServices;
 using Xui.Core.Canvas.Filter;
@@ -11,6 +12,11 @@ public sealed partial class CanvasCommandBuffer
     {
         switch (CommandLayout.Op(in command))
         {
+            case CanvasOp.Symbol:
+            {
+                var c = CommandLayout.Read<SymbolCommand, T>(in command);
+                c.Content=RetainResource(resource); Write(in c); break;
+            }
             case CanvasOp.Font:
             {
                 var c = CommandLayout.Read<FontCommand, T>(in command);
@@ -97,6 +103,7 @@ public sealed partial class CanvasCommandBuffer
     {
         switch (MemoryMarshal.Read<Command>(record).Op)
         {
+            case CanvasOp.Symbol: { var c=MemoryMarshal.Read<SymbolCommand>(record); resourceCount=c.Content.Id+1; break; }
             case CanvasOp.TextResource: { var c=MemoryMarshal.Read<TextResourceCommand>(record); resourceCount=c.Text.Id+1; break; }
             case CanvasOp.Font: { var c=MemoryMarshal.Read<FontCommand>(record); resourceCount=c.Family.Id+1; break; }
             case CanvasOp.FillPattern: { var c=MemoryMarshal.Read<FillPatternCommand>(record); resourceCount=c.Image.Id+1; break; }
@@ -110,6 +117,7 @@ public sealed partial class CanvasCommandBuffer
     {
         switch (op)
         {
+            case CanvasOp.Symbol: return MemoryMarshal.Read<SymbolCommand>(left).Content.Id == MemoryMarshal.Read<SymbolCommand>(right).Content.Id;
             case CanvasOp.Save: return true;
             case CanvasOp.Restore: return true;
             case CanvasOp.BeginPath: return true;
@@ -375,6 +383,11 @@ public sealed partial class CanvasCommandBuffer
                 var op = MemoryMarshal.Read<Command>(remaining).Op;
                 switch (op)
                 {
+                    case CanvasOp.Symbol:
+                    {
+                        var c=MemoryMarshal.Read<SymbolCommand>(remaining);
+                        target.DrawSymbol((SymbolContent)GetResource(c.Content)!); break;
+                    }
                     case CanvasOp.Save:
                     {
                         target.Save(); break;

@@ -73,6 +73,8 @@ internal sealed unsafe class DirectXCommandList : IGpuCommandList
     /// <inheritdoc/>
     public void SetPipeline(GpuPipelineDesc pipeline)
     {
+        if (pipeline.PremultipliedAlpha || pipeline.VertexComponents is not null)
+            throw new NotSupportedException("Custom vertex layouts and premultiplied blending require the GPU resource capability.");
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _currentVertexShader = pipeline.VertexShader as DirectXVertexShader;

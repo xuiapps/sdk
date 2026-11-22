@@ -27,7 +27,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
     private readonly MemoryStream bodyBuffer;
     private readonly StreamWriter styleWriter;
     private readonly StreamWriter defsWriter;
-    private readonly StreamWriter bodyWriter;
+    private StreamWriter bodyWriter;
 
     private readonly bool keepOpen;
     private readonly Size canvasSize;
@@ -185,6 +185,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
     {
         stateStack.Push(new DrawingState
         {
+            Font = font, Align = TextAlign, Baseline = TextBaseline,
             Filter = filter,
             FillColor = currentFillColor,
             FillImage = currentFillImage,
@@ -217,6 +218,7 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
 
         this.PopGroupsUntilDepth(state.GroupDepth);
 
+        font = state.Font; TextAlign = state.Align; TextBaseline = state.Baseline;
         filter = state.Filter;
         currentFillColor = state.FillColor;
         currentFillImage = state.FillImage;
@@ -984,6 +986,9 @@ public sealed partial class SvgDrawingContext : IContext, IDisposable
 
     private struct DrawingState
     {
+        public FontSnapshot Font;
+        public TextAlign Align;
+        public TextBaseline Baseline;
         public FilterState Filter;
         public ImagePaint? FillImage;
         public ImagePaint? StrokeImage;

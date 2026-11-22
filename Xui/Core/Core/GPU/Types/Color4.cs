@@ -58,6 +58,9 @@ public struct Color4
     /// </summary>
     public static Color4 Transparent => new(F32.Zero, F32.Zero, F32.Zero, F32.Zero);
 
+    /// <summary>Adds color components without clamping.</summary>
+    public static Color4 operator +(Color4 a, Color4 b) => new(a.R + b.R, a.G + b.G, a.B + b.B, a.A + b.A);
+
     /// <summary>
     /// Multiplies two colors component-wise.
     /// </summary>

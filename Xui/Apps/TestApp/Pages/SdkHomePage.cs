@@ -119,6 +119,9 @@ public class SdkHomePage : VerticalStack
         this.Add(new SdkExampleButton<Floorplan.FloorplanExample>() {
             Id = "OfficeFloorplan", Margin = 3, Text = "Office Floorplan · Vector map", TextColor = foreground,
         });
+        this.Add(new SdkExampleButton<FloorplanGpu.FloorplanGpuExample>() {
+            Id = "FloorplanGpu", Margin = 3, Text = "Floorplan GPU", TextColor = foreground,
+        });
         this.Add(new SdkExampleButton<WindowModesMacOS>() {
             Id = "WindowModes",
             Margin = 3,

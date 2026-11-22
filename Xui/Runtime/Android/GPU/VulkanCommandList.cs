@@ -24,6 +24,8 @@ internal sealed unsafe class VulkanCommandList(VulkanDevice device) : IGpuComman
     }
     public void SetPipeline(GpuPipelineDesc value)
     {
+        if (value.PremultipliedAlpha || value.VertexComponents is not null)
+            throw new NotSupportedException("Custom vertex layouts and premultiplied blending require the GPU resource capability.");
         Active();if(drawn)throw new NotSupportedException("This backend currently supports one draw per pass.");
         if(value.VertexShader is not VulkanVertexShader {Handle: not 0} v||v.Device!=device || value.FragmentShader is not VulkanFragmentShader {Handle: not 0} f||f.Device!=device)
             throw new ArgumentException("Pipeline shaders must belong to this Vulkan device.");

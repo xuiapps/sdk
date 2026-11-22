@@ -11,7 +11,7 @@ namespace Xui.GPU.Hardware.Metal;
 /// This backend uses the Metal framework for rendering and the Metal shader compiler
 /// for MSL shader compilation. Supports offscreen readback targets and native MTKView presentation targets.
 /// </remarks>
-public sealed class IOSGpuDevice : IGpuDevice
+public sealed partial class IOSGpuDevice : IGpuResourceDevice
 {
     private readonly nint _device;  // id<MTLDevice>
     private readonly nint _commandQueue;  // id<MTLCommandQueue>
@@ -43,6 +43,7 @@ public sealed class IOSGpuDevice : IGpuDevice
     /// <inheritdoc/>
     public IGpuVertexShader CompileVertexShader(string source, string entryPoint)
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
         var library = CompileLibrary(source);
         return new IOSVertexShader(entryPoint, library, entryPoint);
@@ -51,6 +52,7 @@ public sealed class IOSGpuDevice : IGpuDevice
     /// <inheritdoc/>
     public IGpuFragmentShader CompileFragmentShader(string source, string entryPoint)
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
         var library = CompileLibrary(source);
         return new IOSFragmentShader(entryPoint, library, entryPoint);
@@ -59,6 +61,7 @@ public sealed class IOSGpuDevice : IGpuDevice
     /// <inheritdoc/>
     public IGpuRenderTarget CreateRenderTarget(int width, int height)
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
         return new IOSRenderTarget(width, height, _device);
     }

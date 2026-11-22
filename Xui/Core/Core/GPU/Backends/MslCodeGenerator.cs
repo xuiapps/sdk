@@ -23,6 +23,7 @@ public class MslCodeGenerator : IShaderBackend
 
     private readonly StringBuilder _output = new();
     private int _indentLevel = 0;
+    private IrStructType? resourceBindings;
     private const string IndentString = "    ";
 
     /// <summary>
@@ -32,6 +33,7 @@ public class MslCodeGenerator : IShaderBackend
     {
         _output.Clear();
         _indentLevel = 0;
+        resourceBindings = module.VertexStage?.BindingsType ?? module.FragmentStage?.BindingsType;
 
         // Header comment
         WriteLine("// Generated MSL shader code");
@@ -76,6 +78,17 @@ public class MslCodeGenerator : IShaderBackend
         return _output.ToString();
     }
 
+    private IEnumerable<string> ResourceParameters()
+    {
+        int texture = 0, sampler = 0;
+        if (resourceBindings is null) yield break;
+        foreach (var field in resourceBindings.Fields)
+        {
+            if (field.Type is IrTextureType) yield return $"texture2d<float> resource_{field.Name} [[texture({texture++})]]";
+            else if (field.Type is IrSamplerType) yield return $"sampler resource_{field.Name} [[sampler({sampler++})]]";
+        }
+    }
+
     private void GenerateStructDecl(IrStructDecl structDecl, bool isVertexInput = false, bool isFragmentOutput = false)
     {
         var structType = structDecl.Type;
@@ -85,6 +98,7 @@ public class MslCodeGenerator : IShaderBackend
 
         foreach (var field in structType.Fields)
         {
+            if (field.Type is IrTextureType or IrSamplerType) continue;
             var typeStr = GetMslType(field.Type);
             var attribute = GetMslAttribute(field.Decorations, isVertexInput, isFragmentOutput);
             WriteLine($"{typeStr} {field.Name}{attribute};");
@@ -111,6 +125,7 @@ public class MslCodeGenerator : IShaderBackend
         {
             var bindingsType = GetMslType(stage.BindingsType);
             paramsList.Add($"constant {bindingsType}& bindings [[buffer(1)]]");
+            paramsList.AddRange(ResourceParameters());
         }
         var paramsStr = string.Join(", ", paramsList);
 
@@ -132,7 +147,10 @@ public class MslCodeGenerator : IShaderBackend
         var inputType = GetMslType(stage.InputType);
 
         // MSL fragment functions are marked with [[fragment]]
-        WriteLine($"[[fragment]] {outputType} fragment_main({inputType} input [[stage_in]])");
+        var extra = stage.BindingsType is null ? "" : $", constant {stage.BindingsType.Name}& bindings [[buffer(1)]]";
+        var resources = ResourceParameters().ToArray();
+        if (resources.Length > 0) extra += ", " + string.Join(", ", resources);
+        WriteLine($"[[fragment]] {outputType} fragment_main({inputType} input [[stage_in]]{extra})");
         WriteLine("{");
         _indentLevel++;
 
@@ -238,7 +256,8 @@ public class MslCodeGenerator : IShaderBackend
         {
             IrConstant constant => GenerateConstant(constant),
             IrParameter parameter => parameter.Name,
-            IrFieldAccess fieldAccess => $"{GenerateExpression(fieldAccess.Object)}.{fieldAccess.FieldName}",
+            IrFieldAccess fieldAccess when fieldAccess.Object.Type == resourceBindings && fieldAccess.Type is IrTextureType or IrSamplerType => $"resource_{fieldAccess.FieldName}",
+            IrFieldAccess fieldAccess => $"{GenerateExpression(fieldAccess.Object)}.{(fieldAccess.Object.Type is IrVectorType ? fieldAccess.FieldName.ToLowerInvariant() : fieldAccess.FieldName)}",
             IrBinaryOp binaryOp => GenerateBinaryOp(binaryOp),
             IrUnaryOp unaryOp => GenerateUnaryOp(unaryOp),
             IrMethodCall methodCall => GenerateMethodCall(methodCall),
@@ -337,6 +356,11 @@ public class MslCodeGenerator : IShaderBackend
 
     private string GenerateMethodCall(IrMethodCall methodCall)
     {
+        if (methodCall.Target == null && methodCall.MethodName is "Sample" or "SampleLevel")
+        {
+            var a = methodCall.Arguments.Select(GenerateExpression).ToArray();
+            return a[0] + ".sample(" + a[1] + ", " + a[2] + (a.Length == 4 ? ", level(" + a[3] + ")" : "") + ")";
+        }
         var args = string.Join(", ", methodCall.Arguments.Select(GenerateExpression));
 
         // Map shader intrinsics to MSL built-ins
@@ -384,7 +408,7 @@ public class MslCodeGenerator : IShaderBackend
             IrVectorType vector => GetMslVectorType(vector),
             IrMatrixType matrix => GetMslMatrixType(matrix),
             IrStructType structType => structType.Name,
-            IrTextureType texture => $"texture2d<{GetMslType(texture.PixelType)}>",
+            IrTextureType => "texture2d<float>",
             IrSamplerType => "sampler",
             _ => throw new InvalidOperationException(
                 $"Unsupported IR type '{type.GetType().Name}' at {type.SourceLocation?.ToDisplayString() ?? "unknown location"}")

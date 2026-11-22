@@ -9,7 +9,7 @@ namespace Xui.GPU.Shaders;
 public interface IFragmentShader<TInput, TOutput, TBindings> : IShaderStage
     where TInput : unmanaged
     where TOutput : unmanaged
-    where TBindings : unmanaged
+    where TBindings : struct
 {
     /// <summary>
     /// Executes the fragment shader for a single fragment.

@@ -12,6 +12,7 @@ namespace Xui.Runtime.Android.Composition;
 internal sealed class AndroidCommandWriter(WireBuffer buffer, IAndroidResources resources) : IContext
 {
     private void Op(DrawOp op) => buffer.Int((int)op);
+    public void DrawSymbol(Xui.Core.Canvas.Symbols.SymbolContent content) { Op(DrawOp.Symbol); buffer.Int(resources.Symbol(content)); }
     public void Dispose() { }
     public CompositionGroup Group(scoped in GroupOptions options) => throw new InvalidOperationException("Groups are reconciled before transport.");
     public void EndGroup() => throw new InvalidOperationException("Groups are reconciled before transport.");
