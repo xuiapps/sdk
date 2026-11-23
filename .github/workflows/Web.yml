@@ -43,6 +43,30 @@ jobs:
       - name: Build site
         run: docfx build docfx.json
 
+      - name: Publish WASM playground
+        run: dotnet publish Xui/Compiler/Playground/Xui.Compiler.Playground.csproj --configuration Release --output artifacts/playground
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install playground browser tests
+        working-directory: Xui/Compiler/Playground/browser-tests
+        run: |
+          npm ci
+          npx playwright install chromium --only-shell
+
+      - name: Test published playground
+        working-directory: Xui/Compiler/Playground/browser-tests
+        run: npm test -- "${{ github.workspace }}/artifacts/playground/wwwroot"
+
+      - name: Add playground to Pages
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force _site/wasm | Out-Null
+          Copy-Item artifacts/playground/wwwroot/* _site/wasm -Recurse -Force
+          New-Item -ItemType File -Force _site/.nojekyll | Out-Null
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

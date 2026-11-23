@@ -1,0 +1,36 @@
+using System.Reflection.Metadata;
+using Xui.Compiler.XuiNet.DotNet;
+
+namespace Xui.Compiler.XuiNet.CodeFlow;
+
+/// <summary>Interns a common class-reference stack at joins; value types and managed addresses remain exact.</summary>
+internal static class StackMerge
+{
+    public static StackState Merge(StackState existing, StackState incoming)
+    {
+        if (ReferenceEquals(existing, incoming)) return existing;
+        if (existing.Depth != incoming.Depth) throw new InvalidProgramException("Stack merge depths differ.");
+        if (existing.Parent is null || incoming.Parent is null) throw new InvalidProgramException("Stack roots differ.");
+        var parent = Merge(existing.Parent, incoming.Parent);
+        return parent.Push(Merge(existing.Entry!.Value, incoming.Entry!.Value));
+    }
+
+    private static StackEntry Merge(StackEntry a, StackEntry b)
+    {
+        if (a == b) return a;
+        if (a.Type == StackType.Null && b.Type == StackType.ObjectReference) return b;
+        if (b.Type == StackType.Null && a.Type == StackType.ObjectReference) return a;
+        if (a.Type == StackType.ObjectReference && b.Type == StackType.ObjectReference &&
+            a.DeclaredType?.Identity is { } left && b.DeclaredType?.Identity is { } right)
+        {
+            var visited = new HashSet<TypeIdentity>();
+            while (left.Handle.Kind == HandleKind.TypeDefinition && visited.Add(left))
+            {
+                if (right.IsAssignableTo(left)) return StackEntry.From(a.DeclaredType.Value with { Identity = left });
+                if (left.BaseType is not { } parent) break;
+                left = parent;
+            }
+        }
+        throw new InvalidProgramException($"Stack merge has incompatible types {a} and {b}.");
+    }
+}

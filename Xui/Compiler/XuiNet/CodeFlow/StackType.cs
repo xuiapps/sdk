@@ -1,0 +1,22 @@
+namespace Xui.Compiler.XuiNet.CodeFlow;
+
+/// <summary>Normalized MSIL evaluation-stack types supported by the first analysis pass.</summary>
+/// <remarks>Small integers share Int32; float and double share Float. These are types, not runtime values.</remarks>
+public enum StackType
+{
+    /// <summary>A reference to a concrete class.</summary>
+    ObjectReference,
+    Int32,
+    Int64,
+    NativeInt,
+    Float,
+    String,
+    /// <summary>The exact string[] category, retained for entry point signatures.</summary>
+    StringArray,
+    /// <summary>A named value type; StackEntry retains its module-qualified identity.</summary>
+    ValueType,
+    /// <summary>A managed address; StackEntry retains its exact declared element type.</summary>
+    ManagedPointer,
+    /// <summary>An untyped null reference before assignment or conversion.</summary>
+    Null
+}

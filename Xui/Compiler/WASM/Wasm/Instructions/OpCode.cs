@@ -1,0 +1,190 @@
+namespace Xui.Compiler.WASM.Wasm.Instructions;
+
+/// <summary>Single-byte instruction codes currently emitted by the compiler.</summary>
+public enum OpCode : byte
+{
+    /// <summary>Begins a block whose label receives its results.</summary>
+    Block = 0x02,
+    /// <summary>Begins a loop whose label receives its parameters.</summary>
+    Loop = 0x03,
+    /// <summary>Branches to an enclosing control label.</summary>
+    Br = 0x0c,
+    /// <summary>Begins a conditional block.</summary>
+    If = 0x04,
+    /// <summary>Begins the alternative arm of a conditional.</summary>
+    Else = 0x05,
+    /// <summary>Marks a point that cannot be reached.</summary>
+    Unreachable = 0x00,
+    /// <summary>Tests an i64 for zero.</summary>
+    I64Eqz = 0x50,
+    /// <summary>Ends a block, function body, or initializer expression.</summary>
+    End = 0x0b,
+    /// <summary>Returns from the current function.</summary>
+    Return = 0x0f,
+    /// <summary>Calls a function by index.</summary>
+    Call = 0x10,
+
+    /// <summary>Calls a function-table entry with a runtime signature check.</summary>
+    CallIndirect = 0x11,
+    /// <summary>Discards the top value.</summary>
+    Drop = 0x1a,
+    /// <summary>Loads a parameter or local by index.</summary>
+    LocalGet = 0x20,
+    /// <summary>Stores a parameter or local by index.</summary>
+    LocalSet = 0x21,
+    /// <summary>Stores the top value in a local and leaves it on the stack.</summary>
+    LocalTee = 0x22,
+    /// <summary>Loads a global by index.</summary>
+    GlobalGet = 0x23,
+    /// <summary>Stores a global by index.</summary>
+    GlobalSet = 0x24,
+    /// <summary>Pushes a signed LEB128-encoded i32 constant.</summary>
+    I32Const = 0x41,
+    /// <summary>Pushes a signed LEB128-encoded i64 constant.</summary>
+    I64Const = 0x42,
+    /// <summary>Pushes an IEEE 754 binary32 constant.</summary>
+    F32Const = 0x43,
+    /// <summary>Pushes an IEEE 754 binary64 constant.</summary>
+    F64Const = 0x44,
+    /// <summary>Tests an i32 value for zero.</summary>
+    I32Eqz = 0x45,
+    /// <summary>Compares i32 values for equality.</summary>
+    I32Eq = 0x46,
+    /// <summary>Compares signed i32 values for less than.</summary>
+    I32LtS = 0x48,
+    /// <summary>Compares unsigned i32 values for less than.</summary>
+    I32LtU = 0x49,
+    /// <summary>Compares signed i32 values for greater than.</summary>
+    I32GtS = 0x4a,
+    /// <summary>Compares unsigned i32 values for greater than.</summary>
+    I32GtU = 0x4b,
+    /// <summary>Compares i64 values for equality.</summary>
+    I64Eq = 0x51,
+    /// <summary>Compares signed i64 values for less than.</summary>
+    I64LtS = 0x53,
+    /// <summary>Compares unsigned i64 values for less than.</summary>
+    I64LtU = 0x54,
+    /// <summary>Compares signed i64 values for greater than.</summary>
+    I64GtS = 0x55,
+    /// <summary>Compares unsigned i64 values for greater than.</summary>
+    I64GtU = 0x56,
+    /// <summary>Compares f64 values for equality; NaN compares false.</summary>
+    F64Eq = 0x61,
+    /// <summary>Compares f64 values for less than; NaN compares false.</summary>
+    F64Lt = 0x63,
+    /// <summary>Compares f64 values for greater than; NaN compares false.</summary>
+    F64Gt = 0x64,
+    /// <summary>Compares f64 values for less than or equal; NaN compares false.</summary>
+    F64Le = 0x65,
+    /// <summary>Compares f64 values for greater than or equal; NaN compares false.</summary>
+    F64Ge = 0x66,
+    /// <summary>Adds two i32 values with wrapping arithmetic.</summary>
+    I32Add = 0x6a,
+    /// <summary>Subtracts i32 values with wrapping arithmetic.</summary>
+    I32Sub = 0x6b,
+    /// <summary>Multiplies i32 values with wrapping arithmetic.</summary>
+    I32Mul = 0x6c,
+    /// <summary>Computes bitwise AND of i32 values.</summary>
+    I32And = 0x71,
+    /// <summary>Computes bitwise OR of i32 values.</summary>
+    I32Or = 0x72,
+    /// <summary>Computes bitwise XOR of i32 values.</summary>
+    I32Xor = 0x73,
+    /// <summary>Shifts an i32 left, masking the count to five bits.</summary>
+    I32Shl = 0x74,
+    /// <summary>Shifts a signed i32 right, masking the count to five bits.</summary>
+    I32ShrS = 0x75,
+    /// <summary>Shifts an unsigned i32 right, masking the count to five bits.</summary>
+    I32ShrU = 0x76,
+    /// <summary>Adds i64 values with wrapping arithmetic.</summary>
+    I64Add = 0x7c,
+    /// <summary>Subtracts i64 values with wrapping arithmetic.</summary>
+    I64Sub = 0x7d,
+    /// <summary>Multiplies i64 values with wrapping arithmetic.</summary>
+    I64Mul = 0x7e,
+    /// <summary>Computes bitwise AND of i64 values.</summary>
+    I64And = 0x83,
+    /// <summary>Computes bitwise OR of i64 values.</summary>
+    I64Or = 0x84,
+    /// <summary>Computes bitwise XOR of i64 values.</summary>
+    I64Xor = 0x85,
+    /// <summary>Shifts an i64 left, masking the i64 count to six bits.</summary>
+    I64Shl = 0x86,
+    /// <summary>Shifts a signed i64 right, masking the i64 count to six bits.</summary>
+    I64ShrS = 0x87,
+    /// <summary>Shifts an unsigned i64 right, masking the i64 count to six bits.</summary>
+    I64ShrU = 0x88,
+    /// <summary>Negates an f64 value, preserving signed zero.</summary>
+    F64Neg = 0x9a,
+    /// <summary>Adds two f64 values.</summary>
+    F64Add = 0xa0,
+    /// <summary>Subtracts f64 values.</summary>
+    F64Sub = 0xa1,
+    /// <summary>Multiplies f64 values.</summary>
+    F64Mul = 0xa2,
+    /// <summary>Keeps the low 32 bits of an i64 value.</summary>
+    I32WrapI64 = 0xa7,
+    /// <summary>Sign-extends i32 to i64.</summary>
+    I64ExtendI32S = 0xac,
+    /// <summary>Zero-extends i32 to i64.</summary>
+    I64ExtendI32U = 0xad,
+    /// <summary>Converts signed i32 to f32.</summary>
+    F32ConvertI32S = 0xb2,
+    /// <summary>Converts signed i64 directly to f32.</summary>
+    F32ConvertI64S = 0xb4,
+    /// <summary>Rounds an f64 value to f32.</summary>
+    F32DemoteF64 = 0xb6,
+    /// <summary>Converts signed i32 to f64.</summary>
+    F64ConvertI32S = 0xb7,
+    /// <summary>Converts unsigned i32 to f64.</summary>
+    F64ConvertI32U = 0xb8,
+    /// <summary>Converts signed i64 to f64.</summary>
+    F64ConvertI64S = 0xb9,
+    /// <summary>Converts unsigned i64 to f64.</summary>
+    F64ConvertI64U = 0xba,
+    /// <summary>Promotes an f32 value to f64.</summary>
+    F64PromoteF32 = 0xbb,
+    /// <summary>Sign-extends the low eight bits to i32.</summary>
+    I32Extend8S = 0xc0,
+    /// <summary>Sign-extends the low sixteen bits to i32.</summary>
+    I32Extend16S = 0xc1,
+    /// <summary>Pushes a null reference of the following heap type.</summary>
+    RefNull = 0xd0,
+    /// <summary>Tests whether a reference is null.</summary>
+    RefIsNull = 0xd1,
+    /// <summary>Compares GC references by identity.</summary>
+    RefEq = 0xd3,
+    /// <summary>Introduces a GC instruction with a U32 subopcode.</summary>
+    Gc = 0xfb,
+    /// <summary>Introduces miscellaneous instructions including bulk memory.</summary>
+    Misc = 0xfc,
+    /// <summary>Loads four bytes as i32.</summary>
+    I32Load = 0x28,
+    /// <summary>Loads eight bytes as i64.</summary>
+    I64Load = 0x29,
+    /// <summary>Loads four bytes as f32.</summary>
+    F32Load = 0x2a,
+    /// <summary>Loads eight bytes as f64.</summary>
+    F64Load = 0x2b,
+    /// <summary>Loads and sign-extends one byte.</summary>
+    I32Load8S = 0x2c,
+    /// <summary>Loads and zero-extends one byte.</summary>
+    I32Load8U = 0x2d,
+    /// <summary>Loads and sign-extends two bytes.</summary>
+    I32Load16S = 0x2e,
+    /// <summary>Loads and zero-extends two bytes.</summary>
+    I32Load16U = 0x2f,
+    /// <summary>Stores four bytes from i32.</summary>
+    I32Store = 0x36,
+    /// <summary>Stores eight bytes from i64.</summary>
+    I64Store = 0x37,
+    /// <summary>Stores four bytes from f32.</summary>
+    F32Store = 0x38,
+    /// <summary>Stores eight bytes from f64.</summary>
+    F64Store = 0x39,
+    /// <summary>Stores the low byte of i32.</summary>
+    I32Store8 = 0x3a,
+    /// <summary>Stores the low two bytes of i32.</summary>
+    I32Store16 = 0x3b,
+
+}

@@ -1,0 +1,268 @@
+using System.Reflection.Metadata;
+using Xui.Compiler.XuiNet.DotNet.Signatures;
+using System.Reflection.Metadata.Ecma335;
+using Xui.Compiler.XuiNet.DotNet.Op;
+using Model = Xui.Compiler.XuiNet.DotNet;
+
+namespace Xui.Compiler.XuiNet.CodeFlow;
+
+/// <summary>Applies supported MSIL stack effects using signatures, independently of any backend.</summary>
+internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body, Signature signature, Model.TypeIdentity context)
+{
+    private readonly SignatureType[] locals = SignatureReader.Locals(module, body.LocalSignature, context.Arguments).ToArray();
+    private readonly Dictionary<int, Signature> calls = new();
+
+    public void Apply(InstructionNode node)
+    {
+        var reader = body.Instructions;
+        reader.Bytes.Offset = node.Offset;
+        var instruction = reader.Read();
+        var stack = new StackCursor(node);
+        switch (instruction.Code)
+        {
+            case OpCode.Nop: break;
+            case >= OpCode.Ldc_i4_m1 and <= OpCode.Ldc_i4_8:
+            case OpCode.Ldc_i4:
+            case OpCode.Ldc_i4_s: stack.Push(StackType.Int32); break;
+            case OpCode.Ldc_i8: stack.Push(StackType.Int64); break;
+            case OpCode.Ldc_r4:
+            case OpCode.Ldc_r8: stack.Push(StackType.Float); break;
+            case OpCode.Ldnull: stack.Push(StackType.Null); break;
+            case OpCode.Ldstr: stack.Push(StackType.String); break;
+            case OpCode.Pop: stack.Pop(); break;
+            case OpCode.Dup:
+                var duplicated = stack.Pop(); // The original top is read, so it belongs in a future block's parameters.
+                stack.Push(duplicated); stack.Push(duplicated);
+                break;
+            case >= OpCode.Ldarg_0 and <= OpCode.Ldarg_3:
+                stack.Push(Slot(signature.Parameters, (int)instruction.Code - (int)OpCode.Ldarg_0, node)); break;
+            case OpCode.Ldarg:
+                stack.Push(Slot(signature.Parameters, instruction.ReadVariable(ref reader).Index, node)); break;
+            case OpCode.Ldarg_s:
+                stack.Push(Slot(signature.Parameters, instruction.ReadShortVariable(ref reader).Index, node)); break;
+            case OpCode.Starg:
+                stack.Store(Slot(signature.Parameters, instruction.ReadVariable(ref reader).Index, node)); break;
+            case OpCode.Starg_s:
+                stack.Store(Slot(signature.Parameters, instruction.ReadShortVariable(ref reader).Index, node)); break;
+            case >= OpCode.Ldloc_0 and <= OpCode.Ldloc_3:
+                stack.Push(Slot(locals, (int)instruction.Code - (int)OpCode.Ldloc_0, node)); break;
+            case OpCode.Ldloc:
+                stack.Push(Slot(locals, instruction.ReadVariable(ref reader).Index, node)); break;
+            case OpCode.Ldloc_s:
+                stack.Push(Slot(locals, instruction.ReadShortVariable(ref reader).Index, node)); break;
+            case >= OpCode.Stloc_0 and <= OpCode.Stloc_3:
+                stack.Store(Slot(locals, (int)instruction.Code - (int)OpCode.Stloc_0, node)); break;
+            case OpCode.Stloc:
+                stack.Store(Slot(locals, instruction.ReadVariable(ref reader).Index, node)); break;
+            case OpCode.Stloc_s:
+                stack.Store(Slot(locals, instruction.ReadShortVariable(ref reader).Index, node)); break;
+            case OpCode.Ldloca:
+                stack.Push(Address(locals, instruction.ReadVariable(ref reader).Index, node)); break;
+            case OpCode.Ldloca_s:
+                stack.Push(Address(locals, instruction.ReadShortVariable(ref reader).Index, node)); break;
+            case OpCode.Ldarga:
+                stack.Push(Address(signature.Parameters, instruction.ReadVariable(ref reader).Index, node)); break;
+            case OpCode.Ldarga_s:
+                stack.Push(Address(signature.Parameters, instruction.ReadShortVariable(ref reader).Index, node)); break;
+            case OpCode.Ldfld:
+            case OpCode.Ldflda:
+            case OpCode.Stfld:
+                var fieldToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                var resolvedField = Model.MemberResolver.Field(module, fieldToken, context);
+                var field = module.GetField(resolvedField.Handle);
+                if ((field.Attributes & System.Reflection.FieldAttributes.Static) != 0)
+                    throw stack.Error("Instance field instruction targets a static field");
+                var fieldType = SignatureReader.Field(module, field.Signature, resolvedField.DeclaringType.Arguments);
+                if (node.Code == OpCode.Stfld) stack.Store(StackEntry.From(fieldType));
+                var ownerIdentity = resolvedField.DeclaringType;
+                var owner = new SignatureType(SignatureTypeCode.TypeHandle, ownerIdentity, IsReferenceType: !ownerIdentity.IsValueType);
+                var instance = stack.Pop();
+                bool address = instance == StackEntry.From(owner.ByReference());
+                if (!address && !(instance.Type == StackType.Null && !ownerIdentity.IsValueType) &&
+                    ((ownerIdentity.IsValueType && node.Code != OpCode.Ldfld) || !(instance == StackEntry.From(owner) ||
+                        (instance.Type == StackType.ObjectReference && instance.DeclaredType?.Identity is { } actualOwner && actualOwner.IsAssignableTo(ownerIdentity)))))
+                    throw stack.Error($"Expected {owner}&" + (node.Code == OpCode.Ldfld ? $" or {owner}" : ""));
+                if (node.Code == OpCode.Ldfld) stack.Push(StackEntry.From(fieldType));
+                if (node.Code == OpCode.Ldflda) stack.Push(StackEntry.From(fieldType.ByReference()));
+                break;
+            case OpCode.Isinst:
+            case OpCode.Castclass:
+                var targetType = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments).Identity!.Value;
+                if (targetType.Handle.Kind != HandleKind.TypeDefinition || targetType.IsValueType ||
+                    module.GetType((TypeDefinitionHandle)targetType.Handle).IsInterface)
+                    throw new NotSupportedException("Type tests currently require same-module classes.");
+                var tested = stack.Pop();
+                if (tested.Type is not (StackType.ObjectReference or StackType.Null))
+                    throw stack.Error("Class type tests require a class reference");
+                stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, targetType, IsReferenceType: true)));
+                break;
+            case OpCode.Newobj:
+                var constructorToken = instruction.ReadToken(ref reader).Value;
+                var constructor = CallSignature(constructorToken);
+                var constructorHandle = Model.MemberResolver.Method(module, MetadataTokens.EntityHandle(constructorToken), context);
+                if (module.GetMethod(constructorHandle.Handle).Name != ".ctor" ||
+                    constructor.Parameters.Length == 0 || constructor.Result is not null)
+                    throw new NotSupportedException("Only same-module constructors are currently analyzed.");
+                for (int i = constructor.Parameters.Length - 1; i >= 1; i--) stack.Store(StackEntry.From(constructor.Parameters[i]));
+                stack.Push(StackEntry.From(constructor.Parameters[0] with { IsByReference = false }));
+                break;
+            case OpCode.Initobj:
+            case OpCode.Ldobj:
+            case OpCode.Stobj:
+            case OpCode.Cpobj:
+                var valueHandle = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                var resolvedValue = SignatureReader.Resolve(module, valueHandle, context.Arguments);
+                if (resolvedValue.Identity is not { IsValueType: true } valueIdentity)
+                    throw new NotSupportedException("Only same-module value-type object operations are currently analyzed; primitive/reference generic initobj is not implemented.");
+                var value = new SignatureType(SignatureTypeCode.TypeHandle, valueIdentity);
+                var pointer = StackEntry.From(value.ByReference());
+                if (node.Code == OpCode.Stobj) stack.Store(StackEntry.From(value));
+                if (node.Code == OpCode.Cpobj) stack.Pop(pointer);
+                stack.Pop(pointer);
+                if (node.Code == OpCode.Ldobj) stack.Push(StackEntry.From(value));
+                break;
+            case OpCode.Callvirt:
+            case OpCode.Call:
+                int callToken = instruction.ReadToken(ref reader).Value;
+                if (Model.WellKnownMethods.IsObjectConstructor(module, MetadataTokens.EntityHandle(callToken)))
+                {
+                    if (stack.Pop().Type != StackType.ObjectReference) throw stack.Error("Object constructor requires a class receiver");
+                    break;
+                }
+                var called = CallSignature(callToken);
+                for (int i = called.Parameters.Length - 1; i >= 0; i--) stack.Store(StackEntry.From(called.Parameters[i]));
+                if (called.Result is StackEntry result) stack.Push(result);
+                break;
+            case OpCode.Ret:
+                if (signature.Result is StackEntry returned) stack.Store(returned);
+                if (stack.State.Depth != 0) throw stack.Error("Return leaves unconsumed values");
+                break;
+            case OpCode.Br:
+            case OpCode.Br_s: break;
+            case OpCode.Brtrue:
+            case OpCode.Brtrue_s:
+            case OpCode.Brfalse:
+            case OpCode.Brfalse_s:
+                if (stack.Pop().Type is not (StackType.Int32 or StackType.Int64 or StackType.NativeInt or StackType.String or StackType.ObjectReference or StackType.Null))
+                    throw stack.Error("Invalid truth-test type");
+                break;
+            case OpCode.Switch: stack.Pop(StackType.Int32); break;
+            case OpCode.Beq:
+            case OpCode.Beq_s:
+            case OpCode.Bne_un:
+            case OpCode.Bne_un_s:
+                ComparePair(ref stack, node.Code); break;
+            case >= OpCode.Beq_s and <= OpCode.Blt_un_s:
+            case >= OpCode.Beq and <= OpCode.Blt_un:
+                NumericPair(ref stack); break;
+            case OpCode.Ceq:
+            case OpCode.Cgt_un:
+                ComparePair(ref stack, node.Code); stack.Push(StackType.Int32); break;
+            case OpCode.Cgt:
+            case OpCode.Clt:
+            case OpCode.Clt_un:
+                NumericPair(ref stack); stack.Push(StackType.Int32); break;
+            case OpCode.Add:
+            case OpCode.Sub:
+            case OpCode.Mul:
+                stack.Push(NumericPair(ref stack)); break;
+            case OpCode.And:
+            case OpCode.Or:
+            case OpCode.Xor:
+                var integer = NumericPair(ref stack);
+                if (integer == StackType.Float) throw stack.Error("Bitwise operands must be integers");
+                stack.Push(integer); break;
+            case OpCode.Neg:
+                var negated = Numeric(ref stack); stack.Push(negated); break;
+            case OpCode.Not:
+                var inverted = Numeric(ref stack);
+                if (inverted == StackType.Float) throw stack.Error("Not requires an integer");
+                stack.Push(inverted); break;
+            case OpCode.Shl:
+            case OpCode.Shr:
+            case OpCode.Shr_un:
+                if (stack.Pop().Type is not (StackType.Int32 or StackType.NativeInt)) throw stack.Error("Invalid shift count type");
+                var shifted = Numeric(ref stack);
+                if (shifted == StackType.Float) throw stack.Error("Shift requires an integer");
+                stack.Push(shifted); break;
+            case OpCode.Conv_i1:
+            case OpCode.Conv_u1:
+            case OpCode.Conv_i2:
+            case OpCode.Conv_u2:
+            case OpCode.Conv_i4:
+            case OpCode.Conv_u4:
+                Numeric(ref stack); stack.Push(StackType.Int32); break;
+            case OpCode.Conv_i8:
+            case OpCode.Conv_u8:
+                Numeric(ref stack); stack.Push(StackType.Int64); break;
+            case OpCode.Conv_r4:
+            case OpCode.Conv_r8:
+                Numeric(ref stack); stack.Push(StackType.Float); break;
+            case OpCode.Conv_r_un:
+                if (Numeric(ref stack) == StackType.Float) throw stack.Error("Conv_r_un requires an integer");
+                stack.Push(StackType.Float); break;
+            case OpCode.Conv_i:
+            case OpCode.Conv_u:
+                Numeric(ref stack); stack.Push(StackType.NativeInt); break;
+            default:
+                throw new NotSupportedException($"Stack analysis for {instruction.Code} at IL_{node.Offset:x4} is not implemented.");
+        }
+        node.After = stack.State;
+        node.Lowest = stack.Lowest;
+    }
+
+    private static StackEntry Slot(SignatureType[] slots, int index, InstructionNode instruction) =>
+        index < slots.Length ? StackEntry.From(slots[index]) : throw new InvalidProgramException($"Invalid slot {index} at IL_{instruction.Offset:x4}.");
+
+    private static StackEntry Address(SignatureType[] slots, int index, InstructionNode node) =>
+        index < slots.Length ? StackEntry.From(slots[index].ByReference()) :
+            throw new InvalidProgramException($"Invalid slot {index} at IL_{node.Offset:x4}.");
+
+    private Signature CallSignature(int token)
+    {
+        if (calls.TryGetValue(token, out var signature)) return signature;
+        var handle = MetadataTokens.EntityHandle(token);
+        if (handle.Kind == HandleKind.MemberReference &&
+            module.GetMemberReference((MemberReferenceHandle)handle).Parent.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeSpecification))
+        {
+            // External static calls still provide signatures for rewrite-aware analysis.
+            signature = Signature.Read(module, module.GetMemberReference((MemberReferenceHandle)handle).Signature);
+        }
+        else
+        {
+            var resolved = Model.MemberResolver.Method(module, handle, context);
+            signature = Signature.Read(module, module.GetMethod(resolved.Handle).Signature, resolved.DeclaringType);
+        }
+        calls.Add(token, signature);
+        return signature;
+    }
+
+    private static void ComparePair(ref StackCursor stack, OpCode code)
+    {
+        var right = stack.Pop(); var left = stack.Pop();
+        bool Reference(StackEntry value) => value.Type is StackType.ObjectReference or StackType.String or StackType.Null;
+        if (Reference(left) && Reference(right))
+        {
+            if (code == OpCode.Cgt_un && right.Type != StackType.Null) throw stack.Error("Reference cgt.un requires null on the right");
+            if (left.Type == StackType.Null || right.Type == StackType.Null || left == right ||
+                (left.Type == StackType.ObjectReference && right.Type == StackType.ObjectReference)) return;
+            throw stack.Error("Reference comparison type mismatch");
+        }
+        if (left != right || left.Type is not (StackType.Int32 or StackType.Int64 or StackType.NativeInt or StackType.Float))
+            throw stack.Error("Comparison type mismatch");
+    }
+
+    private static StackEntry Numeric(ref StackCursor stack)
+    {
+        var type = stack.Pop();
+        if (type.Type is not (StackType.Int32 or StackType.Int64 or StackType.NativeInt or StackType.Float)) throw stack.Error("Expected a numeric operand");
+        return type;
+    }
+
+    private static StackEntry NumericPair(ref StackCursor stack)
+    {
+        var right = Numeric(ref stack);
+        stack.Pop(right);
+        return right;
+    }
+}

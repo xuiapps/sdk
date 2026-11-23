@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Write C#, compile it to WebAssembly with Xui, and run it in your browser.">
+  <title>Xui · WASM playground</title>
+  <link rel="stylesheet" href="./playground.css">
+  <script type="module" src="./playground.js"></script>
+</head>
+<body>
+  <header>
+    <a class="brand" href="https://xuiapps.com" aria-label="Xui home">Xui<span class="brand-dot">.</span></a>
+    <span class="divider"></span>
+    <span>WASM playground</span>
+    <span class="badge">Experimental</span>
+  </header>
+  <main>
+    <div class="intro">
+      <div><h1>A little C#. A little WASM.</h1><p>Write it, run it, see what happens. Everything stays in your browser.</p></div>
+      <a class="docs" href="https://github.com/xuiapps/sdk/blob/compiler-msil-wasm/Xui/Compiler/WASM/README.md" target="_blank" rel="noreferrer">Supported features</a>
+    </div>
+    <div class="toolbar">
+      <label for="example">Example</label>
+      <select id="example">
+        <option value="hello">Hello World</option>
+        <option value="loop">A small loop</option>
+        <option value="generic">Generic virtual calls</option>
+      </select>
+      <div class="actions">
+        <button id="download" disabled>Download WASM</button>
+        <button id="stop" disabled>Stop</button>
+        <button id="run" class="primary" disabled>Run</button>
+      </div>
+    </div>
+    <div class="workspace">
+      <section class="panel source">
+        <div class="panel-heading"><label for="source">Program.cs</label><span>C#</span></div>
+        <textarea id="source" aria-label="C# source code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off">using System;
+
+Console.WriteLine("Hello World!");
+</textarea>
+        <div class="panel-footer">Ctrl / ⌘ + Enter to run</div>
+      </section>
+      <section class="panel result" aria-labelledby="output-title">
+        <div class="panel-heading"><h2 id="output-title">Output</h2><span id="exit-code"></span></div>
+        <pre id="output" tabindex="0" aria-label="Program output">Your program's output will appear here.</pre>
+        <pre id="error" hidden role="alert"></pre>
+        <div class="panel-footer"><span id="status" role="status">Loading compiler…</span><span id="metrics"></span></div>
+      </section>
+    </div>
+    <footer><span>C# → Roslyn → XuiNet → WebAssembly</span><span>Runs in a worker. Stop any time.</span></footer>
+  </main>
+</body>
+</html>
