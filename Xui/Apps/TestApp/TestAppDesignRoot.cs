@@ -33,7 +33,7 @@ internal sealed class TestAppDesignRoot : View, IFullScreenView
 
     public override object? GetService(Type serviceType)
     {
-        if (serviceType == typeof(ExampleSettings))
+        if (serviceType == typeof(ExampleSettings) || serviceType == typeof(IExampleSettings))
             return exampleSettings;
         if (serviceType == typeof(IDesignSystem) && designSystem is not null)
             return designSystem;

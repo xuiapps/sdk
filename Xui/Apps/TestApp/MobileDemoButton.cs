@@ -25,6 +25,7 @@ internal sealed class MobileDemoButton<TExample> : Button
         LabelTextAlign = TextAlign.Left;
         HorizontalAlignment = HorizontalAlignment.Stretch;
         MinimumHeight = 44;
+        WaitForPressFeedback = true;
         Clicked = NavigateToExample;
     }
 

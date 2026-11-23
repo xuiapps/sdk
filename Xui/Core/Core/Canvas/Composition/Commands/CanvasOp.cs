@@ -97,4 +97,6 @@ public enum CanvasOp
     ImageCrop,
     /// <summary>Text drawn from a retained string resource.</summary>
     TextResource,
+    /// <summary>A placement of immutable reusable vector content.</summary>
+    Symbol,
 }

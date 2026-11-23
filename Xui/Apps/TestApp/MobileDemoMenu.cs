@@ -78,7 +78,12 @@ internal sealed class MobileDemoMenu : MobileSurfaceStack
     {
         var panel = AddPanel("Performance");
         panel.AddExample<Pages.Market.MarketExample>("MarketPulse", "Market Pulse · 5,000 rows", MobileDemoIcon.Market);
-        panel.AddExample<Pages.Floorplan.FloorplanExample>("OfficeFloorplan", "Office Floorplan · Vector map", MobileDemoIcon.Basics);
+        var floorplan = panel.AddExample<Pages.Floorplan.FloorplanExample>("OfficeFloorplan", "Office Floorplan · Vector map", MobileDemoIcon.Basics);
+        floorplan.ClickMaybe += Pages.Floorplan.FloorplanDrawing.Preload;
+        floorplan.ClickFarFetch += Pages.Floorplan.FloorplanDrawing.Preload;
+        var gpu = panel.AddExample<Pages.FloorplanGpu.FloorplanGpuExample>("FloorplanGpu", "Floorplan GPU", MobileDemoIcon.Basics);
+        gpu.ClickMaybe += Pages.FloorplanGpu.FloorplanGpuModel.Preload;
+        gpu.ClickFarFetch += Pages.FloorplanGpu.FloorplanGpuModel.Preload;
     }
 
     private MobileDemoCategoryPanel AddPanel(string heading)

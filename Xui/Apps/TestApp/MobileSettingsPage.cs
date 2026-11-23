@@ -29,6 +29,12 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
     };
     private readonly VerticalStack developerDescription = Description("Show developer and preview", "features in examples.");
     private readonly Toggle developerToggle = new() { Id = "DeveloperFeaturesToggle" };
+    private readonly Label symbolsTitle = new()
+    {
+        Text = "Floorplan symbols", FontFamily = "Inter", FontSize = 17, FontWeight = FontWeight.SemiBold,
+    };
+    private readonly VerticalStack symbolsDescription = Description("Reuse furniture drawings.", "Turn off to compare FPS.");
+    private readonly Toggle symbolsToggle = new() { Id = "FloorplanSymbolsToggle" };
 
     public MobileSettingsPage()
     {
@@ -40,6 +46,14 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         Add(developerTitle);
         Add(developerDescription);
         Add(developerToggle);
+        Add(symbolsTitle);
+        Add(symbolsDescription);
+        Add(symbolsToggle);
+        symbolsToggle.Changed = enabled =>
+        {
+            if (GetService(typeof(IExampleSettings)) is IExampleSettings settings)
+                settings.UseFloorplanSymbols = enabled;
+        };
         developerToggle.Changed = enabled =>
         {
             if (GetService(typeof(ExampleSettings)) is ExampleSettings settings)
@@ -55,6 +69,7 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         if (this.TryFindParent<MobileNavigation>(out var navigation))
             performanceToggle.IsOn = navigation.IsPerformanceOverlayEnabled;
         developerToggle.IsOn = (GetService(typeof(ExampleSettings)) as ExampleSettings)?.ShowDeveloperFeatures ?? false;
+        symbolsToggle.IsOn = (GetService(typeof(IExampleSettings)) as IExampleSettings)?.UseFloorplanSymbols ?? true;
     }
 
     protected override Size MeasureCore(Size available, IMeasureContext context)
@@ -66,6 +81,9 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         developerTitle.Measure((available.Width - 116, 48), context);
         developerDescription.Measure((available.Width - 116, 48), context);
         developerToggle.Measure(available, context);
+        symbolsTitle.Measure((available.Width - 116, 24), context);
+        symbolsDescription.Measure((available.Width - 116, 48), context);
+        symbolsToggle.Measure(available, context);
         return available;
     }
 
@@ -80,6 +98,10 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         developerDescription.Arrange((rect.X + 20, rect.Y + 200, rect.Width - 116, 48), context);
         var developerSize = developerToggle.Measure(rect.Size, context);
         developerToggle.Arrange((rect.Right - 20 - developerSize.Width, rect.Y + 187, developerSize.Width, developerSize.Height), context);
+        symbolsTitle.Arrange((rect.X + 20, rect.Y + 272, rect.Width - 116, 24), context);
+        symbolsDescription.Arrange((rect.X + 20, rect.Y + 298, rect.Width - 116, 48), context);
+        var symbolsSize = symbolsToggle.Measure(rect.Size, context);
+        symbolsToggle.Arrange((rect.Right - 20 - symbolsSize.Width, rect.Y + 285, symbolsSize.Width, symbolsSize.Height), context);
     }
 
     protected override void RenderCore(IContext context)
@@ -90,6 +112,9 @@ internal sealed class MobileSettingsPage : ViewCollection, IPage
         this.RenderChild(context, developerTitle);
         this.RenderChild(context, developerDescription);
         this.RenderChild(context, developerToggle);
+        this.RenderChild(context, symbolsTitle);
+        this.RenderChild(context, symbolsDescription);
+        this.RenderChild(context, symbolsToggle);
         this.RenderChild(context, header);
     }
 

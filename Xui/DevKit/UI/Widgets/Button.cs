@@ -60,6 +60,18 @@ public partial class Button : View, IDesignSystemChangeNotifications
     /// <summary>Invoked when the button is clicked.</summary>
     public Action? Clicked { get; set; }
 
+    /// <summary>Raised once when press recognition allows the highlight to appear. The gesture may still cancel.</summary>
+    public event Action? ClickMaybe;
+
+    /// <summary>Raised on a valid release, before Click. Start nonblocking preparation here.</summary>
+    public event Action? ClickFarFetch;
+
+    /// <summary>Raised when the committed click executes, before the compatibility Clicked callback.</summary>
+    public event Action? Click;
+
+    /// <summary>Waits for a highlighted render and the following animation tick before executing a quick click.</summary>
+    public bool WaitForPressFeedback { get; set; }
+
     /// <inheritdoc/>
     public override int Count => 0;
 
@@ -99,6 +111,8 @@ public partial class Button : View, IDesignSystemChangeNotifications
         // Cancel live input, but let completed taps finish on their original clock.
         var pointer = pressedPointer;
         if (pointer != -1) { EndPress(false); ReleasePointer(pointer); }
+        // A committed release must still execute if its owner removes the button before the next frame.
+        if (clickPending && !raisingFarFetch) CompleteClick();
         hover = false;
         designSystem.Deactivate(this);
         base.OnDeactivate();
@@ -125,6 +139,7 @@ public partial class Button : View, IDesignSystemChangeNotifications
     protected override void RenderCore(IContext context)
     {
         ApplyDesignSystem();
+        if (clickPending && !highlightRendered) pressFeedback.HoldReleasedFeedback();
 
         switch (Variant)
         {
@@ -141,6 +156,8 @@ public partial class Button : View, IDesignSystemChangeNotifications
 
         RenderRipples(context);
         RenderLabel(context);
+        if ((pressedPointer != -1 || clickPending) && FeedbackOpacity > 0)
+            highlightRendered = true;
     }
 
     private void RenderFilled(IContext context)
@@ -218,7 +235,7 @@ public partial class Button : View, IDesignSystemChangeNotifications
             hover = false;
             InvalidateRender();
         }
-        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down && pressedPointer == -1)
+        else if (phase == EventPhase.Tunnel && e.Type == PointerEventType.Down && pressedPointer == -1 && !clickPending)
         {
             hover = e.State.PointerType == PointerType.Mouse && hover;
             var delay = PressFeedbackLayer<Button>.ShouldDelay(this, ref e);
@@ -230,7 +247,7 @@ public partial class Button : View, IDesignSystemChangeNotifications
             var tapped = HitTest(e.State.Position);
             EndPress(tapped);
             ReleasePointer(e.PointerId);
-            if (tapped) Clicked?.Invoke();
+            if (tapped) CommitClick();
         }
         else if (e.Type is PointerEventType.Cancel or PointerEventType.LostCapture && pressedPointer == e.PointerId)
         {

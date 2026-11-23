@@ -41,6 +41,9 @@ public readonly struct Viewport
     /// </summary>
     public readonly float MaxDepth;
 
+    /// <summary>Maps positive NDC Y upward, matching Metal and Direct3D.</summary>
+    public readonly bool YUp;
+
     /// <summary>
     /// Creates a new viewport.
     /// </summary>
@@ -50,10 +53,11 @@ public readonly struct Viewport
     /// <param name="height">Height in pixels. Must be greater than 0.</param>
     /// <param name="minDepth">Minimum depth value (default 0.0).</param>
     /// <param name="maxDepth">Maximum depth value (default 1.0).</param>
+    /// <param name="yUp">Use native GPU NDC orientation (+1 at the top).</param>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when width or height is less than or equal to 0.
     /// </exception>
-    public Viewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f)
+    public Viewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f, bool yUp = false)
     {
         if (width <= 0)
             throw new ArgumentOutOfRangeException(nameof(width), "Width must be greater than 0");
@@ -66,6 +70,7 @@ public readonly struct Viewport
         Height = height;
         MinDepth = minDepth;
         MaxDepth = maxDepth;
+        YUp = yUp;
     }
 
     /// <summary>
@@ -98,7 +103,7 @@ public readonly struct Viewport
         // Transform from [-1, 1] NDC space to screen space
         // NDC: -1 is left/top, +1 is right/bottom
         screenX = X + (ndcX + 1.0f) * 0.5f * Width;
-        screenY = Y + (ndcY + 1.0f) * 0.5f * Height;
+        screenY = Y + ((YUp ? -ndcY : ndcY) + 1.0f) * 0.5f * Height;
 
         // Transform depth from [0, 1] to depth range
         depth = MinDepth + ndcZ * (MaxDepth - MinDepth);

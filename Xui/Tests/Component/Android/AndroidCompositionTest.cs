@@ -14,8 +14,31 @@ namespace Xui.Tests.Component.Android;
 
 public class AndroidCompositionTest
 {
+    [Fact]
+    public void SymbolPlacementUsesOneResourceOpcodeInsteadOfExpandingInstructions()
+    {
+        using var stream = new WireBuffer();
+        var writer = new AndroidCommandWriter(stream, new Resources());
+        IContext canvas = writer;
+        object key = new();
+        using (var symbol = canvas.Symbol(new Xui.Core.Canvas.Symbols.SymbolOptions { Key=key, Bounds=(0,0,20,20) }))
+        {
+            symbol.Context.SetFill(Colors.Red);
+            symbol.Context.FillRect((0,0,20,20));
+        }
+        Assert.Equal(0, stream.Length);
+        for (int i=0; i<100; i++) canvas.UseSymbol(key);
+        Assert.Equal(800, stream.Length);
+        for (int i=0; i<100; i++)
+        {
+            Assert.Equal((int)DrawOp.Symbol, Int(stream.Data, i*8));
+            Assert.Equal(1, Int(stream.Data, i*8+4));
+        }
+    }
+
     private sealed class Resources : IAndroidResources
     {
+        public int Symbol(Xui.Core.Canvas.Symbols.SymbolContent content) => 1;
         public int Font(Xui.Core.Canvas.Font font) => 1;
         public int Image(IImage image) => 1;
     }

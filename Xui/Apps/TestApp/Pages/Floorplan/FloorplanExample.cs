@@ -8,10 +8,12 @@ namespace Xui.Apps.TestApp.Pages.Floorplan;
 public sealed class FloorplanExample : Example, IMobileExamplePresentation
 {
     private bool mobilePresentation;
-    public FloorplanExample()
+    public FloorplanExample() : this(FloorplanDrawing.LoadSharedAsync()) { }
+
+    public FloorplanExample(Task<FloorplanDrawing> drawing)
     {
         Title = "Office Floorplan";
-        Content = new FloorplanView();
+        Content = new FloorplanLoadingView(drawing);
     }
 
     public bool DrawsUnderHeader => mobilePresentation;

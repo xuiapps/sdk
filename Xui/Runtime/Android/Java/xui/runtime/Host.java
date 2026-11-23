@@ -48,6 +48,36 @@ public final class Host extends ViewGroup implements Choreographer.FrameCallback
     private final SparseArray<Surface> nodes=new SparseArray<>();
     private final SparseArray<Typeface> fonts=new SparseArray<>();
     private final SparseArray<Bitmap> images=new SparseArray<>();
+    private final SparseArray<SymbolDrawing> symbols=new SparseArray<>();
+    void drawSymbol(Canvas canvas, int id, float brightness) {
+        SymbolDrawing symbol=symbols.get(id);
+        if(symbol==null)throw new IllegalArgumentException("Unknown symbol "+id);
+        symbol.draw(canvas, brightness);
+    }
+    private final class SymbolDrawing {
+        final float x,y;
+        final Picture picture=new Picture();
+        final ByteBuffer commands;
+        final CanvasPlayer player=new CanvasPlayer(Host.this);
+        SymbolDrawing(ByteBuffer input) {
+            x=input.getFloat();y=input.getFloat();float width=input.getFloat(),height=input.getFloat();
+            if(!Float.isFinite(width)||!Float.isFinite(height)||width<=0||height<=0)
+                throw new IllegalArgumentException("Invalid symbol bounds");
+            // Submission storage is borrowed only for invoke(). Keep our own command bytes
+            // for brightness fallback; Picture is the normal native vector replay path.
+            commands=ByteBuffer.allocate(input.remaining()).order(ByteOrder.LITTLE_ENDIAN);
+            commands.put(input).flip();
+            Canvas target=picture.beginRecording((int)Math.ceil(width),(int)Math.ceil(height));
+            try {target.translate(-x,-y);player.replay(target,commands);}
+            finally {picture.endRecording();}
+        }
+        void draw(Canvas canvas,float brightness) {
+            if(brightness!=1) {player.replay(canvas,commands,brightness);return;}
+            int save=canvas.save();
+            try {canvas.translate(x,y);canvas.drawPicture(picture);}
+            finally {canvas.restoreToCount(save);}
+        }
+    }
     private final ByteBuffer events=ByteBuffer.allocateDirect(32*20).order(ByteOrder.LITTLE_ENDIAN);
     private final Paint measure=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint.FontMetrics metrics=new Paint.FontMetrics();
@@ -181,6 +211,8 @@ public final class Host extends ViewGroup implements Choreographer.FrameCallback
             case 6:active(b.getInt()!=0);break;
             case 7:input.sync(b);break;
             case 8:input.keyboard(b.getInt()!=0);break;
+            case 10:{int id=b.getInt();symbols.put(id,new SymbolDrawing(b));break;}
+            case 11:symbols.remove(b.getInt());break;
             case 9:{int appearance=b.getInt();if(appearance<0||appearance>2)throw new IllegalArgumentException("Invalid status-bar appearance");statusBarAppearance=appearance;applyStatusBarAppearance();break;}
             default:throw new IllegalArgumentException("Unknown bridge operation "+operation);
         }

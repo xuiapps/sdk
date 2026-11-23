@@ -56,6 +56,8 @@ internal static class ScenarioInput
         app.MouseMove(view);
         app.MouseDown(view);
         app.MouseUp(view);
+        app.Render(); // A quick navigation tap presents feedback before the next frame commits it.
+        app.Advance(TimeSpan.Zero); // Commit navigation and initialize the new page's animation clock.
         app.Advance(TimeSpan.FromMilliseconds(400));
     }
 

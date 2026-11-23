@@ -12,7 +12,7 @@ namespace Xui.GPU.Hardware.Metal;
 /// for MSL shader compilation. Rendering is done off-screen to a texture that can be
 /// read back to CPU memory for display via the 2D canvas pipeline.
 /// </remarks>
-public sealed class MacOSGpuDevice : IGpuDevice
+public sealed partial class MacOSGpuDevice : IGpuResourceDevice
 {
     private readonly nint _device;  // id<MTLDevice>
     private readonly nint _commandQueue;  // id<MTLCommandQueue>
@@ -42,6 +42,7 @@ public sealed class MacOSGpuDevice : IGpuDevice
     /// <inheritdoc/>
     public IGpuVertexShader CompileVertexShader(string source, string entryPoint)
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
         var library = CompileLibrary(source);
         return new MacOSVertexShader(entryPoint, library, entryPoint);
@@ -50,6 +51,7 @@ public sealed class MacOSGpuDevice : IGpuDevice
     /// <inheritdoc/>
     public IGpuFragmentShader CompileFragmentShader(string source, string entryPoint)
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
         var library = CompileLibrary(source);
         return new MacOSFragmentShader(entryPoint, library, entryPoint);
@@ -58,6 +60,7 @@ public sealed class MacOSGpuDevice : IGpuDevice
     /// <inheritdoc/>
     public IGpuRenderTarget CreateRenderTarget(int width, int height)
     {
+        using var pool = new NativeMetal.AutoreleaseScope();
         ObjectDisposedException.ThrowIf(_disposed, this);
         return new MacOSRenderTarget(width, height, _device);
     }

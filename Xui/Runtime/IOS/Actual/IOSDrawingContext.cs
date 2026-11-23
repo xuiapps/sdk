@@ -50,7 +50,8 @@ public partial class IOSDrawingContext : IContext
 
     private AffineTransform? baseTransform;
 
-    public IOSDrawingContext(IFontSource? fontSource = null) => textMeasure = new IOSTextMeasureContext(fontSource);
+    private readonly IFontSource? symbolFontSource;
+    public IOSDrawingContext(IFontSource? fontSource = null) { symbolFontSource=fontSource; textMeasure = new IOSTextMeasureContext(fontSource); }
 
     NFloat IPenContext.GlobalAlpha
     {
@@ -189,6 +190,7 @@ public partial class IOSDrawingContext : IContext
         this.baseTransform = null;
         ResetPaintStates();
 
+        DisposeSymbols();
         textMeasure.Dispose();
     }
 

@@ -14,6 +14,7 @@ public class HlslCodeGenerator : IShaderBackend
     
     private readonly StringBuilder _output = new();
     private int _indentLevel = 0;
+    private IrStructType? resourceBindings;
     private const string IndentString = "    ";
 
     /// <summary>
@@ -23,6 +24,7 @@ public class HlslCodeGenerator : IShaderBackend
     {
         _output.Clear();
         _indentLevel = 0;
+        resourceBindings = module.VertexStage?.BindingsType ?? module.FragmentStage?.BindingsType;
 
         // Header comment
         WriteLine("// Generated HLSL shader code");
@@ -54,6 +56,14 @@ public class HlslCodeGenerator : IShaderBackend
             WriteLine();
         }
 
+        int textureSlot = 0, samplerSlot = 0;
+        if (resourceBindings != null)
+            foreach (var field in resourceBindings.Fields)
+            {
+                if (field.Type is IrTextureType) WriteLine($"{GetHlslType(field.Type)} resource_{field.Name} : register(t{textureSlot++});");
+                else if (field.Type is IrSamplerType) WriteLine($"SamplerState resource_{field.Name} : register(s{samplerSlot++});");
+            }
+
         // Generate vertex shader if present
         if (module.VertexStage != null)
         {
@@ -80,6 +90,7 @@ public class HlslCodeGenerator : IShaderBackend
 
         foreach (var field in structType.Fields)
         {
+            if (field.Type is IrTextureType or IrSamplerType) continue;
             var typeStr = GetHlslType(field.Type);
             var interpolation = GetInterpolationModifier(field.Decorations);
             var semantic = GetSemanticString(field.Decorations, isFragmentOutput);
@@ -219,7 +230,8 @@ public class HlslCodeGenerator : IShaderBackend
         {
             IrConstant constant => GenerateConstant(constant),
             IrParameter parameter => parameter.Name,
-            IrFieldAccess fieldAccess => $"{GenerateExpression(fieldAccess.Object)}.{fieldAccess.FieldName}",
+            IrFieldAccess fieldAccess when fieldAccess.Object.Type == resourceBindings && fieldAccess.Type is IrTextureType or IrSamplerType => $"resource_{fieldAccess.FieldName}",
+            IrFieldAccess fieldAccess => $"{GenerateExpression(fieldAccess.Object)}.{(fieldAccess.Object.Type is IrVectorType ? fieldAccess.FieldName.ToLowerInvariant() : fieldAccess.FieldName)}",
             IrBinaryOp binaryOp => GenerateBinaryOp(binaryOp),
             IrUnaryOp unaryOp => GenerateUnaryOp(unaryOp),
             IrMethodCall methodCall => GenerateMethodCall(methodCall),
@@ -309,6 +321,11 @@ public class HlslCodeGenerator : IShaderBackend
 
     private string GenerateMethodCall(IrMethodCall methodCall)
     {
+        if (methodCall.Target == null && methodCall.MethodName is "Sample" or "SampleLevel")
+        {
+            var a = methodCall.Arguments.Select(GenerateExpression).ToArray();
+            return a[0] + "." + methodCall.MethodName + "(" + string.Join(", ", a.Skip(1)) + ")";
+        }
         var args = string.Join(", ", methodCall.Arguments.Select(GenerateExpression));
         
         // Map shader intrinsics to HLSL built-ins

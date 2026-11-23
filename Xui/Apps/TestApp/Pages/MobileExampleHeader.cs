@@ -13,6 +13,8 @@ public sealed class MobileExampleHeader : ViewCollection
     private static readonly NFloat BackButtonWidth = 84;
     private readonly MobileExampleBackButton backButton = new();
     private readonly Label title;
+    private readonly MobileHomeActionButton fps = new("PageFPS", MobileHomeAction.Fps) { BackgroundOpacity = 0 };
+    private MobileFrameRate? frameRate;
 
     public MobileExampleHeader(string text)
     {
@@ -27,19 +29,46 @@ public sealed class MobileExampleHeader : ViewCollection
         };
         Add(backButton);
         Add(title);
+        Add(fps);
+        fps.Clicked = () =>
+        {
+            if (this.TryFindParent<MobileNavigation>(out var navigation))
+                navigation.SetPerformanceOverlayEnabled(!navigation.IsPerformanceOverlayEnabled);
+        };
     }
+
+    protected override void OnActivate()
+    {
+        base.OnActivate();
+        if (!this.TryFindParent<MobileNavigation>(out var navigation)) return;
+        frameRate = navigation.FrameRate;
+        frameRate.Changed += UpdateFrameRate;
+        if (frameRate.IsWarmingUp) fps.StartWarmup(frameRate);
+        if (frameRate.RoundedFramesPerSecond is { } rate) UpdateFrameRate(rate);
+    }
+
+    protected override void OnDeactivate()
+    {
+        if (frameRate is not null) frameRate.Changed -= UpdateFrameRate;
+        frameRate = null;
+        base.OnDeactivate();
+    }
+
+    private void UpdateFrameRate(int rate) => fps.SetFrameRate(rate);
 
     protected override Size MeasureCore(Size available, IMeasureContext context)
     {
         backButton.Measure((BackButtonWidth, available.Height), context);
-        title.Measure(available, context);
+        title.Measure((NFloat.Max(0, available.Width - BackButtonWidth * 2), available.Height), context);
+        fps.Measure((56, available.Height), context);
         return available;
     }
 
     protected override void ArrangeCore(Rect rect, IMeasureContext context)
     {
         backButton.Arrange((rect.X, rect.Y, BackButtonWidth, rect.Height), context);
-        title.Arrange(rect, context);
+        title.Arrange((rect.X + BackButtonWidth, rect.Y, NFloat.Max(0, rect.Width - BackButtonWidth * 2), rect.Height), context);
+        fps.Arrange((rect.Right - 56, rect.Y, 56, rect.Height), context);
     }
 
     protected override void RenderCore(IContext context)
@@ -68,6 +97,7 @@ public sealed class MobileExampleHeader : ViewCollection
 
         this.RenderChild(context, backButton);
         this.RenderChild(context, title);
+        this.RenderChild(context, fps);
 
         context.BeginPath();
         context.MoveTo(this.Frame.BottomLeft);

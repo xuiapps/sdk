@@ -269,6 +269,8 @@
               <path d="M 20.5 78 L 15.5 83 L 20.5 88 " fill="none" stroke="#030303" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
               <text x="31" y="83" fill="#030303" text-anchor="start" dominant-baseline="central" font-size="16" font-family="Inter" font-weight="500" xml:space="preserve">Back</text>
               <text x="134.99" y="72.72" fill="#030303" text-anchor="start" dominant-baseline="text-before-edge" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">Design System</text>
+              <text x="365" y="77" fill="#242529" text-anchor="middle" dominant-baseline="central" font-size="17" font-family="Inter" font-weight="600" xml:space="preserve">--</text>
+              <text x="365" y="93" fill="#242529" text-anchor="middle" dominant-baseline="central" font-size="9" font-family="Inter" font-weight="500" xml:space="preserve">fps</text>
               <path d="M 0 107 L 393 107 " fill="none" stroke="#BDBDBD" />
             </g>
           </g>

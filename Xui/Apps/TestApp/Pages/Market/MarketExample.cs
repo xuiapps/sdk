@@ -45,6 +45,7 @@ public sealed class MarketDetailExample : Example
     public MarketStock Stock { get; }
     public MarketDetailExample(MarketStock stock)
     {
+        stock.PrepareDetails();
         Stock = stock;
         Id = "Market.Detail";
         Title = stock.Symbol + " · Price history";

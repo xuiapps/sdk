@@ -202,7 +202,7 @@
                   </g>
                 </g>
                 <g>
-                  <path d="M 389.5 66.21 H 389.5 A 1.5 1.5 0 0 1 391 67.71 V 390.32 A 1.5 1.5 0 0 1 389.5 391.82 H 389.5 A 1.5 1.5 0 0 1 388 390.32 V 67.71 A 1.5 1.5 0 0 1 389.5 66.21 Z " fill="#000000" fill-rule="nonzero" fill-opacity="0.35" />
+                  <path d="M 389.5 64.61 H 389.5 A 1.5 1.5 0 0 1 391 66.11 V 380.39 A 1.5 1.5 0 0 1 389.5 381.89 H 389.5 A 1.5 1.5 0 0 1 388 380.39 V 66.11 A 1.5 1.5 0 0 1 389.5 64.61 Z " fill="#000000" fill-rule="nonzero" fill-opacity="0.35" />
                 </g>
                 <g>
 <rect x="0" y="-59" width="393" height="115" rx="0" data-xui-material="Blur" fill="url(#surfaceGlass5)" stroke="#FFFFFF" stroke-opacity="0.7" filter="url(#surfaceGlass5Soft)"/>

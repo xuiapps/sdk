@@ -35,7 +35,7 @@ public class TestHarnessTest
             app.Render();
             var button = app.RequireView("TextMetrics", "testing transformed input");
             Assert.NotEqual(button.Frame.Center, TestSinglePageApp<Application, MainWindow>.ViewCenter(button));
-            app.MouseDown(button); app.MouseUp(button); app.Advance(TimeSpan.FromMilliseconds(400));
+            app.MouseDown(button); app.MouseUp(button); app.Render(); app.Advance(TimeSpan.FromMilliseconds(400));
             Assert.IsType<TextMetricsExample>(app.RequireView("Example.TextMetricsExample", "verifying transformed input"));
             Assert.Null(app.Window.RootView.FindViewById("CanvasAnimationsCarousel"));
         });

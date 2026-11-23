@@ -986,6 +986,7 @@ public partial class Direct2DContext : IContext
 
     private struct StrokeStyleStruct
     {
+        public void Dispose() => strokeStyle.Dispose();
         public readonly Factory3 Factory;
 
         private StrokeStyle.Ptr strokeStyle;

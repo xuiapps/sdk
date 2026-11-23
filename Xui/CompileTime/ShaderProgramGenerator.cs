@@ -104,6 +104,7 @@ public class ShaderProgramGenerator : IIncrementalGenerator
             module.FragmentStage = new IrFragmentStage
             {
                 Name = $"{info.TypeName}FragmentShader",
+                BindingsType = bindingsIr,
                 InputType = inputIr,
                 OutputType = outputIr,
                 Body = body

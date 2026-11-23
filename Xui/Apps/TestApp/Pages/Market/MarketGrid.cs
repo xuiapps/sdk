@@ -12,7 +12,8 @@ namespace Xui.Apps.TestApp.Pages.Market;
 
 /// <summary>
 /// One leaf view for the entire dataset. A reusable value-type layer composition is fed each
-/// visible item; there are no row views, cell objects, bindings, recycling queues, or per-frame strings.
+/// visible item; there are no row views, cell objects, bindings, or recycling queues.
+/// A row's data is generated on first visibility and cached for subsequent frames.
 /// ScrollView supplies the culling rectangle in content coordinates and owns inertia/gesture negotiation.
 /// </summary>
 public sealed class MarketGrid : View

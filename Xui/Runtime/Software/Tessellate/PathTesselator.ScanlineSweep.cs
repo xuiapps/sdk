@@ -46,11 +46,14 @@ public partial class PathTesselator
 
                 foreach (var e in edges)
                 {
-                    if (e.YMin == y0)
+                    if (e.YMin == y0 && e.YMax > y0)
                         active.Add(e);
                 }
 
-                active.Sort((a, b) => a.XAt(y0).CompareTo(b.XAt(y0)));
+                // At a shared vertex both edges have the same X. Order within the
+                // open band, and never add horizontal edges (their inverse slope is infinite).
+                nfloat middle = (y0 + y1) / 2;
+                active.Sort((a, b) => a.XAt(middle).CompareTo(b.XAt(middle)));
 
                 int winding = 0;
                 for (int j = 0; j < active.Count - 1; j++)
@@ -58,7 +61,7 @@ public partial class PathTesselator
                     var left = active[j];
                     var right = active[j + 1];
 
-                    winding += (left.End.Y > left.Start.Y) ? 1 : -1;
+                    winding += left.Winding;
 
                     bool shouldFill = fillRule switch
                     {
@@ -256,9 +259,12 @@ public partial class PathTesselator
 
             public readonly nfloat YMin;
             public readonly nfloat YMax;
+            public readonly int Winding;
 
             public Edge(Point a, Point b)
             {
+                // Preserve original contour direction before normalizing endpoints by Y.
+                Winding = b.Y > a.Y ? 1 : -1;
                 if (a.Y < b.Y)
                 {
                     Start = a;

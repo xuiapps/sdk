@@ -28,6 +28,7 @@ public struct PressFeedbackLayer<TView> : ILayer<TView> where TView : class, ILa
 
     private RippleBuffer ripples;
     private int activeSlot; // One-based, so a default layer has no active press.
+    private int releasedSlot;
     private TimeProvider? clock;
     private long epoch;
     private Rect bounds;
@@ -90,8 +91,17 @@ public struct PressFeedbackLayer<TView> : ILayer<TView> where TView : class, ILa
             ripple.Cancelled = !tapped;
             ripple.FadeAt = now + (tapped ? .2f : 0);
         }
+        if (tapped) releasedSlot = activeSlot;
         activeSlot = 0;
         view.InvalidateRender(); view.RequestAnimationFrame();
+    }
+
+    /// <summary>Keeps the most recently committed tap visible while its host awaits the first highlighted render.</summary>
+    public void HoldReleasedFeedback()
+    {
+        if (releasedSlot == 0) return;
+        ref var ripple = ref ripples[releasedSlot - 1];
+        ripple.FadeAt = nfloat.Max(ripple.FadeAt, Now + .2f);
     }
 
     /// <summary>Resumes completed feedback after reparenting, or clears it if the clock changed.</summary>
@@ -99,7 +109,7 @@ public struct PressFeedbackLayer<TView> : ILayer<TView> where TView : class, ILa
     {
         if (clock is null) return;
         var nextClock = view.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
-        if (!ReferenceEquals(clock, nextClock)) { ripples = default; activeSlot = 0; clock = null; return; }
+        if (!ReferenceEquals(clock, nextClock)) { ripples = default; activeSlot = releasedSlot = 0; clock = null; return; }
         for (var i = 0; i < Capacity; i++)
             if (ripples[i].Active) { view.InvalidateRender(); view.RequestAnimationFrame(); break; }
     }
@@ -110,6 +120,9 @@ public struct PressFeedbackLayer<TView> : ILayer<TView> where TView : class, ILa
         if (!ripple.Released || now <= ripple.FadeAt) return 1;
         return 1 - Easing.EaseInOutCubic(nfloat.Clamp((now - ripple.FadeAt) / (ripple.Cancelled ? .08f : .18f), 0, 1));
     }
+
+    /// <summary>Whether the current press has reached its highlight recognition time.</summary>
+    public readonly bool IsPressVisible => activeSlot != 0 && Now >= ripples[activeSlot - 1].ShowAt;
 
     /// <summary>Current background strength for Target, for hosts that blend their own themed fill.</summary>
     public nfloat FeedbackOpacity
