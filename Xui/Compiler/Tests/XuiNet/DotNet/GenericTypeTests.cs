@@ -10,6 +10,35 @@ namespace Xui.Compiler.Tests.XuiNet.DotNet;
 public class GenericTypeTests
 {
     [Fact]
+    public void BaseChainsSubstituteArgumentsAtEachLevel()
+    {
+        const string source = """
+            public class A<T> { public T Value; public virtual T Read() => Value; }
+            public class B<TFirst, TSecond> : A<TSecond> { public TFirst Tag; }
+            public class C : B<string, int> { }
+            public static class Program { public static int Main() => new C().Read(); }
+            """;
+        using var stream = new MemoryStream(Frontend.Roslyn.Compile(source));
+        using var assembly = AssemblyCompiler.Read(stream);
+        var module = assembly.ManifestModule;
+        var c = new TypeIdentity(module, Assert.Single(module.Types, handle => module.GetType(handle).Name == "C"));
+        var b = c.BaseType!.Value;
+        var a = b.BaseType!.Value;
+        Assert.Equal(new[] { SignatureTypeCode.String, SignatureTypeCode.Int32 }, b.Arguments!.Values.Select(type => type.Code));
+        Assert.Equal(SignatureTypeCode.Int32, Assert.Single(a.Arguments!.Values).Code);
+        Assert.True(c.IsAssignableTo(a));
+        Assert.True(c.IsAssignableTo(b));
+        var other = a with { Arguments = new GenericArguments([new(SignatureTypeCode.String)]) };
+        Assert.False(c.IsAssignableTo(other));
+        var field = module.GetField(Assert.Single(module.GetType((TypeDefinitionHandle)a.Handle).Fields));
+        Assert.Equal(SignatureTypeCode.Int32, SignatureReader.Field(module, field.Signature, a.Arguments).Code);
+        var read = Assert.Single(module.MemberReferences, handle => module.GetMemberReference(handle).Name == "Read");
+        var target = MemberResolver.Method(module, read, MethodIdentity.FromDefinition(module, module.EntryPoint).DeclaringType);
+        Assert.Equal(a, target.DeclaringType);
+        Assert.Equal(SignatureTypeCode.Int32, SignatureReader.Method(module, module.GetMethod(target.Handle).Signature, target.DeclaringType.Arguments).Result.Code);
+    }
+
+    [Fact]
     public void ConstructedIdentitiesAreStructuralAndRetainTheirDefinition()
     {
         const string source = """

@@ -6,7 +6,7 @@ using Model = Xui.Compiler.XuiNet.DotNet;
 
 namespace Xui.Compiler.WASM.Runtime;
 
-/// <summary>Resolves same-module class identities and nongeneric class virtual slots.</summary>
+/// <summary>Resolves same-module class identities and specialized class virtual slots.</summary>
 internal sealed class TypeRegistry(Model.Module module)
 {
     private readonly Dictionary<TypeIdentity, Type> types = new();
@@ -33,7 +33,6 @@ internal sealed class TypeRegistry(Model.Module module)
             var parentIdentity = identity.BaseType;
             if (parentIdentity is { Handle.Kind: HandleKind.TypeDefinition } baseIdentity)
             {
-                if (identity.Arguments is not null) throw new NotSupportedException("Generic class inheritance is not implemented yet.");
                 parent = Resolve(baseIdentity);
                 if ((module.GetType((TypeDefinitionHandle)parent.Identity.Handle).Attributes & TypeAttributes.Sealed) != 0)
                     throw new BadImageFormatException("Cannot derive from a sealed class.");
@@ -50,7 +49,6 @@ internal sealed class TypeRegistry(Model.Module module)
             {
                 var method = module.GetMethod(handle);
                 if ((method.Attributes & MethodAttributes.Virtual) == 0) continue;
-                if (identity.Arguments is not null) throw new NotSupportedException("Virtual methods on generic classes are not implemented yet.");
                 var specialized = new MethodIdentity(identity, handle);
                 var signature = SignatureReader.Method(module, method.Signature, identity.Arguments);
                 if (!signature.HasThis) throw new BadImageFormatException("Virtual methods require an instance receiver.");
@@ -101,7 +99,14 @@ internal sealed class TypeRegistry(Model.Module module)
     {
         var left = module.GetMethod(a.Handle); var right = module.GetMethod(b.Handle);
         if (left.Name != right.Name) return false;
-        var x = SignatureReader.Method(module, left.Signature, a.DeclaringType.Arguments); var y = SignatureReader.Method(module, right.Signature, b.DeclaringType.Arguments);
+        // Match in the overriding declaration's open context. Specializing first would
+        // collapse distinct slots such as F(T) and F(int) when T happens to be int.
+        var parent = a.DeclaringType.GenericDefinition.BaseType;
+        while (parent is { } current && current.Handle != b.DeclaringType.Handle)
+            parent = current.BaseType;
+        if (parent is not { } owner) return false;
+        var x = SignatureReader.Method(module, left.Signature);
+        var y = SignatureReader.Method(module, right.Signature, owner.Arguments);
         return x.Result == y.Result && x.Parameters.SequenceEqual(y.Parameters);
     }
 }

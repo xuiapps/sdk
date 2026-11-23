@@ -1,0 +1,11 @@
+<Project>
+  <!-- Roslyn needs PE metadata, not the browser runtime's WebCIL assets. -->
+  <Target Name="EmbedPlaygroundReferences" BeforeTargets="AssignTargetPaths" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <EmbeddedResource Include="@(ReferencePath)"
+                        Condition="'%(ReferencePath.FileName)' == 'System.Runtime' Or '%(ReferencePath.FileName)' == 'System.Console'">
+        <LogicalName>Playground.Reference.%(FileName)%(Extension)</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
+</Project>

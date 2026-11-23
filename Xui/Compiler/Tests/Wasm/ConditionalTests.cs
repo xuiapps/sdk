@@ -2,7 +2,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
-using Xui.Compiler.Tests.Wasm.Rewrite;
+using Xui.Compiler.Playground;
 using Xui.Compiler.WASM.Emitter;
 using Xui.Compiler.XuiNet;
 using Xui.Compiler.XuiNet.CodeFlow;

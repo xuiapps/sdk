@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Xui.Compiler.Tests.Wasm.Gc;
 using Xui.Compiler.Tests.Wasm.Repl;
-using Xui.Compiler.Tests.Wasm.Rewrite;
+using Xui.Compiler.Playground;
 using Xui.Compiler.Tests.Wasm.Structs;
 using Xui.Compiler.WASM.Emitter;
 using Xui.Compiler.XuiNet;

@@ -1,3 +1,4 @@
+using Xui.Compiler.Playground;
 using System.Reflection.Metadata;
 using Xui.Compiler.WASM.Emitter;
 using Xui.Compiler.WASM.Emitter.Rewrite;

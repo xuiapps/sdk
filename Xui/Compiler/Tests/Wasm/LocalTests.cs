@@ -220,7 +220,7 @@ public class LocalTests
         });
         using var stream = new MemoryStream(image);
         using var assembly = AssemblyCompiler.Read(stream);
-        byte[] wasm = new WasmEmitter().Emit(assembly, new Rewrite.ConsoleWriteLineRewriter());
+        byte[] wasm = new WasmEmitter().Emit(assembly, new Xui.Compiler.Playground.ConsoleWriteLineRewriter());
         var result = await Repl.Node.ExecuteAsync(wasm);
         Assert.Equal("\n", result.Output);
         Assert.Equal(0, result.ExitCode);

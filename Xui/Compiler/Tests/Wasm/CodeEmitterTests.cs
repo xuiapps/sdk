@@ -1,4 +1,4 @@
-using Xui.Compiler.Tests.Wasm.Rewrite;
+using Xui.Compiler.Playground;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;

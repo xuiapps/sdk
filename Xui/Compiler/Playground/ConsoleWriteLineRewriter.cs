@@ -10,9 +10,9 @@ using TypeWriter = Xui.Compiler.WASM.Wasm.Section.TypeDefinitions.Writer;
 using IR = Xui.Compiler.XuiNet.DotNet;
 using static Xui.Compiler.WASM.Wasm.Section.TypeDefinitions.ValueTypeCode;
 
-namespace Xui.Compiler.Tests.Wasm.Rewrite;
+namespace Xui.Compiler.Playground;
 
-// Test host policy: replace supported Console.WriteLine overloads with JavaScript logging imports.
+// Playground and test host policy: replace supported Console.WriteLine overloads with JavaScript logging imports.
 internal class ConsoleWriteLineRewriter : CodeRewriter
 {
     private IR.Module source = null!;

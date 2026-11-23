@@ -1,4 +1,4 @@
-using Xui.Compiler.Tests.Wasm.Rewrite;
+using Xui.Compiler.Playground;
 using Xui.Compiler.Tests.Wasm.Repl;
 using System.Runtime.CompilerServices;
 using Xui.Compiler.XuiNet;

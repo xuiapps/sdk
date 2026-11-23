@@ -39,15 +39,21 @@ Immutable runtime GC descriptors contain identity, base descriptor, table start,
 UTF-16 name array, slot count, and field count. This is groundwork for a managed
 `Type` facade; `System.Type`, `GetType`, `typeof`, and reflection calls are not emitted yet.
 
-Closed generic classes with nonvirtual members are specialized at compile time.
+Closed generic classes are specialized at compile time, including inheritance and
+virtual/abstract dispatch.
 `Box<int>` and `Box<string>` have distinct layouts, descriptors, and method plans;
 member references resolve against their generic declarations before substituting
 arguments. Constructors, ordinary instance/static methods, signatures, fields, and
 locals receive the constructed context. [The Boxes demo](../Tests/Wasm/Generics/Snapshots/Boxes.md)
 executes both specializations in one module. `Runtime.Type` exposes their generic
-definition and arguments on the compiler side. Generic class inheritance, virtual
-methods on generic classes, and primitive/reference `default(T)` via `initobj` are
-not implemented. Expanding instantiations stop at a nesting depth of 32.
+definition and arguments on the compiler side. Base arguments are substituted at
+each inheritance level; derived layouts preserve the specialized base's field
+prefix. Overrides reuse inherited slots, while `new virtual` declarations append
+slots. Override matching uses the open declaring context so `F(T)` and `F(int)`
+stay distinct when `T` is `int`. [The DerivedBoxes demo](../Tests/Wasm/Generics/Snapshots/DerivedBoxes.md)
+shows specialized fields, tables, base calls, and nominal `is`/`as` tests across a
+three-level hierarchy. Primitive/reference `default(T)` via `initobj` is not
+implemented. Expanding instantiations stop at a nesting depth of 32.
 
 Interfaces, generic methods/structs, arbitrary external calls, switches, arbitrary
 jump graphs, lambdas, closures, delegates, managed arrays, unmanaged pointers,
@@ -115,8 +121,8 @@ Type/module initializers, synchronized methods, and entry-point `string[] args`
 access are rejected. `dup` uses reusable typed temporary locals.
 
 [CodeRewriter](Emitter/Rewrite/CodeRewriter.cs) can supply replacements before normal
-emission. The default rewriter does nothing. Only the tests plug in
-[ConsoleWriteLineRewriter](../Tests/Wasm/Rewrite/ConsoleWriteLineRewriter.cs) to map
+emission. The default rewriter does nothing. The tests and browser playground plug in
+[ConsoleWriteLineRewriter](../Playground/ConsoleWriteLineRewriter.cs) to map
 selected `Console.WriteLine` overloads to JavaScript logging imports; this is not
 a built-in Console special case. The built-in string conversion import remains part of
 [EmissionRuntime](Emitter/EmissionRuntime.cs).

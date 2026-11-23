@@ -20,6 +20,7 @@ public class AssemblySnapshotTests(ITestOutputHelper output)
     [InlineData("Gc", "Unit", OutputKind.ConsoleApplication, 3)]
     [InlineData("Polymorphism", "Units", OutputKind.ConsoleApplication, 7)]
     [InlineData("Generics", "Boxes", OutputKind.ConsoleApplication, 3)]
+    [InlineData("Generics", "DerivedBoxes", OutputKind.ConsoleApplication, 5)]
     public void AssemblyDepthFirstDumpMatchesMarkdown(string folder, string fixture, OutputKind outputKind, int typeCount)
     {
         string directory = SourceDirectory();

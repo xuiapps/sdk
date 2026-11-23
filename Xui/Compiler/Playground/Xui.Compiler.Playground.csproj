@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Keep Roslyn and its metadata intact; this host interprets managed code. -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <WasmBuildNative>false</WasmBuildNative>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <WasmEnableThreads>false</WasmEnableThreads>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <ProjectReference Include="../WASM/Xui.Compiler.WASM.csproj" />
+  </ItemGroup>
+  <Import Project="ReferenceAssemblies.targets" />
+</Project>

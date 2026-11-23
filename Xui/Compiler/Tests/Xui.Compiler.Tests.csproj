@@ -5,6 +5,8 @@
   <ItemGroup>
     <Compile Remove="Fixtures/**/*.cs" />
     <None Include="Fixtures/**/*.cs" />
+    <Compile Include="../Playground/PlaygroundCompiler.cs" Link="Playground/PlaygroundCompiler.cs" />
+    <Compile Include="../Playground/ConsoleWriteLineRewriter.cs" Link="Playground/ConsoleWriteLineRewriter.cs" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.5.85" />
@@ -13,4 +15,5 @@
     <ProjectReference Include="../XuiNet/Xui.Compiler.XuiNet.csproj" />
     <ProjectReference Include="../WASM/Xui.Compiler.WASM.csproj" />
   </ItemGroup>
+  <Import Project="../Playground/ReferenceAssemblies.targets" />
 </Project>
