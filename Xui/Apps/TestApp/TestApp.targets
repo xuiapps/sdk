@@ -23,7 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets/FloorplanGpu/atlas.bin.gz;Assets/FloorplanGpu/quads-l*.bin;Assets/FloorplanGpu/structure-l*.bin;Assets/FloorplanGpu/atlas.json" LogicalName="TestApp.FloorplanGpu.%(Filename)%(Extension)" />
+    <!-- "bin" in atlas.bin.gz is a culture name on Windows; keep these assets in the main assembly. -->
+    <EmbeddedResource Include="Assets/FloorplanGpu/atlas.bin.gz;Assets/FloorplanGpu/quads-l*.bin;Assets/FloorplanGpu/structure-l*.bin;Assets/FloorplanGpu/atlas.json" LogicalName="TestApp.FloorplanGpu.%(Filename)%(Extension)" WithCulture="false" />
     <EmbeddedResource Include="Assets/Floorplan/Office.svg" LogicalName="TestApp.Floorplan.Office.svg" />
   </ItemGroup>
 </Project>
