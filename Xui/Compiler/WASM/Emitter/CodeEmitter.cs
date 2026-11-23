@@ -262,7 +262,7 @@ public readonly ref partial struct CodeEmitter
     }
 
     /// <summary>Collects literals, call targets, and temporary requirements, giving rewrites first chance.</summary>
-    internal static List<string> CollectRequirements(IR.Module source, MethodPlan method, CodeRewriter rewriter)
+    internal static List<string> CollectRequirements(IR.Module source, MethodPlan method, XuiNet.Reachability.DependencyGraph dependencies)
     {
         var reader = method.Body.Instructions;
         var literals = new List<string>();
@@ -273,12 +273,7 @@ public readonly ref partial struct CodeEmitter
             reader.Seek(node.Offset);
             int offset = reader.Offset;
             var instruction = reader.Read();
-            var candidate = reader;
-            if (rewriter.Collect(instruction, ref candidate))
-            {
-                reader = candidate;
-                continue;
-            }
+            if (dependencies.IsRewritten(method.Identity, offset)) continue;
             if (node.Successors.Length == 2 || instruction.Code is OpCode.Br or OpCode.Br_s) continue;
             switch (instruction.Code)
             {
@@ -396,7 +391,6 @@ public readonly ref partial struct CodeEmitter
                     if (instruction.Code == OpCode.Callvirt && (attributes & System.Reflection.MethodAttributes.Virtual) != 0)
                     {
                         _ = method.Storage.Classes.Slot(target);
-                        method.Storage.Classes.VirtualCalls.Add(target);
                     }
                     else if (instruction.Code == OpCode.Call && (attributes & System.Reflection.MethodAttributes.Abstract) != 0)
                         throw new InvalidProgramException("A direct call cannot target an abstract method.");
@@ -411,7 +405,6 @@ public readonly ref partial struct CodeEmitter
                         {
                             var type = method.Storage.Classes.Resolve(owner);
                             if (type.IsAbstract) throw new InvalidProgramException("Cannot allocate an abstract class.");
-                            method.Storage.Classes.Instantiated.Add(owner);
                         }
                     }
                     if (!method.Calls.Contains(target)) method.Calls.Add(target);

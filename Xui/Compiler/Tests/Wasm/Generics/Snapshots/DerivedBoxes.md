@@ -183,18 +183,18 @@ True
   (type (;16;) (func (param eqref) (result i32)))
   (type (;17;) (func (param eqref externref i32)))
   (type (;18;) (func (param eqref)))
-  (type (;19;) (func (param eqref) (result i32)))
-  (type (;20;) (func (param eqref) (result i32)))
-  (type (;21;) (func (param eqref i32 externref)))
-  (type (;22;) (func (param eqref i32) (result i32)))
-  (type (;23;) (func (param eqref i32) (result i32)))
-  (type (;24;) (func (param eqref externref)))
-  (type (;25;) (func (param eqref) (result externref)))
-  (type (;26;) (func (param eqref externref) (result externref)))
+  (type (;19;) (func (param eqref i32 externref)))
+  (type (;20;) (func (param eqref externref)))
+  (type (;21;) (func (param eqref) (result i32)))
+  (type (;22;) (func (param eqref) (result i32)))
+  (type (;23;) (func (param eqref i32)))
+  (type (;24;) (func (param eqref i32) (result i32)))
+  (type (;25;) (func (param eqref i32) (result i32)))
+  (type (;26;) (func (param eqref) (result externref)))
   (type (;27;) (func (param eqref) (result externref)))
   (type (;28;) (func (param eqref externref) (result externref)))
-  (type (;29;) (func (param eqref) (result i32)))
-  (type (;30;) (func (param eqref i32)))
+  (type (;29;) (func (param eqref externref) (result externref)))
+  (type (;30;) (func (param eqref) (result i32)))
   (import "xui" "console-log" (func (;0;) (type 2) (param i32)))
   (import "xui" "console-log-boolean" (func (;1;) (type 3) (param i32)))
   (import "xui" "console-log" (func (;2;) (type 4) (param externref)))
@@ -210,14 +210,14 @@ True
   (global (;7;) eqref i32.const 5 global.get 6 i32.const 8 i32.const 84 i32.const 97 i32.const 103 i32.const 103 i32.const 101 i32.const 100 i32.const 66 i32.const 111 i32.const 120 i32.const 60 i32.const 73 i32.const 110 i32.const 116 i32.const 51 i32.const 50 i32.const 44 i32.const 32 i32.const 83 i32.const 116 i32.const 114 i32.const 105 i32.const 110 i32.const 103 i32.const 62 array.new_fixed 0 24 i32.const 2 i32.const 3 struct.new 5)
   (global (;8;) eqref i32.const 6 global.get 6 i32.const 10 i32.const 84 i32.const 97 i32.const 103 i32.const 103 i32.const 101 i32.const 100 i32.const 66 i32.const 111 i32.const 120 i32.const 60 i32.const 83 i32.const 116 i32.const 114 i32.const 105 i32.const 110 i32.const 103 i32.const 44 i32.const 32 i32.const 83 i32.const 116 i32.const 114 i32.const 105 i32.const 110 i32.const 103 i32.const 62 array.new_fixed 0 25 i32.const 2 i32.const 3 struct.new 5)
   (export "main" (func 4))
-  (elem (;0;) (i32.const 0) func 9)
-  (elem (;1;) (i32.const 2) func 17)
-  (elem (;2;) (i32.const 3) func 12)
-  (elem (;3;) (i32.const 4) func 10)
-  (elem (;4;) (i32.const 5) func 12)
-  (elem (;5;) (i32.const 6) func 14)
-  (elem (;6;) (i32.const 8) func 15)
-  (elem (;7;) (i32.const 9) func 16)
+  (elem (;0;) (i32.const 0) func 11)
+  (elem (;1;) (i32.const 2) func 18)
+  (elem (;2;) (i32.const 3) func 14)
+  (elem (;3;) (i32.const 4) func 12)
+  (elem (;4;) (i32.const 5) func 14)
+  (elem (;5;) (i32.const 6) func 15)
+  (elem (;6;) (i32.const 8) func 16)
+  (elem (;7;) (i32.const 9) func 17)
   (func (;4;) (type 14) (result i32)
     (local i32 i32 i64 f64 externref eqref i32 i32 eqref externref i32 eqref eqref eqref i32 i64 f64 externref)
     i32.const 40
@@ -286,7 +286,7 @@ True
     struct.get 5 2
     i32.const 0
     i32.add
-    call_indirect (type 19)
+    call_indirect (type 21)
     call 0
     local.get 0
     return
@@ -313,7 +313,7 @@ True
     local.get 3
     local.get 4
     local.get 5
-    call 11
+    call 9
     local.get 0
     local.get 2
     local.set 8
@@ -338,7 +338,7 @@ True
     struct.get 5 2
     i32.const 0
     i32.add
-    call_indirect (type 19)
+    call_indirect (type 21)
     call 0
     local.get 0
     i32.const 7
@@ -354,7 +354,7 @@ True
     struct.get 5 2
     i32.const 1
     i32.add
-    call_indirect (type 22)
+    call_indirect (type 24)
     call 0
     local.get 0
     global.get 5
@@ -389,7 +389,7 @@ True
     struct.get 5 2
     i32.const 0
     i32.add
-    call_indirect (type 19)
+    call_indirect (type 21)
     return
   )
   (func (;7;) (type 17) (param eqref externref i32)
@@ -400,7 +400,7 @@ True
     local.set 3
     local.get 3
     local.get 4
-    call 13
+    call 10
     local.get 0
     local.get 2
     local.set 7
@@ -425,7 +425,7 @@ True
     struct.get 5 2
     i32.const 0
     i32.add
-    call_indirect (type 25)
+    call_indirect (type 26)
     call 2
     local.get 0
     global.get 2
@@ -452,7 +452,7 @@ True
     struct.get 5 2
     i32.const 1
     i32.add
-    call_indirect (type 26)
+    call_indirect (type 28)
     call 2
     local.get 0
     global.get 7
@@ -471,26 +471,7 @@ True
     call 1
     return
   )
-  (func (;9;) (type 19) (param eqref) (result i32)
-    (local eqref eqref i32 i64 f64 externref)
-    local.get 0
-    ref.cast (ref 8)
-    struct.get 8 1
-    return
-  )
-  (func (;10;) (type 20) (param eqref) (result i32)
-    (local eqref eqref eqref i32 i64 f64 externref)
-    local.get 0
-    local.set 1
-    local.get 1
-    call 17
-    local.get 0
-    ref.cast (ref 10)
-    struct.get 10 3
-    i32.add
-    return
-  )
-  (func (;11;) (type 21) (param eqref i32 externref)
+  (func (;9;) (type 19) (param eqref i32 externref)
     (local eqref i32 eqref eqref i32 i64 f64 externref)
     local.get 0
     local.get 1
@@ -498,7 +479,7 @@ True
     local.set 3
     local.get 3
     local.get 4
-    call 18
+    call 13
     local.get 0
     local.get 2
     local.set 10
@@ -510,12 +491,7 @@ True
     struct.set 9 2
     return
   )
-  (func (;12;) (type 23) (param eqref i32) (result i32)
-    (local eqref eqref i32 i64 f64 externref)
-    local.get 1
-    return
-  )
-  (func (;13;) (type 24) (param eqref externref)
+  (func (;10;) (type 20) (param eqref externref)
     (local eqref eqref i32 i64 f64 externref)
     local.get 0
     drop
@@ -530,35 +506,26 @@ True
     struct.set 11 1
     return
   )
-  (func (;14;) (type 25) (param eqref) (result externref)
+  (func (;11;) (type 21) (param eqref) (result i32)
     (local eqref eqref i32 i64 f64 externref)
     local.get 0
-    ref.cast (ref 11)
-    struct.get 11 1
+    ref.cast (ref 8)
+    struct.get 8 1
     return
   )
-  (func (;15;) (type 27) (param eqref) (result externref)
+  (func (;12;) (type 22) (param eqref) (result i32)
     (local eqref eqref eqref i32 i64 f64 externref)
     local.get 0
     local.set 1
     local.get 1
-    call 14
-    return
-  )
-  (func (;16;) (type 28) (param eqref externref) (result externref)
-    (local eqref eqref i32 i64 f64 externref)
-    local.get 1
-    return
-  )
-  (func (;17;) (type 29) (param eqref) (result i32)
-    (local eqref eqref eqref i32 i64 f64 externref)
+    call 18
     local.get 0
-    local.set 1
-    local.get 1
-    call 9
+    ref.cast (ref 10)
+    struct.get 10 3
+    i32.add
     return
   )
-  (func (;18;) (type 30) (param eqref i32)
+  (func (;13;) (type 23) (param eqref i32)
     (local eqref eqref i32 i64 f64 externref)
     local.get 0
     drop
@@ -571,6 +538,39 @@ True
     ref.cast (ref 8)
     local.get 4
     struct.set 8 1
+    return
+  )
+  (func (;14;) (type 25) (param eqref i32) (result i32)
+    (local eqref eqref i32 i64 f64 externref)
+    local.get 1
+    return
+  )
+  (func (;15;) (type 26) (param eqref) (result externref)
+    (local eqref eqref i32 i64 f64 externref)
+    local.get 0
+    ref.cast (ref 11)
+    struct.get 11 1
+    return
+  )
+  (func (;16;) (type 27) (param eqref) (result externref)
+    (local eqref eqref eqref i32 i64 f64 externref)
+    local.get 0
+    local.set 1
+    local.get 1
+    call 15
+    return
+  )
+  (func (;17;) (type 29) (param eqref externref) (result externref)
+    (local eqref eqref i32 i64 f64 externref)
+    local.get 1
+    return
+  )
+  (func (;18;) (type 30) (param eqref) (result i32)
+    (local eqref eqref eqref i32 i64 f64 externref)
+    local.get 0
+    local.set 1
+    local.get 1
+    call 11
     return
   )
   (func (;19;) (type 7) (param eqref eqref) (result eqref)

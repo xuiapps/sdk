@@ -19,7 +19,7 @@ public abstract class CodeRewriter
     /// <summary>Starts an emission; reset any state from a previous module here.</summary>
     public virtual void BeginModule(Module source) { }
 
-    /// <summary>Inspects an instruction and collects requirements; returns true when it replaces that instruction.</summary>
+    /// <summary>Collects requirements once per reachable instruction during source reachability; true replaces its managed dependencies.</summary>
     public virtual bool Collect(Instruction instruction, ref ILReader reader) => false;
 
     /// <summary>Defines any types needed by the collected replacements.</summary>

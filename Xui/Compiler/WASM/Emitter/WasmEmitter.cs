@@ -5,6 +5,7 @@ using Xui.Compiler.WASM.Wasm.Indices;
 using Xui.Compiler.WASM.Wasm.Section;
 using Xui.Compiler.WASM.Wasm.Section.TypeDefinitions;
 using IR = Xui.Compiler.XuiNet.DotNet;
+using Xui.Compiler.XuiNet.Reachability;
 
 using static Xui.Compiler.WASM.Wasm.Section.TypeDefinitions.ValueTypeCode;
 using static Xui.Compiler.WASM.Wasm.Section.TypeDefinitions.ValueType;
@@ -17,8 +18,12 @@ public sealed class WasmEmitter
     /// <summary>The class descriptors from the most recent successful emission.</summary>
     public IReadOnlyList<Runtime.Type> Types { get; private set; } = [];
 
-    /// <summary>Emits a module, optionally applying a caller-supplied instruction rewriter.</summary>
-    public byte[] Emit(IR.Assembly assembly, CodeRewriter? rewriter = null)
+    /// <summary>The source dependency graph from the most recent successful emission.</summary>
+    public DependencyGraph? Dependencies { get; private set; }
+
+    /// <summary>Emits the managed entry point and its dependencies, with optional rewrites and additional preservation roots.</summary>
+    /// <remarks>Additional roots retain code and layouts but do not create WASM exports.</remarks>
+    public byte[] Emit(IR.Assembly assembly, CodeRewriter? rewriter = null, IEnumerable<Root>? additionalRoots = null)
     {
         var source = assembly.ManifestModule;
         if (source.EntryPoint.IsNil)
@@ -33,29 +38,35 @@ public sealed class WasmEmitter
         }
         rewriter ??= NoOpCodeRewriter.Instance;
         rewriter.BeginModule(source);
+        var roots = new List<Root> { Root.EntryPoint(assembly) };
+        if (additionalRoots is not null) roots.AddRange(additionalRoots);
+        var dependencies = Analyzer.Analyze(roots,
+            (IR.MethodIdentity method, int offset, XuiNet.DotNet.Op.Instruction instruction, ref XuiNet.ILReader reader) =>
+            {
+                if (method.DeclaringType.Module != source)
+                    throw new NotSupportedException("WASM emission currently supports only same-module methods.");
+                return rewriter.Collect(instruction, ref reader);
+            });
+        if (dependencies.Nodes.OfType<Dependency.Type>().Any(type => type.Identity.Module != source))
+            throw new NotSupportedException("WASM emission currently supports only same-module roots.");
         var methods = new Dictionary<IR.MethodIdentity, MethodPlan>();
         var orderedMethods = new List<MethodPlan>();
         var literals = new List<string>();
         var seenLiterals = new HashSet<string>(StringComparer.Ordinal);
-        var storage = new StorageModel(source);
-        var main = new MethodPlan(source, IR.MethodIdentity.FromDefinition(source, source.EntryPoint), entryPoint: true, storage);
-        methods.Add(main.Identity, main);
-        orderedMethods.Add(main);
-        // Only read reachable bodies. Register before traversing calls so recursive edges terminate.
-        for (int i = 0; i < orderedMethods.Count; i++)
+        var storage = new StorageModel(source, dependencies);
+        var mainIdentity = IR.MethodIdentity.FromDefinition(source, source.EntryPoint);
+        foreach (var identity in dependencies.Methods)
         {
-            var method = orderedMethods[i];
+            var method = new MethodPlan(source, identity, entryPoint: identity == mainIdentity, storage);
+            methods.Add(identity, method);
+            orderedMethods.Add(method);
             if (method.IsAbstract) continue;
-            foreach (string literal in CodeEmitter.CollectRequirements(source, method, rewriter))
+            foreach (string literal in CodeEmitter.CollectRequirements(source, method, dependencies))
                 if (seenLiterals.Add(literal)) literals.Add(literal);
-            foreach (var handle in method.Calls.Concat(storage.Classes.RequiredImplementations()).Distinct().ToArray())
-            {
-                if (methods.ContainsKey(handle)) continue;
-                var callee = new MethodPlan(source, handle, entryPoint: false, storage);
-                methods.Add(handle, callee);
-                orderedMethods.Add(callee);
-            }
         }
+        var main = methods[mainIdentity];
+        foreach (var layout in dependencies.Nodes.OfType<Dependency.Layout>())
+            if (storage.IsGc(layout.Identity)) _ = storage.Shape(layout.Identity);
         foreach (var method in orderedMethods) method.AllocateTemporaries(methods);
         var literalIndices = new Dictionary<string, (DataIndex Data, GlobalIndex Global)>(StringComparer.Ordinal);
         using var module = new MemoryStream();
@@ -165,6 +176,7 @@ public sealed class WasmEmitter
                 data.PassiveUtf16(literal);
         }
         Types = Array.AsReadOnly(storage.Classes.Types.ToArray());
+        Dependencies = dependencies;
         return module.ToArray();
     }
 }

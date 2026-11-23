@@ -13,9 +13,9 @@ using WasmValue = Xui.Compiler.WASM.Wasm.Section.TypeDefinitions.ValueType;
 namespace Xui.Compiler.WASM.Emitter;
 
 /// <summary>Selects linear or GC storage and recursively flattens value-type instance fields.</summary>
-internal sealed class StorageModel(Model.Module module)
+internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.DependencyGraph dependencies)
 {
-    public Runtime.TypeRegistry Classes { get; } = new(module);
+    public Runtime.TypeRegistry Classes { get; } = new(module, dependencies);
     public TypeIndex ClassRoot { get; private set; }
     public TypeIndex DescriptorType { get; private set; }
     public TypeIndex InstanceTestType { get; private set; }
