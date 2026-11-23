@@ -7,6 +7,7 @@ namespace Xui.Compiler.XuiNet.Reachability;
 public sealed class DependencyGraph
 {
     private readonly HashSet<Dependency> membership;
+    private readonly IReadOnlyDictionary<(TypeIdentity Type, MethodIdentity Method), MethodIdentity> interfaceImplementations;
     private readonly IReadOnlyDictionary<TypeIdentity, IReadOnlyList<VirtualSlot>> slots;
 
     internal DependencyGraph(IEnumerable<Dependency> nodes, IEnumerable<DependencyEdge> edges, DispatchTable dispatch)
@@ -14,6 +15,8 @@ public sealed class DependencyGraph
         Nodes = Array.AsReadOnly(nodes.ToArray());
         Edges = Array.AsReadOnly(edges.ToArray());
         membership = Nodes.ToHashSet();
+        interfaceImplementations = new ReadOnlyDictionary<(TypeIdentity, MethodIdentity), MethodIdentity>(
+            new Dictionary<(TypeIdentity, MethodIdentity), MethodIdentity>(dispatch.InterfaceImplementations));
         Methods = Array.AsReadOnly(Nodes.OfType<Dependency.Method>().Select(node => node.Identity).ToArray());
         slots = new ReadOnlyDictionary<TypeIdentity, IReadOnlyList<VirtualSlot>>(
             new Dictionary<TypeIdentity, IReadOnlyList<VirtualSlot>>(dispatch.Types));
@@ -29,6 +32,10 @@ public sealed class DependencyGraph
     public bool Contains(Dependency dependency) => membership.Contains(dependency);
     /// <summary>Whether host collection replaced this instruction.</summary>
     public bool IsRewritten(MethodIdentity method, int offset) => Contains(new Dependency.Rewrite(method, offset));
+    /// <summary>The reachable interface target for a concrete receiver, or null when this pair was not reached.</summary>
+    public MethodIdentity? InterfaceImplementation(TypeIdentity type, MethodIdentity method) =>
+        interfaceImplementations.TryGetValue((type, method), out var implementation) ? implementation : null;
+
     /// <summary>The inherited slots of a retained class layout.</summary>
     public IReadOnlyList<VirtualSlot> VirtualSlots(TypeIdentity type) => slots.TryGetValue(type, out var result)
         ? result : throw new InvalidOperationException($"Class layout was not retained: {type}.");

@@ -20,9 +20,15 @@ internal static class StackMerge
         if (a == b) return a;
         if (a.Type == StackType.Null && b.Type == StackType.ObjectReference) return b;
         if (b.Type == StackType.Null && a.Type == StackType.ObjectReference) return a;
+        if (a.Type == StackType.ObjectReference && b.Type == StackType.ObjectReference)
+        {
+            if (a.DeclaredType?.Code == SignatureTypeCode.Object) return a;
+            if (b.DeclaredType?.Code == SignatureTypeCode.Object) return b;
+        }
         if (a.Type == StackType.ObjectReference && b.Type == StackType.ObjectReference &&
             a.DeclaredType?.Identity is { } left && b.DeclaredType?.Identity is { } right)
         {
+            if (left.IsAssignableTo(right)) return b;
             var visited = new HashSet<TypeIdentity>();
             while (left.Handle.Kind == HandleKind.TypeDefinition && visited.Add(left))
             {

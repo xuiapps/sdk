@@ -5,8 +5,8 @@ using Xui.Compiler.XuiNet.DotNet.Signatures;
 
 namespace Xui.Compiler.XuiNet.Reachability;
 
-/// <summary>Resolves inherited class slots before any backend indices are assigned.</summary>
-internal sealed class DispatchTable
+/// <summary>Resolves class slots and interface mappings before backend indices are assigned.</summary>
+internal sealed partial class DispatchTable
 {
     public Dictionary<TypeIdentity, IReadOnlyList<VirtualSlot>> Types { get; } = new();
     private readonly HashSet<TypeIdentity> resolving = new();
@@ -21,16 +21,26 @@ internal sealed class DispatchTable
         try
         {
             var definition = module.GetType((TypeDefinitionHandle)identity.Handle);
-            if (definition.IsInterface || identity.Arguments?.ContainsGenericParameters == true ||
+            if (identity.Arguments?.ContainsGenericParameters == true ||
                 definition.GenericParameterCount != (identity.Arguments?.Values.Length ?? 0))
                 throw new NotSupportedException("Interface and open generic runtime types are not implemented.");
-            if (definition.MethodImplementations.Count != 0)
-                throw new NotSupportedException("Explicit method implementations and covariant overrides are not implemented.");
+            if (definition.IsInterface)
+            {
+                ValidateInterface(identity);
+                Types.Add(identity, Array.Empty<VirtualSlot>());
+                return Types[identity];
+            }
+            foreach (var mapping in definition.MethodImplementations)
+            {
+                var declaration = MemberResolver.Method(module, module.GetMethodImplementation(mapping).Declaration, identity);
+                if (!declaration.DeclaringType.IsInterface)
+                    throw new NotSupportedException("Explicit class method implementations and covariant overrides are not implemented.");
+            }
             var slots = new List<VirtualSlot>();
             if (identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } parent)
             {
                 slots.AddRange(Resolve(parent));
-                if ((module.GetType((TypeDefinitionHandle)parent.Handle).Attributes & TypeAttributes.Sealed) != 0)
+                if ((parent.Module.GetType((TypeDefinitionHandle)parent.Handle).Attributes & TypeAttributes.Sealed) != 0)
                     throw new BadImageFormatException("Cannot derive from a sealed class.");
             }
             else if (definition.BaseType.Kind == HandleKind.TypeReference)
@@ -54,7 +64,7 @@ internal sealed class DispatchTable
                 if (slot < 0) slots.Add(new((uint)slots.Count, specialized, specialized));
                 else
                 {
-                    if ((module.GetMethod(slots[slot].Implementation.Handle).Attributes & MethodAttributes.Final) != 0)
+                    if ((slots[slot].Implementation.DeclaringType.Module.GetMethod(slots[slot].Implementation.Handle).Attributes & MethodAttributes.Final) != 0)
                         throw new BadImageFormatException("Cannot override a final virtual method.");
                     slots[slot] = slots[slot] with { Implementation = specialized };
                 }
@@ -77,14 +87,14 @@ internal sealed class DispatchTable
     {
         var module = a.DeclaringType.Module;
         var left = module.GetMethod(a.Handle);
-        var right = module.GetMethod(b.Handle);
+        var right = b.DeclaringType.Module.GetMethod(b.Handle);
         if (left.Name != right.Name) return false;
         // Match templates first: F(T) and F(int) must not collapse when T becomes int.
         var parent = a.DeclaringType.GenericDefinition.BaseType;
-        while (parent is { } current && current.Handle != b.DeclaringType.Handle) parent = current.BaseType;
+        while (parent is { } current && current.GenericDefinition != b.DeclaringType.GenericDefinition) parent = current.BaseType;
         if (parent is not { } owner) return false;
         var x = SignatureReader.Method(module, left.Signature);
-        var y = SignatureReader.Method(module, right.Signature, owner.Arguments);
+        var y = SignatureReader.Method(b.DeclaringType.Module, right.Signature, owner.Arguments);
         return x.Result == y.Result && x.Parameters.SequenceEqual(y.Parameters);
     }
 }

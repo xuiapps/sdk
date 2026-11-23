@@ -43,12 +43,16 @@ public sealed class WasmEmitter
         var dependencies = Analyzer.Analyze(roots,
             (IR.MethodIdentity method, int offset, XuiNet.DotNet.Op.Instruction instruction, ref XuiNet.ILReader reader) =>
             {
-                if (method.DeclaringType.Module != source)
-                    throw new NotSupportedException("WASM emission currently supports only same-module methods.");
+                RequireLinkedModule(method.DeclaringType.Module);
+                rewriter.UseSource(method.DeclaringType.Module);
                 return rewriter.Collect(instruction, ref reader);
             });
-        if (dependencies.Nodes.OfType<Dependency.Type>().Any(type => type.Identity.Module != source))
-            throw new NotSupportedException("WASM emission currently supports only same-module roots.");
+        foreach (var type in dependencies.Nodes.OfType<Dependency.Type>()) RequireLinkedModule(type.Identity.Module);
+        void RequireLinkedModule(IR.Module module)
+        {
+            if (module != source && (source.Compilation is null || module.Compilation != source.Compilation))
+                throw new NotSupportedException("Only same-module roots or assemblies bound to the same compilation can be emitted together.");
+        }
         var methods = new Dictionary<IR.MethodIdentity, MethodPlan>();
         var orderedMethods = new List<MethodPlan>();
         var literals = new List<string>();
@@ -57,11 +61,11 @@ public sealed class WasmEmitter
         var mainIdentity = IR.MethodIdentity.FromDefinition(source, source.EntryPoint);
         foreach (var identity in dependencies.Methods)
         {
-            var method = new MethodPlan(source, identity, entryPoint: identity == mainIdentity, storage);
+            var method = new MethodPlan(identity.DeclaringType.Module, identity, entryPoint: identity == mainIdentity, storage);
             methods.Add(identity, method);
             orderedMethods.Add(method);
             if (method.IsAbstract) continue;
-            foreach (string literal in CodeEmitter.CollectRequirements(source, method, dependencies))
+            foreach (string literal in CodeEmitter.CollectRequirements(identity.DeclaringType.Module, method, dependencies))
                 if (seenLiterals.Add(literal)) literals.Add(literal);
         }
         var main = methods[mainIdentity];
@@ -151,9 +155,14 @@ public sealed class WasmEmitter
         {
             using var elements = writer.ElementSection();
             foreach (var type in storage.Classes.Types)
+            {
                 foreach (var slot in type.VirtualSlots)
                     if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsAbstract)
+                        elements.Functions(type.TableStart + (uint)storage.Classes.InterfaceMethods.Count + slot.Index, [implementation.Function]);
+                foreach (var slot in type.InterfaceSlots)
+                    if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsAbstract)
                         elements.Functions(type.TableStart + slot.Index, [implementation.Function]);
+            }
         }
         writer.DataCount((uint)literals.Count);
         using (var code = writer.CodeSection())
@@ -161,13 +170,14 @@ public sealed class WasmEmitter
             foreach (var method in orderedMethods.Where(method => !method.IsAbstract))
             {
                 using var bodyWriter = code.FunctionBody(method.LocalTypes);
-                var emitter = new CodeEmitter(source, bodyWriter, literalIndices, runtime, rewriter, method, methods);
+                rewriter.UseSource(method.Identity.DeclaringType.Module);
+                var emitter = new CodeEmitter(method.Identity.DeclaringType.Module, bodyWriter, literalIndices, runtime, rewriter, method, methods);
                 emitter.Emit(method.Body.Instructions);
             }
             if (storage.Classes.Types.Count != 0)
             {
                 using var body = code.FunctionBody([EqRef]);
-                Runtime.InstanceTest.Emit(body, storage.ClassRoot, storage.DescriptorType);
+                Runtime.InstanceTest.Emit(body, storage.ClassRoot, storage.DescriptorType, storage.Classes.Types);
             }
         }
         using (var data = writer.DataSection())

@@ -7,7 +7,8 @@ namespace Xui.Compiler.Tests.Frontend;
 internal static class Roslyn
 {
     public static byte[] Compile(string source, OutputKind outputKind = OutputKind.ConsoleApplication,
-        string assemblyName = "HelloWorld", OptimizationLevel optimizationLevel = OptimizationLevel.Release)
+        string assemblyName = "HelloWorld", OptimizationLevel optimizationLevel = OptimizationLevel.Release,
+        IEnumerable<MetadataReference>? additionalReferences = null)
     {
         var references = new[]
         {
@@ -21,7 +22,7 @@ internal static class Roslyn
         var compilation = CSharpCompilation.Create(
             assemblyName,
             [CSharpSyntaxTree.ParseText(source)],
-            references,
+            references.Concat(additionalReferences ?? []),
             new CSharpCompilationOptions(
                 outputKind,
                 optimizationLevel: optimizationLevel,

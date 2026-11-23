@@ -16,14 +16,19 @@ public sealed partial class Analyzer
             throw new InvalidProgramException($"Cannot allocate an abstract class: {node.Identity}.");
         _ = dispatch.Resolve(node.Identity);
         // Index by each ancestor so a new slot only visits compatible instantiated classes.
+        foreach (var contract in node.Identity.Interfaces()) Register(contract);
         TypeIdentity? ancestor = node.Identity;
         while (ancestor is { Handle.Kind: HandleKind.TypeDefinition } type)
+        {
+            Register(type);
+            ancestor = type.BaseType;
+        }
+        void Register(TypeIdentity type)
         {
             if (!instantiated.TryGetValue(type, out var instances)) instantiated.Add(type, instances = new());
             instances.Add(node);
             if (virtualCalls.TryGetValue(type, out var calls))
                 foreach (var call in calls) Connect(call, node);
-            ancestor = type.BaseType;
         }
     }
 
@@ -31,7 +36,8 @@ public sealed partial class Analyzer
     {
         Add(new Dependency.Method(node.Identity), node, DependencyReason.VirtualCall);
         Add(new Dependency.Layout(node.Identity.DeclaringType), node, DependencyReason.Layout);
-        _ = dispatch.Slot(node.Identity);
+        if (!node.Identity.DeclaringType.IsInterface) _ = dispatch.Slot(node.Identity);
+        else _ = dispatch.Resolve(node.Identity.DeclaringType);
         if (!virtualCalls.TryGetValue(node.Identity.DeclaringType, out var calls))
             virtualCalls.Add(node.Identity.DeclaringType, calls = new());
         calls.Add(node);
@@ -41,7 +47,9 @@ public sealed partial class Analyzer
 
     private void Connect(Dependency.VirtualCall call, Dependency.Instantiation instance)
     {
-        var implementation = dispatch.Resolve(instance.Identity)[(int)dispatch.Slot(call.Identity)].Implementation;
+        var implementation = call.Identity.DeclaringType.IsInterface
+            ? dispatch.InterfaceImplementation(instance.Identity, call.Identity)
+            : dispatch.Resolve(instance.Identity)[(int)dispatch.Slot(call.Identity)].Implementation;
         if ((implementation.DeclaringType.Module.GetMethod(implementation.Handle).Attributes & MethodAttributes.Abstract) != 0)
             throw new InvalidProgramException($"Concrete class {instance.Identity} has no implementation of {call.Identity}.");
         Add(new Dependency.Method(implementation), call, DependencyReason.VirtualImplementation, condition: instance);

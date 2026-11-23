@@ -21,7 +21,7 @@ public static class SignatureReader
                 var handle = reader.ReadTypeHandle();
                 if (handle.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeReference))
                     throw new NotSupportedException($"Constructed type signatures are not implemented: {handle.Kind}.");
-                return new(code, new TypeIdentity(module, handle), IsReferenceType: isReference);
+                return new(code, module.ResolveType(handle), IsReferenceType: isReference);
             case SignatureTypeCode.GenericTypeInstance:
                 var definition = Type(module, ref reader, arguments);
                 if (definition.Code != SignatureTypeCode.TypeHandle || definition.Identity is not { } identity || identity.Arguments is not null)
@@ -34,7 +34,7 @@ public static class SignatureReader
                     values[i] = NonVoid(module, ref reader, arguments);
                     if (values[i].IsByReference) throw new NotSupportedException("Byref generic arguments are not implemented.");
                 }
-                if (identity.Handle.Kind == HandleKind.TypeDefinition && module.GetType((TypeDefinitionHandle)identity.Handle).GenericParameterCount != arity)
+                if (identity.Handle.Kind == HandleKind.TypeDefinition && identity.Module.GetType((TypeDefinitionHandle)identity.Handle).GenericParameterCount != arity)
                     throw new BadImageFormatException("Generic argument count differs from the type declaration.");
                 return definition with { Identity = identity with { Arguments = new GenericArguments(values) } };
             case SignatureTypeCode.GenericTypeParameter:
@@ -50,6 +50,8 @@ public static class SignatureReader
                 if (reader.ReadSignatureTypeCode() != SignatureTypeCode.String)
                     throw new NotSupportedException("Only string[] entry-point array signatures are supported.");
                 return new(code);
+            case SignatureTypeCode.Object:
+                return new(code, IsReferenceType: true);
             case SignatureTypeCode.Void:
             case SignatureTypeCode.Boolean:
             case SignatureTypeCode.Char:
@@ -116,7 +118,7 @@ public static class SignatureReader
         if (handle.Kind == HandleKind.TypeSpecification) return module.GetTypeSpecification((TypeSpecificationHandle)handle).Read(arguments);
         if (handle.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeReference))
             throw new NotSupportedException($"Unsupported type token: {handle.Kind}.");
-        var identity = new TypeIdentity(module, handle);
+        var identity = module.ResolveType(handle);
         return new(SignatureTypeCode.TypeHandle, identity, IsReferenceType: !identity.IsValueType);
     }
 

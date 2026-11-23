@@ -112,8 +112,10 @@ public readonly ref partial struct CodeEmitter
             var wanted = SourceEntry(entry);
             if (!SameSourceType(actual, wanted))
             {
-                if (entry.Type != StackType.ObjectReference || wanted.Identity is not { } target ||
-                    (!actual.IsNull && (actual.IsByReference || actual.Identity is not { } from || !from.IsAssignableTo(target))))
+                if (entry.Type != StackType.ObjectReference ||
+                    !(wanted.TypeCode == SignatureTypeCode.Object && IsObjectReference(actual)) &&
+                    (wanted.Identity is not { } target || (!actual.IsNull &&
+                    (actual.IsByReference || actual.Identity is not { } from || !from.IsAssignableTo(target)))))
                     throw new InvalidProgramException($"Emission stack differs from analysis at IL_{offset:x4}.");
                 widen = true;
             }

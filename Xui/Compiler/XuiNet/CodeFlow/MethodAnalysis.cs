@@ -69,10 +69,10 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Stfld:
                 var fieldToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
                 var resolvedField = Model.MemberResolver.Field(module, fieldToken, context);
-                var field = module.GetField(resolvedField.Handle);
+                var field = resolvedField.DeclaringType.Module.GetField(resolvedField.Handle);
                 if ((field.Attributes & System.Reflection.FieldAttributes.Static) != 0)
                     throw stack.Error("Instance field instruction targets a static field");
-                var fieldType = SignatureReader.Field(module, field.Signature, resolvedField.DeclaringType.Arguments);
+                var fieldType = SignatureReader.Field(resolvedField.DeclaringType.Module, field.Signature, resolvedField.DeclaringType.Arguments);
                 if (node.Code == OpCode.Stfld) stack.Store(StackEntry.From(fieldType));
                 var ownerIdentity = resolvedField.DeclaringType;
                 var owner = new SignatureType(SignatureTypeCode.TypeHandle, ownerIdentity, IsReferenceType: !ownerIdentity.IsValueType);
@@ -88,8 +88,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Isinst:
             case OpCode.Castclass:
                 var targetType = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments).Identity!.Value;
-                if (targetType.Handle.Kind != HandleKind.TypeDefinition || targetType.IsValueType ||
-                    module.GetType((TypeDefinitionHandle)targetType.Handle).IsInterface)
+                if (targetType.Handle.Kind != HandleKind.TypeDefinition || targetType.IsValueType)
                     throw new NotSupportedException("Type tests currently require same-module classes.");
                 var tested = stack.Pop();
                 if (tested.Type is not (StackType.ObjectReference or StackType.Null))
@@ -100,7 +99,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 var constructorToken = instruction.ReadToken(ref reader).Value;
                 var constructor = CallSignature(constructorToken);
                 var constructorHandle = Model.MemberResolver.Method(module, MetadataTokens.EntityHandle(constructorToken), context);
-                if (module.GetMethod(constructorHandle.Handle).Name != ".ctor" ||
+                if (constructorHandle.DeclaringType.Module.GetMethod(constructorHandle.Handle).Name != ".ctor" ||
                     constructor.Parameters.Length == 0 || constructor.Result is not null)
                     throw new NotSupportedException("Only same-module constructors are currently analyzed.");
                 for (int i = constructor.Parameters.Length - 1; i >= 1; i--) stack.Store(StackEntry.From(constructor.Parameters[i]));
@@ -223,7 +222,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         if (calls.TryGetValue(token, out var signature)) return signature;
         var handle = MetadataTokens.EntityHandle(token);
         if (handle.Kind == HandleKind.MemberReference &&
-            module.GetMemberReference((MemberReferenceHandle)handle).Parent.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeSpecification))
+            module.GetMemberReference((MemberReferenceHandle)handle).Parent.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeSpecification) &&
+            module.ResolveType(module.GetMemberReference((MemberReferenceHandle)handle).Parent).Handle.Kind != HandleKind.TypeDefinition)
         {
             // External static calls still provide signatures for rewrite-aware analysis.
             signature = Signature.Read(module, module.GetMemberReference((MemberReferenceHandle)handle).Signature);
@@ -231,7 +231,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         else
         {
             var resolved = Model.MemberResolver.Method(module, handle, context);
-            signature = Signature.Read(module, module.GetMethod(resolved.Handle).Signature, resolved.DeclaringType);
+            signature = Signature.Read(resolved.DeclaringType.Module, resolved.DeclaringType.Module.GetMethod(resolved.Handle).Signature, resolved.DeclaringType);
         }
         calls.Add(token, signature);
         return signature;

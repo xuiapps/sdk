@@ -75,7 +75,7 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("System.Object..ctor"), node, DependencyReason.Call, offset);
                         break;
                     }
-                    if (token.Kind == HandleKind.MemberReference &&
+                    if (module.Compilation is null && token.Kind == HandleKind.MemberReference &&
                         module.GetMemberReference((MemberReferenceHandle)token).Parent.Kind is not
                             (HandleKind.TypeDefinition or HandleKind.TypeSpecification))
                         throw new NotSupportedException($"Unsupported {instruction.Code} at IL_{offset:x4}; only same-module method definitions or explicit rewrites are supported.");
@@ -86,7 +86,7 @@ public sealed partial class Analyzer
                         throw new NotSupportedException($"Unsupported {instruction.Code} at IL_{offset:x4} in {identity}: {error.Message}", error);
                     }
                     bool isVirtual = instruction.Code is OpCode.Callvirt or OpCode.Ldvirtftn &&
-                        (module.GetMethod(target.Handle).Attributes & MethodAttributes.Virtual) != 0;
+                        (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & MethodAttributes.Virtual) != 0;
                     Add(isVirtual ? new Dependency.VirtualCall(target) : new Dependency.Method(target), node,
                         isVirtual ? DependencyReason.VirtualCall : DependencyReason.Call, offset);
                     if (instruction.Code == OpCode.Newobj)

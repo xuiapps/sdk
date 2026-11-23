@@ -9,7 +9,7 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    private bool IsGc(MsilStackEntry value) => value.Location is not null ||
+    private bool IsGc(MsilStackEntry value) => value.TypeCode == SignatureTypeCode.Object || value.Location is not null ||
         (value.Identity is { } identity && method.Storage.IsGc(identity));
 
     private GcLocation Location(MsilStackEntry value) => value.Location ?? new(method.Storage.Shape(value.Identity!.Value), 0);
@@ -17,7 +17,7 @@ public readonly ref partial struct CodeEmitter
     private void InitializeGcLocals()
     {
         for (int i = 0; i < locals.Length; i++)
-            if (locals[i].UsesGc && !method.Storage.IsClass(locals[i].Identity!.Value))
+            if (locals[i].UsesGc && locals[i].Identity is { } identity && !method.Storage.IsClass(identity))
                 writer.StructNewDefault(method.Storage.Shape(locals[i].Identity!.Value).Type)
                     .LocalSet(new LocalIndex((uint)(parameters.Length + i)));
     }
@@ -64,7 +64,7 @@ public readonly ref partial struct CodeEmitter
         var receiver = store ? stack.ElementAt(1) : stack.Peek();
         var handle = MetadataTokens.EntityHandle(instruction.Value);
         var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType);
-        var field = source.GetField(resolvedField.Handle);
+        var field = resolvedField.DeclaringType.Module.GetField(resolvedField.Handle);
         var declaring = resolvedField.DeclaringType;
         if (receiver.IsNull && method.Storage.IsClass(declaring)) receiver = new(SignatureTypeCode.TypeHandle, declaring);
         if (!IsGc(receiver)) return false;

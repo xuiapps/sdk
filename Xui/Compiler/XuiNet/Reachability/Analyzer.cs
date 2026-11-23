@@ -26,7 +26,7 @@ public sealed partial class Analyzer
     }
 
     /// <summary>Expands mixed roots and follows their dependencies to a fixed point.</summary>
-    /// <remarks>Currently resolves same-module members and closed generic classes. Unknown external calls,
+    /// <remarks>Resolves members in the supplied compilation and closed generic classes. Unknown external calls,
     /// generic methods, and exception regions fail explicitly. Generic argument identities retain
     /// their existing nesting bound to reject expanding generic recursion.</remarks>
     public static DependencyGraph Analyze(IEnumerable<Root> roots, InstructionRewriter? rewrite = null)
@@ -93,6 +93,7 @@ public sealed partial class Analyzer
         foreach (var handle in type.Interfaces)
             Add(new Dependency.Type(SignatureReader.Resolve(identity.Module, identity.Module.GetInterfaceType(handle), identity.Arguments).Identity!.Value),
                 node, DependencyReason.Interface);
+        if (type.IsInterface) _ = dispatch.Resolve(identity);
         if (typeRoots.TryGetValue(identity.GenericDefinition, out var roots))
             foreach (var root in roots) Preserve(new Dependency.Root(root), identity, root.Policy);
     }

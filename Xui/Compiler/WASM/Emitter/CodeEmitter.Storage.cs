@@ -8,6 +8,7 @@ public readonly ref partial struct CodeEmitter
     private void PopAssignable(LocalVariable storage, OpCode code, int offset)
     {
         var value = Pop(code, offset);
+        if (!storage.IsByReference && storage.TypeCode == SignatureTypeCode.Object && IsObjectReference(value)) return;
         if (value.IsNull && (storage.TypeCode == SignatureTypeCode.String ||
             (storage.Identity is { } identity && method.Storage.IsClass(identity))))
         {
@@ -23,6 +24,9 @@ public readonly ref partial struct CodeEmitter
             !(storage.StackType == SignatureTypeCode.Int32 && value.TypeCode == SignatureTypeCode.IntPtr))
             throw new InvalidProgramException($"Evaluation stack type mismatch for {code} at IL_{offset:x4}; expected {storage.StackType}, found {value.TypeCode}.");
     }
+
+    private bool IsObjectReference(MsilStackEntry value) => !value.IsByReference &&
+        (value.IsNull || value.TypeCode == SignatureTypeCode.Object || value.Identity is { } identity && method.Storage.IsClass(identity));
 
     private void Narrow(LocalVariable storage)
     {

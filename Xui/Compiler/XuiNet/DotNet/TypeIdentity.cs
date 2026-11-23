@@ -4,12 +4,36 @@ using System.Reflection.Metadata;
 namespace Xui.Compiler.XuiNet.DotNet;
 
 /// <summary>A named type's definition and optional generic arguments, qualified by its owning module.</summary>
-/// <remarks>Definition and reference handles remain distinct until assembly reference resolution is implemented.</remarks>
+/// <remarks>Signature readers canonicalize references into supplied assemblies; unresolved external references retain their source module.</remarks>
 public readonly record struct TypeIdentity(
     Module Module,
     EntityHandle Handle,
     GenericArguments? Arguments = null)
 {
+    /// <summary>Whether this resolved declaration is an interface.</summary>
+    public bool IsInterface => Handle.Kind == HandleKind.TypeDefinition && Module.GetType((TypeDefinitionHandle)Handle).IsInterface;
+
+    /// <summary>All implemented/inherited interfaces with generic arguments substituted, without duplicates.</summary>
+    public IReadOnlyList<TypeIdentity> Interfaces()
+    {
+        var result = new List<TypeIdentity>();
+        var visited = new HashSet<TypeIdentity>();
+        void Visit(TypeIdentity type)
+        {
+            if (type.Handle.Kind != HandleKind.TypeDefinition || !visited.Add(type)) return;
+            var definition = type.Module.GetType((TypeDefinitionHandle)type.Handle);
+            foreach (var handle in definition.Interfaces)
+            {
+                var contract = SignatureReader.Resolve(type.Module, type.Module.GetInterfaceType(handle), type.Arguments).Identity!.Value;
+                if (!result.Contains(contract)) result.Add(contract);
+                Visit(contract);
+            }
+            if (type.BaseType is { } parent) Visit(parent);
+        }
+        Visit(this);
+        return result;
+    }
+
     /// <summary>Whether a same-module definition derives directly from System.ValueType or System.Enum.</summary>
     public bool IsValueType
     {
@@ -23,11 +47,12 @@ public readonly record struct TypeIdentity(
         }
     }
 
-    /// <summary>Tests identity or a same-module class base chain; value types remain invariant.</summary>
+    /// <summary>Tests identity or a resolved class base chain; value types remain invariant.</summary>
     public bool IsAssignableTo(TypeIdentity target)
     {
         if (this == target) return true;
-        if (Module != target.Module || IsValueType || target.IsValueType) return false;
+        if (IsValueType || target.IsValueType) return false;
+        if (target.IsInterface) return Interfaces().Contains(target);
         var current = this;
         var visited = new HashSet<TypeIdentity>();
         while (current.BaseType is { } parent && visited.Add(current))

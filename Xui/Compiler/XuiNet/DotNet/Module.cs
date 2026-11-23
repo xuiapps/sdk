@@ -15,6 +15,12 @@ public sealed class Module
 
     internal MetadataReader Metadata => assembly.Metadata;
 
+    /// <summary>The explicit assembly-resolution context, if this module has been bound to one.</summary>
+    public Compilation? Compilation { get; internal set; }
+
+    internal TypeIdentity ResolveType(EntityHandle handle) =>
+        Compilation?.ResolveType(this, handle) ?? new(this, handle);
+
     private ModuleDefinition Definition => Metadata.GetModuleDefinition();
 
     /// <summary>The module name, decoded on access.</summary>
@@ -102,6 +108,13 @@ public sealed class Module
     /// <summary>Reads the interface type referenced by an interface implementation row.</summary>
     public EntityHandle GetInterfaceType(InterfaceImplementationHandle handle) =>
         Metadata.GetInterfaceImplementation(handle).Interface;
+
+    /// <summary>Reads the declaration and implementation tokens of an explicit method mapping.</summary>
+    public (EntityHandle Declaration, EntityHandle Body) GetMethodImplementation(MethodImplementationHandle handle)
+    {
+        var mapping = Metadata.GetMethodImplementation(handle);
+        return (mapping.MethodDeclaration, mapping.MethodBody);
+    }
 
     internal MethodBody? GetBody(MethodDefinitionHandle handle)
     {

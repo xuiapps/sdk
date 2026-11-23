@@ -25,6 +25,7 @@ internal struct StackCursor(InstructionNode instruction)
     {
         var actual = Pop();
         if (actual == expected) return;
+        if (actual.Type == StackType.ObjectReference && expected.DeclaredType?.Code == System.Reflection.Metadata.SignatureTypeCode.Object) return;
         if (actual.Type == StackType.ObjectReference && expected.Type == StackType.ObjectReference &&
             actual.DeclaredType?.Identity is { } from && expected.DeclaredType?.Identity is { } to && from.IsAssignableTo(to)) return;
         if (actual.Type == StackType.Null && expected.Type is StackType.ObjectReference or StackType.String) return;

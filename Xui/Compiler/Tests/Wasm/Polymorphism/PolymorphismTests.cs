@@ -200,7 +200,6 @@ public class PolymorphismTests
         """, "251.25\noriginal\n", 3);
 
     [Theory]
-    [InlineData("public interface I { int F(); } public class A : I { int I.F() => 1; }", "new A()", "Explicit method")]
     [InlineData("public class A : System.Exception { }", "new A()", "External class inheritance")]
     public void UnsupportedRuntimeTypeModelsFailExplicitly(string declarations, string expression, string reason)
     {

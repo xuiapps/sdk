@@ -3,7 +3,7 @@ using Xui.Compiler.XuiNet.DotNet.Signatures;
 
 namespace Xui.Compiler.XuiNet.DotNet;
 
-/// <summary>Resolves same-module members while retaining constructed declaring-type identity.</summary>
+/// <summary>Resolves members across the supplied assemblies while retaining constructed declaring-type identity.</summary>
 public static class MemberResolver
 {
     /// <summary>Resolves a MethodDef or MemberRef using the containing type's generic context.</summary>
@@ -19,10 +19,10 @@ public static class MemberResolver
         if (reference.Kind != MemberReferenceKind.Method) throw new BadImageFormatException("Expected a method reference.");
         var owner = Parent(module, reference.Parent, context);
         // Match templates before substitution: M(T) and M(int) remain distinct when T is int.
-        foreach (var candidate in module.GetType((TypeDefinitionHandle)owner.Handle).Methods)
+        foreach (var candidate in owner.Module.GetType((TypeDefinitionHandle)owner.Handle).Methods)
         {
-            var method = module.GetMethod(candidate);
-            if (method.Name == reference.Name && Equal(method.Signature, reference.Signature)) return new(owner, candidate);
+            var method = owner.Module.GetMethod(candidate);
+            if (method.Name == reference.Name && Equal(SignatureReader.Method(owner.Module, method.Signature), SignatureReader.Method(module, reference.Signature))) return new(owner, candidate);
         }
         throw new NotSupportedException($"Cannot resolve method reference {owner}.{reference.Name}.");
     }
@@ -39,10 +39,10 @@ public static class MemberResolver
         var reference = module.GetMemberReference((MemberReferenceHandle)handle);
         if (reference.Kind != MemberReferenceKind.Field) throw new BadImageFormatException("Expected a field reference.");
         var owner = Parent(module, reference.Parent, context);
-        foreach (var candidate in module.GetType((TypeDefinitionHandle)owner.Handle).Fields)
+        foreach (var candidate in owner.Module.GetType((TypeDefinitionHandle)owner.Handle).Fields)
         {
-            var field = module.GetField(candidate);
-            if (field.Name == reference.Name && Equal(field.Signature, reference.Signature)) return new(owner, candidate);
+            var field = owner.Module.GetField(candidate);
+            if (field.Name == reference.Name && SignatureReader.Field(owner.Module, field.Signature) == SignatureReader.Field(module, reference.Signature)) return new(owner, candidate);
         }
         throw new NotSupportedException($"Cannot resolve field reference {owner}.{reference.Name}.");
     }
@@ -51,17 +51,13 @@ public static class MemberResolver
     {
         var type = SignatureReader.Resolve(module, parent, context.Arguments);
         if (type.Identity is not { Handle.Kind: HandleKind.TypeDefinition } identity)
-            throw new NotSupportedException("Only same-module member references can be resolved.");
+            throw new NotSupportedException($"Cannot resolve member owner {type.Identity}; supply its implementation assembly to the compilation.");
         return identity;
     }
 
     private static TypeIdentity Owner(Module module, TypeDefinitionHandle declaringType, TypeIdentity context) =>
         context.Module == module && context.Handle == declaringType ? context : new(module, declaringType);
 
-    private static bool Equal(BlobReader a, BlobReader b)
-    {
-        if (a.Length != b.Length) return false;
-        while (a.RemainingBytes != 0) if (a.ReadByte() != b.ReadByte()) return false;
-        return true;
-    }
+    private static bool Equal(MethodSignature a, MethodSignature b) =>
+        a.HasThis == b.HasThis && a.Result == b.Result && a.Parameters.SequenceEqual(b.Parameters);
 }

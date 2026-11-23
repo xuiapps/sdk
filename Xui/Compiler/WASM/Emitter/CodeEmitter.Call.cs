@@ -10,9 +10,6 @@ public readonly ref partial struct CodeEmitter
     private static MethodIdentity ResolveCall(Xui.Compiler.XuiNet.DotNet.Module source, TypeIdentity context, int token, int offset)
     {
         var handle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
-        if (handle.Kind == HandleKind.MemberReference &&
-            source.GetMemberReference((MemberReferenceHandle)handle).Parent.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeSpecification))
-            throw new NotSupportedException($"Unsupported Call at IL_{offset:x4}; only same-module method definitions or explicit rewrites are supported.");
         return MemberResolver.Method(source, handle, context);
     }
 
@@ -52,7 +49,7 @@ public readonly ref partial struct CodeEmitter
                     writer.RefCast(method.Storage.Shape(arguments[0].Identity!.Value).Type);
             }
         if (instruction.Code == OpCode.Callvirt &&
-            (source.GetMethod(target.Handle).Attributes & System.Reflection.MethodAttributes.Virtual) != 0)
+            (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & System.Reflection.MethodAttributes.Virtual) != 0)
         {
             var storage = method.Storage;
             writer.LocalGet(temporaries![0]).RefCast(storage.ClassRoot).StructGet(storage.ClassRoot, new(0))

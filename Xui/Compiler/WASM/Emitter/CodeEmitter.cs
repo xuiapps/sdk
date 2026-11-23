@@ -387,7 +387,7 @@ public readonly ref partial struct CodeEmitter
                     var call = instruction.ReadToken(ref reader);
                     if (instruction.Code == OpCode.Call && IR.WellKnownMethods.IsObjectConstructor(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value))) break;
                     var target = ResolveCall(source, method.Identity.DeclaringType, call.Value, offset);
-                    var attributes = source.GetMethod(target.Handle).Attributes;
+                    var attributes = target.DeclaringType.Module.GetMethod(target.Handle).Attributes;
                     if (instruction.Code == OpCode.Callvirt && (attributes & System.Reflection.MethodAttributes.Virtual) != 0)
                     {
                         _ = method.Storage.Classes.Slot(target);
@@ -396,7 +396,7 @@ public readonly ref partial struct CodeEmitter
                         throw new InvalidProgramException("A direct call cannot target an abstract method.");
                     if (instruction.Code == OpCode.Newobj)
                     {
-                        var constructor = source.GetMethod(target.Handle);
+                        var constructor = target.DeclaringType.Module.GetMethod(target.Handle);
                         var owner = target.DeclaringType;
                         if (constructor.Name != ".ctor" || !method.Storage.IsGc(owner))
                             throw new NotSupportedException("Only GC class/struct constructors are emitted by newobj.");

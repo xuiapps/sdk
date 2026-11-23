@@ -61,11 +61,11 @@ public readonly ref partial struct CodeEmitter
     {
         var handle = MetadataTokens.EntityHandle(token);
         var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType);
-        var field = source.GetField(resolvedField.Handle);
+        var field = resolvedField.DeclaringType.Module.GetField(resolvedField.Handle);
         if ((field.Attributes & FieldAttributes.Static) != 0) throw new NotSupportedException("Static field storage is not implemented.");
         var owner = resolvedField.DeclaringType;
         var layout = Frame.Layout(owner);
-        var type = SignatureReader.Field(source, field.Signature, owner.Arguments);
+        var type = SignatureReader.Field(owner.Module, field.Signature, owner.Arguments);
         return (new(type.Code, type.Identity, type.IsByReference), owner, layout.Fields[resolvedField.Handle].Offset);
     }
 

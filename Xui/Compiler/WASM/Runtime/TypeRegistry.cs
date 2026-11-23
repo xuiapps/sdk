@@ -6,31 +6,44 @@ using Model = Xui.Compiler.XuiNet.DotNet;
 
 namespace Xui.Compiler.WASM.Runtime;
 
-/// <summary>Assigns runtime class identities to layouts already retained by source reachability.</summary>
+/// <summary>Assigns runtime class/interface identities and dispatch locations retained by source reachability.</summary>
 internal sealed class TypeRegistry(Model.Module module, DependencyGraph dependencies)
 {
     private readonly Dictionary<TypeIdentity, Type> types = new();
     public IReadOnlyCollection<Type> Types => types.Values;
+    public IReadOnlyList<MethodIdentity> InterfaceMethods { get; } = dependencies.Nodes
+        .OfType<Dependency.VirtualCall>().Select(node => node.Identity)
+        .Where(method => method.DeclaringType.IsInterface).Distinct().ToArray();
 
     public Type Resolve(TypeIdentity identity)
     {
         if (types.TryGetValue(identity, out var found)) return found;
-        if (identity.Module != module || identity.Handle.Kind != HandleKind.TypeDefinition || identity.IsValueType)
+        if ((identity.Module != module && !identity.IsInterface) || identity.Handle.Kind != HandleKind.TypeDefinition || identity.IsValueType)
             throw new NotSupportedException($"Runtime class metadata requires a same-module class: {identity}.");
-        var definition = module.GetType((TypeDefinitionHandle)identity.Handle);
+        var definition = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
         Type? parent = identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } baseIdentity ? Resolve(baseIdentity) : null;
         var slots = dependencies.VirtualSlots(identity)
             .Select(slot => new VirtualSlot(slot.Index, slot.Declaration, slot.Implementation)).ToArray();
         var type = new Type((uint)types.Count + 1, identity, parent,
             (definition.Attributes & TypeAttributes.Abstract) != 0, Array.AsReadOnly(slots));
         types.Add(identity, type);
+        type.Interfaces = Array.AsReadOnly(identity.Interfaces().Select(Resolve).ToArray());
+        if (!type.IsInterface)
+            type.InterfaceSlots = Array.AsReadOnly(InterfaceMethods.Select((method, index) =>
+                (Method: method, Index: (uint)index, Implementation: dependencies.InterfaceImplementation(identity, method)))
+                .Where(slot => slot.Implementation is not null)
+                .Select(slot => new InterfaceSlot(slot.Index, slot.Method, slot.Implementation!.Value)).ToArray());
         return type;
     }
 
     public uint Slot(MethodIdentity handle)
     {
-        foreach (var slot in Resolve(handle.DeclaringType).VirtualSlots)
-            if (slot.Implementation == handle || slot.Declaration == handle) return slot.Index;
+        if (handle.DeclaringType.IsInterface)
+        {
+            for (int i = 0; i < InterfaceMethods.Count; i++) if (InterfaceMethods[i] == handle) return (uint)i;
+        }
+        else foreach (var slot in Resolve(handle.DeclaringType).VirtualSlots)
+            if (slot.Implementation == handle || slot.Declaration == handle) return (uint)InterfaceMethods.Count + slot.Index;
         throw new NotSupportedException($"No virtual slot for {handle}.");
     }
 }

@@ -57,7 +57,7 @@ internal sealed partial class MethodPlan
             Locals = [];
             Graph = null!;
             foreach (var parameter in Signature.Parameters.Append(Signature.Result))
-                if (parameter.UsesGc) RequireGc(parameter.Identity!.Value);
+                if (parameter.UsesGc) { if (parameter.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
             return;
         }
         Body = method.Body ?? throw new NotSupportedException($"The method has no managed body: {method.Name}.");
@@ -65,7 +65,7 @@ internal sealed partial class MethodPlan
             throw new NotSupportedException("WASM exception handling is not implemented.");
         Locals = LocalVariable.Read(source, Body.LocalSignature, storage, identity.DeclaringType.Arguments);
         foreach (var local in Locals.Concat(Signature.Parameters).Append(Signature.Result))
-            if (local.UsesGc) RequireGc(local.Identity!.Value);
+            if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
         if (Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) ||
             Graph.Instructions.Any(n => n.Code == OpCode.Newobj)) Graph = Analyzer.Analyze(source, identity);
@@ -104,6 +104,7 @@ internal sealed partial class MethodPlan
         foreach (var target in Calls)
         {
             var parameters = methods[target].Signature.Parameters;
+            if (methods[target].Signature.Result.UsesGc || parameters.Any(parameter => parameter.UsesGc)) UsesGc = true;
             if (!methods[target].Signature.HasThis && !parameters.Any(parameter => parameter.NeedsNarrowing)) continue;
             var slots = new LocalIndex[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)

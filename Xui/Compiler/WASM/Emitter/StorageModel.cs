@@ -26,8 +26,13 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
     private readonly HashSet<TypeIdentity> flattening = new();
 
     public bool IsClass(TypeIdentity identity) => identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
-    public bool IsGc(TypeIdentity identity) => IsClass(identity) ||
-        (identity.Handle.Kind == HandleKind.TypeDefinition && layouts.Classify((TypeDefinitionHandle)identity.Handle) == StorageKind.ContainsManagedReferences);
+    public bool IsGc(TypeIdentity identity)
+    {
+        if (identity.Module != module && identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsInterface)
+            throw new NotSupportedException($"Cross-assembly struct and class storage is not implemented: {identity}.");
+        return IsClass(identity) || (identity.Handle.Kind == HandleKind.TypeDefinition &&
+            layouts.Classify((TypeDefinitionHandle)identity.Handle) == StorageKind.ContainsManagedReferences);
+    }
 
     public LocalVariable Bind(SignatureType type)
     {
@@ -37,7 +42,7 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
             throw new NotSupportedException("Generic struct storage is not implemented yet.");
         if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition })
             throw new NotSupportedException($"External class storage is not implemented: {type}.");
-        return new(type.Code, type.Identity, type.IsByReference, type.Identity is { } identity && IsGc(identity));
+        return new(type.Code, type.Identity, type.IsByReference, type.Code == SignatureTypeCode.Object || type.Identity is { } identity && IsGc(identity));
     }
 
     public GcShape Shape(TypeIdentity identity)
@@ -50,6 +55,13 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
             scalar.Leaves.Add(new(new(SignatureTypeCode.Single), 0));
             shapes.Add(identity, scalar);
             return scalar;
+        }
+        if (identity.IsInterface)
+        {
+            _ = Classes.Resolve(identity);
+            var contract = new GcShape(identity);
+            shapes.Add(identity, contract);
+            return contract;
         }
         if (identity.Module != module || identity.Handle.Kind != HandleKind.TypeDefinition)
             throw new NotSupportedException($"External GC layout is not implemented: {identity}.");
@@ -114,9 +126,16 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
                 WasmValue.RefNull(utf16ArrayType), ValueTypeCode.I32, ValueTypeCode.I32], Mutability.Immutable);
             ClassRoot = writer.StructType([ValueTypeCode.EqRef], extensible: true);
             InstanceTestType = writer.FunctionType([ValueTypeCode.EqRef, ValueTypeCode.EqRef], ValueTypeCode.EqRef);
+            foreach (var contract in Classes.Types.Where(type => type.IsInterface)) contract.WasmType = ClassRoot;
         }
         foreach (var shape in shapes.Values)
         {
+            if (shape.Identity.IsInterface)
+            {
+                shape.Type = ClassRoot;
+                Classes.Resolve(shape.Identity).WasmType = ClassRoot;
+                continue;
+            }
             var fields = shape.Leaves.Select(leaf => (WasmValue)leaf.Storage.WasmType).ToArray();
             if (IsClass(shape.Identity))
             {
@@ -133,9 +152,10 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
                         SignatureReader.Field(module, field.Signature, declaring.Arguments), new((uint)pair.Value.First), (uint)pair.Value.Count);
                 }).ToArray());
                 type.TableStart = TableSize;
-                TableSize += (uint)type.VirtualSlots.Count;
+                TableSize += (uint)(Classes.InterfaceMethods.Count + type.VirtualSlots.Count);
             }
             else shape.Type = writer.StructType(fields);
         }
+        if (Classes.InterfaceMethods.Count != 0 && TableSize == 0) TableSize = (uint)Classes.InterfaceMethods.Count;
     }
 }

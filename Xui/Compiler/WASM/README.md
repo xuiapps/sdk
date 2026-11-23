@@ -1,7 +1,9 @@
 # WASM backend support
 
 The backend emits a `void` or `int` entry point and reachable, non-generic static and instance
-methods in the same module. Method bodies support straight-line code, nested conditionals, and single-entry loops.
+methods. Primitive/string static calls can cross assemblies explicitly bound with
+`XuiNet.Compilation`; all retained bodies share one output module and function index space.
+Object/struct storage still requires declarations in the entry-point module. Method bodies support straight-line code, nested conditionals, and single-entry loops.
 It supports integer and floating-point constants, arithmetic, bitwise operations,
 shifts, numeric comparisons, selected conversions, primitive local and argument loads/stores, stack duplication/discard, and string literals.
 MSIL `Int32` and `Int64` use WASM `i32` and `i64`; floating-point evaluation values
@@ -33,8 +35,22 @@ parent links; identical field layouts do not make unrelated classes interchangea
 [GC objects demo](../Tests/Wasm/Gc/Snapshots/Objects.md) and
 [polymorphism demo](../Tests/Wasm/Polymorphism/Snapshots/Units.md).
 
+Interfaces implemented by classes support implicit public implementations, explicit
+MethodImpl mappings, inherited implementations, reimplementation, and virtual overrides.
+Inherited interfaces and closed invariant generic interfaces retain nominal identity.
+Each concrete class's function-table range starts with a shared interface-slot prefix;
+only reachable interface calls retain their implementations. Interface `callvirt`
+uses `call_indirect` with the same scalar/reference ABI as class methods.
+`is`, `as`, and explicit casts work between classes, interfaces, and class references
+stored as `object`. Null casts preserve null; failed non-null casts trap.
+Interface membership is emitted as descriptor comparisons over the retained type set,
+while class tests continue walking parent descriptors. Identical layouts do not imply
+interface membership. Interface contracts may come from another supplied assembly;
+concrete class storage still belongs to the entry-point module.
+See the [interface demo](../Tests/Wasm/Interfaces/Snapshots/Units.md).
+
 [Runtime.Type](Runtime/Type.cs), exposed by `WasmEmitter.Types`, records source
-identity, base type, flattened field ranges, virtual slots, and WASM indices.
+identity, base type, implemented interfaces, flattened field ranges, class/interface dispatch slots, and WASM indices.
 Immutable runtime GC descriptors contain identity, base descriptor, table start,
 UTF-16 name array, slot count, and field count. This is groundwork for a managed
 `Type` facade; `System.Type`, `GetType`, `typeof`, and reflection calls are not emitted yet.
@@ -55,19 +71,22 @@ shows specialized fields, tables, base calls, and nominal `is`/`as` tests across
 three-level hierarchy. Primitive/reference `default(T)` via `initobj` is not
 implemented. Expanding instantiations stop at a nesting depth of 32.
 
-Interfaces, generic methods/structs, arbitrary external calls, switches, arbitrary
+Generic methods/structs, arbitrary external calls, switches, arbitrary
 jump graphs, lambdas, closures, delegates, managed arrays, unmanaged pointers,
 boxing, and exception handling are not implemented. Class signatures and type tests
-currently require same-module declarations; general `object` storage and external
-class hierarchies remain unsupported. Explicit MethodImpl mappings and covariant
-return overrides are rejected. Explicit-layout structs cannot
+currently require same-module concrete declarations; interface declarations can be linked.
+`object` storage currently holds emitted class/interface references and null, not strings,
+boxed values, arrays, or arbitrary BCL objects. External class hierarchies, variant interfaces,
+default/static interface methods, generic interface methods, boxed/constrained struct dispatch,
+and explicit class MethodImpl/covariant return overrides remain unsupported. Explicit-layout structs cannot
 be flattened into GC fields yet; their supported linear-memory layouts are unchanged.
 Managed-address locals and explicit byref parameters remain unsupported. Addresses
 of inline struct fields can be used within expressions and conditional arms, but
 cannot be passed as instance receivers or carried across loops. Class-reference
 joins widen to a common same-module base class, including null/class joins.
-Other stack types still require exact matches; joins requiring System.Object or
-interface resolution remain unsupported.
+Class references can also join an existing assignable interface or `object` stack type.
+Other stack types still require exact matches; synthesizing a common interface for unrelated
+class stack types remains unsupported.
 Native-integer arithmetic, checked arithmetic, division/remainder, and floating-point
 to integer conversions also remain unsupported.
 
@@ -184,7 +203,7 @@ supported operations that require no emitted bytes.
 | `dup` | `local.tee`; `local.get`; `memory.copy` or `struct.new` | Classes retain identity; struct duplicates receive independent value storage. |
 | `pop` | `drop` | Discards runtime value and its tracked MSIL stack type. |
 | `jmp` |  |  |
-| `call` | Optional argument narrowing/spills; `call`; optional `f64.promote_f32` | Calls same-module static/direct instance methods; preserves argument value semantics. |
+| `call` | Optional argument narrowing/spills; `call`; optional `f64.promote_f32` | Calls linked static or same-module instance methods; preserves value semantics. |
 | `calli` |  |  |
 | `ret` | Optional result narrowing; `return` | Returns scalars, class references or copied GC struct values. |
 | `br.s` | `Structured sequencing / br` | Sequences regions or branches to typed loop exit/repeat labels. |
@@ -255,13 +274,13 @@ supported operations that require no emitted bytes.
 | `conv.r8` | `f64.convert_i32_s` / `f64.convert_i64_s` / no instruction (f64) | Signed integer conversion; floating-point stack values already use f64. |
 | `conv.u4` | No instruction (i32) / `i32.wrap_i64` (i64) | Keeps low 32 bits; floating-point inputs are currently rejected. |
 | `conv.u8` | `i64.extend_i32_u` (i32) / no instruction (i64) | Zero-extends int32 inputs; already-wide integers retain their original bits. |
-| `callvirt` | `ref.cast`; `struct.get`; `call_indirect` or `call` | Null-checks receiver; virtual slots select the runtime class implementation. |
+| `callvirt` | `ref.cast`; `struct.get`; `call_indirect` or `call` | Null-checks receiver; class or interface slots select concrete method implementations. |
 | `cpobj` | `memory.copy` or leaf loads/stores | Copies matching structs, including transfers between GC and linear storage. |
 | `ldobj` | `memory.copy` or `struct.get`; `struct.new` | Loads an independent struct value from its managed address. |
 | `ldstr` | `global.get; ref.is_null; if; i32.const; i32.const; array.new_data; i32.const; i32.const; call; global.set; end; global.get` | Materializes passive UTF-16LE data through js-string; caches the JavaScript string. |
 | `newobj` | `struct.new_default`; `call` | Allocates storage, initializes class type header, then invokes constructor. |
-| `castclass` | Descriptor helper `call`; `unreachable` on mismatch | Preserves null; checks nominal ancestry; failed casts currently trap. |
-| `isinst` | Descriptor helper `call`; `ref.eq`; parent traversal | Returns original reference or null; supports class is/as tests. |
+| `castclass` | Descriptor helper `call`; `unreachable` on mismatch | Preserves null; checks class ancestry/interface membership; failed casts trap. |
+| `isinst` | Descriptor helper `call`; `ref.eq`; ancestry/membership checks | Returns original reference or null; supports class/interface is/as tests. |
 | `conv.r.un` | `f64.convert_i32_u` / `f64.convert_i64_u` | Interprets integer bits as unsigned before conversion to floating point. |
 | `unbox` |  |  |
 | `throw` |  |  |

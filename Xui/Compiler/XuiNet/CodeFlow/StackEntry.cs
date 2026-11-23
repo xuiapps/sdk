@@ -17,6 +17,7 @@ public readonly record struct StackEntry(
         if (type.IsByReference) return new(StackType.ManagedPointer, type);
         return type.Code switch
         {
+            SignatureTypeCode.Object => new(StackType.ObjectReference, type),
             SignatureTypeCode.TypeHandle => new StackEntry(type.IsReferenceType ? StackType.ObjectReference : StackType.ValueType, type),
             SignatureTypeCode.Boolean or SignatureTypeCode.Char or SignatureTypeCode.SByte or SignatureTypeCode.Byte or
             SignatureTypeCode.Int16 or SignatureTypeCode.UInt16 or SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 => StackType.Int32,
