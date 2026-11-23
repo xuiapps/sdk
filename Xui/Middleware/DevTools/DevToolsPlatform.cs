@@ -8,7 +8,7 @@ namespace Xui.Middleware.DevTools;
 /// <summary>
 /// A runtime middleware layer that wraps any <see cref="IRuntime"/> to inject DevTools support.
 ///
-/// In Debug builds, DevTools starts a named-pipe JSON-RPC server on application startup.
+/// Debug apps can select stdio JSON-RPC with --enable-stdio-jsonrpc; otherwise a named-pipe server starts.
 /// External tools (e.g. the Xui MCP server) can connect to inspect and interact with the running app.
 /// The pipe name is deterministic: <c>xui-devtools-{processId}</c>.
 /// When the pipe server is ready, the app prints <c>DEVTOOLS_READY:{pipeName}</c> to stdout.
@@ -16,9 +16,18 @@ namespace Xui.Middleware.DevTools;
 public class DevToolsPlatform : IRuntime
 {
     internal readonly IRuntime Base;
-    internal DevToolsWindow? Window;
+    internal volatile DevToolsWindow? Window;
 
-    public DevToolsPlatform(IRuntime @base) => Base = @base;
+    /// <summary>True only in Debug when the explicit command-line switch is present.</summary>
+    public bool StdioEnabled { get; }
+
+    public DevToolsPlatform(IRuntime @base)
+    {
+        Base = @base;
+#if DEBUG
+        StdioEnabled = Environment.GetCommandLineArgs().Contains("--enable-stdio-jsonrpc", StringComparer.Ordinal);
+#endif
+    }
 
     /// <inheritdoc/>
     public IDispatcher MainDispatcher => Base.MainDispatcher;
@@ -42,12 +51,52 @@ public class DevToolsPlatform : IRuntime
     /// </summary>
     public IRunLoop CreateRunloop(Application applicationAbstract)
     {
+        var runloop = Base.CreateRunloop(applicationAbstract);
+        var handler = new DevToolsHandler(this);
+        if (StdioEnabled)
+        {
+            // Capture the protocol stream before moving all application logging to stderr.
+            var output = Console.OpenStandardOutput();
+            Console.SetOut(Console.Error);
+            return new ControlledRunLoop(runloop, this, handler, output);
+        }
         var pipeName = $"xui-devtools-{Environment.ProcessId}";
-        var server = new PipeServer(pipeName, new DevToolsHandler(this));
+        var server = new PipeServer(pipeName, handler);
         server.Start();
         Console.WriteLine($"DEVTOOLS_READY:{pipeName}");
-        return Base.CreateRunloop(applicationAbstract);
+        return new PipeRunLoop(runloop, server);
     }
+    private sealed class PipeRunLoop(IRunLoop inner, PipeServer server) : IRunLoop
+    {
+        public int Run() { try { return inner.Run(); } finally { server.Dispose(); } }
+        public void Quit() => inner.Quit();
+    }
+
+    private sealed class ControlledRunLoop(IRunLoop inner, DevToolsPlatform platform,
+        IDevToolsHandler handler, Stream output) : IRunLoop
+    {
+        public int Run()
+        {
+            using var cancellation = new CancellationTokenSource();
+            var token = cancellation.Token;
+            _ = Task.Run(async () =>
+            {
+                var quitRequested = false;
+                try
+                {
+                    using var connection = new JsonRpcConnection(Console.OpenStandardInput(), output, leaveOpen: true);
+                    await new RpcServer(handler, () => { quitRequested = true; Quit(); }).ServeAsync(connection, token);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+                catch (Exception ex) { Console.Error.WriteLine($"Stdio control: {ex.Message}"); }
+                finally { if (!quitRequested && !token.IsCancellationRequested) Quit(); }
+            });
+            try { return inner.Run(); }
+            finally { cancellation.Cancel(); }
+        }
+        public void Quit() => platform.MainDispatcher.Post(inner.Quit);
+    }
+
 }
 
 /// <summary>
@@ -61,10 +110,14 @@ file sealed class DevToolsHandler(DevToolsPlatform platform) : IDevToolsHandler
 
     public Task<IO.InspectResult> HandleInspect() => Window?.HandleInspect() ?? Task.FromResult(new IO.InspectResult(new IO.ViewNode("no-window", 0, 0, 0, 0, 0, 0, false, null, null, [])));
     public Task<IO.ScreenshotResult> HandleScreenshot() => Window?.HandleScreenshot() ?? Task.FromResult(new IO.ScreenshotResult("<svg/>"));
-    public Task HandleTap(IO.TapParams p) => Window?.HandleTap(p) ?? Task.CompletedTask;
-    public Task HandlePointer(IO.PointerParams p) => Window?.HandlePointer(p) ?? Task.CompletedTask;
-    public Task HandleClick(IO.ClickParams p) => Window?.HandleClick(p) ?? Task.CompletedTask;
-    public Task HandleMouseMove(IO.MouseMoveParams p) => Window?.HandleMouseMove(p) ?? Task.CompletedTask;
+    public Task HandleTap(IO.TapParams p) => RequireWindow().HandleTap(p);
+    public Task HandlePointer(IO.PointerParams p) => RequireWindow().HandlePointer(p);
+    public Task HandleClick(IO.ClickParams p) => RequireWindow().HandleClick(p);
+    public Task HandleMouseMove(IO.MouseMoveParams p) => RequireWindow().HandleMouseMove(p);
     public Task HandleInvalidate() => Window?.HandleInvalidate() ?? Task.CompletedTask;
+    private DevToolsWindow RequireWindow() => Window ?? throw new InvalidOperationException("Window is not ready.");
+    public Task<FrameResult> HandleFrame(FrameParams p) => RequireWindow().HandleFrame(p);
+    public Task<ProfileResult> HandleProfileReset() => RequireWindow().HandleProfileReset();
+    public Task<ProfileResult> HandleProfileRead() => RequireWindow().HandleProfileRead();
     public Task HandleIdentify(IO.IdentifyParams p) => Window?.HandleIdentify(p) ?? Task.CompletedTask;
 }

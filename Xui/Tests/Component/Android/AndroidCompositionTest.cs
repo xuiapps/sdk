@@ -12,7 +12,7 @@ using Xui.Runtime.Android.GPU;
 
 namespace Xui.Tests.Component.Android;
 
-public class AndroidCompositionTest
+public partial class AndroidCompositionTest
 {
     [Fact]
     public void SymbolPlacementUsesOneResourceOpcodeInsteadOfExpandingInstructions()
@@ -36,20 +36,6 @@ public class AndroidCompositionTest
         }
     }
 
-    private sealed class Resources : IAndroidResources
-    {
-        public int Symbol(Xui.Core.Canvas.Symbols.SymbolContent content) => 1;
-        public int Font(Xui.Core.Canvas.Font font) => 1;
-        public int Image(IImage image) => 1;
-    }
-    private sealed class Measure : ITextDrawingContext
-    {
-        public TextAlign TextAlign { set { } }
-        public TextBaseline TextBaseline { set { } }
-        public void SetFont(Xui.Core.Canvas.Font font) { }
-        public TextMetrics MeasureText(string text) => default;
-        public void FillText(string text, Point position) => throw new NotSupportedException();
-    }
     private static int Int(ReadOnlySpan<byte> bytes, int offset) => BinaryPrimitives.ReadInt32LittleEndian(bytes[offset..]);
     private static float Float(ReadOnlySpan<byte> bytes, int offset) => BinaryPrimitives.ReadSingleLittleEndian(bytes[offset..]);
     private static int NodeOffset(ReadOnlySpan<byte> packet, int index)
@@ -58,16 +44,6 @@ public class AndroidCompositionTest
         int p=16+4*Int(packet,8);
         for(int i=0;i<index;i++) p+=136+Math.Max(0,Int(packet,p+132));
         return p;
-    }
-    private static void Frame(RetainedCanvasContext ctx, object key, bool update, int x)
-    {
-        ctx.BeginFrame((0,0,300,500),2);
-        using(var group=ctx.Group(new GroupOptions { Key=key, Bounds=(10,20,100,150), ViewBacking=true,
-            Transform=AffineTransform.Translate((x,0)), HasUpdates=update }))
-        {
-            if(group.NeedsRedraw) {ctx.SetFill(Colors.Red);ctx.FillRect((10,20,100,150));}
-        }
-        ctx.EndFrame();
     }
     [Fact]
     public void MovingCachedNodeKeepsIdentityAndOmitsDrawing()
@@ -99,17 +75,6 @@ public class AndroidCompositionTest
         ctx.BeginFrame((0,0,300,500),1);ctx.EndFrame();var hidden=presenter.Encode(ctx.Root);Assert.Equal(1,Int(hidden,12));ctx.AcceptFrame();
         ctx.BeginFrame((0,0,300,500),1);Declare(false);ctx.EndFrame();var last=presenter.Encode(ctx.Root);int p=NodeOffset(last,1);
         Assert.Equal(Int(first,NodeOffset(first,1)),Int(last,p));Assert.Equal(-1,Int(last,p+132));
-    }
-    [Fact]
-    public void WarmTransformFramesAllocateNoManagedObjects()
-    {
-        using var presenter=new AndroidCompositionPresenter(0,new Resources());
-        using var ctx=new RetainedCanvasContext(new Measure(),graphicsNodeFactory:presenter.CreateNode);
-        object key=new();
-        for(int i=0;i<20;i++){Frame(ctx,key,i==0,i);presenter.Encode(ctx.Root);ctx.AcceptFrame();}
-        long before=GC.GetAllocatedBytesForCurrentThread();
-        for(int i=0;i<100;i++){Frame(ctx,key,false,i);presenter.Encode(ctx.Root);ctx.AcceptFrame();}
-        Assert.Equal(0,GC.GetAllocatedBytesForCurrentThread()-before);
     }
     [Fact]
     public void WireFormatUsesFloat32AndUtf16IndependentOfNativeStructLayout()

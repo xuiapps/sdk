@@ -16,7 +16,7 @@ using Xui.Runtime.Test;
 
 namespace Xui.Tests.Integration.DesignSystem;
 
-public class DesignSystemMenuTest
+public partial class DesignSystemMenuTest
 {
     [Fact]
     public void ColorAndRoundnessGallery()
@@ -52,43 +52,6 @@ public class DesignSystemMenuTest
     }
 
     [Fact]
-    public void ShadeTriangleSelectsWhiteBlackAndHueAndKeepsDragAllocationsAtZero()
-    {
-        using var scene = new Scene();
-        var wheel = scene.Find("DesignSystem.Hue");
-        var design = (IDesignSystem)wheel.GetService(typeof(IDesignSystem))!;
-        var palette = design.Colors;
-        var center = wheel.Parent!.LocalToGlobal(wheel.Frame.Center);
-        var radius = (nfloat)115 * .83f - 12;
-        var white = center + new Vector(-radius / 2, -nfloat.Sqrt(3) * radius / 2);
-        var black = center + new Vector(-radius / 2, nfloat.Sqrt(3) * radius / 2);
-        var hue = center + new Vector(radius, 0);
-        scene.App.PointerDown(center);
-        // Continue outside each corner: projection should land exactly on that vertex.
-        scene.App.PointerMove(white + new Vector(-5, -5));
-        Assert.InRange((double)new Oklch(palette.Primary.Background).L, .999, 1.001);
-        scene.App.PointerMove(black + new Vector(-5, 5));
-        Assert.InRange((double)new Oklch(palette.Primary.Background).L, 0, .001);
-        scene.App.PointerMove(hue + new Vector(5, 0));
-        Assert.InRange((double)new Oklch(palette.Primary.Background).C, .1, .4);
-        long allocated = 0;
-        for (var i = 0; i < 32; i++)
-        {
-            var point = center + new Vector(0, (i % 16 - 8) * 2);
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            scene.App.PointerMove(point);
-            if (i >= 16) allocated += GC.GetAllocatedBytesForCurrentThread() - before;
-            scene.Advance(8);
-        }
-        scene.App.PointerUp(center);
-        Assert.Equal(0, allocated);
-        Assert.Same(palette, design.Colors);
-        var selected = palette.Primary.Background;
-        scene.App.PointerMove(white);
-        Assert.Equal(selected, palette.Primary.Background);
-    }
-
-    [Fact]
     public void NestedSegmentsHaveConcentricCornersForEveryShape()
     {
         using var scene = new Scene();
@@ -107,29 +70,6 @@ public class DesignSystemMenuTest
             Assert.Equal((double)(shape.Frame.Left + outer), StartX(paths[0]), precision: 2);
             Assert.Equal((double)(shape.Frame.Left + 4 + index * width + inner), StartX(paths[1]), precision: 2);
         }
-    }
-
-    [Fact]
-    public void HueUpdatesDoNotReallocateTheThemePerPointerMove()
-    {
-        using var scene = new Scene();
-        var wheel = scene.Find("DesignSystem.Hue");
-        var center = wheel.Parent!.LocalToGlobal(wheel.Frame.Center);
-        scene.App.PointerDown(center + new Vector(105, 0));
-        long allocated = 0;
-        for (var i = 0; i < 32; i++)
-        {
-            var angle = (nfloat)i * nfloat.Pi / 16;
-            var point = center + new Vector(nfloat.Cos(angle) * 105, nfloat.Sin(angle) * 105);
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            scene.App.PointerMove(point);
-            var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            if (i >= 16) allocated += bytes;
-            // Reset invalidation flags outside the allocation measurement, as a real frame does.
-            scene.Advance(8);
-        }
-        scene.App.PointerUp(center + new Vector(105, 0));
-        Assert.True(allocated == 0, $"Hue update allocated {allocated / 16} B per pointer move.");
     }
 
     [Fact]
@@ -707,84 +647,36 @@ public class DesignSystemMenuTest
 
     private static nfloat Translation(ScrollView scroll) => ((TransformView)scroll[0]).Transform.Ty;
 
-    private sealed class Scene : IDisposable
+    [Fact]
+    public void ShadeTriangleSelectsWhiteBlackAndHueAndRetainsPalette()
     {
-        public TestSinglePageApp<Application, MainWindow> App { get; }
-        private TimeSpan time;
-        public ScrollView Scroll => Assert.IsAssignableFrom<ScrollView>(App.Window.RootView.FindViewById("DesignSystem.PaletteScroll"));
-
-        public Scene(TestRuntimeVariant variant = TestRuntimeVariant.IPhoneEmulator, int? width = null, [CallerMemberName] string name = "", [CallerFilePath] string path = "")
+        using var scene = new Scene();
+        var wheel = scene.Find("DesignSystem.Hue");
+        var design = (IDesignSystem)wheel.GetService(typeof(IDesignSystem))!;
+        var palette = design.Colors;
+        var center = wheel.Parent!.LocalToGlobal(wheel.Frame.Center);
+        var radius = (nfloat)115 * .83f - 12;
+        var white = center + new Vector(-radius / 2, -nfloat.Sqrt(3) * radius / 2);
+        var black = center + new Vector(-radius / 2, nfloat.Sqrt(3) * radius / 2);
+        var hue = center + new Vector(radius, 0);
+        scene.App.PointerDown(center);
+        // Continue outside each corner: projection should land exactly on that vertex.
+        scene.App.PointerMove(white + new Vector(-5, -5));
+        Assert.InRange((double)new Oklch(palette.Primary.Background).L, .999, 1.001);
+        scene.App.PointerMove(black + new Vector(-5, 5));
+        Assert.InRange((double)new Oklch(palette.Primary.Background).L, 0, .001);
+        scene.App.PointerMove(hue + new Vector(5, 0));
+        Assert.InRange((double)new Oklch(palette.Primary.Background).C, .1, .4);
+        for (var i = 0; i < 32; i++)
         {
-            App = width is null ? IntegrationRuntimeVariants.CreateApp<Application, MainWindow>((600, 400),
-                variant, path, name, fontSource: Xui.Core.Fonts.Inter.Source) :
-                new TestSinglePageApp<Application, MainWindow>((width.Value + 48, 916),
-                    configure: services => services.AddSingleton<ITestSettings>(new TestSettings()),
-                    runtimeVariant: TestRuntimeVariant.IPhoneEmulator,
-                    emulatorDevice: DeviceCatalog.All.Single(d => d.Model == "iPhone 15 Pro") with { LogicalResolution = new Size(width.Value, 852) },
-                    fontSource: Xui.Core.Fonts.Inter.Source);
-            App.Render();
-            Assert.IsAssignableFrom<Button>(App.Window.RootView.FindViewById("DesignSystem")).Clicked!();
-            Advance(0);
-            Advance(400);
+            var point = center + new Vector(0, (i % 16 - 8) * 2);
+            scene.App.PointerMove(point);
+            scene.Advance(8);
         }
-
-        public void Advance(int milliseconds)
-        {
-            var next = time + TimeSpan.FromMilliseconds(milliseconds);
-            App.AnimationFrame(time, next);
-            time = next;
-            App.Render();
-        }
-
-        public View Find(string id) => Assert.IsAssignableFrom<View>(App.Window.RootView.FindViewById(id));
-
-        public Point Cell(View view, int index, int count) => view.Parent!.LocalToGlobal(
-            new Point(view.Frame.Left + (index + (nfloat)0.5) * view.Frame.Width / count, view.Frame.Center.Y));
-
-        public void TapCell(View view, int index, int count, bool settle = true)
-        {
-            var point = Cell(view, index, count);
-            App.PointerDown(point);
-            Advance(20);
-            App.PointerUp(point);
-            Advance(16);
-            if (settle) Advance(900);
-        }
-
-        public void Tap(View view, bool header = false)
-        {
-            var point = view.Parent!.LocalToGlobal(header ? new Point(view.Frame.Center.X, view.Frame.Top + 20) : view.Frame.Center);
-            App.PointerDown(point);
-            Advance(20);
-            App.PointerUp(point);
-            Advance(16);
-        }
-
-        public void Reveal(View view)
-        {
-            Assert.True(view.TryFindParent<ScrollView>(out var scroll));
-            for (var i = 0; i < 16; i++)
-            {
-                var top = view.Parent!.LocalToGlobal(view.Frame.TopLeft).Y;
-                var bottom = view.Parent!.LocalToGlobal(new Point(view.Frame.Left, view.Frame.Bottom)).Y;
-                var viewportTop = scroll.Parent!.LocalToGlobal(scroll.Frame.TopLeft).Y;
-                var tabs = Find("DesignSystem.Tabs");
-                var viewportBottom = nfloat.Min(scroll.Parent!.LocalToGlobal(new Point(scroll.Frame.Left, scroll.Frame.Bottom)).Y,
-                    tabs.Parent!.LocalToGlobal(tabs.Frame.TopLeft).Y);
-                if (top >= viewportTop + 8 && bottom <= viewportBottom - 8) return;
-                var delta = nfloat.Clamp((top + bottom) / 2 - (viewportTop + viewportBottom) / 2, -220, 220);
-                var start = scroll.Parent!.LocalToGlobal(new Point(scroll.Frame.Left + 5, scroll.Frame.Center.Y));
-                App.PointerDown(start);
-                Advance(30);
-                App.PointerMove(start - new Vector(0, delta));
-                Advance(200);
-                App.PointerUp(start - new Vector(0, delta));
-                Advance(16);
-                Advance(1000);
-            }
-            Assert.Fail("Could not reveal " + view.Id);
-        }
-
-        public void Dispose() => App.Dispose();
+        scene.App.PointerUp(center);
+        Assert.Same(palette, design.Colors);
+        var selected = palette.Primary.Background;
+        scene.App.PointerMove(white);
+        Assert.Equal(selected, palette.Primary.Background);
     }
 }

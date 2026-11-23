@@ -11,5 +11,6 @@
     <Compile Remove="Host/**/*.cs" />
     <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
     <InternalsVisibleTo Include="Xui.Tests.Component" />
+    <InternalsVisibleTo Include="Xui.Tests.Memory" />
   </ItemGroup>
 </Project>

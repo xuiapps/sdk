@@ -4,7 +4,7 @@ using Xui.Core.UI.Input;
 
 namespace Xui.Core.UI.Tests;
 
-public class PointerGestureNegotiationTests
+public partial class PointerGestureNegotiationTests
 {
     [Fact]
     public void CandidatesFollowTunnelOrderAndStorageIsFreshForEveryEvent()
@@ -56,38 +56,6 @@ public class PointerGestureNegotiationTests
         Assert.All(handlers, handler => Assert.Equal(handlers.Skip(4), handler.Last.Select(candidate => candidate.Handler)));
     }
 
-    [Fact]
-    public void RepeatedDispatchAndOverflowDoNotAllocateGestureStorage()
-    {
-        var root = new AllocationObserver();
-        var leaf = root;
-        for (var i = 0; i < 12; i++) { var child = new AllocationObserver(); leaf.Add(child); leaf = child; }
-        var router = new EventRouter(root);
-        for (var i = 0; i < 256; i++) Send(router);
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 256; i++) Send(router);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(0, allocated);
-        Assert.Equal(8, leaf.LastCount);
-
-        static void Send(EventRouter router)
-        {
-            var e = new TouchEventRef([new Touch { Index = 0, Phase = TouchPhase.Start, Position = (5, 5), Radius = 1 }]);
-            router.Dispatch(ref e);
-        }
-    }
-
-    private sealed class AllocationObserver : ViewCollection
-    {
-        public int LastCount;
-        public override bool HitTest(Point point) => true;
-        public override void OnPointerEvent(ref PointerEventRef e, EventPhase phase)
-        {
-            if (phase == EventPhase.Tunnel) e.PushPotentialGesture(this, PointerGestures.Drag);
-            LastCount = e.PotentialGestures.Length;
-        }
-    }
-
     private sealed class Observer : ViewCollection
     {
         public bool Advertise;
@@ -104,6 +72,23 @@ public class PointerGestureNegotiationTests
                 e.PushPotentialGesture(this, PointerGestures.Tap); // Too late; must be ignored.
                 Last = e.PotentialGestures.ToArray();
             }
+        }
+    }
+    [Fact]
+    public void RepeatedDispatchAndOverflowKeepEightCandidates()
+    {
+        var root = new AllocationObserver();
+        var leaf = root;
+        for (var i = 0; i < 12; i++) { var child = new AllocationObserver(); leaf.Add(child); leaf = child; }
+        var router = new EventRouter(root);
+        for (var i = 0; i < 256; i++) Send(router);
+        for (var i = 0; i < 256; i++) Send(router);
+        Assert.Equal(8, leaf.LastCount);
+
+        static void Send(EventRouter router)
+        {
+            var e = new TouchEventRef([new Touch { Index = 0, Phase = TouchPhase.Start, Position = (5, 5), Radius = 1 }]);
+            router.Dispatch(ref e);
         }
     }
 }

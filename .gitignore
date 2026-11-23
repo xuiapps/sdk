@@ -9,3 +9,6 @@ api/
 
 ## Generated shader files
 *.hlsl
+
+# Allocation snapshot failures are review artifacts, never approved baselines.
+*.received.txt

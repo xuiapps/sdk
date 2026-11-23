@@ -14,73 +14,6 @@ namespace Xui.Tests.Component.IOS;
 // No UIKit window or simulator is needed; portable state tests run on other hosts.
 public sealed partial class IOSDrawingContextTest
 {
-    public sealed class CoreGraphicsFactAttribute : FactAttribute
-    {
-        public CoreGraphicsFactAttribute()
-        {
-            if (!OperatingSystem.IsMacOS()) Skip = "Requires Apple's CoreGraphics framework.";
-        }
-    }
-
-    [CoreGraphicsFact]
-    public void DashReplayRestoresNativePatternAndPhaseWithoutAllocating()
-    {
-        using var bitmap = new Bitmap();
-        using IContext context = new IOSDrawingContext();
-        var ios = (IOSDrawingContext)context;
-        using var stream = new MemoryStream();
-        using var measure = new SvgDrawingContext((16, 16), stream, keepOpen: true);
-        using var scene = new RetainedCanvasContext(measure);
-        scene.BeginFrame((0, 0, 16, 16), 1);
-        scene.SetLineDash([2, 4]);
-        scene.LineDashOffset = 1;
-        scene.Save();
-        scene.SetLineDash([1, 2, 3]);
-        scene.LineDashOffset = 2;
-        scene.Save();
-        scene.SetLineDash([]);
-        scene.Restore();
-        scene.Restore();
-        // Changing only the phase after Restore must use the restored pattern.
-        scene.LineDashOffset = 5;
-        scene.EndFrame();
-
-        void Replay()
-        {
-            ios.Bind(bitmap.Handle);
-            scene.Root.Commands.Replay(context);
-            ios.Unbind();
-        }
-        for (int i = 0; i < 20; i++) Replay();
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 100; i++) Replay();
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
-
-        Stroke(bitmap.Handle);
-        using var expected = new Bitmap();
-        Span<NFloat> dashes = [2, 4];
-        CGContextRef.CGContextSetLineDash(expected.Handle, 5, ref MemoryMarshal.GetReference(dashes), 2);
-        Stroke(expected.Handle);
-        Assert.Equal(expected.Pixels(), bitmap.Pixels());
-
-        // A new native drawing pass starts solid, even when only its phase changes.
-        using var next = new Bitmap();
-        ios.Bind(next.Handle);
-        context.LineDashOffset = 3;
-        Stroke(next.Handle);
-        using var solid = new Bitmap();
-        Stroke(solid.Handle);
-        Assert.Equal(solid.Pixels(), next.Pixels());
-        Assert.False(solid.Pixels().AsSpan().SequenceEqual(expected.Pixels()));
-        ios.Unbind();
-    }
-
-    private static void Stroke(nint context)
-    {
-        CGContextRef.CGContextSetRGBStrokeColor(context, 1, 1, 1, 1);
-        CGContextRef.CGContextStrokeRect(context, new CGRect(1, 4, 14, 8));
-    }
-
     [CoreGraphicsFact]
     public void ImagesMultiplyGlobalAlphaAndRestoreItForLaterDrawing()
     {
@@ -114,35 +47,6 @@ public sealed partial class IOSDrawingContextTest
         context.DrawImage(image, (12, 0, 2, 2));
         ios.Unbind();
         Assert.Equal(255, bitmap.AlphaAt(12));
-    }
-
-    private sealed class Bitmap : IDisposable
-    {
-        internal nint Handle { get; }
-        private readonly int size;
-        internal Bitmap(int size = 16)
-        {
-            this.size = size;
-            using var space = CGColorSpaceRef.CreateDeviceRGB();
-            Handle = CGBitmapContextCreate(0, (nuint)size, (nuint)size, 8, (nuint)(size * 4), space,
-                CGBitmapInfo.ByteOrder32Little | CGBitmapInfo.AlphaPremultipliedFirst);
-            Assert.NotEqual(0, Handle);
-        }
-        internal int AlphaAt(int x)
-        {
-            // Sample the drawn column independently of Quartz's row orientation.
-            int alpha = 0;
-            for (int y = 0; y < size; y++)
-                alpha = Math.Max(alpha, Marshal.ReadByte(CGBitmapContextGetData(Handle), y * size * 4 + x * 4 + 3));
-            return alpha;
-        }
-        internal byte[] Pixels()
-        {
-            var pixels = new byte[size * size * 4];
-            Marshal.Copy(CGBitmapContextGetData(Handle), pixels, 0, pixels.Length);
-            return pixels;
-        }
-        public void Dispose() => CGContextRef.CGContextRelease(Handle);
     }
 
     [CoreGraphicsFact]
@@ -247,9 +151,54 @@ public sealed partial class IOSDrawingContextTest
         Assert.True(difference < 1500, $"Native pixel difference: {difference}");
     }
 
-    [LibraryImport(CoreGraphicsLib)]
-    private static partial nint CGBitmapContextCreate(nint data, nuint width, nuint height,
-        nuint bitsPerComponent, nuint bytesPerRow, nint colorSpace, CGBitmapInfo bitmapInfo);
-    [LibraryImport(CoreGraphicsLib)]
-    private static partial nint CGBitmapContextGetData(nint context);
+    [CoreGraphicsFact]
+    public void DashReplayRestoresNativePatternAndPhase()
+    {
+        using var bitmap = new Bitmap();
+        using IContext context = new IOSDrawingContext();
+        var ios = (IOSDrawingContext)context;
+        using var stream = new MemoryStream();
+        using var measure = new SvgDrawingContext((16, 16), stream, keepOpen: true);
+        using var scene = new RetainedCanvasContext(measure);
+        scene.BeginFrame((0, 0, 16, 16), 1);
+        scene.SetLineDash([2, 4]);
+        scene.LineDashOffset = 1;
+        scene.Save();
+        scene.SetLineDash([1, 2, 3]);
+        scene.LineDashOffset = 2;
+        scene.Save();
+        scene.SetLineDash([]);
+        scene.Restore();
+        scene.Restore();
+        // Changing only the phase after Restore must use the restored pattern.
+        scene.LineDashOffset = 5;
+        scene.EndFrame();
+
+        void Replay()
+        {
+            ios.Bind(bitmap.Handle);
+            scene.Root.Commands.Replay(context);
+            ios.Unbind();
+        }
+        for (int i = 0; i < 20; i++) Replay();
+        for (int i = 0; i < 100; i++) Replay();
+
+        Stroke(bitmap.Handle);
+        using var expected = new Bitmap();
+        Span<NFloat> dashes = [2, 4];
+        CGContextRef.CGContextSetLineDash(expected.Handle, 5, ref MemoryMarshal.GetReference(dashes), 2);
+        Stroke(expected.Handle);
+        Assert.Equal(expected.Pixels(), bitmap.Pixels());
+
+        // A new native drawing pass starts solid, even when only its phase changes.
+        using var next = new Bitmap();
+        ios.Bind(next.Handle);
+        context.LineDashOffset = 3;
+        Stroke(next.Handle);
+        using var solid = new Bitmap();
+        Stroke(solid.Handle);
+        Assert.Equal(solid.Pixels(), next.Pixels());
+        Assert.False(solid.Pixels().AsSpan().SequenceEqual(expected.Pixels()));
+        ios.Unbind();
+    }
 }

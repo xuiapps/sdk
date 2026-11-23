@@ -17,11 +17,14 @@ repository-root `AGENTS.md` first.
   multi-step scenarios without an OS window.
 - Design system suite: `Xui/Tests/Integration/DesignSystem`, within the Integration
   project. Owns palette math, retained-token
-  and allocation checks, widget invalidation, and deterministic mobile design-system
+  and palette retention checks, widget invalidation, and deterministic mobile design-system
   scenarios. SVG galleries and their README specifications live beside the tests.
 - E2E tests: `Xui/Tests/E2E`. Launch a real Debug desktop app and control it
   through the DevTools named-pipe protocol. Use only when a real platform
   process/window or DevTools behavior matters.
+- Memory tests: `Xui/Tests/Memory`. Owns allocation budgets moved out of Core,
+  Component and Integration, subprocess stdio protocol checks, and opt-in native
+  desktop/emulator frame profiling. See its README for measured boundaries.
 - Docs generators: `Xui/Tests/Docs`. These xUnit methods generate committed
   documentation figures; they are not visual-regression assertions.
 
@@ -142,6 +145,7 @@ dotnet test Xui/DevKit/ThreeD.Tests/Xui.DevKit.ThreeD.Tests.csproj
 dotnet test Xui/Tests/Component/Xui.Tests.Component.csproj
 dotnet test Xui/Tests/Integration/Xui.Tests.Integration.csproj
 dotnet test Xui/Tests/E2E/Xui.Tests.E2E.csproj
+dotnet test Xui/Tests/Memory/Xui.Tests.Memory.csproj -c Debug
 dotnet test Xui/Tests/Docs/Xui.Tests.Docs.csproj
 ```
 

@@ -36,9 +36,10 @@ Current app families:
   `EmulatorPlatform`.
 - Mobile selects `IOS` or `ANDROID` from the target framework.
 - Browser selects `BROWSER` from the WebAssembly SDK.
-- BlankApp and TestApp currently define `DEVTOOLS` for Debug desktop builds;
+- All app families define `DEVTOOLS` for Debug desktop and emulator builds;
   their `Platform.cs` wraps the selected runtime in `DevToolsPlatform`.
-  LoadTestApp, XuiSDK, and ClockApp do not currently add this middleware.
+  `--enable-stdio-jsonrpc` selects direct stdin/stdout control instead of the
+  default named-pipe transport. See `Xui/Middleware/DevTools/README.md`.
 
 Keep MSBuild conditions, project references, symbols, and the `Platform.cs`
 branches synchronized. If a common `Xui.targets` behavior changes, inspect every
