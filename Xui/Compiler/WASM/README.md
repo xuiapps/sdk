@@ -733,3 +733,9 @@ value-copy semantics; NFloat field Equals handles NaN and signed zero.
 Null comparer receivers throw managed NullReferenceException. Custom comparer
 subclasses, IEqualityComparer interface dispatch, hashing, class equality, and
 fallback ValueType.Equals remain explicitly unsupported.
+
+String equality operators, static Equals(string, string), and instance Equals(string)
+use ordinal UTF-16 equality over JavaScript strings. Static comparisons accept null;
+instance equality throws managed NullReferenceException for a null receiver.
+Object/culture-sensitive overloads remain unsupported. Calls stage string arguments
+before converting MSIL null into externref, including multiple null arguments.

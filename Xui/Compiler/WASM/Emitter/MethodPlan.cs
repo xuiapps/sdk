@@ -162,7 +162,7 @@ internal sealed partial class MethodPlan
         {
             var parameters = methods[target].Signature.Parameters;
             if (methods[target].Signature.Result.UsesGc || parameters.Any(parameter => parameter.UsesGc)) UsesGc = true;
-            if (!methods[target].Signature.HasThis && !parameters.Any(parameter => parameter.NeedsNarrowing || parameter.IsReferenceAddress)) continue;
+            if (!methods[target].Signature.HasThis && !parameters.Any(parameter => parameter.NeedsNarrowing || parameter.IsReferenceAddress || parameter.TypeCode == SignatureTypeCode.String)) continue;
             var slots = new LocalIndex[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
             {

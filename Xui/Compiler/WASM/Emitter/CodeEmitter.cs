@@ -569,6 +569,15 @@ public readonly ref partial struct CodeEmitter
                         method.RequireGcTemporaries();
                         break;
                     }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.StringEquality.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } textEquality)
+                    {
+                        method.Storage.StringEqualityEnabled = true;
+                        method.Storage.ExceptionsEnabled |= textEquality.Signature.HasThis;
+                        method.EqualityTemporaries.TryAdd(new(SignatureTypeCode.String), default);
+                        method.RequireGcTemporaries();
+                        break;
+                    }
                     if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.DefaultEquality.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } equality)
                     {

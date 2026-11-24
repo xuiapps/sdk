@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-No virtual slot for System.Object.ToString.
+The method has no managed body: System.Math.Pow.
 ```
 
 ## Dependency path
@@ -35,15 +35,15 @@ No virtual slot for System.Object.ToString.
 ```text
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
- → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel.AddExample<Xui.Apps.TestApp.BrowserCanvasExample> }
- → Method { Identity = Xui.DevKit.UI.Widgets.Button.set_Text }
- → Method { Identity = System.String.op_Equality }
- → Method { Identity = System.String.Equals }
- → Method { Identity = System.String.EqualsHelper }
- → Method { Identity = System.SpanHelpers.SequenceEqual }
- → Method { Identity = System.Runtime.CompilerServices.Unsafe.AddByteOffset<Byte> }
- → VirtualCall { Identity = System.Object.ToString }
+ → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomePage.<.ctor>b__1_0 }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.SetScrollOffset }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.UpdateTransforms }
+ → Method { Identity = Xui.Core.Animation.Easing.EaseInOutCubic }
+ → Method { Identity = System.Runtime.InteropServices.NFloat.Pow }
+ → Method { Identity = System.Double.Pow }
+ → Method { Identity = System.Math.Pow }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.
