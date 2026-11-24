@@ -106,6 +106,10 @@ public readonly ref partial struct CodeEmitter
         }
         switch (instruction.Code)
         {
+            case OpCode.Constrained:
+                _ = instruction.ReadToken(ref reader);
+                if (!method.InterpolationCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString.");
+                break;
             case OpCode.Ldind_i4: EmitLdind_i4(offset); break;
             case OpCode.Stind_i4: EmitStind_i4(offset); break;
             case OpCode.Throw: EmitThrow(offset); break;
@@ -375,6 +379,10 @@ public readonly ref partial struct CodeEmitter
                         if (element.Identity is { } elementIdentity) method.RequireGc(elementIdentity);
                     }
                     break;
+                case OpCode.Constrained:
+                    _ = instruction.ReadToken(ref reader);
+                    if (!method.InterpolationCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString.");
+                    break;
                 case OpCode.Isinst:
                 case OpCode.Castclass:
                     method.Storage.ExceptionsEnabled = true;
@@ -544,6 +552,14 @@ public readonly ref partial struct CodeEmitter
                         method.Storage.ExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.IndexOutOfRangeException);
                         method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (method.InterpolationCalls.ContainsKey(offset) || instruction.Code is OpCode.Call or OpCode.Newobj && IR.Intrinsics.InterpolatedStringHandler.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null)
+                    {
+                        method.Storage.Interpolation.Enabled = true;
+                        method.RequireGcTemporaries();
+                        foreach (string text in new[] { "True", "False" }) if (seenLiterals.Add(text)) literals.Add(text);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.TimeSpanFactory.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } duration)

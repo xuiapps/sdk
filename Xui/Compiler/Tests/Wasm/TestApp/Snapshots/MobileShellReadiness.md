@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Unsupported Newobj at IL_0023 in System.Span<Char>.Slice: Unsupported signature type: Pointer.
+Generic virtual method dispatch is not implemented: Xui.Apps.TestApp.Pages.IExampleNavigation.PushExamplePage<Xui.Apps.TestApp.Pages.Canvas.CanvasTestsExample>.
 ```
 
 ## Dependency path
@@ -37,14 +37,14 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.ShowRating }
- → Method { Identity = Xui.Apps.TestApp.MobileRatingPanel..ctor }
- → Method { Identity = System.Runtime.CompilerServices.DefaultInterpolatedStringHandler.AppendLiteral }
- → Method { Identity = System.Span<Char>.Slice }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoMenu..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoMenu.AddCanvas }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel.AddExample<Xui.Apps.TestApp.Pages.Canvas.CanvasTestsExample> }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.Pages.Canvas.CanvasTestsExample>..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.Pages.Canvas.CanvasTestsExample>.NavigateToExample }
 ```
 
-Generated event subscriptions and TimeSpan factories now pass dependency discovery. Duration conversion emits WASM tick arithmetic with managed NaN/range failures and English messages, without retaining System.SR or ResourceManager for those guards. The probe next reaches MobileRatingPanel's interpolated strings: DefaultInterpolatedStringHandler.AppendLiteral calls Span<Char>.Slice, whose pointer signature is unsupported. Static initialization, clock/services, collections, text measurement, and full event routing still require further probes.
+Generated event subscriptions and TimeSpan factories now pass dependency discovery. Duration conversion emits WASM tick arithmetic with managed NaN/range failures and English messages, without retaining System.SR or ResourceManager for those guards. The rating panel's string interpolation now uses mutable UTF-16 GC buffers and integer formatting without retaining the BCL handler body. The probe next reaches IExampleNavigation.PushExamplePage<CanvasTestsExample> from MobileDemoButton.NavigateToExample, which requires generic interface method dispatch. Static initialization, clock/services, collections, text measurement, and full event routing still require further probes.
 
 ## WAT
 

@@ -40,11 +40,14 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     private readonly Dictionary<TypeIdentity, GcShape> shapes = new();
     private readonly HashSet<TypeIdentity> flattening = new();
 
+    public InterpolationRuntime Interpolation { get; } = new();
+
     public bool ArgumentExceptionsEnabled { get; set; }
 
     public bool IsClass(TypeIdentity identity) => DelegateInfo.IsRuntimeBase(identity) || XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
     public bool IsGc(TypeIdentity identity)
     {
+        if (XuiNet.DotNet.Intrinsics.InterpolatedStringHandler.Is(identity)) return false;
         if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity)) return false;
         return IsClass(identity) || (!StackTypes.Contains(identity) && identity.Handle.Kind == HandleKind.TypeDefinition &&
             HasStackReferences(identity));
@@ -78,6 +81,14 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             var exception = new GcShape(identity);
             shapes.Add(identity, exception);
             return exception;
+        }
+        if (XuiNet.DotNet.Intrinsics.InterpolatedStringHandler.Is(identity))
+        {
+            var handler = new GcShape(identity);
+            handler.Leaves.Add(new(new(SignatureTypeCode.Object, UsesGc: true), 0));
+            handler.Leaves.Add(new(new(SignatureTypeCode.Int32), 4));
+            shapes.Add(identity, handler);
+            return handler;
         }
         if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity))
         {

@@ -31,14 +31,17 @@ The probe also supplies the implementation assembly defining IServiceProvider.
 TimeSpan's single-value factories now emit tick arithmetic and managed NaN/range
 checks with English messages, avoiding resource-manager dependencies for these guards.
 CLR/Node comparisons cover fractional ticks, integer limits, NaN, and infinities.
-The next failure is `MobileRatingPanel..ctor` →
-`DefaultInterpolatedStringHandler.AppendLiteral` → `Span<Char>.Slice`, which uses
-an unsupported pointer signature. The full application has not executed yet.
+The rating panel's interpolated strings now use compiler-owned mutable UTF-16 GC
+buffers. Strings, characters, booleans, and default integer formatting execute in
+WASM; handler bodies, ArrayPool, and pointer-based Span<char> are not retained.
+The next failure is `MobileDemoButton<CanvasTestsExample>.NavigateToExample` →
+`IExampleNavigation.PushExamplePage<CanvasTestsExample>()`: generic interface
+method dispatch is unsupported. The full application has not executed yet.
 
 The next sequence is:
 
-1. Support the interpolated strings used by the rating panel, then probe actual
-   clock operations separately from duration conversion.
+1. Specialize reachable generic interface method calls and their dispatch slots
+   for demo navigation; then probe actual clock operations separately from durations.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

@@ -12,6 +12,9 @@ public enum GcOpCode : uint
     /// <summary>Reads the array length.</summary>
     ArrayLen = 0x0f,
 
+    /// <summary>Copies a range between GC arrays, preserving packed code units.</summary>
+    ArrayCopy = 0x11,
+
     /// <summary>Tests a reference against a non-null heap type.</summary>
     RefTest = 0x14,
 

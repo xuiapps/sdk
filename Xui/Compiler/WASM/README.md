@@ -262,6 +262,26 @@ rounding boundaries, infinities, and exception messages. Composite overloads,
 formatting, parsing, and clock reads are not supplied by these intrinsics. Duration
 conversion has no JavaScript host dependency.
 
+`DefaultInterpolatedStringHandler` has a compiler-owned eight-byte stack header:
+a frame-owned GC reference slot for a mutable packed UTF-16 array, plus a character
+count. Capacity grows geometrically; appends write code units directly. Supported
+members are the two-integer constructor, AppendLiteral, single-value AppendFormatted
+for strings/chars/bools/all fixed-width integers, ToString, and ToStringAndClear.
+Integer formatting uses invariant decimal digits with exact signed/unsigned i64
+arithmetic, including MinValue/MaxValue. ToString materializes an immutable native
+JS string; ToStringAndClear also releases the handler's buffer reference. Copies
+share buffer storage but retain independent counts and reference-slot ownership.
+Normal and exceptional frame exit clears references. Allocation limits still use
+WASM allocation traps; managed OutOfMemoryException is not implemented.
+
+The handler's constrained Object.ToString call is specialized explicitly; this does
+not implement general constrained dispatch. Providers, alignment, format strings,
+floating-point/decimal/object formatting, and general char spans remain unsupported
+and fail explicitly. The BCL handler, ArrayPool, and pointer-based Span<char> code
+are not retained. [CLR/Node comparisons](../Tests/Wasm/Strings/InterpolationTests.cs)
+cover both optimization modes; [the REPL snapshot](../Tests/Wasm/Strings/Snapshots/RatingText.md)
+contains source, output, exit code, and WAT.
+
 Numeric layouts follow linked TypeRefs into their defining modules; caches and
 field maps retain module ownership. The [standalone canvas demos](../Tests/Wasm/Canvas/README.md)
 use real Rect and Color fields, execute Rect.Right from Xui.Core.dll, and expose scalar
@@ -545,7 +565,7 @@ supported operations that require no emitted bytes.
 | `volatile.` |  |  |
 | `tail.` |  |  |
 | `initobj` | `memory.fill` or `struct.set` | Clears struct storage, including null references in GC fields. |
-| `constrained.` |  |  |
+| `constrained.` | specialized call | Only interpolation handler ToString; general constrained dispatch remains unsupported. |
 | `cpblk` |  |  |
 | `initblk` |  |  |
 | `no.` |  |  |

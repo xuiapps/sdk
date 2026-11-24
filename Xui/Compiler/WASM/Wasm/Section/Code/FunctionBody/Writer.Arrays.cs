@@ -11,6 +11,9 @@ public ref partial struct Writer
     public readonly Writer ArrayGet(TypeIndex type) { body.Instruction(GcOpCode.ArrayGet).U32(type.Value); return this; }
     /// <summary>Stores the top value at the array/index below it.</summary>
     public readonly Writer ArraySet(TypeIndex type) { body.Instruction(GcOpCode.ArraySet).U32(type.Value); return this; }
+    /// <summary>Copies array elements: destination, destination index, source, source index, length.</summary>
+    public readonly Writer ArrayCopy(TypeIndex destination, TypeIndex source)
+    { body.Instruction(GcOpCode.ArrayCopy).U32(destination.Value).U32(source.Value); return this; }
     /// <summary>Reads the length of a GC array.</summary>
     public readonly Writer ArrayLen() { body.Instruction(GcOpCode.ArrayLen); return this; }
 }

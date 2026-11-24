@@ -117,6 +117,10 @@ public enum OpCode : byte
     I64Sub = 0x7d,
     /// <summary>Multiplies i64 values with wrapping arithmetic.</summary>
     I64Mul = 0x7e,
+    /// <summary>Unsigned 64-bit integer division.</summary>
+    I64DivU = 0x80,
+    /// <summary>Unsigned 64-bit integer remainder.</summary>
+    I64RemU = 0x82,
     /// <summary>Computes bitwise AND of i64 values.</summary>
     I64And = 0x83,
     /// <summary>Computes bitwise OR of i64 values.</summary>

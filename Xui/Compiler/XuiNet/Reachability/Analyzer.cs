@@ -129,6 +129,7 @@ public sealed partial class Analyzer
             throw new NotSupportedException($"Layout requires a closed resolved type: {identity}.");
         if (DelegateInfo.IsRuntimeBase(identity)) return;
         if (DelegateInfo.Is(identity)) { _ = dispatch.Resolve(identity); return; }
+        if (DotNet.Intrinsics.InterpolatedStringHandler.Is(identity)) return; // Compiler-owned buffer handle and length.
         if (DotNet.Intrinsics.SpanAccess.Is(identity)) return; // Backing and length have a compiler-owned ABI.
         var type = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
         if (!identity.IsValueType && type.Name != "<Module>") _ = dispatch.Resolve(identity);

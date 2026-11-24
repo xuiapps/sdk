@@ -110,9 +110,15 @@ managed NaN/range failures. Their English guard messages do not require BCL
 resource lookup. Separate CLR/Node tests compare integer and floating-point
 boundaries, fractional ticks, and exception behavior.
 
-The next failure is MobileRatingPanel..ctor →
-DefaultInterpolatedStringHandler.AppendLiteral → Span<Char>.Slice, whose pointer
-signature is unsupported. Next handle interpolated strings, then probe clocks,
+The rating panel's string interpolation now uses a compiler-owned mutable UTF-16
+GC buffer with string/character/boolean/integer append operations and immutable JS
+string materialization. The BCL handler's pointer-based Span<char> implementation
+is not retained. Separate CLR/Node tests cover growth, copies, nested calls, integer
+limits, Unicode, and exceptional cleanup.
+
+The next failure is MobileDemoButton<CanvasTestsExample>.NavigateToExample →
+IExampleNavigation.PushExamplePage<CanvasTestsExample>: generic interface method
+dispatch is unsupported. Next specialize those dispatch slots, then probe clocks,
 static initialization, collections, service/type lookup, text measurement/drawing,
 and the complete window/input lifecycle. This test does not claim the full
 application executes.

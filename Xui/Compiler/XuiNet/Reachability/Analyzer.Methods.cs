@@ -39,6 +39,7 @@ public sealed partial class Analyzer
             Signature(node, local, DependencyReason.Local);
 
         var graph = InstructionGraph.Read(body.Instructions);
+        var interpolationCalls = InterpolationCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
         var reachable = new HashSet<InstructionNode>();
         var pending = new Stack<InstructionNode>();
         pending.Push(graph.Entry);
@@ -78,6 +79,13 @@ public sealed partial class Analyzer
                     {
                         Add(new Dependency.Intrinsic($"Span.{span.Operation}"), node, DependencyReason.Call, offset);
                         Signature(node, span.Signature.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
+                    if ((interpolationCalls.GetValueOrDefault(offset) ?? (instruction.Code is OpCode.Call or OpCode.Newobj
+                        ? DotNet.Intrinsics.InterpolatedStringHandler.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) : null)) is { } interpolation)
+                    {
+                        Add(new Dependency.Intrinsic("Interpolation." + interpolation.Operation), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Layout(interpolation.Owner), node, DependencyReason.Layout, offset);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.TimeSpanFactory.Read(module, token) is { } duration)
@@ -137,7 +145,7 @@ public sealed partial class Analyzer
                     }
                     bool isVirtual = instruction.Code is OpCode.Callvirt or OpCode.Ldvirtftn &&
                         (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & MethodAttributes.Virtual) != 0;
-                    if (isVirtual && target.Arguments is not null) throw new NotSupportedException("Generic virtual method dispatch is not implemented.");
+                    if (isVirtual && target.Arguments is not null) throw new NotSupportedException($"Generic virtual method dispatch is not implemented: {target}.");
                     Add(isVirtual ? new Dependency.VirtualCall(target) : new Dependency.Method(target), node,
                         isVirtual ? DependencyReason.VirtualCall : DependencyReason.Call, offset);
                     if (instruction.Code == OpCode.Newobj)

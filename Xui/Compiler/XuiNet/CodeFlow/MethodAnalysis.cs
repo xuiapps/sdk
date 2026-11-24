@@ -7,10 +7,11 @@ using Model = Xui.Compiler.XuiNet.DotNet;
 namespace Xui.Compiler.XuiNet.CodeFlow;
 
 /// <summary>Applies supported MSIL stack effects using signatures, independently of any backend.</summary>
-internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body, Signature signature, Model.TypeIdentity context, GenericArguments? methodArguments = null)
+internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body, Signature signature, Model.TypeIdentity context, InstructionGraph graph, GenericArguments? methodArguments = null)
 {
     private readonly SignatureType[] locals = SignatureReader.Locals(module, body.LocalSignature, context.Arguments, methodArguments).ToArray();
     private readonly Dictionary<int, Signature> calls = new();
+    private readonly IReadOnlyDictionary<int, Model.Intrinsics.InterpolatedStringHandler> interpolationCalls = InterpolationCalls.Read(module, body, graph, context, methodArguments);
 
     public void Apply(InstructionNode node)
     {
@@ -47,6 +48,10 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 ArrayOperations.Validate(node.Code, arrayElement, explicitElement);
                 if (stored is { } item) { stack.Push(item); stack.Store(StackEntry.From(arrayElement)); }
                 else stack.Push(StackEntry.From(node.Code == OpCode.Ldelema ? arrayElement.ByReference() : arrayElement));
+                break;
+            case OpCode.Constrained:
+                _ = instruction.ReadToken(ref reader);
+                if (!interpolationCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString.");
                 break;
             case OpCode.Nop: break;
             case OpCode.Ldind_i1:
@@ -216,7 +221,9 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     if (stack.Pop().Type != StackType.ObjectReference) throw stack.Error("Object constructor requires a class receiver");
                     break;
                 }
-                var called = CallSignature(callToken);
+                var called = interpolationCalls.TryGetValue(node.Offset, out var handlerCall)
+                    ? new Signature([new SignatureType(SignatureTypeCode.TypeHandle, handlerCall.Owner, IsByReference: true)], StackEntry.From(handlerCall.Signature.Result))
+                    : CallSignature(callToken);
                 for (int i = called.Parameters.Length - 1; i >= 0; i--) stack.Store(StackEntry.From(called.Parameters[i]));
                 if (called.Result is StackEntry result) stack.Push(result);
                 break;
@@ -334,6 +341,9 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             signature = new(inline.Signature.Parameters.ToArray(), StackEntry.From(inline.Signature.Result));
         else if (Model.Intrinsics.SpanAccess.Read(module, handle, context.Arguments, methodArguments) is { } span)
             signature = new([new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters], StackEntry.From(span.Signature.Result));
+        else if (Model.Intrinsics.InterpolatedStringHandler.Read(module, handle, context.Arguments, methodArguments) is { } interpolation)
+            signature = new([new SignatureType(SignatureTypeCode.TypeHandle, interpolation.Owner, IsByReference: true), .. interpolation.Signature.Parameters],
+                interpolation.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(interpolation.Signature.Result));
         else if (Model.Intrinsics.TimeSpanFactory.Read(module, handle) is { } duration)
             signature = new(duration.Signature.Parameters.ToArray(), StackEntry.From(duration.Signature.Result));
         else if (Model.Intrinsics.ReferenceCompareExchange.Read(module, handle, context.Arguments, methodArguments) is { } exchange)

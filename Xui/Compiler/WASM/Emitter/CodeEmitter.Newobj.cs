@@ -6,6 +6,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitNewobj(Instruction.Token instruction, int offset)
     {
+        if (TryInterpolation(instruction, offset)) return;
         if (TryDelegateConstructor(instruction, offset)) return;
         if (TryExceptionMember(instruction, offset)) return;
         var callee = methods[ResolveCall(source, method.Identity, instruction.Value, offset)];

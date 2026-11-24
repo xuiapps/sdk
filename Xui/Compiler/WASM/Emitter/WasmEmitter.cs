@@ -107,8 +107,9 @@ public sealed partial class WasmEmitter
             if (storage.ArgumentExceptionsEnabled)
             {
                 stringConcatType = types.FunctionType([ExternRef, ExternRef], NonNullExternRef);
-                stringLengthType = types.FunctionType([ExternRef], I32);
             }
+            if (storage.ArgumentExceptionsEnabled || storage.Interpolation.Enabled) stringLengthType = types.FunctionType([ExternRef], I32);
+            storage.Interpolation.DefineTypes(ref types);
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
             storage.DefineReferenceAddressTypes(ref types);
@@ -140,8 +141,9 @@ public sealed partial class WasmEmitter
             if (storage.ArgumentExceptionsEnabled)
             {
                 stringConcat = imports.Function("wasm:js-string", "concat", stringConcatType);
-                stringLength = imports.Function("wasm:js-string", "length", stringLengthType);
             }
+            if (storage.ArgumentExceptionsEnabled || storage.Interpolation.Enabled) stringLength = imports.Function("wasm:js-string", "length", stringLengthType);
+            storage.Interpolation.Import(ref imports);
             importedFunctionCount = imports.FunctionCount;
         }
         finally
@@ -151,14 +153,17 @@ public sealed partial class WasmEmitter
         bool hasFrames = orderedMethods.Any(method => method.Frame is not null);
         GlobalIndex? stackPointer = null, referenceStackPointer = null;
         TableIndex? objectReferences = null, stringReferences = null;
-        using (var functions = writer.FunctionSection(importedFunctionCount))
+        var functions = writer.FunctionSection(importedFunctionCount);
+        try
         {
             foreach (var method in orderedMethods.Where(method => !method.IsDeclaration || method.IsDelegateInvoke)) method.Function = functions.Function(method.Type);
             foreach (var accessorType in storage.ReferenceAccessorTypes) storage.ReferenceAccessorFunctions.Add(functions.Function(accessorType));
             if (storage.Classes.Types.Count != 0) storage.InstanceTest = functions.Function(storage.InstanceTestType);
             foreach (var target in storage.DelegateTargets.Values) target.Function = functions.Function(target.Type);
             foreach (var helper in storage.DelegateFunctions.Values) helper.Function = functions.Function(helper.Type);
+            storage.Interpolation.Declare(ref functions);
         }
+        finally { functions.Dispose(); }
         if (storage.TableSize != 0 || storage.ReferenceSlotsEnabled)
         {
             using var table = writer.TableSection();
@@ -224,7 +229,8 @@ public sealed partial class WasmEmitter
             }
         }
         writer.DataCount((uint)literals.Count);
-        using (var code = writer.CodeSection())
+        var code = writer.CodeSection();
+        try
         {
             foreach (var method in orderedMethods.Where(method => !method.IsDeclaration || method.IsDelegateInvoke))
             {
@@ -259,7 +265,9 @@ public sealed partial class WasmEmitter
                 using var body = code.FunctionBody(helper.Locals);
                 storage.EmitDelegateHelper(body, kind);
             }
+            storage.Interpolation.Emit(ref code, runtime);
         }
+        finally { code.Dispose(); }
         using (var data = writer.DataSection())
         {
             foreach (string literal in literals)

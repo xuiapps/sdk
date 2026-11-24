@@ -22,6 +22,7 @@ internal sealed partial class StorageModel
 
     public bool HasStackReferences(TypeIdentity type)
     {
+        if (XuiNet.DotNet.Intrinsics.InterpolatedStringHandler.Is(type)) return true;
         if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(type)) return false; // Borrowed backing, no owned reference slots.
         if (stackReferenceKinds.TryGetValue(type, out bool found)) return found;
         if (type.Handle.Kind != HandleKind.TypeDefinition || !type.IsValueType || Layouts(type).Classify(type) == StorageKind.LinearMemory)
@@ -55,6 +56,7 @@ internal sealed partial class StorageModel
         void Select(TypeIdentity type)
         {
             if (!StackTypes.Add(type)) return;
+            if (XuiNet.DotNet.Intrinsics.InterpolatedStringHandler.Is(type)) return;
             if (type.Handle.Kind != HandleKind.TypeDefinition) return;
             foreach (var fieldHandle in type.Module.GetType((TypeDefinitionHandle)type.Handle).Fields)
             {
@@ -69,6 +71,11 @@ internal sealed partial class StorageModel
     public StackStructLayout StackLayout(TypeIdentity identity)
     {
         if (stackLayouts.TryGetValue(identity, out var found)) return found;
+        if (XuiNet.DotNet.Intrinsics.InterpolatedStringHandler.Is(identity))
+        {
+            ReferenceSlotsEnabled = ExceptionsEnabled = true;
+            return stackLayouts[identity] = new(8, 4, new Dictionary<FieldDefinitionHandle, FieldLayout>());
+        }
         // Spans over inline storage borrow a linear address and element count. This is
         // an emission ABI, not a claim that CLR spans have unmanaged byte layouts.
         if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity)) return stackLayouts[identity] = new(8, 4, new Dictionary<FieldDefinitionHandle, FieldLayout>());
