@@ -216,6 +216,19 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Callvirt:
             case OpCode.Call:
                 int callToken = instruction.ReadToken(ref reader).Value;
+                if (Model.Intrinsics.ArrayCopy.Read(module, MetadataTokens.EntityHandle(callToken)) is { } copy)
+                {
+                    stack.Pop(StackType.Int32);
+                    if (copy.HasIndices) stack.Pop(StackType.Int32);
+                    var destination = stack.Pop();
+                    if (copy.HasIndices) stack.Pop(StackType.Int32);
+                    var sourceArray = stack.Pop();
+                    if (sourceArray.Type is not (StackType.ArrayReference or StackType.Null) || destination.Type is not (StackType.ArrayReference or StackType.Null))
+                        throw new NotSupportedException("Array.Copy requires statically typed vectors.");
+                    if (sourceArray.DeclaredType?.Array is { } from && destination.DeclaredType?.Array is { } to && from != to)
+                        throw new NotSupportedException("Array.Copy requires the same exact vector element type.");
+                    break;
+                }
                 if (Model.WellKnownMethods.IsObjectConstructor(module, MetadataTokens.EntityHandle(callToken)))
                 {
                     if (stack.Pop().Type != StackType.ObjectReference) throw stack.Error("Object constructor requires a class receiver");

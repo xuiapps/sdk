@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Unsupported local type in System.Array.Copy: Unsupported signature type: Pointer.
+Default equality is not implemented for Xui.Core.UI.View.
 ```
 
 ## Dependency path
@@ -37,13 +37,13 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileNavigation..ctor }
- → Method { Identity = Xui.DevKit.UI.Mobile.Navigation.NavigationView..ctor }
- → VirtualCall { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Add }
- → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Add }
- → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.AddWithResize }
- → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Grow }
- → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.set_Capacity }
- → Method { Identity = System.Array.Copy }
+ → Method { Identity = Xui.DevKit.UI.Mobile.Navigation.NavigationView.set_OverlayContent }
+ → VirtualCall { Identity = Xui.Core.UI.ViewCollection.Remove }
+ → Method { Identity = Xui.Core.UI.ViewCollection.Remove }
+ → VirtualCall { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Remove }
+ → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Remove }
+ → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.IndexOf }
+ → Method { Identity = System.Array.IndexOf<Xui.Core.UI.View> }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

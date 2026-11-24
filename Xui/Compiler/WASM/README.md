@@ -739,3 +739,11 @@ use ordinal UTF-16 equality over JavaScript strings. Static comparisons accept n
 instance equality throws managed NullReferenceException for a null receiver.
 Object/culture-sensitive overloads remain unsupported. Calls stage string arguments
 before converting MSIL null into externref, including multiple null arguments.
+
+Array.Copy's int-indexed three- and five-argument overloads emit GC array.copy
+for identical, statically known vector types containing scalars or references.
+Copies preserve object identity and overlap order; null, negative-index/length,
+and capacity failures throw managed argument exceptions before mutation. Struct
+elements are explicitly rejected until copying preserves element storage aliases.
+System.Array-typed operands, covariance, element conversions, multidimensional
+arrays, and 64-bit index overloads are not supported.

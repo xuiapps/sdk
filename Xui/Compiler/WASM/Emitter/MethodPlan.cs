@@ -52,6 +52,10 @@ internal sealed partial class MethodPlan
     public Dictionary<IR.MethodIdentity, LocalIndex[]> CallTemporaries { get; } = new();
     public Dictionary<LocalVariable, (LocalIndex Left, LocalIndex Right)> EqualityTemporaries { get; } = new();
     public bool UsesArrays { get; set; }
+    public bool UsesArrayCopy { get; set; }
+    public LocalIndex CopyLength { get; private set; }
+    public LocalIndex CopySourceIndex { get; private set; }
+    public LocalIndex CopyDestinationIndex { get; private set; }
     public LocalIndex ArrayReference { get; private set; }
     public LocalIndex ArrayIndex { get; private set; }
     public Dictionary<int, LocalIndex> ReferenceLocals { get; } = new();
@@ -140,6 +144,12 @@ internal sealed partial class MethodPlan
     {
         var types = Locals.Select(local => local.WasmType).ToList();
         uint parameterCount = (uint)Signature.WasmParameterCount;
+        if (UsesArrayCopy)
+        {
+            CopyLength = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            CopySourceIndex = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            CopyDestinationIndex = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+        }
         for (int i = 0; i < Locals.Length; i++)
             if (Locals[i].IsReferenceAddress)
             {

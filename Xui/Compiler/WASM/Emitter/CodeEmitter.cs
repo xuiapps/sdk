@@ -546,6 +546,18 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ArrayCopy.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is not null)
+                    {
+                        method.UsesArrayCopy = true;
+                        method.RequireGcTemporaries();
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentNullException);
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
+                        foreach (var name in new[] { "sourceArray", "destinationArray", "sourceIndex", "destinationIndex", "length" })
+                            if (seenLiterals.Add(name)) literals.Add(name);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.MathMethod.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } math)
                     {
