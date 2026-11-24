@@ -85,7 +85,17 @@ a dedicated test executes Action<Xui.Core.Math2D.Vector>.
 Other delegate base APIs (including Equals/GetInvocationList/RemoveAll and the
 params-array Combine overload), delegate-type variance, open-instance/closed-static
 binding, and boxed value-type receivers remain unsupported. Compiler-generated
-event accessors still need their Interlocked synchronization path supported.
+event add/remove accessors execute using reference CompareExchange. The compiler
+recognizes the framework generic/object overloads and CompareExchangeObject by
+identity and signature. It reads through the managed owner/selector address,
+compares with `ref.eq`, writes only on a match, and returns the original reference.
+It never uses delegate equality or calls user Equals methods. Existing accessors
+cover object fields and frame-owned slots, including reference fields in stack
+structs. The read/compare/write sequence makes no host calls and allocates no
+objects. This implementation supports single-agent execution only; it provides no
+cross-thread atomicity or memory-ordering guarantees. Numeric Interlocked overloads
+remain unsupported. String reference CompareExchange is explicitly rejected because
+native JavaScript strings do not retain managed string object identity.
 Compiler-generated static caches for noncapturing lambdas/method groups still require
 static-field and initializer support; explicit delegate construction and capturing
 lambdas work. General `calli` and unmanaged function pointers remain unsupported.

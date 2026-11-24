@@ -80,6 +80,12 @@ public sealed partial class Analyzer
                         Signature(node, span.Signature.Result, DependencyReason.Signature, offset);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ReferenceCompareExchange.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } exchange)
+                    {
+                        Add(new Dependency.Intrinsic("Interlocked.CompareExchange.Reference"), node, DependencyReason.Call, offset);
+                        Signature(node, exchange.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.NativeFloat.TryMethod(module, token, out var nativeOperation, out _))
                     {
                         Add(new Dependency.Intrinsic($"NFloat.{nativeOperation}"), node, DependencyReason.Call, offset);

@@ -8,7 +8,7 @@ namespace Xui.Compiler.Tests.Frontend;
 /// <summary>Builds an exact-IL static int Main for stack and emission tests.</summary>
 internal static class Msil
 {
-    public static byte[] Compile(Action<InstructionEncoder> emit, SignatureTypeCode[]? locals = null, bool initLocals = true)
+    public static byte[] Compile(Action<InstructionEncoder> emit, SignatureTypeCode[]? locals = null, bool initLocals = true, Action<MetadataBuilder>? configureMetadata = null)
     {
         var metadata = new MetadataBuilder();
         metadata.AddModule(0, metadata.GetOrAddString("Graph.exe"), metadata.GetOrAddGuid(Guid.NewGuid()), default, default);
@@ -21,6 +21,7 @@ internal static class Msil
             MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
         metadata.AddTypeDefinition(TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed, default,
             metadata.GetOrAddString("Program"), objectRef, MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
+        configureMetadata?.Invoke(metadata);
         // Keep short-branch fixups within one blob in the SDK's method-body encoder.
         var code = new BlobBuilder(4096);
         var il = new InstructionEncoder(code, new ControlFlowBuilder());

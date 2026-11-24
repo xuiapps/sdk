@@ -21,20 +21,23 @@ composition. The [full-shell probe](Tests/Wasm/TestApp/Snapshots/MobileShellRead
 compiles all application dependencies as separate PEs with the real shader
 generator. Closed generic methods and reference byrefs now execute with aliasing,
 linked-call, and unwind tests, covering the SetProtectedChild pattern. The full-shell
-probe now passes `Delegate.Combine` and the `ArgumentNullException` guard in
-`View.AddProtectedChild`. Argument exceptions preserve parameter names, messages,
-and catch/type-test inheritance without traversing BCL resource lookup. The next
-failure is `ScrollView.add_ScrollChanged` → `Interlocked.CompareExchange<Action<Vector>>`
-→ `Interlocked.CompareExchangeObject`, a runtime-provided method with no MSIL body.
-Single-target and multicast delegates, captured closures, and the real
-Action<Xui.Core.Math2D.Vector> callback execute.
+probe now passes delegate combination, ArgumentNullException guards, and reference
+CompareExchange in generated event accessors. The exchange compares object identity,
+conditionally updates the existing owner/selector address, and returns the previous
+reference without host callbacks. This is a single-agent implementation; shared
+multi-threaded state and string reference identity remain unsupported.
+
+The probe now also supplies the implementation assembly defining IServiceProvider.
+Its next failure is `MobileFrameRate..ctor` → `TimeSpan.FromSeconds` → a NaN guard
+in ThrowHelper → System.SR resource lookup and an unsupported
+MissingManifestResourceException catch. This is compile-time discovery, not an
+observed NaN at runtime.
 
 The next sequence is:
 
-1. Implement reference CompareExchange through the existing owner/selector byref
-   ABI for the browser's single-agent execution model. Preserve reference identity,
-   conditional replacement, and the returned original value. Shared multi-threaded
-   managed state will need an actual synchronization design.
+1. Support the timing helpers actually used by the mobile app, beginning with
+   TimeSpan.FromSeconds and its NaN/overflow behavior, without importing the full
+   resource-manager implementation for guard messages.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

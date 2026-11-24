@@ -546,6 +546,14 @@ public readonly ref partial struct CodeEmitter
                         method.RequireGcTemporaries();
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ReferenceCompareExchange.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } exchange)
+                    {
+                        _ = method.Storage.Bind(exchange.Result);
+                        method.UsesReferenceCompareExchange = true;
+                        method.Storage.ReferenceAddressesEnabled = true;
+                        method.RequireGcTemporaries();
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.NativeFloat.TryMethod(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out var nativeOperation, out _))
                     {
                         method.UsesNativeFloat = true;

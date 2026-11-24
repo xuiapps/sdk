@@ -24,6 +24,9 @@ internal sealed partial class MethodPlan
     public MemoryFrame? Frame { get; }
     public StorageModel Storage { get; }
     public bool UsesGc { get; private set; }
+    public bool UsesReferenceCompareExchange { get; set; }
+    public LocalIndex CompareExchangeReplacement { get; private set; }
+    public LocalIndex CompareExchangeOriginal { get; private set; }
     public LocalIndex GcSource { get; private set; }
     public LocalIndex GcOwner { get; private set; }
     public LocalIndex GcI32 { get; private set; }
@@ -216,6 +219,11 @@ internal sealed partial class MethodPlan
             GcF64 = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F64);
             GcExtern = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
             if (Storage.ArgumentExceptionsEnabled) { ExceptionParamName = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef); }
+        }
+        if (UsesReferenceCompareExchange)
+        {
+            CompareExchangeReplacement = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
+            CompareExchangeOriginal = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
         }
         LocalTypes = types.ToArray();
     }

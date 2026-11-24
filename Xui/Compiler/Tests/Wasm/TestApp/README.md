@@ -98,14 +98,17 @@ probe does not package embedded font or GPU assets; the complete app will also n
 those assets supplied by the browser host. The .NET SDK's
 ASP.NET shared framework supplies the Microsoft.Extensions metadata for Core.DI.
 
-Constructing `MobileTestAppShell` now passes Delegate.Combine and the
-ArgumentNullException guard in View.AddProtectedChild during dependency discovery.
-Argument exceptions preserve parameter names, messages, and catch inheritance.
-The next failure is ScrollView.add_ScrollChanged → the generic reference
-Interlocked.CompareExchange overload → CompareExchangeObject, which has no managed
-body. It needs a compiler/runtime intrinsic through the reference-byref ABI.
-Single-target and multicast delegates and captured closures execute, including
-the actual Action<Xui.Core.Math2D.Vector> boundary. Next handle reference
-CompareExchange for the supported execution model, then probe static initialization,
-collections, service/type lookup, text measurement/drawing, and the complete
-window/input lifecycle. This test does not claim the full application executes.
+Constructing `MobileTestAppShell` now passes ArgumentNullException guards and
+reference CompareExchange in generated event accessors during dependency discovery.
+The exchange supports single-agent execution, preserving reference identity and
+the previous value through the existing managed-byref representation. Separate
+CLR/Node tests execute generated event add/remove accessors and invocation snapshots.
+The probe now includes the implementation assembly defining IServiceProvider.
+
+The next failure is MobileFrameRate..ctor → TimeSpan.FromSeconds → its NaN guard
+in ThrowHelper → System.SR resource lookup, which catches an unsupported
+MissingManifestResourceException. The app has not executed; this does not indicate
+a NaN input. Next handle timing helpers and their guard dependencies, then probe
+static initialization, collections, service/type lookup, text measurement/drawing,
+and the complete window/input lifecycle. This test does not claim the full
+application executes.
