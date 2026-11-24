@@ -21,18 +21,19 @@ composition. The [full-shell probe](Tests/Wasm/TestApp/Snapshots/MobileShellRead
 compiles all application dependencies as separate PEs with the real shader
 generator. Closed generic methods and reference byrefs now execute with aliasing,
 linked-call, and unwind tests, covering the SetProtectedChild pattern. The full-shell
-probe now advances through delegate construction and stops at
-`ScrollView.add_ScrollChanged` calling `System.Delegate.Combine`. Single-target
-delegates, captured closures, and the real Action<Xui.Core.Math2D.Vector> callback
-execute. Their runtime constructors and Invoke use a compiler-owned target/table ABI;
-plain framework object allocation is also supported.
+probe now passes `Delegate.Combine` and stops at `View.AddProtectedChild` →
+`ArgumentNullException..ctor` → `System.SR.GetResourceString`, which catches an
+unsupported `MissingManifestResourceException`. This is dependency discovery, not
+a runtime null-child failure. Single-target and multicast delegates, captured
+closures, and the real Action<Xui.Core.Math2D.Vector> callback execute. Ordered
+invocation lists support Combine/Remove, last-result semantics, and equality.
 
 The next sequence is:
 
-1. Implement multicast Combine/Remove with ordered invocation lists and .NET removal
-   semantics, then handle the synchronization used by generated event accessors.
-2. Re-run the full-shell probe; implement reachable static initialization and the
-   collections it actually uses instead of preloading the BCL.
+1. Extend the compiler's built-in exception surface for ArgumentNullException,
+   avoiding a full BCL resource-manager dependency for ordinary argument checks.
+2. Re-run the full-shell probe; handle event accessor synchronization, reachable
+   static initialization, and collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real
    RootView/EventRouter and EmulatedWindow rather than the single-view bridge.
 4. Expand the Canvas host to text measurement, text drawing, paths and clipping

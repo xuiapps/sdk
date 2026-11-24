@@ -25,7 +25,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Delegate base APIs and multicast operations are not implemented.
+Catch type is not a supported built-in exception: System.Resources.MissingManifestResourceException.
 ```
 
 ## Dependency path
@@ -34,12 +34,13 @@ Delegate base APIs and multicast operations are not implemented.
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
- → Method { Identity = Xui.Core.UI.ScrollView.add_ScrollChanged }
- → Method { Identity = System.Delegate.Combine }
+ → Method { Identity = Xui.Core.UI.View.AddProtectedChild }
+ → Method { Identity = System.ArgumentNullException..ctor }
+ → Method { Identity = System.SR.get_ArgumentNull_Generic }
+ → Method { Identity = System.SR.GetResourceString }
 ```
 
-Single-target delegates, captured closures, and the real Action<Vector> callback now execute. Dependency discovery reaches ScrollView event subscription: Delegate.Combine needs multicast invocation lists, followed by Remove and the event accessor synchronization path. Static initialization, collections, services, text measurement, and full event routing still require further probes.
+Single-target and multicast delegates, captured closures, and the real Action<Vector> callback now execute. Dependency discovery passes Delegate.Combine and reaches the ArgumentNullException constructor used by View.AddProtectedChild, which pulls in BCL resource lookup and an unsupported MissingManifestResourceException catch. This is a compile-time dependency failure, not evidence that the app passed a null child at runtime. Event accessor synchronization, static initialization, collections, services, text measurement, and full event routing still require further probes.
 
 ## WAT
 

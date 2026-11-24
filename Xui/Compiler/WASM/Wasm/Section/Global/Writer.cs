@@ -46,6 +46,15 @@ public ref struct Writer
         return new(section, type, new GlobalIndex(importedGlobalCount + count++));
     }
 
+    /// <summary>Defines an immutable eqref global containing an i32 GC array.</summary>
+    public GlobalIndex I32Array(TypeIndex arrayType, scoped ReadOnlySpan<int> values)
+    {
+        section.Byte((byte)ValueTypeCode.EqRef).Byte((byte)Mutability.Immutable);
+        foreach (int value in values) section.Instruction(OpCode.I32Const).Signed(value);
+        section.Instruction(GcOpCode.ArrayNewFixed).U32(arrayType.Value).U32((uint)values.Length).Instruction(OpCode.End);
+        return new GlobalIndex(importedGlobalCount + count++);
+    }
+
     /// <summary>Patches the global count and section length.</summary>
     public void Dispose()
     {

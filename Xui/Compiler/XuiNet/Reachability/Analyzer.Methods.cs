@@ -95,6 +95,11 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("System.Object..ctor"), node, DependencyReason.Call, offset);
                         break;
                     }
+                    if (DelegateInfo.Operation(module, token, identity) is { } delegateOperation)
+                    {
+                        Add(new Dependency.Intrinsic("Delegate." + delegateOperation), node, DependencyReason.Call, offset);
+                        break;
+                    }
                     if (DelegateInfo.Member(module, token, identity) is { } delegateMember)
                     {
                         string name = delegateMember.DeclaringType.Module.GetMethod(delegateMember.Handle).Name;
@@ -189,7 +194,7 @@ public sealed partial class Analyzer
     {
         var module = identity.DeclaringType.Module;
         var method = module.GetMethod(identity.Handle);
-        if (DelegateInfo.IsRuntimeBase(identity.DeclaringType)) throw new NotSupportedException("Delegate base APIs and multicast operations are not implemented.");
+        if (DelegateInfo.IsRuntimeBase(identity.DeclaringType)) throw new NotSupportedException("This delegate base API is not implemented.");
         if (IsOpen(identity.DeclaringType) || (method.GenericParameters.Count != (identity.Arguments?.Values.Length ?? 0)) || identity.Arguments?.ContainsGenericParameters == true)
             throw new NotSupportedException($"Method reachability requires a closed declaring type and closed method arguments: {identity}.");
         if (retainBody) UseModule(module, node);

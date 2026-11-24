@@ -40,7 +40,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     private readonly Dictionary<TypeIdentity, GcShape> shapes = new();
     private readonly HashSet<TypeIdentity> flattening = new();
 
-    public bool IsClass(TypeIdentity identity) => XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
+    public bool IsClass(TypeIdentity identity) => DelegateInfo.IsRuntimeBase(identity) || XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
     public bool IsGc(TypeIdentity identity)
     {
         if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity)) return false;
@@ -60,7 +60,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
         type = EnumInfo.Storage(type);
         if (type.Code is SignatureTypeCode.GenericTypeParameter or SignatureTypeCode.GenericMethodParameter)
             throw new NotSupportedException("Open generic parameters cannot be emitted.");
-        if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)
+        if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && !DelegateInfo.IsRuntimeBase(external) && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)
             throw new NotSupportedException($"External class storage is not implemented: {type}.");
         if (type.Array is { } array) _ = ArrayShape(array);
         return new(type.Code, type.Identity, type.IsByReference, type.Code is SignatureTypeCode.Object or SignatureTypeCode.SZArray || type.Identity is { } identity && IsGc(identity), type.Array);
@@ -92,13 +92,16 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             shapes.Add(identity, scalar);
             return scalar;
         }
-        if (DelegateInfo.Is(identity))
+        if (DelegateInfo.Is(identity) || DelegateInfo.IsRuntimeBase(identity))
         {
-            _ = Classes.Resolve(identity);
+            DelegatesEnabled = true;
+            if (!DelegateInfo.IsRuntimeBase(identity)) _ = Classes.Resolve(identity);
             var delegateShape = new GcShape(identity);
             delegateShape.Leaves.Add(new(new(SignatureTypeCode.Object, UsesGc: true), 0)); // descriptor
             delegateShape.Leaves.Add(new(new(SignatureTypeCode.Object, UsesGc: true), 0)); // target
             delegateShape.Leaves.Add(new(new(SignatureTypeCode.Int32), 0)); // callable table index
+            delegateShape.Leaves.Add(new(new(SignatureTypeCode.Int32), 0)); // canonical method
+            delegateShape.Leaves.Add(new(new(SignatureTypeCode.Object, UsesGc: true), 0)); // invocation list
             shapes.Add(identity, delegateShape);
             return delegateShape;
         }
@@ -183,13 +186,19 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             ExceptionReferenceBlock = writer.FunctionType([], ValueTypeCode.ExnRef);
             EmptyBlock = writer.FunctionType();
         }
-        if (Classes.Types.Count != 0)
+        if (Classes.Types.Count != 0 || DelegatesEnabled)
         {
             DescriptorType = writer.StructType([ValueTypeCode.I32, ValueTypeCode.EqRef, ValueTypeCode.I32,
                 WasmValue.RefNull(utf16ArrayType), ValueTypeCode.I32, ValueTypeCode.I32], Mutability.Immutable);
             ClassRoot = writer.StructType([ValueTypeCode.EqRef], extensible: true);
             InstanceTestType = writer.FunctionType([ValueTypeCode.EqRef, ValueTypeCode.EqRef], ValueTypeCode.EqRef);
             foreach (var contract in Classes.Types.Where(type => type.IsInterface)) contract.WasmType = ClassRoot;
+        }
+        if (DelegatesEnabled)
+        {
+            DelegateType = writer.StructType([ValueTypeCode.EqRef, ValueTypeCode.EqRef, ValueTypeCode.I32, ValueTypeCode.I32, ValueTypeCode.EqRef], baseType: ClassRoot);
+            DelegateListType = writer.ArrayType(ValueTypeCode.EqRef, Mutability.Mutable);
+            DelegateMethodsType = writer.ArrayType(ValueTypeCode.I32, Mutability.Immutable);
         }
         foreach (var shape in shapes.Values)
         {
@@ -202,6 +211,19 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             {
                 shape.Type = ClassRoot;
                 Classes.Resolve(shape.Identity).WasmType = ClassRoot;
+                continue;
+            }
+            if (DelegateInfo.Is(shape.Identity) || DelegateInfo.IsRuntimeBase(shape.Identity))
+            {
+                shape.Type = DelegateType;
+                if (DelegateInfo.Is(shape.Identity))
+                {
+                    var descriptor = Classes.Resolve(shape.Identity);
+                    descriptor.WasmType = DelegateType;
+                    descriptor.FieldCount = (uint)shape.Leaves.Count;
+                    descriptor.TableStart = TableSize;
+                    TableSize += (uint)Classes.InterfaceMethods.Count;
+                }
                 continue;
             }
             var fields = shape.Leaves.Select(leaf => (WasmValue)leaf.Storage.WasmType).ToArray();

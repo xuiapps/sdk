@@ -15,6 +15,7 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryDelegateOperation(instruction, offset)) return;
         if (TryInlineArrayAccess(instruction, offset)) return;
         if (TrySpanAccess(instruction, offset)) return;
         if (TryNativeFloat(instruction, offset)) return;
@@ -56,7 +57,6 @@ public readonly ref partial struct CodeEmitter
                     CheckExceptionNull();
                     var receiverType = method.Storage.Shape(arguments[0].Identity!.Value).Type;
                     writer.RefCast(receiverType);
-                    if (delegateInvoke) writer.StructGet(receiverType, new((uint)Xui.Compiler.WASM.Runtime.DelegateField.Target));
                 }
             }
         for (int i = 0; i < arguments.Length; i++)
@@ -64,8 +64,7 @@ public readonly ref partial struct CodeEmitter
         if (callee.Signature.HasResultAddress) FrameAddress(Frame.Values[offset]);
         if (delegateInvoke)
         {
-            var shape = method.Storage.Shape(target.DeclaringType);
-            writer.LocalGet(temporaries![0]).RefCast(shape.Type).StructGet(shape.Type, new((uint)Xui.Compiler.WASM.Runtime.DelegateField.Callable)).CallIndirect(callee.Type);
+            writer.Call(callee.Function);
         }
         else if (instruction.Code == OpCode.Callvirt &&
             (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & System.Reflection.MethodAttributes.Virtual) != 0)

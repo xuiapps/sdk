@@ -565,6 +565,14 @@ public readonly ref partial struct CodeEmitter
                         method.RequireGcTemporaries();
                         break;
                     }
+                    if (IR.DelegateInfo.Operation(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity) is { } delegateOperation)
+                    {
+                        method.Storage.DelegateOperations.Add(delegateOperation);
+                        method.Storage.DelegatesEnabled = true;
+                        method.Storage.ExceptionsEnabled = true;
+                        method.RequireGcTemporaries();
+                        break;
+                    }
                     if (IR.DelegateInfo.Member(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity) is { } delegateMember)
                     {
                         method.RequireGc(delegateMember.DeclaringType);

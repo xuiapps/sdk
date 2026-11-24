@@ -11,29 +11,29 @@ namespace Xui.Compiler.Tests.Wasm.Delegates;
 [Collection(nameof(ManagedConsoleCollection))]
 public class SnapshotTests
 {
-    [Fact]
-    public async Task EscapingClosuresExecuteAndSnapshot()
+    [Theory]
+    [InlineData("Closures", "15\n107\n", 122)]
+    [InlineData("Multicast", "2\n12\n4\n4\n7\n15\n15\n8\n16\n9\n", 9)]
+    public async Task DelegatesExecuteAndSnapshot(string fixture, string output, int exitCode)
     {
-        string source = File.ReadAllText(Path.Combine(Directory(), "../../Fixtures/Delegates/Closures.cs"));
+        string source = File.ReadAllText(Path.Combine(Directory(), $"../../Fixtures/Delegates/{fixture}.cs"));
         foreach (var optimization in new[] { OptimizationLevel.Release, OptimizationLevel.Debug })
         {
             byte[] pe = Frontend.Roslyn.Compile(source, optimizationLevel: optimization);
             var managed = GcTests.RunManaged(pe);
-            Assert.Equal("15\n107\n", managed.Output);
-            Assert.Equal(122, managed.ExitCode);
+            Assert.Equal(output, managed.Output);
+            Assert.Equal(exitCode, managed.ExitCode);
             byte[] wasm = GcTests.Emit(pe);
             var result = await Node.ExecuteAsync(wasm);
             Assert.Equal(managed, result);
             if (optimization == OptimizationLevel.Debug) continue;
             string wat = await WasmTools.ToWatAsync(wasm);
-            Snapshot.AssertMatches("Closures", $"""
-                # Delegates and escaping closures
+            Snapshot.AssertMatches(fixture, $"""
+                # {(fixture == "Closures" ? "Delegates and escaping closures" : "Multicast delegates")}
 
-                Source: [Closures.cs](Fixtures/Delegates/Closures.cs)
+                Source: [{fixture}.cs](Fixtures/Delegates/{fixture}.cs)
 
-                Each Create call owns a separate captured count. Its two callbacks share
-                that captured variable after Create returns. The delegate keeps the
-                compiler-generated closure object reachable through a GC reference.
+                {(fixture == "Closures" ? "Each Create call owns a separate captured count. Its two callbacks share\nthat captured variable after Create returns. The delegate keeps the\ncompiler-generated closure object reachable through a GC reference." : "Handlers run in order and the last result is returned. Removal matches\nthe last occurrence by target and method, preserving the original list.")}
 
                 ## Source
 

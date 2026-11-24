@@ -19,6 +19,9 @@ public enum OpCode : byte
     Loop = 0x03,
     /// <summary>Branches to an enclosing control label.</summary>
     Br = 0x0c,
+
+    /// <summary>Branches to a label when the i32 condition is nonzero.</summary>
+    BrIf = 0x0d,
     /// <summary>Begins a conditional block.</summary>
     If = 0x04,
     /// <summary>Begins the alternative arm of a conditional.</summary>
@@ -38,6 +41,8 @@ public enum OpCode : byte
     CallIndirect = 0x11,
     /// <summary>Discards the top value.</summary>
     Drop = 0x1a,
+    /// <summary>Selects one of two numeric values using an i32 condition.</summary>
+    Select = 0x1b,
     /// <summary>Loads a parameter or local by index.</summary>
     LocalGet = 0x20,
     /// <summary>Stores a parameter or local by index.</summary>

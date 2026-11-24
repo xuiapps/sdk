@@ -138,10 +138,11 @@ public sealed partial class WasmEmitter
         TableIndex? objectReferences = null, stringReferences = null;
         using (var functions = writer.FunctionSection(importedFunctionCount))
         {
-            foreach (var method in orderedMethods.Where(method => !method.IsDeclaration)) method.Function = functions.Function(method.Type);
+            foreach (var method in orderedMethods.Where(method => !method.IsDeclaration || method.IsDelegateInvoke)) method.Function = functions.Function(method.Type);
             foreach (var accessorType in storage.ReferenceAccessorTypes) storage.ReferenceAccessorFunctions.Add(functions.Function(accessorType));
             if (storage.Classes.Types.Count != 0) storage.InstanceTest = functions.Function(storage.InstanceTestType);
             foreach (var target in storage.DelegateTargets.Values) target.Function = functions.Function(target.Type);
+            foreach (var helper in storage.DelegateFunctions.Values) helper.Function = functions.Function(helper.Type);
         }
         if (storage.TableSize != 0 || storage.ReferenceSlotsEnabled)
         {
@@ -165,6 +166,7 @@ public sealed partial class WasmEmitter
         }
         using (var globals = writer.GlobalSection())
         {
+            if (storage.DelegatesEnabled) storage.DelegateMethodIds = globals.I32Array(storage.DelegateMethodsType, storage.DelegateTableMethods(methods));
             for (int i = 0; i < literals.Count; i++)
                 literalIndices.Add(literals[i], (new DataIndex((uint)i), globals.RefNull(ExternRef, Mutability.Mutable)));
             if (hasFrames) stackPointer = globals.I32(MemoryFrame.Start, Mutability.Mutable);
@@ -209,8 +211,14 @@ public sealed partial class WasmEmitter
         writer.DataCount((uint)literals.Count);
         using (var code = writer.CodeSection())
         {
-            foreach (var method in orderedMethods.Where(method => !method.IsDeclaration))
+            foreach (var method in orderedMethods.Where(method => !method.IsDeclaration || method.IsDelegateInvoke))
             {
+                if (method.IsDelegateInvoke)
+                {
+                    using var invoke = code.FunctionBody(storage.DelegateInvokeLocals(method));
+                    storage.EmitDelegateInvoke(invoke, method);
+                    continue;
+                }
                 using var bodyWriter = code.FunctionBody(method.LocalTypes);
                 rewriter.UseSource(method.Identity.DeclaringType.Module);
                 var emitter = new CodeEmitter(method.Identity.DeclaringType.Module, bodyWriter, literalIndices, runtime, rewriter, method, methods);
@@ -230,6 +238,11 @@ public sealed partial class WasmEmitter
             {
                 using var body = code.FunctionBody();
                 StorageModel.EmitDelegateAdapter(body, target);
+            }
+            foreach (var (kind, helper) in storage.DelegateFunctions)
+            {
+                using var body = code.FunctionBody(helper.Locals);
+                storage.EmitDelegateHelper(body, kind);
             }
         }
         using (var data = writer.DataSection())

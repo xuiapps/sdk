@@ -61,21 +61,31 @@ Immutable runtime GC descriptors contain identity, base descriptor, table start,
 UTF-16 name array, slot count, and field count. This is groundwork for a managed
 `Type` facade; `System.Type`, `GetType`, `typeof`, and reflection calls are not emitted yet.
 
-Single-target delegates use a compiler-owned GC object containing a nominal type
-descriptor, the retained target/closure reference, and a function-table index.
-`ldftn` binds a closed method through an adapter; static adapters ignore their leading
-receiver. `ldvirtftn` captures the receiver's selected virtual/interface slot.
-`Invoke` null-checks the delegate and uses `call_indirect` with the existing typed ABI,
-including reference byrefs and caller-owned struct results. Invocation allocates no
-delegate wrapper. Captured lambdas use Roslyn's generated classes, so callbacks share
-mutable captured fields and remain valid after their creating method returns.
-See the [closure execution snapshot](../Tests/Wasm/Delegates/Snapshots/Closures.md).
-Framework Action/Func definitions come from supplied implementation assemblies;
-a dedicated test executes Action<Xui.Core.Math2D.Vector>. Plain `new object()` also
-works when the framework implementation is supplied.
+Delegates use a compiler-owned GC object containing a nominal type descriptor,
+retained target/closure, callable table slot, canonical method identity, and an
+optional invocation list. `ldftn` binds a closed method through an adapter;
+`ldvirtftn` captures the selected virtual/interface implementation. Canonical method
+identity lets equality and removal match callbacks bound through different slots.
+`Invoke` null-checks and calls a generated typed loop, forwarding reference byrefs
+and caller-owned struct results. Handlers run in order; the last result is returned,
+and an exception stops the remaining calls. Each handler gets independent by-value
+struct arguments. Invocation creates no delegate wrapper or invocation list.
 
-Multicast Combine/Remove, delegate equality/base APIs, delegate-type variance,
-open-instance/closed-static binding, and boxed value-type receivers remain unsupported.
+Two-operand `Delegate.Combine` and `Remove`, and the delegate equality operators,
+are supported. Combine flattens lists; Remove removes the last matching contiguous
+sequence. Published lists stay unchanged, including during reentrant subscription
+changes. Null combinations and no-match removal reuse existing objects; a new
+multi-handler result allocates a GC array and wrapper. Different nominal delegate
+types cannot combine, even with identical signatures.
+See the [multicast execution snapshot](../Tests/Wasm/Delegates/Snapshots/Multicast.md)
+and [captured closures](../Tests/Wasm/Delegates/Snapshots/Closures.md).
+Framework Action/Func definitions come from supplied implementation assemblies;
+a dedicated test executes Action<Xui.Core.Math2D.Vector>.
+
+Other delegate base APIs (including Equals/GetInvocationList/RemoveAll and the
+params-array Combine overload), delegate-type variance, open-instance/closed-static
+binding, and boxed value-type receivers remain unsupported. Compiler-generated
+event accessors still need their Interlocked synchronization path supported.
 Compiler-generated static caches for noncapturing lambdas/method groups still require
 static-field and initializer support; explicit delegate construction and capturing
 lambdas work. General `calli` and unmanaged function pointers remain unsupported.
@@ -96,7 +106,7 @@ shows specialized fields, tables, base calls, and nominal `is`/`as` tests across
 three-level hierarchy. Reference `default(T)` via `initobj` is supported; primitive generic object operations remain unsupported. Expanding instantiations stop at a nesting depth of 32.
 
 Generic virtual methods, open generic structs, arbitrary external calls, switches, arbitrary
-jump graphs, multicast delegates, multidimensional arrays, unmanaged pointers,
+jump graphs, multidimensional arrays, unmanaged pointers,
 value-type boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage currently holds emitted class/interface references and null, not strings,
 boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies,

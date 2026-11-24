@@ -98,11 +98,13 @@ probe does not package embedded font or GPU assets; the complete app will also n
 those assets supplied by the browser host. The .NET SDK's
 ASP.NET shared framework supplies the Microsoft.Extensions metadata for Core.DI.
 
-Constructing `MobileTestAppShell` reaches `MobileHomePage`, then fails at
-`ScrollView.add_ScrollChanged` calling `System.Delegate.Combine`. Single-target
-delegates and captured closures execute, including the actual Action<Xui.Core.Math2D.Vector>
-boundary. Closed generic methods and reference byrefs cover the SetProtectedChild
-pattern. Next implement multicast Combine/Remove and event accessor synchronization,
-then continue probing static initialization,
+Constructing `MobileTestAppShell` now passes Delegate.Combine during dependency
+discovery. The next failure is View.AddProtectedChild → ArgumentNullException's
+constructor → System.SR.GetResourceString, which catches an unsupported
+MissingManifestResourceException. No app code executed to cause this failure.
+Single-target and multicast delegates and captured closures execute, including
+the actual Action<Xui.Core.Math2D.Vector> boundary. Closed generic methods and
+reference byrefs cover the SetProtectedChild pattern. Next extend built-in
+exception support, then probe event accessor synchronization, static initialization,
 collections, service/type lookup, text measurement/drawing, and the complete
 window/input lifecycle. This test does not claim the full application executes.

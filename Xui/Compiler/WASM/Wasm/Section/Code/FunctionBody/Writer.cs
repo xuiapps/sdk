@@ -76,6 +76,9 @@ public ref partial struct Writer
         return this;
     }
 
+    /// <summary>Selects the first numeric value when the condition is nonzero, otherwise the second.</summary>
+    public readonly Writer Select() { body.Instruction(OpCode.Select); return this; }
+
     /// <summary>Discards the top value.</summary>
     public readonly Writer Drop()
     {

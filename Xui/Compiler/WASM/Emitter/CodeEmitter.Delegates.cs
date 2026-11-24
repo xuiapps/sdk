@@ -33,7 +33,9 @@ public readonly ref partial struct CodeEmitter
         }
         var shape = method.Storage.Shape(constructor.DeclaringType);
         writer.GlobalGet(method.Storage.Classes.Resolve(constructor.DeclaringType).Descriptor)
-            .LocalGet(method.GcSource).LocalGet(method.GcI32).StructNew(shape.Type);
+            .LocalGet(method.GcSource).LocalGet(method.GcI32)
+            .GlobalGet(method.Storage.DelegateMethodIds).RefCast(method.Storage.DelegateMethodsType).LocalGet(method.GcI32).ArrayGet(method.Storage.DelegateMethodsType)
+            .RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef).StructNew(shape.Type);
         stack.Push(new(SignatureTypeCode.TypeHandle, constructor.DeclaringType));
         return true;
     }

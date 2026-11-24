@@ -17,7 +17,13 @@ public readonly ref partial struct CodeEmitter
         if (!IsObjectReference(value))
             throw new NotSupportedException("Class type tests currently accept only same-module class references.");
         if (throwing) writer.LocalTee(method.GcSource);
-        if (XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(target) is { } exceptionKind)
+        if (DelegateInfo.IsRuntimeBase(target))
+        {
+            writer.LocalSet(method.GcOwner).LocalGet(method.GcOwner).RefTest(method.Storage.DelegateType)
+                .If(method.Storage.ExceptionPayloadBlock).LocalGet(method.GcOwner).Else()
+                .RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef).End();
+        }
+        else if (XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(target) is { } exceptionKind)
         {
             writer.LocalSet(method.GcOwner).LocalGet(method.GcOwner).RefTest(method.Storage.ExceptionType)
                 .If(method.Storage.ExceptionPayloadBlock);

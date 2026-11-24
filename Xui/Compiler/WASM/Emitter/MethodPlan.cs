@@ -20,6 +20,7 @@ internal sealed partial class MethodPlan
     public IR.MethodBody Body { get; }
     /// <summary>Only a signature is needed: an abstract declaration or an unselected default body.</summary>
     public bool IsDeclaration { get; }
+    public bool IsDelegateInvoke => IR.DelegateInfo.Is(Identity.DeclaringType) && Identity.DeclaringType.Module.GetMethod(Handle).Name == "Invoke";
     public MemoryFrame? Frame { get; }
     public StorageModel Storage { get; }
     public bool UsesGc { get; private set; }

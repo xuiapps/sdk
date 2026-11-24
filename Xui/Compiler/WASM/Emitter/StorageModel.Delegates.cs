@@ -14,6 +14,7 @@ internal sealed partial class StorageModel
 
     public void DefineDelegateTypes(ref TypeWriter writer, IReadOnlyDictionary<MethodIdentity, MethodPlan> methods)
     {
+        DefineMulticastTypes(ref writer);
         foreach (var identity in DelegateMethods)
         {
             var method = methods[identity];
@@ -29,6 +30,7 @@ internal sealed partial class StorageModel
             target.Type = writer.FunctionType(parameters, signature.ReturnType == SignatureTypeCode.Void ? null : signature.Result.WasmType);
             DelegateTargets.Add(identity, target);
         }
+        if (methods.Values.Any(m => m.IsDelegateInvoke) && TableSize == 0) TableSize = 1;
     }
 
     public static void EmitDelegateAdapter(BodyWriter writer, DelegateTarget target)

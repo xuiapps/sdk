@@ -145,7 +145,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Isinst:
             case OpCode.Castclass:
                 var targetType = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments).Identity!.Value;
-                if ((targetType.Handle.Kind != HandleKind.TypeDefinition && Model.Exceptions.ExceptionTypes.Kind(targetType) is null) || targetType.IsValueType)
+                if ((targetType.Handle.Kind != HandleKind.TypeDefinition && !Model.DelegateInfo.IsRuntimeBase(targetType) && Model.Exceptions.ExceptionTypes.Kind(targetType) is null) || targetType.IsValueType)
                     throw new NotSupportedException("Type tests currently require same-module classes.");
                 var tested = stack.Pop();
                 if (tested.Type is not (StackType.ObjectReference or StackType.Null))

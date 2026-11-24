@@ -74,20 +74,16 @@ public class FrameworkDelegateTests
     }
 
     [Fact]
-    public void MulticastDelegatesFailExplicitly()
-    {
-        byte[] image = Frontend.Roslyn.Compile("""
-            public static class Program {
-                static void A() { }
-                static void B() { }
-                public static void Main() { var callback = new System.Action(A) + new System.Action(B); callback(); }
+    public Task FrameworkMulticastInvokesInOrder() => InlineArrayTests.AssertLinked("""
+        public static class Program {
+            static void A() { System.Console.WriteLine("A"); }
+            static void B() { System.Console.WriteLine("B"); }
+            public static int Main() {
+                var callback = new System.Action(A) + new System.Action(B);
+                callback(); callback -= new System.Action(A); callback(); return 42;
             }
-            """);
-        using var app = CanvasTests.Read(image);
-        using var framework = new Frontend.Framework();
-        _ = new Xui.Compiler.XuiNet.Compilation([app, .. framework.Assemblies]);
-        Assert.Contains("multicast", Assert.Throws<NotSupportedException>(() => new WasmEmitter().Emit(app)).Message);
-    }
+        }
+        """, "A\nB\nB\n", 42);
 
     [Fact]
     public Task StaticObjectFactoryDelegateReturnsFreshRootObjects() => InlineArrayTests.AssertLinked("""

@@ -12,6 +12,8 @@ internal static class TypeRelations
     private static bool Named(TypeIdentity source, TypeIdentity target, HashSet<(TypeIdentity, TypeIdentity)> active)
     {
         if (source == target) return true;
+        if (DelegateInfo.Is(source) && DelegateInfo.IsRuntimeBase(target)) return true;
+        if (FrameworkTypes.Is(source, "System", "MulticastDelegate") && FrameworkTypes.Is(target, "System", "Delegate")) return true;
         if (Exceptions.ExceptionTypes.Kind(source) is { } exception && Exceptions.ExceptionTypes.Kind(target) is { } targetException)
             return Exceptions.ExceptionTypes.IsAssignable(exception, targetException);
         if (source.IsValueType || target.IsValueType) return false;
