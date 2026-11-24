@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-The method has no managed body: System.Math.Pow.
+Unsupported local type in System.Array.Copy: Unsupported signature type: Pointer.
 ```
 
 ## Dependency path
@@ -36,14 +36,14 @@ The method has no managed body: System.Math.Pow.
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomePage.<.ctor>b__1_0 }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.SetScrollOffset }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.UpdateTransforms }
- → Method { Identity = Xui.Core.Animation.Easing.EaseInOutCubic }
- → Method { Identity = System.Runtime.InteropServices.NFloat.Pow }
- → Method { Identity = System.Double.Pow }
- → Method { Identity = System.Math.Pow }
+ → Method { Identity = Xui.Apps.TestApp.MobileNavigation..ctor }
+ → Method { Identity = Xui.DevKit.UI.Mobile.Navigation.NavigationView..ctor }
+ → VirtualCall { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Add }
+ → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Add }
+ → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.AddWithResize }
+ → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Grow }
+ → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.set_Capacity }
+ → Method { Identity = System.Array.Copy }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

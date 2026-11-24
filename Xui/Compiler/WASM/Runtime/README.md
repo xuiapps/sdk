@@ -20,3 +20,12 @@ Only reachable implementations on instantiated receiver types are emitted. Direc
 generic class-virtual calls remain unsupported; interface calls to generic class
 implementations are supported. Tests cover separate int/string/i64 specializations,
 struct results and byrefs, default overrides, and linked assemblies.
+
+The shared [JavaScript host source](xui-runtime.js) defines `xuiRuntimeImports`.
+Spread it into the import object when instantiating generated modules. The compiler
+imports `xui-math.pow` only when reachable code uses Math/MathF/Double/Single/NFloat
+Pow. Its IEEE identities account for the differences in JavaScript Math.pow;
+MathF and WASM32 NFloat operands/results round to f32 in generated WASM.
+Finite transcendental results depend on the host math implementation and need not
+be bit-identical across platforms. The same source is embedded for Node/standalone
+HTML hosts and linked into the playground worker's published assets.

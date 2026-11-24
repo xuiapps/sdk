@@ -1,4 +1,5 @@
 // Every run gets a fresh worker and WASM instance; stopping it preserves the compiler.
+import './xui-runtime.js';
 self.addEventListener('message', async ({ data: { id, wasm } }) => {
     let lines = 0;
     let characters = 0;
@@ -16,6 +17,7 @@ self.addEventListener('message', async ({ data: { id, wasm } }) => {
         const start = performance.now();
         const module = await WebAssembly.compile(wasm, { builtins: ['js-string'] });
         const instance = await WebAssembly.instantiate(module, {
+            ...globalThis.xuiRuntimeImports,
             xui: {
                 'console-log': value => console.log(value),
                 'console-log-boolean': value => console.log(value ? 'True' : 'False')

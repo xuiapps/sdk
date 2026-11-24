@@ -22,7 +22,7 @@ internal static class Node
         };
         start.ArgumentList.Add("--input-type=module");
         start.ArgumentList.Add("--eval");
-        start.ArgumentList.Add("""
+        start.ArgumentList.Add(Xui.Compiler.WASM.Runtime.JavaScript.Source + "\n" + """
             import { Console } from 'node:console';
             import { Writable } from 'node:stream';
             const output = [];
@@ -33,6 +33,7 @@ internal static class Node
             for await (const chunk of process.stdin) chunks.push(chunk);
             const module = await WebAssembly.compile(Buffer.concat(chunks), { builtins: ['js-string'] });
             const instance = await WebAssembly.instantiate(module, {
+                ...globalThis.xuiRuntimeImports,
                 xui: {
                     'console-log': value => hostConsole.log(value === null ? '' : typeof value === 'bigint' ? value.toString() : value),
                     'console-log-boolean': value => hostConsole.log(value ? 'True' : 'False')

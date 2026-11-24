@@ -56,6 +56,8 @@ try {
 
     await run('using System; Console.WriteLine(true); Console.WriteLine(1234567890123L); Console.WriteLine(1.25f);');
     await result('True\n1234567890123\n1.25\n', 0);
+    await run('using System; Console.WriteLine(Math.Pow(2,3)); Console.WriteLine(Math.Pow(1,double.NaN)); Console.WriteLine("abc".Equals("abc"));');
+    await result('8\n1\nTrue\n', 0);
     await run('using System;\nConsole.WriteLine( ;');
     assert.match(await page.locator('#error').innerText(), /Program.cs\(2,/);
     await run('using System; try { throw new InvalidOperationException("caught"); } catch (Exception error) { Console.WriteLine(error.Message); } finally { Console.WriteLine("cleanup"); }');

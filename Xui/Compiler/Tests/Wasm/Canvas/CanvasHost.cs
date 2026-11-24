@@ -32,11 +32,11 @@ internal static class CanvasHost
     {
         var start = new ProcessStartInfo("node") { RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
         start.ArgumentList.Add("--input-type=module"); start.ArgumentList.Add("--eval");
-        start.ArgumentList.Add((javaScript ?? JavaScript) + """
+        start.ArgumentList.Add(Xui.Compiler.WASM.Runtime.JavaScript.Source + "\n" + (javaScript ?? JavaScript) + """
             const chunks = []; for await (const chunk of process.stdin) chunks.push(chunk);
             const module = await WebAssembly.compile(Buffer.concat(chunks), { builtins: ['js-string'] });
             const commands = [];
-            const instance = await WebAssembly.instantiate(module, { canvas: canvasImports(null, commands) });
+            const instance = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasImports(null, commands) });
             const exitCode = instance.exports.main();
             process.stdout.write(JSON.stringify({ commands, exitCode }));
             """);
@@ -70,6 +70,7 @@ internal static class CanvasHost
         <p id="status" role="status">Starting…</p>
         <details><summary>C# source</summary><pre>{{WebUtility.HtmlEncode(source)}}</pre></details>
         <script>
+        {{Xui.Compiler.WASM.Runtime.JavaScript.Source}}
         {{javaScript ?? JavaScript}}
         const bytes = Uint8Array.from(atob('{{Convert.ToBase64String(wasm)}}'), c => c.charCodeAt(0));
         async function run() {
@@ -80,7 +81,7 @@ internal static class CanvasHost
                 const commands = [];
                 const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
                 const context = document.getElementById('canvas').getContext('2d');
-                const instance = await WebAssembly.instantiate(module, { canvas: canvasImports(context, commands) });
+                const instance = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasImports(context, commands) });
                 const exitCode = instance.exports.main();
                 window.demoResult = { commands, exitCode };
                 status.textContent = `Rendered ${commands.length} drawing commands · Exit code ${exitCode}`;

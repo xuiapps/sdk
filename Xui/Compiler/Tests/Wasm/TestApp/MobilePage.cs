@@ -16,6 +16,7 @@ internal static class MobilePage
         <canvas id="canvas" tabindex="0" aria-label="Xui TestApp view inside the middleware phone frame"></canvas>
         <p id="status" role="status">Compiler preview: FillRect view · drag to test input · full mobile navigation pending</p>
         <script>
+        {{Xui.Compiler.WASM.Runtime.JavaScript.Source}}
         {{ViewCanvasHost.JavaScript}}
         {{host}}
         const bytes = Uint8Array.from(atob('{{Convert.ToBase64String(wasm)}}'), c => c.charCodeAt(0));

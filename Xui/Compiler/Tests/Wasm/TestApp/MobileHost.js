@@ -4,7 +4,7 @@ async function startMobile(bytes) {
     const context = canvas.getContext('2d');
     const commands = [];
     const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
-    const { exports: api } = await WebAssembly.instantiate(module, { canvas: canvasImports(context, commands) });
+    const { exports: api } = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasImports(context, commands) });
     let session = api.Create();
     let pending = 0, disposed = false;
     const contacts = new Map();

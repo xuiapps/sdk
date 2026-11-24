@@ -43,8 +43,9 @@ The next sequence is:
 1. The browser catalogue is now injected into the real shell, separately from the
    unchanged default catalogue. Default string/scalar and typed IEquatable struct equality now execute, including
    Color and its NFloat fields. Ordinary string equality in Button also executes.
-   The next observed dependency is Math.Pow through NFloat.Pow in header easing;
-   then continue through the window and service paths.
+   Header easing now uses the shared Pow runtime. The next observed dependency is
+   Array.Copy while navigation grows its List<View>; continue through collections,
+   then the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

@@ -41,7 +41,7 @@ public class MobileTests(Xunit.Abstractions.ITestOutputHelper output)
         catch (NotSupportedException error) { foreach (System.Collections.DictionaryEntry entry in error.Data) output.WriteLine($"{entry.Key}: {entry.Value}"); throw; }
         await ExportHost.RunAsync(wasm, ViewCanvasHost.JavaScript + """
             const commands = [];
-            const { exports: api } = await WebAssembly.instantiate(module, { canvas: canvasImports(null, commands) });
+            const { exports: api } = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasImports(null, commands) });
             const session = api.Create();
             api.Frame(session, 900, 900, 0n);
             assert.equal(api.Frames(session), 1);

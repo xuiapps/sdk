@@ -68,6 +68,11 @@ public sealed partial class Analyzer
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.MathMethod.Read(module, token) is { } math)
+                    {
+                        Add(new Dependency.Intrinsic("Math." + math.Operation), node, DependencyReason.Call, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.InlineArrayAccess.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } inline)
                     {
                         Add(new Dependency.Intrinsic(inline.Operation), node, DependencyReason.Call, offset);

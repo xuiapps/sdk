@@ -76,6 +76,17 @@ public static class NativeCanvas
 }
 </pre></details>
 <script>
+// Host operations absent from core WASM. Keep this source shared by browser and Node hosts.
+globalThis.xuiRuntimeImports = Object.freeze({
+    'xui-math': Object.freeze({
+        pow(x, y) {
+            // CoreLib follows IEEE/C pow identities; ECMAScript differs for NaN and ±1.
+            if (x === 1 || y === 0 || (x === -1 && (y === Infinity || y === -Infinity))) return 1;
+            return Math.pow(x, y);
+        }
+    })
+});
+
 function canvasImports(context, commands) {
     const color = (r,g,b,a) => `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`;
     return {
@@ -102,7 +113,7 @@ async function run() {
         const commands = [];
         const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
         const context = document.getElementById('canvas').getContext('2d');
-        const instance = await WebAssembly.instantiate(module, { canvas: canvasImports(context, commands) });
+        const instance = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasImports(context, commands) });
         const exitCode = instance.exports.main();
         window.demoResult = { commands, exitCode };
         status.textContent = `Rendered ${commands.length} drawing commands · Exit code ${exitCode}`;

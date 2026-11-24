@@ -15,6 +15,7 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryMath(instruction, offset)) return;
         if (TryStringEquality(instruction, offset)) return;
         if (TryDefaultEquality(instruction, offset)) return;
         if (TryNullGuard(instruction, offset)) return;

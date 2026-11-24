@@ -111,6 +111,7 @@ public sealed partial class WasmEmitter
             if (storage.ArgumentExceptionsEnabled || storage.Interpolation.Enabled) stringLengthType = types.FunctionType([ExternRef], I32);
             if (storage.StringEqualityEnabled) stringEqualsType = types.FunctionType([ExternRef, ExternRef], I32);
             storage.Interpolation.DefineTypes(ref types);
+            storage.MathImports.DefineTypes(ref types);
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
             storage.DefineReferenceAddressTypes(ref types);
@@ -146,6 +147,7 @@ public sealed partial class WasmEmitter
             if (storage.ArgumentExceptionsEnabled || storage.Interpolation.Enabled) stringLength = imports.Function("wasm:js-string", "length", stringLengthType);
             if (storage.StringEqualityEnabled) stringEquals = imports.Function("wasm:js-string", "equals", stringEqualsType);
             storage.Interpolation.Import(ref imports);
+            storage.MathImports.Import(ref imports);
             importedFunctionCount = imports.FunctionCount;
         }
         finally

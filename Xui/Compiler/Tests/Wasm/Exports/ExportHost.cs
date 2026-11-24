@@ -13,7 +13,7 @@ internal static class ExportHost
             import assert from 'node:assert/strict';
             const chunks = []; for await (const chunk of process.stdin) chunks.push(chunk);
             const module = await WebAssembly.compile(Buffer.concat(chunks), { builtins: ['js-string'] });
-            """ + "\n" + script);
+            """ + "\n" + Xui.Compiler.WASM.Runtime.JavaScript.Source + "\n" + script);
         using var process = Process.Start(start)!;
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
         await process.StandardInput.BaseStream.WriteAsync(wasm); process.StandardInput.Close();

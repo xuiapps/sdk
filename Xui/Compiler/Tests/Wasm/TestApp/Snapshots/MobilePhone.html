@@ -11,6 +11,17 @@
 <canvas id="canvas" tabindex="0" aria-label="Xui TestApp view inside the middleware phone frame"></canvas>
 <p id="status" role="status">Compiler preview: FillRect view · drag to test input · full mobile navigation pending</p>
 <script>
+// Host operations absent from core WASM. Keep this source shared by browser and Node hosts.
+globalThis.xuiRuntimeImports = Object.freeze({
+    'xui-math': Object.freeze({
+        pow(x, y) {
+            // CoreLib follows IEEE/C pow identities; ECMAScript differs for NaN and ±1.
+            if (x === 1 || y === 0 || (x === -1 && (y === Infinity || y === -Infinity))) return 1;
+            return Math.pow(x, y);
+        }
+    })
+});
+
 function canvasImports(context, commands) {
     const color = (r,g,b,a) => `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`;
     let pathRect = [0,0,0,0];
@@ -57,7 +68,7 @@ async function startMobile(bytes) {
     const context = canvas.getContext('2d');
     const commands = [];
     const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
-    const { exports: api } = await WebAssembly.instantiate(module, { canvas: canvasImports(context, commands) });
+    const { exports: api } = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasImports(context, commands) });
     let session = api.Create();
     let pending = 0, disposed = false;
     const contacts = new Map();

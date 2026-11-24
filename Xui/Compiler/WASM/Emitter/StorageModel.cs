@@ -41,6 +41,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     private readonly HashSet<TypeIdentity> flattening = new();
 
     public InterpolationRuntime Interpolation { get; } = new();
+    public MathRuntime MathImports { get; } = new();
     public Dictionary<TypeIdentity, GlobalIndex> DefaultComparers { get; } = new();
     public bool StringEqualityEnabled { get; set; }
 
