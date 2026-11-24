@@ -14,6 +14,8 @@ public static class IndirectOperations
             OpCode.Ldind_u1 => OpCode.Ldelem_u1,
             OpCode.Ldind_i2 => OpCode.Ldelem_i2,
             OpCode.Ldind_u2 => OpCode.Ldelem_u2,
+            OpCode.Ldind_i4 => OpCode.Ldelem_i4,
+            OpCode.Stind_i4 => OpCode.Stelem_i4,
             OpCode.Ldind_u4 => OpCode.Ldelem_u4,
             OpCode.Ldind_i8 => OpCode.Ldelem_i8,
             OpCode.Ldind_i => OpCode.Ldelem_i,

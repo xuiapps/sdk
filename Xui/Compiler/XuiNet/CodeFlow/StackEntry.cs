@@ -18,6 +18,7 @@ public readonly record struct StackEntry(
         // Mutable addresses can be supplied to an in parameter; stack joins use the element type.
         if (type.IsByReference) return new(StackType.ManagedPointer, type with { IsReadOnlyByReference = false });
         if (type.Identity is { } identity && DotNet.Intrinsics.NativeFloat.Is(identity)) return StackType.Float;
+        type = DotNet.EnumInfo.Storage(type);
         return type.Code switch
         {
             SignatureTypeCode.Object => new(StackType.ObjectReference, type),

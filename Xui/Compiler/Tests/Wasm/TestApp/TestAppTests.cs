@@ -10,7 +10,7 @@ namespace Xui.Compiler.Tests.Wasm.TestApp;
 
 public class TestAppTests(ITestOutputHelper output)
 {
-    [SkippableFact]
+    [Fact]
     public async Task RealFillRectViewConstruction()
     {
         // Compile the actual TestApp files against the actual Core implementation PE.
@@ -29,7 +29,8 @@ public class TestAppTests(ITestOutputHelper output)
             public static class Program {
                 public static int Main() {
                     var view = new FillRectTest();
-                    return view == null ? 1 : 0;
+                    if (view == null) return 1;
+                    return view.WritingMode == Xui.Core.UI.WritingMode.HorizontalTB ? 0 : 2;
                 }
             }
             """;
@@ -41,31 +42,17 @@ public class TestAppTests(ITestOutputHelper output)
         using var componentModel = CanvasTests.Read(File.ReadAllBytes(typeof(IServiceProvider).Assembly.Location));
         using var collections = CanvasTests.Read(File.ReadAllBytes(Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "System.Collections.dll")));
         _ = new Xui.Compiler.XuiNet.Compilation([app, view, core, componentModel, collections, .. framework.Assemblies]);
-        string status, details;
-        Exception? unsupported = null;
-        try
-        {
-            byte[] wasm = new WasmEmitter().Emit(app);
-            var result = await Node.ExecuteAsync(wasm);
-            Assert.Equal(0, result.ExitCode);
-            status = "Construction passed. Layout, rendering, input, and the complete TestApp are not exercised by this gate.";
-            details = "```wat\n" + (await WasmTools.ToWatAsync(wasm)).TrimEnd() + "\n```";
-        }
-        // This progress snapshot also records compiler validation failures on valid
-        // Roslyn-produced IL; a changed diagnostic still requires snapshot review.
-        catch (Exception error) when (error is NotSupportedException or InvalidProgramException)
-        {
-            unsupported = error;
-            status = "Blocked during compilation. WASM was not emitted; no browser rendering is claimed.";
-            details = "```text\n" + error.GetType().FullName + ": " + error.Message + "\n```";
-        }
+        byte[] wasm = new WasmEmitter().Emit(app);
+        var result = await Node.ExecuteAsync(wasm);
+        Assert.Equal(0, result.ExitCode);
+        const string status = "Construction and the default WritingMode passed. Layout, rendering, input, and the complete TestApp are not exercised by this gate.";
+        string details = "```wat\n" + (await WasmTools.ToWatAsync(wasm)).TrimEnd() + "\n```";
         string markdown = $"# Real TestApp view: construction gate\n\n" +
             "Repository sources: `Xui/Apps/TestApp/Pages/Canvas/Tests/FillRectTest.cs` and `Xui/Apps/TestApp/Pages/Canvas/ICanvasDrawingExample.cs`.\n\n" +
             "These unchanged sources form a separate TestApp.Canvas assembly linked with the actual Xui.Core implementation and this driver. This first gate deliberately tests construction before adding the rendering host.\n\n" +
-            $"## Driver\n\n```csharp\n{driver}\n```\n\n## Status\n\n{status}\n\n## WASM / blocker\n\n{details}\n";
+            $"## Driver\n\n```csharp\n{driver}\n```\n\n## Status\n\n{status}\n\n## Exit Code\n\n```text\n{result.ExitCode}\n```\n\n## WAT\n\n{details}\n";
         output.WriteLine(markdown);
         Snapshot.AssertMatches("FillRectConstruction", markdown);
-        Skip.If(unsupported is not null, unsupported?.Message);
     }
 
     private static string SourceDirectory([CallerFilePath] string path = "") => Path.GetDirectoryName(path)!;

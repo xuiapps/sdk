@@ -482,9 +482,10 @@ the actual Core and framework implementation PEs. The [Values scene](../Tests/Wa
 uses tuple syntax in an offline browser artifact.
 
 The [real TestApp construction gate](../Tests/Wasm/TestApp/Snapshots/FillRectConstruction.md)
-has passed tuple resolution and default-interface validation. With the framework
-assemblies for `IServiceProvider` and collections supplied, it now passes array signatures and variant-interface metadata. It stops when stack analysis
-treats the `WritingMode` enum as a struct and rejects an otherwise valid integer field store. The full TestApp is still not running.
+now compiles and executes unchanged `FillRectTest`/Core construction in Node, including
+checking the initialized `WritingMode`. It supplies framework implementation PEs for
+`IServiceProvider` and collection dependencies. This is a required passing test; layout,
+rendering, input, and the full TestApp are not yet exercised by it.
 
 ## Default interface implementations
 
@@ -557,3 +558,29 @@ relations require the framework implementation PE to be supplied.
 Multiple compatible variant default candidates without an exact contract are explicitly
 unsupported. Delegate variance, generic methods, and boxed struct dispatch remain outside
 this implementation.
+
+## Enum values
+
+All eight C# enum underlying types execute through locals, arguments/results, class
+and struct fields, vectors, closed generic types, and supported inline-buffer accesses.
+`EnumInfo` reads `value__` from the PE; declared signatures, overload resolution,
+generic specialization, and array identities keep the enum's nominal identity.
+Only stack analysis and backend storage selection reduce its values to integers.
+
+| Underlying type | Linear storage | MSIL stack / WASM numeric slot |
+| --- | --- | --- |
+| `sbyte`, `byte` | 1 byte | `Int32` / `i32` |
+| `short`, `ushort` | 2 bytes | `Int32` / `i32` |
+| `int`, `uint` | 4 bytes | `Int32` / `i32` |
+| `long`, `ulong` | 8 bytes | `Int64` / `i64` |
+
+Stores truncate to the declared width; loads extend with the correct signedness.
+GC fields and vector elements currently use widened i32 slots for small integers,
+matching primitive storage in this backend. Linear struct/inline-buffer fields retain
+their exact byte sizes, offsets, and packing. Enums do not allocate struct wrappers.
+Flags bit operations, unsigned comparisons, explicit casts, and unnamed values work.
+See [enum widths](../Tests/Wasm/Enums/Snapshots/Widths.md).
+
+Enum byref parameters/locals and address-taking of scalar enum locals remain unsupported,
+as do boxing, enum-name formatting, reflection, and arbitrary System.Enum helpers.
+This milestone does not add general primitive-address or generic initobj support.

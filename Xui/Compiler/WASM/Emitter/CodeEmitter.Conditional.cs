@@ -140,10 +140,13 @@ public readonly ref partial struct CodeEmitter
     private static bool SameSourceType(MsilStackEntry left, MsilStackEntry right) =>
         left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull && left.Array == right.Array;
 
-    private static MsilStackEntry SourceEntry(StackEntry entry) => entry.Type == StackType.Null
-        ? new(SignatureTypeCode.Object) { IsNull = true } : entry.DeclaredType is { } declared
-        ? new(declared.Code, declared.Identity, declared.IsByReference, declared.Array)
-        : new(SourceType(entry.Type));
+    private static MsilStackEntry SourceEntry(StackEntry entry)
+    {
+        if (entry.Type == StackType.Null) return new(SignatureTypeCode.Object) { IsNull = true };
+        if (entry.DeclaredType is not { } declared) return new(SourceType(entry.Type));
+        declared = XuiNet.DotNet.EnumInfo.Storage(declared);
+        return new(declared.Code, declared.Identity, declared.IsByReference, declared.Array);
+    }
 
     private static SignatureTypeCode SourceType(StackType type) => type switch
     {

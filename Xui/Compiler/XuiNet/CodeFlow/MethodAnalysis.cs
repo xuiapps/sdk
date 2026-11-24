@@ -48,6 +48,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Ldind_u1:
             case OpCode.Ldind_i2:
             case OpCode.Ldind_u2:
+            case OpCode.Ldind_i4:
+            case OpCode.Stind_i4:
             case OpCode.Ldind_u4:
             case OpCode.Ldind_i8:
             case OpCode.Ldind_i:
@@ -70,15 +72,6 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 IndirectOperations.Validate(node.Code, indirectType);
                 if (indirectValue is { } storedIndirect) { stack.Push(storedIndirect); stack.Store(StackEntry.From(indirectType)); }
                 else stack.Push(StackEntry.From(indirectType));
-                break;
-            case OpCode.Stind_i4:
-                stack.Store(StackType.Int32);
-                goto case OpCode.Ldind_i4;
-            case OpCode.Ldind_i4:
-                var indirect = stack.Pop();
-                if (indirect.Type != StackType.ManagedPointer || indirect.DeclaredType?.Code is not (SignatureTypeCode.Int32 or SignatureTypeCode.UInt32))
-                    throw stack.Error("Expected an Int32/UInt32 managed address");
-                if (instruction.Code == OpCode.Ldind_i4) stack.Push(StackType.Int32);
                 break;
             case >= OpCode.Ldc_i4_m1 and <= OpCode.Ldc_i4_8:
             case OpCode.Ldc_i4:

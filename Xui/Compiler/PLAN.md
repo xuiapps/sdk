@@ -29,7 +29,7 @@ Color, string, and interface values through a stack event and interface call.
 
 Closed generic struct layouts and framework ValueTuple constructors now execute,
 including Xui's `Point point = (0, 0)` conversions. Default interface selection, arrays, and generic interface variance now execute.
-The next compiler milestone is enum stack/storage normalization.
+Enum stack/storage normalization now executes too. The next milestone is real View layout/render execution.
 The next visible host milestone is adding these scenes to the playground editor, followed by persistent
 state and frame/input exports. The current artifacts establish the canvas slice,
 not arbitrary Xui application compatibility.
@@ -39,11 +39,12 @@ not arbitrary Xui application compatibility.
 The [construction snapshot](Tests/Wasm/TestApp/Snapshots/FillRectConstruction.md) now
 compiles the unchanged `FillRectTest.cs` and `ICanvasDrawingExample.cs` from TestApp
 into a separate PE, linked with the actual Core implementation and a small driver.
-It remains inconclusive. The ValueTuple constructor in `View..ctor` now resolves into
-supplied framework implementation PEs. Default interface validation now passes. The
-probe also supplies `System.ComponentModel` for `IServiceProvider` and
-`System.Collections` for collection types. Vector storage executes in focused tests. The construction graph passes array signatures and variant-interface metadata. Stack
-analysis next mistakes `WritingMode` for a struct and rejects its valid integer field store.
+It now passes as a required regression test: the module executes in Node and checks
+the initialized `WritingMode` through the real property getter. The ValueTuple constructor
+in `View..ctor` resolves into supplied framework implementation PEs. The probe supplies
+`System.ComponentModel` for `IServiceProvider` and `System.Collections` for collection types.
+Array signatures, variant-interface metadata, and enum stack/storage normalization pass.
+Construction success does not yet establish layout, rendering, input, or full TestApp support.
 No Core/View method is replaced or silently omitted by this gate.
 
 Completed in this step:
@@ -75,8 +76,12 @@ Variance milestone: class/interface reference conversions, dispatch, casts, inhe
 and specialized default bodies execute. See [variance](Tests/Wasm/Interfaces/Snapshots/Variance.md).
 Representation-changing calls and multiple variant default candidates still fail explicitly.
 
-Next sequence: normalize enum values to their underlying integer stack/storage types,
-rerun the construction gate, then grow it to Measure/Arrange/Render with a Canvas host. Closed
+Enum milestone: all eight underlying types retain nominal signatures and exact linear
+storage widths while using integer evaluation-stack values. Signedness, flags, generic
+specializations, and arrays/inline buffers execute; the TestApp constructor gate passes.
+See [enum widths](Tests/Wasm/Enums/Snapshots/Widths.md).
+
+Next sequence: grow the successful construction gate to Measure/Arrange/Render with a Canvas host. Closed
 Nullable storage is enabled by generic layout; its callable BCL surface still needs testing.
 Static initialization, GC-field byrefs, collection methods and remaining span operations, numeric helpers, and
 persistent frame/input exports remain later gates. The full TestApp is not running yet.
@@ -223,9 +228,9 @@ The first canvas slice is complete: dependency-defined numeric structs, actual X
 geometry, a narrow NFloat policy, drawing imports, and standalone browser artifacts
 all execute with regression coverage.
 
-1. **Enum stack/storage normalization:** preserve the enum identity in metadata while
-   treating loads, stores, arguments, and results as the underlying integer type.
-   Rerun the unchanged TestApp construction gate to expose its next dependency.
+1. **Real View layout/render gate:** extend the passing unchanged `FillRectTest`
+   construction test to Measure/Arrange/Render, supplying a minimal Canvas adapter.
+   Use that dependency closure to identify the next required compiler features.
 2. **Editor integration:** supply Core to the playground compiler and replay drawing
    commands from its worker into a canvas output area.
 3. **Persistent rendering:** export frame/input entry points, retain application state,

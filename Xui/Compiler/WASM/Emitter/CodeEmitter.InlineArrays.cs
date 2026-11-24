@@ -54,7 +54,7 @@ public readonly ref partial struct CodeEmitter
         else
         {
             if (!first) writer.LocalGet(Frame.I32Scratch).I32Const(ElementSize(access.Layout.Element)).I32Mul().I32Add();
-            var element = access.Layout.Element;
+            var element = EnumInfo.Storage(access.Layout.Element);
             stack.Push(new(element.Code, element.Identity, true, element.Array));
         }
         return true;
@@ -84,7 +84,7 @@ public readonly ref partial struct CodeEmitter
             ThrowException(ExceptionKind.IndexOutOfRangeException);
             writer.End().LocalGet(Frame.AddressScratch).I32Load().LocalGet(Frame.I32Scratch)
                 .I32Const(ElementSize(access.Owner.Arguments!.Values[0])).I32Mul().I32Add();
-            var element = access.Owner.Arguments.Values[0];
+            var element = EnumInfo.Storage(access.Owner.Arguments.Values[0]);
             stack.Push(new(element.Code, element.Identity, true, element.Array));
         }
         return true;
