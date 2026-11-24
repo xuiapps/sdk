@@ -46,6 +46,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     public bool StringEqualityEnabled { get; set; }
 
     public bool ArgumentExceptionsEnabled { get; set; }
+    public bool InnerExceptionsEnabled { get; set; }
+    public uint InnerExceptionField => ArgumentExceptionsEnabled ? 3u : 2u;
 
     public bool IsClass(TypeIdentity identity) => DelegateInfo.IsRuntimeBase(identity) || XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
     public bool IsGc(TypeIdentity identity)
@@ -202,9 +204,10 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     {
         if (ExceptionsEnabled)
         {
-            ExceptionType = writer.StructType(ArgumentExceptionsEnabled
-                ? [ValueTypeCode.I32, ValueTypeCode.ExternRef, ValueTypeCode.ExternRef]
-                : [ValueTypeCode.I32, ValueTypeCode.ExternRef], Mutability.Immutable);
+            List<WasmValue> exceptionFields = [ValueTypeCode.I32, ValueTypeCode.ExternRef];
+            if (ArgumentExceptionsEnabled) exceptionFields.Add(ValueTypeCode.ExternRef);
+            if (InnerExceptionsEnabled) exceptionFields.Add(ValueTypeCode.EqRef);
+            ExceptionType = writer.StructType(exceptionFields.ToArray(), Mutability.Immutable);
             ExceptionTagType = writer.FunctionType([ValueTypeCode.EqRef]);
             ExceptionPayloadBlock = writer.FunctionType([], ValueTypeCode.EqRef);
             ExceptionCatchBlock = writer.FunctionType([], [ValueTypeCode.EqRef, ValueTypeCode.ExnRef]);

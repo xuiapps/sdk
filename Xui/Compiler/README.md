@@ -31,7 +31,8 @@ subscriptions, ArgumentNullException guards, TimeSpan factories, and the rating
 panel’s UTF-16 interpolation and generic interface dispatch for demo navigation.
 The full catalogue reaches optional Lazy/async floorplan preloading. The smaller
 browser catalogue passes equality, header easing, and navigation array operations;
-its next dependency is the generic page constructor factory. Optional preloading also needs Lazy/async support. See [PLAN.md](PLAN.md) for the remaining gates.
+generic page factories now specialize too. Its next dependency is integer ToString
+for the header frame-rate display. Optional preloading also needs Lazy/async support. See [PLAN.md](PLAN.md) for the remaining gates.
 
 Managed vectors and inline arrays now have distinct storage paths. See [array execution](Tests/Wasm/Arrays/Snapshots/Vectors.md)
 and [real Xui gradient stops](Tests/Wasm/InlineArrays/Snapshots/Gradients.md): the latter

@@ -10,7 +10,7 @@ public static class ExceptionTypes
     public static ExceptionKind? Kind(TypeIdentity type)
     {
         foreach (var kind in Enum.GetValues<ExceptionKind>())
-            if (FrameworkTypes.Is(type, "System", kind.ToString())) return kind;
+            if (FrameworkTypes.Is(type, kind == ExceptionKind.TargetInvocationException ? "System.Reflection" : "System", kind.ToString())) return kind;
         return null;
     }
 
@@ -20,7 +20,8 @@ public static class ExceptionTypes
     /// <summary>Tests the supported nominal exception hierarchy.</summary>
     public static bool IsAssignable(ExceptionKind actual, ExceptionKind target) => actual == target ||
         target == ExceptionKind.ArgumentException && actual is ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException ||
-        target == ExceptionKind.Exception || target == ExceptionKind.SystemException && actual != ExceptionKind.Exception;
+        target == ExceptionKind.ApplicationException && actual == ExceptionKind.TargetInvocationException ||
+        target == ExceptionKind.Exception || target == ExceptionKind.SystemException && actual is not (ExceptionKind.Exception or ExceptionKind.ApplicationException or ExceptionKind.TargetInvocationException);
 
     /// <summary>The default English message used when no message was supplied.</summary>
     public static string Message(ExceptionKind kind) => kind switch
@@ -35,11 +36,13 @@ public static class ExceptionTypes
         ExceptionKind.ArgumentOutOfRangeException => "Specified argument was out of the range of valid values.",
         ExceptionKind.ArgumentNullException => "Value cannot be null.",
         ExceptionKind.ArgumentException => "Value does not fall within the expected range.",
+        ExceptionKind.ApplicationException => "Error in the application.",
+        ExceptionKind.TargetInvocationException => "Exception has been thrown by the target of an invocation.",
         _ => throw new ArgumentOutOfRangeException(nameof(kind))
     };
 
     /// <summary>Whether a supported member constructs an exception.</summary>
-    public static bool IsConstructor(ExceptionMember member) => member is not (ExceptionMember.Message or ExceptionMember.ParamName);
+    public static bool IsConstructor(ExceptionMember member) => member is not (ExceptionMember.Message or ExceptionMember.ParamName or ExceptionMember.InnerException);
 
     /// <summary>Whether a member needs the parameter-name payload and message formatting.</summary>
     public static bool UsesParameterName(ExceptionMember member) => member is ExceptionMember.ParameterConstructor or
@@ -55,6 +58,11 @@ public static class ExceptionTypes
         kind = resolved;
         var signature = SignatureReader.Method(module, member.Signature);
         if (!signature.HasThis) return false;
+        if (member.Name == "get_InnerException" && signature.Parameters.Length == 0 &&
+            signature.Result.Identity is { } inner && Kind(inner) == ExceptionKind.Exception)
+        { operation = ExceptionMember.InnerException; return true; }
+        // TargetInvocationException has no default or message-only public constructors.
+        if (kind == ExceptionKind.TargetInvocationException && member.Name == ".ctor") return false;
         if (signature.Parameters.Length == 0 && signature.Result.Code == SignatureTypeCode.String)
         {
             if (member.Name == "get_Message") { operation = ExceptionMember.Message; return true; }

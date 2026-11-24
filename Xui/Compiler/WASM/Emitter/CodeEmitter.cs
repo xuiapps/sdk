@@ -546,6 +546,15 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ConstructorFactory.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } factoryConstructor)
+                    {
+                        method.RequireGc(factoryConstructor.DeclaringType);
+                        if (!method.Calls.Contains(factoryConstructor)) method.Calls.Add(factoryConstructor);
+                        method.Storage.ExceptionsEnabled = method.Storage.InnerExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.TargetInvocationException);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.ArrayCopy.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is not null)
                     {
@@ -665,6 +674,7 @@ public readonly ref partial struct CodeEmitter
                         method.Storage.ExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(exceptionKind);
                         method.Storage.ArgumentExceptionsEnabled |= IR.Exceptions.ExceptionTypes.UsesParameterName(exceptionMember);
+                        method.Storage.InnerExceptionsEnabled |= exceptionMember == IR.Exceptions.ExceptionMember.InnerException;
                         method.RequireGcTemporaries();
                         break;
                     }

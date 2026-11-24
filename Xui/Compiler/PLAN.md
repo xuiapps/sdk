@@ -45,9 +45,9 @@ The next sequence is:
    Color and its NFloat fields. Ordinary string equality in Button also executes.
    Header easing now uses the shared Pow runtime; same-type scalar/reference Array.Copy
    executes directly with overlap and managed range checks. Class default equality and Array.IndexOf now execute, including virtual Equals
-   overrides. The browser probe next reaches Activator.CreateInstance<TPage> from
-   generic navigation; specialize that constructor, then continue through the
-   window and service paths.
+   overrides. Generic page factories now select constructors at compile time and preserve
+   TargetInvocationException wrapping. The browser probe next reaches Int32.ToString
+   for the frame-rate label; then continue through the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

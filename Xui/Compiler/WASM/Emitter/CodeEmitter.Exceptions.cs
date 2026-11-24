@@ -86,10 +86,20 @@ public readonly ref partial struct CodeEmitter
     {
         if (target == ExceptionKind.Exception) { writer.I32Const(1); return; }
         writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0));
-        if (target == ExceptionKind.SystemException) writer.I32Const((int)ExceptionKind.Exception).I32Eq().I32Eqz();
+        if (target == ExceptionKind.SystemException)
+        {
+            writer.I32Const((int)ExceptionKind.Exception).I32Eq().I32Eqz();
+            foreach (var excluded in new[] { ExceptionKind.ApplicationException, ExceptionKind.TargetInvocationException })
+                if (method.Storage.ExtraExceptionKinds.Contains(excluded))
+                    writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
+                        .I32Const((int)excluded).I32Eq().I32Eqz().I32And();
+        }
         else
         {
             writer.I32Const((int)target).I32Eq();
+            if (target == ExceptionKind.ApplicationException && method.Storage.ExtraExceptionKinds.Contains(ExceptionKind.TargetInvocationException))
+                writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
+                    .I32Const((int)ExceptionKind.TargetInvocationException).I32Eq().I32Or();
             if (target == ExceptionKind.ArgumentException)
                 foreach (var derived in new[] { ExceptionKind.ArgumentNullException, ExceptionKind.ArgumentOutOfRangeException })
                     if (method.Storage.ExtraExceptionKinds.Contains(derived))
@@ -112,6 +122,7 @@ public readonly ref partial struct CodeEmitter
             EmitString(ExceptionTypes.Message(kind));
         }
         if (method.Storage.ArgumentExceptionsEnabled) writer.RefNull(ValueTypeCode.ExternRef);
+        if (method.Storage.InnerExceptionsEnabled) writer.RefNull(ValueTypeCode.EqRef);
         writer.StructNew(method.Storage.ExceptionType);
     }
 
@@ -150,8 +161,10 @@ public readonly ref partial struct CodeEmitter
         {
             _ = Pop(instruction.Code, offset);
             CheckExceptionNull();
-            writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(member == ExceptionMember.ParamName ? 2u : 1u));
-            stack.Push(new(SignatureTypeCode.String));
+            uint field = member == ExceptionMember.InnerException ? method.Storage.InnerExceptionField : member == ExceptionMember.ParamName ? 2u : 1u;
+            writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(field));
+            var signature = XuiNet.DotNet.Signatures.SignatureReader.Method(source, source.GetMemberReference((MemberReferenceHandle)token).Signature);
+            stack.Push(new(signature.Result.Code, signature.Result.Identity));
         }
         return true;
     }

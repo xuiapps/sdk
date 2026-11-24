@@ -45,6 +45,8 @@ public readonly ref partial struct CodeEmitter
         writer.Call(Runtime.StringConcat!.Value).LocalGet(method.ExceptionParamName).Call(Runtime.StringConcat.Value);
         EmitString("')");
         writer.Call(Runtime.StringConcat.Value).LocalSet(method.GcExtern).End().End();
-        writer.I32Const((int)kind).LocalGet(method.GcExtern).LocalGet(method.ExceptionParamName).StructNew(method.Storage.ExceptionType);
+        writer.I32Const((int)kind).LocalGet(method.GcExtern).LocalGet(method.ExceptionParamName);
+        if (method.Storage.InnerExceptionsEnabled) writer.RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef);
+        writer.StructNew(method.Storage.ExceptionType);
     }
 }

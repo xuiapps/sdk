@@ -755,3 +755,11 @@ and the comparer search helper execute scalar/string/class searches with managed
 argument checks, including NaN equality, nulls, and range slices. Struct-element
 search remains unsupported. The dependency graph explicitly records equality edges
 so override bodies survive tree shaking even without an ordinary callvirt instruction.
+
+Closed generic new T()/Activator.CreateInstance<T>() specialize public parameterless
+constructors of concrete named classes. Allocation initializes the normal class
+descriptor and invokes the selected constructor; no reflection cache is retained.
+Managed constructor failures are wrapped in TargetInvocationException, preserving
+InnerException and the ApplicationException hierarchy. Direct newobj still exposes
+the original exception. Value-type factories, missing/private constructors, and
+reflection-based overload selection remain unsupported.
