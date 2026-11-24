@@ -52,3 +52,6 @@ XUI_UPDATE_SNAPSHOTS=1 dotnet test Xui/Compiler/Tests/Xui.Compiler.Tests.csproj 
 ```
 
 Review command/WAT diffs and browser output before accepting updated artifacts.
+
+The browser runner also verifies the [real TestApp View demo](../TestApp/README.md),
+which executes Measure/Arrange/Render under an explicit first-frame Core profile.

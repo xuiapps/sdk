@@ -8,6 +8,26 @@ The route is a dedicated compiler sample that supplies Xui Core and the sample a
 
 The first visible frame is deliberately a **Xui canvas slice**, not a claim that arbitrary `Application`, `Window`, or `View` code works. A later acceptance gate requires the real framework lifecycle, rendering, and input paths.
 
+## Real View first frame now executes
+
+[FillRectRender](Tests/Wasm/TestApp/Snapshots/FillRectRender.html) runs the unchanged
+TestApp FillRectTest through real `View.Measure`, `Arrange`, and `Render` and draws
+five rectangles in Canvas. Debug/Release execution is compared with .NET; the
+standalone file is also checked offline in Chromium. Core, TestApp view, and driver
+remain separate input assemblies. See the [profile and limits](Tests/Wasm/TestApp/README.md).
+
+This gate explicitly uses `XUI_COMPILER_CANVAS`: instrumentation calls are omitted,
+and Font constructs equivalent default weight/stretch values instead of reading
+static fields. Normal Core behavior is unchanged. Compiler additions include
+layout NFloat helpers, init-only setter signatures, TimeSpan.Zero value loads,
+shared short-circuit tails/early-return joins, and linear struct block results.
+
+The next small milestone is persistent state: keep a View alive across exported
+resize/frame calls, then add pointer input through the real RootView/EventRouter.
+Before full TestApp navigation, address general static initialization, collections,
+text measurement/drawing, remaining Canvas operations, and Window/service setup.
+The first-frame host is intentionally incomplete and rejects unsupported operations.
+
 ## Reassessment after standalone canvas execution
 
 Reassessed on 2026-11-24. The first canvas slice now runs: [Shapes](Tests/Wasm/Canvas/Snapshots/Shapes.html),
@@ -29,7 +49,7 @@ Color, string, and interface values through a stack event and interface call.
 
 Closed generic struct layouts and framework ValueTuple constructors now execute,
 including Xui's `Point point = (0, 0)` conversions. Default interface selection, arrays, and generic interface variance now execute.
-Enum stack/storage normalization now executes too. The next milestone is real View layout/render execution.
+Enum stack/storage normalization now executes too. Real View layout/render now executes under the explicit first-frame profile described above.
 The next visible host milestone is adding these scenes to the playground editor, followed by persistent
 state and frame/input exports. The current artifacts establish the canvas slice,
 not arbitrary Xui application compatibility.

@@ -23,9 +23,18 @@ public readonly partial struct Font : IEquatable<Font>
     {
         FontFamily = fontFamily;
         FontSize = fontSize;
+#if XUI_COMPILER_CANVAS
+        // The first-frame compiler profile does not yet initialize static fields.
+        FontWeight = fontWeight ?? new FontWeight(400);
+#else
         FontWeight = fontWeight ?? FontWeight.Normal;
+#endif
         FontStyle = fontStyle ?? FontStyle.Normal;
+#if XUI_COMPILER_CANVAS
+        FontStretch = fontStretch ?? new FontStretch(100);
+#else
         FontStretch = fontStretch ?? FontStretch.Normal;
+#endif
         LineHeight = lineHeight ?? fontSize * 1.2f;
     }
 

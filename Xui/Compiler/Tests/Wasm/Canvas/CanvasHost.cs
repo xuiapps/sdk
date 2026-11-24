@@ -28,11 +28,11 @@ internal static class CanvasHost
         }
         """;
 
-    public static async Task<(string Commands, int ExitCode)> Record(byte[] wasm)
+    public static async Task<(string Commands, int ExitCode)> Record(byte[] wasm, string? javaScript = null)
     {
         var start = new ProcessStartInfo("node") { RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
         start.ArgumentList.Add("--input-type=module"); start.ArgumentList.Add("--eval");
-        start.ArgumentList.Add(JavaScript + """
+        start.ArgumentList.Add((javaScript ?? JavaScript) + """
             const chunks = []; for await (const chunk of process.stdin) chunks.push(chunk);
             const module = await WebAssembly.compile(Buffer.concat(chunks), { builtins: ['js-string'] });
             const commands = [];
@@ -48,7 +48,7 @@ internal static class CanvasHost
         return (JsonSerializer.Serialize(json.RootElement.GetProperty("commands"), new JsonSerializerOptions { WriteIndented = true }), json.RootElement.GetProperty("exitCode").GetInt32());
     }
 
-    public static string Html(string title, string source, byte[] wasm) => $$"""
+    public static string Html(string title, string source, byte[] wasm, string? javaScript = null) => $$"""
         <!doctype html>
         <html lang="en">
         <meta charset="utf-8">
@@ -70,7 +70,7 @@ internal static class CanvasHost
         <p id="status" role="status">Starting…</p>
         <details><summary>C# source</summary><pre>{{WebUtility.HtmlEncode(source)}}</pre></details>
         <script>
-        {{JavaScript}}
+        {{javaScript ?? JavaScript}}
         const bytes = Uint8Array.from(atob('{{Convert.ToBase64String(wasm)}}'), c => c.charCodeAt(0));
         async function run() {
             const button = document.getElementById('run');
