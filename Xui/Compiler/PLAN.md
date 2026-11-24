@@ -34,14 +34,14 @@ CLR/Node comparisons cover fractional ticks, integer limits, NaN, and infinities
 The rating panel's interpolated strings now use compiler-owned mutable UTF-16 GC
 buffers. Strings, characters, booleans, and default integer formatting execute in
 WASM; handler bodies, ArrayPool, and pointer-based Span<char> are not retained.
-The next failure is `MobileDemoButton<CanvasTestsExample>.NavigateToExample` →
-`IExampleNavigation.PushExamplePage<CanvasTestsExample>()`: generic interface
-method dispatch is unsupported. The full application has not executed yet.
+Closed generic interface navigation calls now have specialized dispatch slots.
+The full-menu probe next reaches optional floorplan preloading: Lazy<Task<FloorplanDrawing>>
+uses unsupported IsVolatile metadata, followed by async/resource dependencies. The full application has not executed yet.
 
 The next sequence is:
 
-1. Specialize reachable generic interface method calls and their dispatch slots
-   for demo navigation; then probe actual clock operations separately from durations.
+1. Separate optional async/GPU/resource-heavy showcases from the first browser
+   profile, then continue through the real mobile home, window, and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

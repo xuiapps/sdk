@@ -11,3 +11,12 @@ This is the foundation for a managed `Type` facade. Reflection, `GetType`, `type
 Closed generic classes carry a structurally comparable argument vector in `TypeIdentity`. `MethodIdentity` combines the declaring specialization with the PE method handle, so constructors, ordinary members, and virtual implementations receive separate bodies for each reachable argument list. Base arguments are substituted at every level; inherited fields and virtual slots retain their constructed declaring type. Override matching compares declarations in the overriding type's open context, before specialization can collapse overloads such as `F(T)` and `F(int)`. Each specialization has its own descriptor and table range, including when two specializations have structurally identical WASM layouts. The compiler-side `Type` exposes the generic definition and argument list; runtime descriptors remain nominal class descriptors. Generic reflection metadata is not yet serialized for a managed `Type.GetGenericArguments` implementation.
 
 Interface dispatch uses a shared prefix of each class table. Class mappings take precedence over default bodies; otherwise the most-specific interface implementation supplies the function. A signature-only default declaration has no emitted function until selected or called directly. Nominal descriptors also record interface membership for `is`/`as` and casts. Variance, static-abstract dispatch, and boxed/constrained receivers remain unsupported.
+
+Closed generic interface methods now allocate a distinct dispatch slot per reachable
+method argument list. Implementation selection preserves arguments through implicit,
+explicit, inherited, variant, and default interface mappings. Class overrides are
+selected before specialization without confusing hidden `new virtual` slots.
+Only reachable implementations on instantiated receiver types are emitted. Direct
+generic class-virtual calls remain unsupported; interface calls to generic class
+implementations are supported. Tests cover separate int/string/i64 specializations,
+struct results and byrefs, default overrides, and linked assemblies.

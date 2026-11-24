@@ -707,3 +707,12 @@ currently stops at `ScrollView.Content → SetProtectedChild<ScrollContent>`.
 Unused generic virtual declarations no longer prevent ordinary vtable construction;
 reachable generic method calls still reject explicitly. See the
 [readiness snapshot](../Tests/Wasm/TestApp/Snapshots/MobileShellReadiness.md).
+
+Closed generic interface methods now allocate a distinct dispatch slot per reachable
+method argument list. Implementation selection preserves arguments through implicit,
+explicit, inherited, variant, and default interface mappings. Class overrides are
+selected before specialization without confusing hidden `new virtual` slots.
+Only reachable implementations on instantiated receiver types are emitted. Direct
+generic class-virtual calls remain unsupported; interface calls to generic class
+implementations are supported. Tests cover separate int/string/i64 specializations,
+struct results and byrefs, default overrides, and linked assemblies.

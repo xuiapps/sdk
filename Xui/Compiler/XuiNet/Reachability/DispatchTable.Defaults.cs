@@ -16,8 +16,8 @@ internal sealed partial class DispatchTable
             foreach (var handle in definition.MethodImplementations)
             {
                 var mapping = module.GetMethodImplementation(handle);
-                if (MemberResolver.Method(module, mapping.Declaration, contract) == declaration)
-                    candidates.Add(MemberResolver.Method(module, mapping.Body, contract));
+                if (MemberResolver.Method(module, mapping.Declaration, contract) == (declaration with { Arguments = null }))
+                    candidates.Add(MemberResolver.Method(module, mapping.Body, contract) with { Arguments = declaration.Arguments });
             }
         }
         // Abstract overrides participate too: reabstraction must suppress a less-specific body.

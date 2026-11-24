@@ -116,9 +116,10 @@ string materialization. The BCL handler's pointer-based Span<char> implementatio
 is not retained. Separate CLR/Node tests cover growth, copies, nested calls, integer
 limits, Unicode, and exceptional cleanup.
 
-The next failure is MobileDemoButton<CanvasTestsExample>.NavigateToExample →
-IExampleNavigation.PushExamplePage<CanvasTestsExample>: generic interface method
-dispatch is unsupported. Next specialize those dispatch slots, then probe clocks,
+Generic interface navigation methods now specialize into separate dispatch slots.
+The full-menu probe next reaches IsVolatile in Lazy<Task<FloorplanDrawing>> through
+optional preload handlers. Separate optional async/resource-heavy showcases for
+the first browser profile, then continue through clocks,
 static initialization, collections, service/type lookup, text measurement/drawing,
 and the complete window/input lifecycle. This test does not claim the full
 application executes.

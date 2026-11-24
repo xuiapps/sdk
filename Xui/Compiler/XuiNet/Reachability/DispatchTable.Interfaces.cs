@@ -24,7 +24,7 @@ internal sealed partial class DispatchTable
                     if (contract != declaration.DeclaringType && contract.GenericDefinition == declaration.DeclaringType.GenericDefinition &&
                         contract.IsAssignableTo(declaration.DeclaringType))
                     {
-                        target = ClassInterfaceImplementation(owner, new(contract, declaration.Handle));
+                        target = ClassInterfaceImplementation(owner, new(contract, declaration.Handle, declaration.Arguments));
                         if (target is not null) break;
                     }
             if (target is not null) break;
@@ -32,7 +32,8 @@ internal sealed partial class DispatchTable
         if (target is { } implementation)
         {
             if ((implementation.DeclaringType.Module.GetMethod(implementation.Handle).Attributes & MethodAttributes.Virtual) != 0)
-                implementation = Resolve(type)[(int)Slot(implementation)].Implementation;
+                implementation = implementation.Arguments is not null ? GenericInterfaceOverride(type, implementation)
+                    : Resolve(type)[(int)Slot(implementation)].Implementation;
         }
         else
         {
@@ -44,7 +45,7 @@ internal sealed partial class DispatchTable
                     contract.IsAssignableTo(declaration.DeclaringType)).ToArray();
                 if (contracts.Length != 1)
                     throw new NotSupportedException($"Multiple variant default interface candidates for {declaration} on {type} are not implemented.");
-                implementation = DefaultInterfaceImplementation(type, new(contracts[0], declaration.Handle));
+                implementation = DefaultInterfaceImplementation(type, new(contracts[0], declaration.Handle, declaration.Arguments));
             }
         }
         InterfaceImplementations.Add((type, declaration), implementation);
@@ -70,8 +71,8 @@ internal sealed partial class DispatchTable
             foreach (var handle in definition.MethodImplementations)
             {
                 var mapping = type.Module.GetMethodImplementation(handle);
-                if (MemberResolver.Method(type.Module, mapping.Declaration, type) == declaration)
-                    target = MemberResolver.Method(type.Module, mapping.Body, type);
+                if (MemberResolver.Method(type.Module, mapping.Declaration, type) == (declaration with { Arguments = null }))
+                    target = MemberResolver.Method(type.Module, mapping.Body, type) with { Arguments = declaration.Arguments };
             }
             TypeIdentity? current = type, template = type.GenericDefinition;
             while (target is null && current is { Handle.Kind: HandleKind.TypeDefinition } owner && template is { } openOwner)
@@ -80,9 +81,9 @@ internal sealed partial class DispatchTable
                 {
                     var method = owner.Module.GetMethod(handle);
                     if ((method.Attributes & (MethodAttributes.MemberAccessMask | MethodAttributes.Static)) != MethodAttributes.Public) continue;
-                    if (InterfaceSignatureMatches(new(openOwner, handle), new(contract, declaration.Handle)))
+                    if (InterfaceSignatureMatches(new(openOwner, handle), new(contract, declaration.Handle, declaration.Arguments)))
                     {
-                        target = new(owner, handle);
+                        target = new(owner, handle, declaration.Arguments);
                         break;
                     }
                 }

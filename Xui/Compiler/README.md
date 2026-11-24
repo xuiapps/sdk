@@ -28,8 +28,8 @@ FillRectTest now lays out and renders in the browser phone preview. The
 [full-shell probe](Tests/Wasm/TestApp/Snapshots/MobileShellReadiness.md) supplies the
 framework assemblies for services and collections. It now passes generated event
 subscriptions, ArgumentNullException guards, TimeSpan factories, and the rating
-panel’s UTF-16 interpolation. Generic interface method dispatch for demo navigation
-is the next blocker. See [PLAN.md](PLAN.md) for the remaining gates.
+panel’s UTF-16 interpolation and generic interface dispatch for demo navigation.
+Optional floorplan preloading now reaches unsupported Lazy/async machinery. See [PLAN.md](PLAN.md) for the remaining gates.
 
 Managed vectors and inline arrays now have distinct storage paths. See [array execution](Tests/Wasm/Arrays/Snapshots/Vectors.md)
 and [real Xui gradient stops](Tests/Wasm/InlineArrays/Snapshots/Gradients.md): the latter

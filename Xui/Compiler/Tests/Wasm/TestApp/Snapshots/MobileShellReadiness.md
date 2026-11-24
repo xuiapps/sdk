@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Generic virtual method dispatch is not implemented: Xui.Apps.TestApp.Pages.IExampleNavigation.PushExamplePage<Xui.Apps.TestApp.Pages.Canvas.CanvasTestsExample>.
+Required signature modifier is not implemented: System.Runtime.CompilerServices.IsVolatile.
 ```
 
 ## Dependency path
@@ -38,13 +38,13 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileDemoMenu..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoMenu.AddCanvas }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel.AddExample<Xui.Apps.TestApp.Pages.Canvas.CanvasTestsExample> }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.Pages.Canvas.CanvasTestsExample>..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.Pages.Canvas.CanvasTestsExample>.NavigateToExample }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoMenu.AddPerformance }
+ → Method { Identity = Xui.Apps.TestApp.Pages.Floorplan.FloorplanDrawing.Preload }
+ → Method { Identity = Xui.Apps.TestApp.Pages.Floorplan.FloorplanDrawing.LoadSharedAsync }
+ → Method { Identity = System.Lazy<System.Threading.Tasks.Task<Xui.Apps.TestApp.Pages.Floorplan.FloorplanDrawing>>.get_Value }
 ```
 
-Generated event subscriptions and TimeSpan factories now pass dependency discovery. Duration conversion emits WASM tick arithmetic with managed NaN/range failures and English messages, without retaining System.SR or ResourceManager for those guards. The rating panel's string interpolation now uses mutable UTF-16 GC buffers and integer formatting without retaining the BCL handler body. The probe next reaches IExampleNavigation.PushExamplePage<CanvasTestsExample> from MobileDemoButton.NavigateToExample, which requires generic interface method dispatch. Static initialization, clock/services, collections, text measurement, and full event routing still require further probes.
+Generated event subscriptions and TimeSpan factories now pass dependency discovery. Duration conversion emits WASM tick arithmetic with managed NaN/range failures and English messages, without retaining System.SR or ResourceManager for those guards. The rating panel's string interpolation now uses mutable UTF-16 GC buffers and integer formatting without retaining the BCL handler body. Closed generic interface methods now specialize their implementations and use distinct dispatch slots, including the demo navigation call. The next blocker is IsVolatile metadata in Lazy<Task<FloorplanDrawing>>, reached by optional floorplan preloading. Static initialization, clock/services, collections, text measurement, and full event routing still require further probes.
 
 ## WAT
 

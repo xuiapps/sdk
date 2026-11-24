@@ -27,7 +27,7 @@ public sealed partial class Analyzer
 
     /// <summary>Expands mixed roots and follows their dependencies to a fixed point.</summary>
     /// <remarks>Resolves members in the supplied compilation and closed generic types and methods. Unknown external calls,
-    /// generic virtual calls, and exception filters fail explicitly. Generic argument identities retain
+    /// generic class-virtual calls, and exception filters fail explicitly. Generic argument identities retain
     /// their existing nesting bound to reject expanding generic recursion.</remarks>
     public static DependencyGraph Analyze(IEnumerable<Root> roots, InstructionRewriter? rewrite = null)
     {

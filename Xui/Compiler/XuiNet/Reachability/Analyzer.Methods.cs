@@ -145,7 +145,7 @@ public sealed partial class Analyzer
                     }
                     bool isVirtual = instruction.Code is OpCode.Callvirt or OpCode.Ldvirtftn &&
                         (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & MethodAttributes.Virtual) != 0;
-                    if (isVirtual && target.Arguments is not null) throw new NotSupportedException($"Generic virtual method dispatch is not implemented: {target}.");
+                    if (isVirtual && target.Arguments is not null && !target.DeclaringType.IsInterface) throw new NotSupportedException($"Generic virtual method dispatch is not implemented: {target}.");
                     Add(isVirtual ? new Dependency.VirtualCall(target) : new Dependency.Method(target), node,
                         isVirtual ? DependencyReason.VirtualCall : DependencyReason.Call, offset);
                     if (instruction.Code == OpCode.Newobj)

@@ -54,8 +54,8 @@ internal sealed partial class DispatchTable
             {
                 var method = module.GetMethod(handle);
                 if ((method.Attributes & MethodAttributes.Virtual) == 0) continue;
-                // Unsupported generic methods must not root otherwise unused bodies.
-                // A reachable generic call still rejects when its signature is read.
+                // Generic interface calls specialize their selected implementations separately.
+                // Unused generic templates do not occupy class slots.
                 if (method.GenericParameters.Count != 0) continue;
                 var specialized = new MethodIdentity(identity, handle);
                 if (!SignatureReader.Method(module, method.Signature, identity.Arguments).HasThis)
@@ -91,7 +91,7 @@ internal sealed partial class DispatchTable
         var module = a.DeclaringType.Module;
         var left = module.GetMethod(a.Handle);
         var right = b.DeclaringType.Module.GetMethod(b.Handle);
-        if (left.Name != right.Name) return false;
+        if (left.Name != right.Name || left.GenericParameters.Count != right.GenericParameters.Count) return false;
         // Match templates first: F(T) and F(int) must not collapse when T becomes int.
         var parent = a.DeclaringType.GenericDefinition.BaseType;
         while (parent is { } current && current.GenericDefinition != b.DeclaringType.GenericDefinition) parent = current.BaseType;
