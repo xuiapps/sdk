@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Catch type is not a supported built-in exception: System.Resources.MissingManifestResourceException.
+Unsupported Newobj at IL_0023 in System.Span<Char>.Slice: Unsupported signature type: Pointer.
 ```
 
 ## Dependency path
@@ -35,16 +35,16 @@ Catch type is not a supported built-in exception: System.Resources.MissingManife
 ```text
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
- → Method { Identity = Xui.Apps.TestApp.MobilePerformanceMetrics..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileFrameRate..ctor }
- → Method { Identity = System.TimeSpan.FromSeconds }
- → Method { Identity = System.TimeSpan.Interval }
- → Method { Identity = System.ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN }
- → Method { Identity = System.SR.get_Arg_CannotBeNaN }
- → Method { Identity = System.SR.GetResourceString }
+ → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.ShowRating }
+ → Method { Identity = Xui.Apps.TestApp.MobileRatingPanel..ctor }
+ → Method { Identity = System.Runtime.CompilerServices.DefaultInterpolatedStringHandler.AppendLiteral }
+ → Method { Identity = System.Span<Char>.Slice }
 ```
 
-Generated event subscriptions now execute using reference CompareExchange in the single-agent runtime. The probe also supplies IServiceProvider's implementation assembly. Dependency discovery next reaches MobileFrameRate's TimeSpan.FromSeconds call: its NaN guard pulls in System.SR resource lookup and an unsupported MissingManifestResourceException catch. This is dependency discovery, not a runtime NaN failure. Static initialization, timing/services, collections, text measurement, and full event routing still require further probes.
+Generated event subscriptions and TimeSpan factories now pass dependency discovery. Duration conversion emits WASM tick arithmetic with managed NaN/range failures and English messages, without retaining System.SR or ResourceManager for those guards. The probe next reaches MobileRatingPanel's interpolated strings: DefaultInterpolatedStringHandler.AppendLiteral calls Span<Char>.Slice, whose pointer signature is unsupported. Static initialization, clock/services, collections, text measurement, and full event routing still require further probes.
 
 ## WAT
 

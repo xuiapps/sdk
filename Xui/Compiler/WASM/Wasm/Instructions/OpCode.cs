@@ -173,6 +173,8 @@ public enum OpCode : byte
     I64ExtendI32S = 0xac,
     /// <summary>Zero-extends i32 to i64.</summary>
     I64ExtendI32U = 0xad,
+    /// <summary>Truncates f64 toward zero to signed i64; traps on NaN or overflow.</summary>
+    I64TruncF64S = 0xb0,
     /// <summary>Converts signed i32 to f32.</summary>
     F32ConvertI32S = 0xb2,
     /// <summary>Converts signed i64 directly to f32.</summary>

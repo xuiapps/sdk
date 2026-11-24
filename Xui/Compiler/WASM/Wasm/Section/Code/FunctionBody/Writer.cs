@@ -369,6 +369,9 @@ public ref partial struct Writer
         return this;
     }
 
+    /// <summary>Truncates f64 toward zero to signed i64; callers must guard NaN and out-of-range values to avoid traps.</summary>
+    public readonly Writer I64TruncF64S() { body.Instruction(OpCode.I64TruncF64S); return this; }
+
     /// <summary>Converts signed i32 to f32.</summary>
     public readonly Writer F32ConvertI32S()
     {

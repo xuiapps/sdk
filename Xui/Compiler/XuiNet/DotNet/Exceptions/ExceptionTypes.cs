@@ -19,7 +19,7 @@ public static class ExceptionTypes
 
     /// <summary>Tests the supported nominal exception hierarchy.</summary>
     public static bool IsAssignable(ExceptionKind actual, ExceptionKind target) => actual == target ||
-        target == ExceptionKind.ArgumentException && actual == ExceptionKind.ArgumentNullException ||
+        target == ExceptionKind.ArgumentException && actual is ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException ||
         target == ExceptionKind.Exception || target == ExceptionKind.SystemException && actual != ExceptionKind.Exception;
 
     /// <summary>The default English message used when no message was supplied.</summary>
@@ -32,6 +32,7 @@ public static class ExceptionTypes
         ExceptionKind.InvalidOperationException => "Operation is not valid due to the current state of the object.",
         ExceptionKind.IndexOutOfRangeException => "Index was outside the bounds of the array.",
         ExceptionKind.OverflowException => "Arithmetic operation resulted in an overflow.",
+        ExceptionKind.ArgumentOutOfRangeException => "Specified argument was out of the range of valid values.",
         ExceptionKind.ArgumentNullException => "Value cannot be null.",
         ExceptionKind.ArgumentException => "Value does not fall within the expected range.",
         _ => throw new ArgumentOutOfRangeException(nameof(kind))
@@ -57,7 +58,7 @@ public static class ExceptionTypes
         if (signature.Parameters.Length == 0 && signature.Result.Code == SignatureTypeCode.String)
         {
             if (member.Name == "get_Message") { operation = ExceptionMember.Message; return true; }
-            if (member.Name == "get_ParamName" && kind is ExceptionKind.ArgumentException or ExceptionKind.ArgumentNullException)
+            if (member.Name == "get_ParamName" && kind is ExceptionKind.ArgumentException or ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException)
             { operation = ExceptionMember.ParamName; return true; }
         }
         if (member.Name != ".ctor" || signature.Result.Code != SignatureTypeCode.Void) return false;
@@ -65,12 +66,12 @@ public static class ExceptionTypes
         if (signature.Parameters.Any(p => p.Code != SignatureTypeCode.String || p.IsByReference)) return false;
         if (signature.Parameters.Length == 1)
         {
-            operation = kind == ExceptionKind.ArgumentNullException ? ExceptionMember.ParameterConstructor : ExceptionMember.MessageConstructor;
+            operation = kind is ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException ? ExceptionMember.ParameterConstructor : ExceptionMember.MessageConstructor;
             return true;
         }
-        if (signature.Parameters.Length == 2 && kind is ExceptionKind.ArgumentException or ExceptionKind.ArgumentNullException)
+        if (signature.Parameters.Length == 2 && kind is ExceptionKind.ArgumentException or ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException)
         {
-            operation = kind == ExceptionKind.ArgumentNullException ? ExceptionMember.ParameterMessageConstructor : ExceptionMember.MessageParameterConstructor;
+            operation = kind is ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException ? ExceptionMember.ParameterMessageConstructor : ExceptionMember.MessageParameterConstructor;
             return true;
         }
         return false;

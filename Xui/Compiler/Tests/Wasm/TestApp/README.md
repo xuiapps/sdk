@@ -105,10 +105,14 @@ the previous value through the existing managed-byref representation. Separate
 CLR/Node tests execute generated event add/remove accessors and invocation snapshots.
 The probe now includes the implementation assembly defining IServiceProvider.
 
-The next failure is MobileFrameRate..ctor → TimeSpan.FromSeconds → its NaN guard
-in ThrowHelper → System.SR resource lookup, which catches an unsupported
-MissingManifestResourceException. The app has not executed; this does not indicate
-a NaN input. Next handle timing helpers and their guard dependencies, then probe
+TimeSpan's single-value factories now emit duration arithmetic in WASM, including
+managed NaN/range failures. Their English guard messages do not require BCL
+resource lookup. Separate CLR/Node tests compare integer and floating-point
+boundaries, fractional ticks, and exception behavior.
+
+The next failure is MobileRatingPanel..ctor →
+DefaultInterpolatedStringHandler.AppendLiteral → Span<Char>.Slice, whose pointer
+signature is unsupported. Next handle interpolated strings, then probe clocks,
 static initialization, collections, service/type lookup, text measurement/drawing,
 and the complete window/input lifecycle. This test does not claim the full
 application executes.

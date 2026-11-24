@@ -27,17 +27,18 @@ conditionally updates the existing owner/selector address, and returns the previ
 reference without host callbacks. This is a single-agent implementation; shared
 multi-threaded state and string reference identity remain unsupported.
 
-The probe now also supplies the implementation assembly defining IServiceProvider.
-Its next failure is `MobileFrameRate..ctor` → `TimeSpan.FromSeconds` → a NaN guard
-in ThrowHelper → System.SR resource lookup and an unsupported
-MissingManifestResourceException catch. This is compile-time discovery, not an
-observed NaN at runtime.
+The probe also supplies the implementation assembly defining IServiceProvider.
+TimeSpan's single-value factories now emit tick arithmetic and managed NaN/range
+checks with English messages, avoiding resource-manager dependencies for these guards.
+CLR/Node comparisons cover fractional ticks, integer limits, NaN, and infinities.
+The next failure is `MobileRatingPanel..ctor` →
+`DefaultInterpolatedStringHandler.AppendLiteral` → `Span<Char>.Slice`, which uses
+an unsupported pointer signature. The full application has not executed yet.
 
 The next sequence is:
 
-1. Support the timing helpers actually used by the mobile app, beginning with
-   TimeSpan.FromSeconds and its NaN/overflow behavior, without importing the full
-   resource-manager implementation for guard messages.
+1. Support the interpolated strings used by the rating panel, then probe actual
+   clock operations separately from duration conversion.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

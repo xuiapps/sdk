@@ -546,6 +546,20 @@ public readonly ref partial struct CodeEmitter
                         method.RequireGcTemporaries();
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.TimeSpanFactory.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } duration)
+                    {
+                        var shape = method.Storage.Shape(duration.Owner);
+                        if (method.Storage.IsGc(duration.Owner) || shape.Leaves.Count != 1 || shape.Leaves[0].Storage.TypeCode != SignatureTypeCode.Int64 ||
+                            shape.Leaves[0].MemoryOffset != 0 || method.Storage.StackLayout(duration.Owner).Size != 8)
+                            throw new NotSupportedException("TimeSpan requires a single signed 64-bit tick field at offset zero.");
+                        method.Storage.ExceptionsEnabled = true;
+                        bool floating = duration.Signature.Parameters[0].Code == SignatureTypeCode.Double;
+                        method.Storage.ExtraExceptionKinds.Add(floating ? IR.Exceptions.ExceptionKind.OverflowException : IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
+                        method.RequireGcTemporaries();
+                        if (floating && seenLiterals.Add(IR.Intrinsics.TimeSpanFactory.NaNMessage)) literals.Add(IR.Intrinsics.TimeSpanFactory.NaNMessage);
+                        if (seenLiterals.Add(IR.Intrinsics.TimeSpanFactory.OverflowMessage)) literals.Add(IR.Intrinsics.TimeSpanFactory.OverflowMessage);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.ReferenceCompareExchange.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } exchange)
                     {
                         _ = method.Storage.Bind(exchange.Result);

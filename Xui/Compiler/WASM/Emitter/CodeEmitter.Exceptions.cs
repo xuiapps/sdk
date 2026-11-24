@@ -90,9 +90,11 @@ public readonly ref partial struct CodeEmitter
         else
         {
             writer.I32Const((int)target).I32Eq();
-            if (target == ExceptionKind.ArgumentException && method.Storage.ExtraExceptionKinds.Contains(ExceptionKind.ArgumentNullException))
-                writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
-                    .I32Const((int)ExceptionKind.ArgumentNullException).I32Eq().I32Or();
+            if (target == ExceptionKind.ArgumentException)
+                foreach (var derived in new[] { ExceptionKind.ArgumentNullException, ExceptionKind.ArgumentOutOfRangeException })
+                    if (method.Storage.ExtraExceptionKinds.Contains(derived))
+                        writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
+                            .I32Const((int)derived).I32Eq().I32Or();
         }
     }
 

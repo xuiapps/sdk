@@ -249,6 +249,19 @@ linear struct. Taking its static address (`ldsflda`) and general static storage/
 initialization remain unsupported. `IsExternalInit` required modifiers on void init
 setter returns preserve the ordinary setter ABI; other unknown required modifiers reject.
 
+Single-value `TimeSpan.FromDays/Hours/Minutes/Seconds/Milliseconds/Microseconds`
+factories lower to WASM arithmetic over signed 64-bit ticks (100ns units), stored
+in independent linear struct frame slots. Floating inputs truncate fractional
+ticks, preserve the rounded maximum boundary, and throw managed ArgumentException
+for NaN or OverflowException for out-of-range values. Integral overloads use exact
+multiplication with ArgumentOutOfRangeException on overflow. Framework implementation
+metadata supplies the layout; factory bodies and their System.SR/ResourceManager
+message dependencies are omitted. Guard messages are English, not localized.
+[CLR/Node comparisons](../Tests/Wasm/Time/TimeSpanTests.cs) cover both build modes,
+rounding boundaries, infinities, and exception messages. Composite overloads,
+formatting, parsing, and clock reads are not supplied by these intrinsics. Duration
+conversion has no JavaScript host dependency.
+
 Numeric layouts follow linked TypeRefs into their defining modules; caches and
 field maps retain module ownership. The [standalone canvas demos](../Tests/Wasm/Canvas/README.md)
 use real Rect and Color fields, execute Rect.Right from Xui.Core.dll, and expose scalar
@@ -276,16 +289,16 @@ The managed payload is a GC struct containing a nominal exception kind and a
 native JavaScript message string, with a parameter-name slot when needed.
 Recognized framework references are `Exception`, `SystemException`,
 `InvalidCastException`, `NullReferenceException`, `InvalidOperationException`,
-`ArgumentException`, `ArgumentNullException`, `IndexOutOfRangeException`, and
+`ArgumentException`, `ArgumentNullException`, `ArgumentOutOfRangeException`, `IndexOutOfRangeException`, and
 `OverflowException`. Parameterless/string constructors, `Message`, hierarchy tests,
-and casts work without compiling BCL bodies. ArgumentNullException's single-string
-constructor takes a parameter name; its two-string overload takes (paramName,
-message). ArgumentException's two-string overload reverses those roles. `ParamName`
+and casts work without compiling BCL bodies. ArgumentNullException and
+ArgumentOutOfRangeException take a parameter name in their single-string constructor;
+their two-string overload takes (paramName, message). ActualValue is unsupported. ArgumentException's two-string overload reverses those roles. `ParamName`
 preserves null and empty names, and `Message` appends a parameter suffix only for
 nonempty names. Dynamic names use the standard
 [JS string builtins](https://github.com/WebAssembly/js-string-builtins/blob/main/proposals/js-string-builtins/Overview.md)
 for length and concatenation; these imports are emitted only for modules needing
-parameter-name support. ArgumentNullException is catchable as ArgumentException,
+parameter-name support. ArgumentNullException and ArgumentOutOfRangeException are catchable as ArgumentException,
 SystemException, and Exception. CLR/Node tests cover Debug and Release, with and
 without linked framework implementation PEs.
 `throw null` throws `NullReferenceException`. Default messages are English;

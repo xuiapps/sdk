@@ -15,6 +15,7 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryTimeSpanFactory(instruction, offset)) return;
         if (TryReferenceCompareExchange(instruction, offset)) return;
         if (TryDelegateOperation(instruction, offset)) return;
         if (TryInlineArrayAccess(instruction, offset)) return;

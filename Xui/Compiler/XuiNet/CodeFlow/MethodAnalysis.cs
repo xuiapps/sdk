@@ -334,6 +334,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             signature = new(inline.Signature.Parameters.ToArray(), StackEntry.From(inline.Signature.Result));
         else if (Model.Intrinsics.SpanAccess.Read(module, handle, context.Arguments, methodArguments) is { } span)
             signature = new([new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters], StackEntry.From(span.Signature.Result));
+        else if (Model.Intrinsics.TimeSpanFactory.Read(module, handle) is { } duration)
+            signature = new(duration.Signature.Parameters.ToArray(), StackEntry.From(duration.Signature.Result));
         else if (Model.Intrinsics.ReferenceCompareExchange.Read(module, handle, context.Arguments, methodArguments) is { } exchange)
             signature = new(exchange.Parameters.ToArray(), StackEntry.From(exchange.Result));
         else if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _))
