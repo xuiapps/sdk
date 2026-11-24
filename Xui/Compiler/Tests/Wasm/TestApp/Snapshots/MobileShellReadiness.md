@@ -25,7 +25,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-The method has no managed body: System.Action<Xui.Core.Math2D.Vector>..ctor.
+Delegate base APIs and multicast operations are not implemented.
 ```
 
 ## Dependency path
@@ -35,10 +35,11 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
- → Method { Identity = System.Action<Xui.Core.Math2D.Vector>..ctor }
+ → Method { Identity = Xui.Core.UI.ScrollView.add_ScrollChanged }
+ → Method { Identity = System.Delegate.Combine }
 ```
 
-Closed generic method specialization and owner/selector byrefs are supported, including the SetProtectedChild pattern. Dependency discovery now reaches a runtime-provided delegate constructor: its implementation is not IL and needs compiler/runtime delegate support. Static initialization, collections, services, text measurement, and full event routing still require further probes.
+Single-target delegates, captured closures, and the real Action<Vector> callback now execute. Dependency discovery reaches ScrollView event subscription: Delegate.Combine needs multicast invocation lists, followed by Remove and the event accessor synchronization path. Static initialization, collections, services, text measurement, and full event routing still require further probes.
 
 ## WAT
 

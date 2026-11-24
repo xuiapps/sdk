@@ -95,6 +95,19 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("System.Object..ctor"), node, DependencyReason.Call, offset);
                         break;
                     }
+                    if (DelegateInfo.Member(module, token, identity) is { } delegateMember)
+                    {
+                        string name = delegateMember.DeclaringType.Module.GetMethod(delegateMember.Handle).Name;
+                        if (instruction.Code == OpCode.Newobj && name == ".ctor" || instruction.Code is OpCode.Call or OpCode.Callvirt && name == "Invoke")
+                        {
+                            Add(new Dependency.Signature(DelegateInfo.Invoke(delegateMember.DeclaringType)), node, DependencyReason.Signature, offset);
+                            Add(new Dependency.Layout(delegateMember.DeclaringType), node, DependencyReason.Layout, offset);
+                            Add(new Dependency.Intrinsic("Delegate." + name), node, DependencyReason.Call, offset);
+                            if (instruction.Code == OpCode.Newobj) Add(new Dependency.Instantiation(delegateMember.DeclaringType), node, DependencyReason.Allocation, offset);
+                            break;
+                        }
+                        throw new NotSupportedException($"Delegate member is not implemented: {delegateMember}.");
+                    }
                     if (module.Compilation is null && token.Kind == HandleKind.MemberReference &&
                         module.GetMemberReference((MemberReferenceHandle)token).Parent.Kind is not
                             (HandleKind.TypeDefinition or HandleKind.TypeSpecification))
@@ -176,6 +189,7 @@ public sealed partial class Analyzer
     {
         var module = identity.DeclaringType.Module;
         var method = module.GetMethod(identity.Handle);
+        if (DelegateInfo.IsRuntimeBase(identity.DeclaringType)) throw new NotSupportedException("Delegate base APIs and multicast operations are not implemented.");
         if (IsOpen(identity.DeclaringType) || (method.GenericParameters.Count != (identity.Arguments?.Values.Length ?? 0)) || identity.Arguments?.ContainsGenericParameters == true)
             throw new NotSupportedException($"Method reachability requires a closed declaring type and closed method arguments: {identity}.");
         if (retainBody) UseModule(module, node);

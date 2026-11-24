@@ -61,6 +61,25 @@ Immutable runtime GC descriptors contain identity, base descriptor, table start,
 UTF-16 name array, slot count, and field count. This is groundwork for a managed
 `Type` facade; `System.Type`, `GetType`, `typeof`, and reflection calls are not emitted yet.
 
+Single-target delegates use a compiler-owned GC object containing a nominal type
+descriptor, the retained target/closure reference, and a function-table index.
+`ldftn` binds a closed method through an adapter; static adapters ignore their leading
+receiver. `ldvirtftn` captures the receiver's selected virtual/interface slot.
+`Invoke` null-checks the delegate and uses `call_indirect` with the existing typed ABI,
+including reference byrefs and caller-owned struct results. Invocation allocates no
+delegate wrapper. Captured lambdas use Roslyn's generated classes, so callbacks share
+mutable captured fields and remain valid after their creating method returns.
+See the [closure execution snapshot](../Tests/Wasm/Delegates/Snapshots/Closures.md).
+Framework Action/Func definitions come from supplied implementation assemblies;
+a dedicated test executes Action<Xui.Core.Math2D.Vector>. Plain `new object()` also
+works when the framework implementation is supplied.
+
+Multicast Combine/Remove, delegate equality/base APIs, delegate-type variance,
+open-instance/closed-static binding, and boxed value-type receivers remain unsupported.
+Compiler-generated static caches for noncapturing lambdas/method groups still require
+static-field and initializer support; explicit delegate construction and capturing
+lambdas work. General `calli` and unmanaged function pointers remain unsupported.
+
 Closed generic classes are specialized at compile time, including inheritance and
 virtual/abstract dispatch.
 `Box<int>` and `Box<string>` have distinct layouts, descriptors, and method plans;
@@ -77,7 +96,7 @@ shows specialized fields, tables, base calls, and nominal `is`/`as` tests across
 three-level hierarchy. Reference `default(T)` via `initobj` is supported; primitive generic object operations remain unsupported. Expanding instantiations stop at a nesting depth of 32.
 
 Generic virtual methods, open generic structs, arbitrary external calls, switches, arbitrary
-jump graphs, lambdas, closures, delegates, multidimensional arrays, unmanaged pointers,
+jump graphs, multicast delegates, multidimensional arrays, unmanaged pointers,
 value-type boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage currently holds emitted class/interface references and null, not strings,
 boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies,
@@ -381,11 +400,11 @@ supported operations that require no emitted bytes.
 | `conv.r8` | `f64.convert_i32_s` / `f64.convert_i64_s` / no instruction (f64) | Signed integer conversion; floating-point stack values already use f64. |
 | `conv.u4` | No instruction (i32) / `i32.wrap_i64` (i64) | Keeps low 32 bits; floating-point inputs are currently rejected. |
 | `conv.u8` | `i64.extend_i32_u` (i32) / no instruction (i64) | Zero-extends int32 inputs; already-wide integers retain their original bits. |
-| `callvirt` | `ref.cast`; `struct.get`; `call_indirect` or `call` | Null-checks receiver; class or interface slots select concrete method implementations. |
+| `callvirt` | `ref.cast`; `struct.get`; `call_indirect` or `call` | Null-checks receiver; class/interface slots or delegate entries select callable methods. |
 | `cpobj` | `memory.copy` or leaf loads/stores | Copies matching structs, including transfers between GC and linear storage. |
 | `ldobj` | `memory.copy` or `struct.get`; `struct.new` | Loads an independent struct value from its managed address. |
 | `ldstr` | `global.get; ref.is_null; if; i32.const; i32.const; array.new_data; i32.const; i32.const; call; global.set; end; global.get` | Materializes passive UTF-16LE data through js-string; caches the JavaScript string. |
-| `newobj` | Frame address / `struct.new_default`; `call` | Reserves stack values or GC objects, then invokes constructor. |
+| `newobj` | Frame address / `struct.new_default`; `struct.new`; `call` | Constructs values/classes or binds a delegate target and callable. |
 | `castclass` | Descriptor helper `call`; `unreachable` on mismatch | Preserves null; checks class ancestry/interface membership; failed casts trap. |
 | `isinst` | Descriptor helper `call`; `ref.eq`; ancestry/membership checks | Returns original reference or null; supports class/interface is/as tests. |
 | `conv.r.un` | `f64.convert_i32_u` / `f64.convert_i64_u` | Interprets integer bits as unsigned before conversion to floating point. |
@@ -468,8 +487,8 @@ supported operations that require no emitted bytes.
 | `cgt.un` | `i32.gt_u` / `i64.gt_u` / `f64.le; i32.eqz` | Unsigned integers; inverted ordered floating comparison makes NaN yield true. |
 | `clt` | `i32.lt_s` / `i64.lt_s` / `f64.lt` | Numeric operands only; pushes int32 0/1; NaN comparisons yield false. |
 | `clt.un` | `i32.lt_u` / `i64.lt_u` / `f64.ge; i32.eqz` | Unsigned integers; inverted ordered floating comparison makes NaN yield true. |
-| `ldftn` |  |  |
-| `ldvirtftn` |  |  |
+| `ldftn` | `i32.const` | Captures a closed method adapter in the function table. |
+| `ldvirtftn` | `struct.get`; `i32.add` | Null-checks receiver and captures its selected virtual/interface table entry. |
 | `ldarg` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
 | `ldarga` | `local.get` | Addresses owned struct parameter storage; primitive argument addresses remain unsupported. |
 | `starg` | Optional narrowing; `local.set` | Replaces scalar arguments; copies structs into alias-preserving parameter storage. |

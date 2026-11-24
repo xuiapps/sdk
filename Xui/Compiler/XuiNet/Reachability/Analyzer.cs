@@ -100,13 +100,14 @@ public sealed partial class Analyzer
     private void ReadType(Dependency.Type node)
     {
         var identity = node.Identity;
+        if (DelegateInfo.IsRuntimeBase(identity)) throw new NotSupportedException("Delegate base APIs, multicast operations, and base-type conversions are not implemented.");
         if (FrameworkTypes.IsRuntimeBase(identity) || DotNet.Intrinsics.NativeFloat.Is(identity) || DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null) return;
         if (identity.Arguments is { } arguments)
         {
             foreach (var argument in arguments.Values) Signature(node, argument, DependencyReason.GenericArgument);
         }
         if (identity.Handle.Kind != HandleKind.TypeDefinition) return; // Unresolved identity, not an executable dependency.
-        if (IsOpen(identity)) return;
+        if (IsOpen(identity) || DelegateInfo.Is(identity)) return;
         var type = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
         if (!type.BaseType.IsNil)
             Signature(node, SignatureReader.Resolve(identity.Module, type.BaseType, identity.Arguments), DependencyReason.BaseType);
@@ -126,6 +127,7 @@ public sealed partial class Analyzer
         Add(new Dependency.Type(identity), node, DependencyReason.Layout);
         if (identity.Handle.Kind != HandleKind.TypeDefinition || IsOpen(identity))
             throw new NotSupportedException($"Layout requires a closed resolved type: {identity}.");
+        if (DelegateInfo.Is(identity)) { _ = dispatch.Resolve(identity); return; }
         if (DotNet.Intrinsics.SpanAccess.Is(identity)) return; // Backing and length have a compiler-owned ABI.
         var type = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
         if (!identity.IsValueType && type.Name != "<Module>") _ = dispatch.Resolve(identity);

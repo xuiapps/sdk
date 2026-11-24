@@ -9,6 +9,8 @@ public enum StackType
     Int32,
     Int64,
     NativeInt,
+    /// <summary>A callable method token used to construct a delegate.</summary>
+    MethodPointer,
     Float,
     String,
     /// <summary>A managed vector with its exact element signature.</summary>

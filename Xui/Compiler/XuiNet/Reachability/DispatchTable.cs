@@ -24,7 +24,7 @@ internal sealed partial class DispatchTable
             if (identity.Arguments?.ContainsGenericParameters == true ||
                 definition.GenericParameterCount != (identity.Arguments?.Values.Length ?? 0))
                 throw new NotSupportedException("Interface and open generic runtime types are not implemented.");
-            if (definition.IsInterface)
+            if (definition.IsInterface || DelegateInfo.Is(identity) || FrameworkTypes.Is(identity, "System", "Object"))
             {
                 Types.Add(identity, Array.Empty<VirtualSlot>());
                 return Types[identity];
@@ -49,7 +49,7 @@ internal sealed partial class DispatchTable
                 if (reference.Namespace != "System" || reference.Name != "Object")
                     throw new NotSupportedException("External class inheritance is not implemented.");
             }
-            else throw new NotSupportedException("Unsupported class base type.");
+            else throw new NotSupportedException($"Unsupported class base type: {identity}.");
             foreach (var handle in definition.Methods)
             {
                 var method = module.GetMethod(handle);

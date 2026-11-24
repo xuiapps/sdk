@@ -329,6 +329,10 @@ public readonly ref partial struct CodeEmitter
                 EmitLdarg_3(offset); break;
             case OpCode.Ldstr:
                 EmitLdstr(instruction.ReadToken(ref reader)); break;
+            case OpCode.Ldftn:
+                EmitLdftn(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Ldvirtftn:
+                EmitLdvirtftn(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Ret:
                 EmitRet(offset); break;
             default:
@@ -519,6 +523,17 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Dup:
                     method.NeedsDup = true;
                     break;
+                case OpCode.Ldftn:
+                case OpCode.Ldvirtftn:
+                    var pointed = ResolveCall(source, method.Identity, instruction.ReadToken(ref reader).Value, offset);
+                    if (instruction.Code == OpCode.Ldftn) method.Storage.DelegateMethods.Add(pointed);
+                    else
+                    {
+                        _ = method.Storage.Classes.Slot(pointed);
+                        method.Storage.ExceptionsEnabled = true;
+                        method.RequireGcTemporaries();
+                    }
+                    break;
                 case OpCode.Newobj:
                 case OpCode.Callvirt:
                 case OpCode.Call:
@@ -548,6 +563,14 @@ public readonly ref partial struct CodeEmitter
                         method.Storage.ExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(exceptionKind);
                         method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (IR.DelegateInfo.Member(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity) is { } delegateMember)
+                    {
+                        method.RequireGc(delegateMember.DeclaringType);
+                        method.Storage.ExceptionsEnabled = true;
+                        var invoke = IR.DelegateInfo.Invoke(delegateMember.DeclaringType);
+                        if (!method.Calls.Contains(invoke)) method.Calls.Add(invoke);
                         break;
                     }
                     if (instruction.Code == OpCode.Callvirt) { method.Storage.ExceptionsEnabled = true; method.RequireGcTemporaries(); }

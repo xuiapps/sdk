@@ -6,6 +6,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitNewobj(Instruction.Token instruction, int offset)
     {
+        if (TryDelegateConstructor(instruction, offset)) return;
         if (TryExceptionMember(instruction, offset)) return;
         var callee = methods[ResolveCall(source, method.Identity, instruction.Value, offset)];
         if (!callee.Signature.IsConstructor || !callee.Signature.HasThis) throw new InvalidProgramException("newobj requires an instance constructor.");

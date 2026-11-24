@@ -99,10 +99,10 @@ those assets supplied by the browser host. The .NET SDK's
 ASP.NET shared framework supplies the Microsoft.Extensions metadata for Core.DI.
 
 Constructing `MobileTestAppShell` reaches `MobileHomePage`, then fails at
-`System.Action<Vector>..ctor`. This runtime-provided delegate constructor has no
-managed IL body. Closed generic **method** specialization and reference byrefs now
-execute; tests cover the SetProtectedChild pattern, linked calls, aliasing, and
-cleanup during unwinding. Next implement the reachable delegate constructor/invoke
-path, then continue probing static initialization,
+`ScrollView.add_ScrollChanged` calling `System.Delegate.Combine`. Single-target
+delegates and captured closures execute, including the actual Action<Xui.Core.Math2D.Vector>
+boundary. Closed generic methods and reference byrefs cover the SetProtectedChild
+pattern. Next implement multicast Combine/Remove and event accessor synchronization,
+then continue probing static initialization,
 collections, service/type lookup, text measurement/drawing, and the complete
 window/input lifecycle. This test does not claim the full application executes.

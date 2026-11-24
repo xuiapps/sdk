@@ -92,6 +92,16 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             shapes.Add(identity, scalar);
             return scalar;
         }
+        if (DelegateInfo.Is(identity))
+        {
+            _ = Classes.Resolve(identity);
+            var delegateShape = new GcShape(identity);
+            delegateShape.Leaves.Add(new(new(SignatureTypeCode.Object, UsesGc: true), 0)); // descriptor
+            delegateShape.Leaves.Add(new(new(SignatureTypeCode.Object, UsesGc: true), 0)); // target
+            delegateShape.Leaves.Add(new(new(SignatureTypeCode.Int32), 0)); // callable table index
+            shapes.Add(identity, delegateShape);
+            return delegateShape;
+        }
         if (identity.IsInterface)
         {
             _ = Classes.Resolve(identity);

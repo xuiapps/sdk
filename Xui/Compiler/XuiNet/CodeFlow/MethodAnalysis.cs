@@ -152,9 +152,27 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     throw stack.Error("Class type tests require a class reference");
                 stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, targetType, IsReferenceType: true)));
                 break;
+            case OpCode.Ldftn:
+            case OpCode.Ldvirtftn:
+                var pointed = Model.MemberResolver.Method(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context, methodArguments);
+                if (node.Code == OpCode.Ldvirtftn)
+                {
+                    var receiver = stack.Pop();
+                    if (receiver.Type is not (StackType.ObjectReference or StackType.Null)) throw stack.Error("ldvirtftn requires an object receiver");
+                }
+                stack.Push(new(StackType.MethodPointer, Method: pointed));
+                break;
             case OpCode.Newobj:
                 var constructorToken = instruction.ReadToken(ref reader).Value;
                 var constructor = CallSignature(constructorToken);
+                if (Model.DelegateInfo.Member(module, MetadataTokens.EntityHandle(constructorToken), new(context, default, methodArguments)) is { } delegateConstructor)
+                {
+                    if (delegateConstructor.DeclaringType.Module.GetMethod(delegateConstructor.Handle).Name != ".ctor") throw stack.Error("Expected a delegate constructor");
+                    if (stack.Pop().Type != StackType.MethodPointer) throw stack.Error("Delegate construction requires a method pointer");
+                    if (stack.Pop().Type is not (StackType.ObjectReference or StackType.Null)) throw stack.Error("Delegate construction requires an object target");
+                    stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, delegateConstructor.DeclaringType, IsReferenceType: true)));
+                    break;
+                }
                 if (Model.Exceptions.ExceptionTypes.TryMember(module, MetadataTokens.EntityHandle(constructorToken), out _, out bool intrinsicConstructor, out _) && intrinsicConstructor)
                 {
                     for (int i = constructor.Parameters.Length - 1; i >= 1; i--) stack.Store(StackEntry.From(constructor.Parameters[i]));

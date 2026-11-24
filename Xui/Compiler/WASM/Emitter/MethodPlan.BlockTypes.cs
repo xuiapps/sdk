@@ -47,7 +47,7 @@ internal sealed partial class MethodPlan
 
         WasmType Type(StackEntry type) => type.Type switch
         {
-            StackType.Int32 or StackType.NativeInt => ValueTypeCode.I32,
+            StackType.Int32 or StackType.NativeInt or StackType.MethodPointer => ValueTypeCode.I32,
             StackType.Int64 => ValueTypeCode.I64,
             StackType.Float => ValueTypeCode.F64,
             StackType.String => ValueTypeCode.ExternRef,

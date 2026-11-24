@@ -21,13 +21,16 @@ composition. The [full-shell probe](Tests/Wasm/TestApp/Snapshots/MobileShellRead
 compiles all application dependencies as separate PEs with the real shader
 generator. Closed generic methods and reference byrefs now execute with aliasing,
 linked-call, and unwind tests, covering the SetProtectedChild pattern. The full-shell
-probe now stops at `System.Action<Vector>..ctor` from `MobileHomePage`: delegates
-need compiler/runtime support because their constructor has no managed IL body.
+probe now advances through delegate construction and stops at
+`ScrollView.add_ScrollChanged` calling `System.Delegate.Combine`. Single-target
+delegates, captured closures, and the real Action<Xui.Core.Math2D.Vector> callback
+execute. Their runtime constructors and Invoke use a compiler-owned target/table ABI;
+plain framework object allocation is also supported.
 
 The next sequence is:
 
-1. Implement the reachable delegate constructor/invocation path (`Action<Vector>`),
-   including the target receiver and method function reference.
+1. Implement multicast Combine/Remove with ordered invocation lists and .NET removal
+   semantics, then handle the synchronization used by generated event accessors.
 2. Re-run the full-shell probe; implement reachable static initialization and the
    collections it actually uses instead of preloading the BCL.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

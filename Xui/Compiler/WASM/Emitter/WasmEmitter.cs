@@ -103,6 +103,7 @@ public sealed partial class WasmEmitter
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
             storage.DefineReferenceAddressTypes(ref types);
+            storage.DefineDelegateTypes(ref types, methods);
             foreach (var method in orderedMethods)
             {
                 var parameters = Array.ConvertAll(method.Signature.Parameters,
@@ -140,6 +141,7 @@ public sealed partial class WasmEmitter
             foreach (var method in orderedMethods.Where(method => !method.IsDeclaration)) method.Function = functions.Function(method.Type);
             foreach (var accessorType in storage.ReferenceAccessorTypes) storage.ReferenceAccessorFunctions.Add(functions.Function(accessorType));
             if (storage.Classes.Types.Count != 0) storage.InstanceTest = functions.Function(storage.InstanceTestType);
+            foreach (var target in storage.DelegateTargets.Values) target.Function = functions.Function(target.Type);
         }
         if (storage.TableSize != 0 || storage.ReferenceSlotsEnabled)
         {
@@ -190,6 +192,7 @@ public sealed partial class WasmEmitter
         if (storage.TableSize != 0)
         {
             using var elements = writer.ElementSection();
+            foreach (var target in storage.DelegateTargets.Values) elements.Functions(target.TableSlot, [target.Function]);
             foreach (var type in storage.Classes.Types)
             {
                 foreach (var slot in type.VirtualSlots)
@@ -222,6 +225,11 @@ public sealed partial class WasmEmitter
             {
                 using var body = code.FunctionBody([EqRef]);
                 Runtime.InstanceTest.Emit(body, storage.ClassRoot, storage.DescriptorType, storage.Classes.Types);
+            }
+            foreach (var target in storage.DelegateTargets.Values)
+            {
+                using var body = code.FunctionBody();
+                StorageModel.EmitDelegateAdapter(body, target);
             }
         }
         using (var data = writer.DataSection())

@@ -21,13 +21,13 @@ internal sealed class TypeRegistry(DependencyGraph dependencies)
         if (identity.Handle.Kind != HandleKind.TypeDefinition || identity.IsValueType)
             throw new NotSupportedException($"Runtime class metadata requires a linked class or interface definition: {identity}.");
         var definition = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
-        Type? parent = identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } baseIdentity && !FrameworkTypes.Is(baseIdentity, "System", "Object") ? Resolve(baseIdentity) : null;
+        Type? parent = !DelegateInfo.Is(identity) && identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } baseIdentity && !FrameworkTypes.Is(baseIdentity, "System", "Object") ? Resolve(baseIdentity) : null;
         var slots = dependencies.VirtualSlots(identity)
             .Select(slot => new VirtualSlot(slot.Index, slot.Declaration, slot.Implementation)).ToArray();
         var type = new Type((uint)types.Count + 1, identity, parent,
             (definition.Attributes & TypeAttributes.Abstract) != 0, Array.AsReadOnly(slots));
         types.Add(identity, type);
-        type.Interfaces = Array.AsReadOnly(identity.Interfaces().Select(Resolve).ToArray());
+        type.Interfaces = Array.AsReadOnly((DelegateInfo.Is(identity) ? [] : identity.Interfaces().Select(Resolve).ToArray()));
         if (!type.IsInterface)
             type.InterfaceSlots = Array.AsReadOnly(InterfaceMethods.Select((method, index) =>
                 (Method: method, Index: (uint)index, Implementation: dependencies.InterfaceImplementation(identity, method)))

@@ -57,6 +57,7 @@ public sealed partial class Analyzer
     private void Connect(Dependency.VirtualCall call, Dependency.Instantiation instance)
     {
         if (!instance.Identity.IsAssignableTo(call.Identity.DeclaringType)) return;
+        if (DelegateInfo.Is(instance.Identity)) throw new NotSupportedException("Virtual calls through delegate base/interface APIs are not implemented.");
         var implementation = call.Identity.DeclaringType.IsInterface
             ? dispatch.InterfaceImplementation(instance.Identity, call.Identity)
             : dispatch.Resolve(instance.Identity)[(int)dispatch.Slot(call.Identity)].Implementation;

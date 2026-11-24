@@ -31,6 +31,7 @@ public readonly ref partial struct CodeEmitter
         var callee = methods[target];
         if (callee.Signature.HasEntryPointArguments)
             throw new NotSupportedException("Calls with string[] entry-point arguments are not implemented.");
+        bool delegateInvoke = DelegateInfo.Is(target.DeclaringType);
         var arguments = callee.Signature.Parameters;
         method.CallTemporaries.TryGetValue(target, out var temporaries);
         for (int i = arguments.Length - 1; i >= 0; i--)
@@ -50,16 +51,23 @@ public readonly ref partial struct CodeEmitter
             for (int i = 0; i < temporaries.Length; i++)
             {
                 writer.LocalGet(temporaries[i]);
-                if (i == 0 && instruction.Code == OpCode.Callvirt && arguments[0].UsesGc)
+                if (i == 0 && (delegateInvoke || instruction.Code == OpCode.Callvirt) && arguments[0].UsesGc)
                 {
                     CheckExceptionNull();
-                    writer.RefCast(method.Storage.Shape(arguments[0].Identity!.Value).Type);
+                    var receiverType = method.Storage.Shape(arguments[0].Identity!.Value).Type;
+                    writer.RefCast(receiverType);
+                    if (delegateInvoke) writer.StructGet(receiverType, new((uint)Xui.Compiler.WASM.Runtime.DelegateField.Target));
                 }
             }
         for (int i = 0; i < arguments.Length; i++)
             if (arguments[i].IsReferenceAddress) writer.LocalGet(method.CallReferenceTemporaries[target][i]);
         if (callee.Signature.HasResultAddress) FrameAddress(Frame.Values[offset]);
-        if (instruction.Code == OpCode.Callvirt &&
+        if (delegateInvoke)
+        {
+            var shape = method.Storage.Shape(target.DeclaringType);
+            writer.LocalGet(temporaries![0]).RefCast(shape.Type).StructGet(shape.Type, new((uint)Xui.Compiler.WASM.Runtime.DelegateField.Callable)).CallIndirect(callee.Type);
+        }
+        else if (instruction.Code == OpCode.Callvirt &&
             (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & System.Reflection.MethodAttributes.Virtual) != 0)
         {
             var storage = method.Storage;

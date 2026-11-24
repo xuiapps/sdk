@@ -6,7 +6,8 @@ namespace Xui.Compiler.XuiNet.CodeFlow;
 /// <summary>A normalized MSIL stack category, with exact type information for structs and managed addresses.</summary>
 public readonly record struct StackEntry(
     StackType Type,
-    SignatureType? DeclaredType = null)
+    SignatureType? DeclaredType = null,
+    DotNet.MethodIdentity? Method = null)
 {
     /// <summary>Creates a primitive stack category.</summary>
     public static implicit operator StackEntry(StackType type) => new(type);
@@ -35,5 +36,5 @@ public readonly record struct StackEntry(
     }
 
     /// <summary>Includes concrete type names for value types and addresses in diagnostic snapshots.</summary>
-    public override string ToString() => DeclaredType?.ToString() ?? Type.ToString();
+    public override string ToString() => Method is { } method ? $"MethodPointer({method})" : DeclaredType?.ToString() ?? Type.ToString();
 }
