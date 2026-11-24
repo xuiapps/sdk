@@ -11,7 +11,7 @@ public sealed class LayoutFrameInstruments : IInstruments, IInstrumentsSink, IRe
 {
     private const int ExpectedViewCount = 4096;
 
-    private readonly HashSet<View> measuredOrArrangedViews = new(ExpectedViewCount);
+    private readonly HashSet<View>? measuredOrArrangedViews;
     private long frameStartTimestamp;
     private bool frameOpen;
 
@@ -20,7 +20,7 @@ public sealed class LayoutFrameInstruments : IInstruments, IInstrumentsSink, IRe
     public int ArrangeCount { get; private set; }
     public int RenderCount { get; private set; }
     public int TextMeasureCount { get; private set; }
-    public int UniqueViewCount => measuredOrArrangedViews.Count;
+    public int UniqueViewCount => measuredOrArrangedViews?.Count ?? 0;
     public double LastFrameMilliseconds { get; private set; }
     public double EstimatedFramesPerSecond { get; private set; }
     public double TextMeasureMilliseconds => textMeasureTicks * 1000d / Stopwatch.Frequency;
@@ -33,10 +33,17 @@ public sealed class LayoutFrameInstruments : IInstruments, IInstrumentsSink, IRe
     /// <summary>Creates the application-level factory instance.</summary>
     public LayoutFrameInstruments() : this("TestApp") { }
 
-    private LayoutFrameInstruments(string name)
+    private LayoutFrameInstruments(string name) : this(name, new HashSet<View>(ExpectedViewCount)) { }
+
+    private LayoutFrameInstruments(string name, HashSet<View>? uniqueViews)
     {
         this.Name = name;
+        measuredOrArrangedViews = uniqueViews;
     }
+
+    /// <summary>Creates traversal counters without retaining views for unique-view diagnostics.</summary>
+    /// <remarks>Useful for restricted hosts; UniqueViewCount remains zero.</remarks>
+    public static LayoutFrameInstruments CreateCountersOnly() => new("TestApp", null);
 
     /// <summary>Returns this preallocated sink for the TestApp's single UI run loop.</summary>
     public IInstrumentsSink CreateSink() => this;
@@ -58,7 +65,7 @@ public sealed class LayoutFrameInstruments : IInstruments, IInstrumentsSink, IRe
         RenderCount = 0;
         TextMeasureCount = 0;
         textMeasureTicks = 0;
-        measuredOrArrangedViews.Clear();
+        measuredOrArrangedViews?.Clear();
     }
 
     /// <summary>Records the CPU time spent in the completed window update.</summary>
@@ -89,11 +96,11 @@ public sealed class LayoutFrameInstruments : IInstruments, IInstrumentsSink, IRe
                 break;
             case Scope.ViewMeasure:
                 MeasureCount++;
-                measuredOrArrangedViews.Add(view);
+                measuredOrArrangedViews?.Add(view);
                 break;
             case Scope.ViewArrange:
                 ArrangeCount++;
-                measuredOrArrangedViews.Add(view);
+                measuredOrArrangedViews?.Add(view);
                 break;
             case Scope.ViewRendering:
                 RenderCount++;

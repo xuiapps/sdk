@@ -40,8 +40,9 @@ uses unsupported IsVolatile metadata, followed by async/resource dependencies. T
 
 The next sequence is:
 
-1. Separate optional async/GPU/resource-heavy showcases from the first browser
-   profile, then continue through the real mobile home, window, and service paths.
+1. The browser catalogue is now injected into the real shell, separately from the
+   unchanged default catalogue. Continue through EqualityComparer<string>.Default
+   used by View.SetViewProperty, then the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

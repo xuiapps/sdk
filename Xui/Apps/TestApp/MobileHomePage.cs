@@ -8,7 +8,7 @@ internal sealed class MobileHomePage : ScrollView, INavigationAware
 {
     private readonly MobileHomeHeader header;
 
-    public MobileHomePage(MobileFrameRate frameRate)
+    public MobileHomePage(MobileFrameRate frameRate, View demoMenu)
     {
         header = new MobileHomeHeader(frameRate);
         Id = "HomeScroll";
@@ -17,7 +17,7 @@ internal sealed class MobileHomePage : ScrollView, INavigationAware
         ClipToViewport = false;
         var menu = new VerticalStack();
         menu.Add(new View { MinimumHeight = MobileHomeHeader.ExpandedHeight, MaximumHeight = MobileHomeHeader.ExpandedHeight });
-        menu.Add(new MobileDemoMenu { Margin = (0, 16) });
+        menu.Add(demoMenu);
         Content = menu;
         Overlay = header;
         ScrollChanged += offset => header.SetScrollOffset(offset.Y);

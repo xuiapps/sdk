@@ -123,3 +123,15 @@ the first browser profile, then continue through clocks,
 static initialization, collections, service/type lookup, text measurement/drawing,
 and the complete window/input lifecycle. This test does not claim the full
 application executes.
+
+## Browser catalogue probe
+
+[BrowserShellReadiness](Snapshots/BrowserShellReadiness.md) passes an explicit
+[BrowserMenu](Fixtures/TestApp/Mobile/BrowserMenu.cs) into MobileTestAppShell.
+The default shell constructor still creates the full TestApp catalogue. The browser
+fixture uses the real mobile category card, demo button, navigation, and page wrapper
+for a FillRectTest page; optional async/GPU showcases are not included in its menu.
+LayoutFrameInstruments.CreateCountersOnly omits unique-view tracking while the
+normal constructors retain their preallocated HashSet. Core's existing compiler
+profile still omits diagnostic instrumentation. The next browser construction
+blocker is EqualityComparer<string>.Default used by View.SetViewProperty.

@@ -30,7 +30,9 @@ internal static class MobileProjects
 
         void Add(string directory, string name, string[]? exclude = null)
         {
-            byte[] image = SourceProject.Compile(directory, name, references, exclude: exclude, generateShaders: name == "TestApp.Mobile");
+            byte[] image = SourceProject.Compile(directory, name, references,
+                extraSources: name == "TestApp.Mobile" ? [File.ReadAllText(Path.Combine(SourceProject.XuiRoot, "Compiler/Tests/Fixtures/TestApp/Mobile/BrowserMenu.cs"))] : null,
+                exclude: exclude, generateShaders: name == "TestApp.Mobile");
             result.Add(name, image); references.Add(MetadataReference.CreateFromImage(image));
         }
     }

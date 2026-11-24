@@ -36,7 +36,6 @@ Required signature modifier is not implemented: System.Runtime.CompilerServices.
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileDemoMenu..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileDemoMenu.AddPerformance }
  → Method { Identity = Xui.Apps.TestApp.Pages.Floorplan.FloorplanDrawing.Preload }

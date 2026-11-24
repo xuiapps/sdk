@@ -14,8 +14,13 @@ public sealed class MobileTestAppShell : View, IFullScreenView
     private readonly MobileNavigation navigation;
 
     public MobileTestAppShell(MobilePerformanceMetrics performanceMetrics)
+        : this(performanceMetrics, new MobileDemoMenu { Margin = (0, 16) }) { }
+
+    /// <summary>Creates the real mobile shell with a host-selected demo catalogue.</summary>
+    public MobileTestAppShell(MobilePerformanceMetrics performanceMetrics, View demoMenu)
     {
-        navigation = new MobileNavigation(new MobileHomePage(performanceMetrics.FrameRate), performanceMetrics);
+        ArgumentNullException.ThrowIfNull(demoMenu);
+        navigation = new MobileNavigation(new MobileHomePage(performanceMetrics.FrameRate, demoMenu), performanceMetrics);
         this.AddProtectedChild(navigation);
     }
 
