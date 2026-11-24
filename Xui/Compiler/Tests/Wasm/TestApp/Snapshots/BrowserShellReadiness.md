@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Unsupported signature type: Pointer.
+Custom System.Type subclasses are not implemented.
 ```
 
 ## Dependency path
@@ -35,17 +35,14 @@ Unsupported signature type: Pointer.
 ```text
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
- → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel.AddExample<Xui.Apps.TestApp.BrowserCanvasExample> }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.BrowserCanvasExample>..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.BrowserCanvasExample>.NavigateToExample }
- → VirtualCall { Identity = Xui.Apps.TestApp.Pages.IExampleNavigation.PushExamplePage<Xui.Apps.TestApp.BrowserCanvasExample> }
- → Method { Identity = Xui.Apps.TestApp.MobileNavigation.PushExamplePage<Xui.Apps.TestApp.BrowserCanvasExample> }
- → Method { Identity = Xui.Apps.TestApp.Pages.MobileExamplePage<Xui.Apps.TestApp.BrowserCanvasExample>..ctor }
- → Method { Identity = Xui.Apps.TestApp.BrowserCanvasExample..ctor }
- → Method { Identity = Example..ctor }
- → Method { Identity = System.Object.GetType }
- → Method { Identity = System.Runtime.CompilerServices.RuntimeHelpers.GetMethodTable }
+ → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.ShowRating }
+ → Method { Identity = System.Type.GetTypeFromHandle }
+ → Field { Identity = FieldIdentity { DeclaringType = System.RuntimeTypeHandle, Handle = System.Reflection.Metadata.FieldDefinitionHandle } }
+ → Type { Identity = System.RuntimeType }
+ → Type { Identity = System.Reflection.TypeInfo }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

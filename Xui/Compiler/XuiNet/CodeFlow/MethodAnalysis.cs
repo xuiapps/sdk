@@ -369,7 +369,10 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     {
         if (calls.TryGetValue(token, out var signature)) return signature;
         var handle = MetadataTokens.EntityHandle(token);
-        if (Model.Intrinsics.Int32Formatting.Is(module, handle))
+        if (Model.Intrinsics.ManagedType.Read(module, handle) is { } managedType)
+            signature = new(managedType.Signature.HasThis ? [new(SignatureTypeCode.Object)] : managedType.Signature.Parameters.ToArray(),
+                StackEntry.From(managedType.Signature.Result));
+        else if (Model.Intrinsics.Int32Formatting.Is(module, handle))
             signature = new([new(SignatureTypeCode.Int32, IsByReference: true)], StackType.String);
         else if (Model.Intrinsics.ConstructorFactory.Read(module, handle, context.Arguments, methodArguments) is { } constructor)
             signature = new([], StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, constructor.DeclaringType, IsReferenceType: true)));

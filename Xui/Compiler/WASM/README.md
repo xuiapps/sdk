@@ -58,8 +58,14 @@ See the [interface demo](../Tests/Wasm/Interfaces/Snapshots/Units.md).
 [Runtime.Type](Runtime/Type.cs), exposed by `WasmEmitter.Types`, records source
 identity, base type, implemented interfaces, flattened field ranges, class/interface dispatch slots, and WASM indices.
 Immutable runtime GC descriptors contain identity, base descriptor, table start,
-UTF-16 name array, slot count, and field count. This is groundwork for a managed
-`Type` facade; `System.Type`, `GetType`, `typeof`, and reflection calls are not emitted yet.
+UTF-16 name array, slot count, and field count. A narrow `System.Type` facade reuses
+these descriptors directly: `GetType()` on a named class/interface returns its
+actual runtime descriptor, and `.Name` returns the metadata simple name (including
+generic arity, excluding namespace/nesting prefixes). Type equality compares
+immutable descriptor identity; locals, arguments, fields, and casts preserve it.
+GetType/Name on null throw managed NullReferenceException. Descriptor simple-name
+storage is added only when the facade is used. Object-typed/boxed/array/exception
+GetType receivers, `typeof`, and general reflection remain unsupported.
 
 Delegates use a compiler-owned GC object containing a nominal type descriptor,
 retained target/closure, callable table slot, canonical method identity, and an

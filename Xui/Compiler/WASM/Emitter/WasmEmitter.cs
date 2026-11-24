@@ -211,6 +211,8 @@ public sealed partial class WasmEmitter
                 else descriptor.RefNull(EqRef);
                 descriptor.I32((int)type.TableStart).Utf16Array(utf16ArrayType, type.Name)
                     .I32(type.VirtualSlots.Count).I32((int)type.FieldCount);
+                if (storage.ManagedTypesEnabled)
+                    descriptor.Utf16Array(utf16ArrayType, type.Identity.Module.GetType((TypeDefinitionHandle)type.Identity.Handle).Name);
             }
         }
         // Frame state follows the string-cache globals in the same index space.

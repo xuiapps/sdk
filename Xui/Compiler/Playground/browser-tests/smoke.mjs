@@ -60,6 +60,8 @@ try {
     await result('8\n1\nTrue\n', 0);
     await run('using System; int value = int.MinValue; Console.WriteLine(value.ToString()); Console.WriteLine(value.ToString(System.Globalization.CultureInfo.InvariantCulture));');
     await result('-2147483648\n-2147483648\n', 0);
+    await run('using System; public class Item { } public static class Program { public static void Main() { var a=new Item(); Console.WriteLine(a.GetType().Name); Console.WriteLine(a.GetType()==new Item().GetType()); } }');
+    await result('Item\nTrue\n', 0);
     await run('using System;\nConsole.WriteLine( ;');
     assert.match(await page.locator('#error').innerText(), /Program.cs\(2,/);
     await run('using System; try { throw new InvalidOperationException("caught"); } catch (Exception error) { Console.WriteLine(error.Message); } finally { Console.WriteLine("cleanup"); }');

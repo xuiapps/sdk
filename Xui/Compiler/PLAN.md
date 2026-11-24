@@ -47,8 +47,9 @@ The next sequence is:
    executes directly with overlap and managed range checks. Class default equality and Array.IndexOf now execute, including virtual Equals
    overrides. Generic page factories now select constructors at compile time and preserve
    TargetInvocationException wrapping. The header’s Int32.ToString now produces native
-   JS strings, including direct InvariantCulture calls. The browser probe next reaches
-   GetType().Name for example IDs; then continue through the window and service paths.
+   JS strings, including direct InvariantCulture calls. GetType().Name now uses
+   existing runtime descriptors. The browser probe next needs typeof for service lookup
+   and string concatenation for example IDs; then continue through the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

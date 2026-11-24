@@ -69,6 +69,12 @@ public sealed partial class Analyzer
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && DotNet.Intrinsics.ManagedType.Read(module, token) is { } managedType)
+                    {
+                        Add(new Dependency.Intrinsic("Type." + managedType.Operation), node, DependencyReason.Call, offset);
+                        Signature(node, managedType.Signature.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
                     if (invariantFormatting.ContainsKey(offset))
                     {
                         Add(new Dependency.Intrinsic("Int32.ToString.InvariantCulture"), node, DependencyReason.Call, offset);

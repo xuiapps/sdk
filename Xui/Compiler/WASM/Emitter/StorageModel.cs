@@ -44,13 +44,14 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     public MathRuntime MathImports { get; } = new();
     public FormattingRuntime Formatting { get; } = new();
     public Dictionary<TypeIdentity, GlobalIndex> DefaultComparers { get; } = new();
+    public bool ManagedTypesEnabled { get; set; }
     public bool StringEqualityEnabled { get; set; }
 
     public bool ArgumentExceptionsEnabled { get; set; }
     public bool InnerExceptionsEnabled { get; set; }
     public uint InnerExceptionField => ArgumentExceptionsEnabled ? 3u : 2u;
 
-    public bool IsClass(TypeIdentity identity) => DelegateInfo.IsRuntimeBase(identity) || XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
+    public bool IsClass(TypeIdentity identity) => XuiNet.DotNet.Intrinsics.ManagedType.Is(identity) || DelegateInfo.IsRuntimeBase(identity) || XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
     public bool IsGc(TypeIdentity identity)
     {
         if (XuiNet.DotNet.Intrinsics.InterpolatedStringHandler.Is(identity)) return false;
@@ -68,7 +69,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
         type = EnumInfo.Storage(type);
         if (type.Code is SignatureTypeCode.GenericTypeParameter or SignatureTypeCode.GenericMethodParameter)
             throw new NotSupportedException("Open generic parameters cannot be emitted.");
-        if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && !DelegateInfo.IsRuntimeBase(external) && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)
+        if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && !XuiNet.DotNet.Intrinsics.ManagedType.Is(external) && !DelegateInfo.IsRuntimeBase(external) && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)
             throw new NotSupportedException($"External class storage is not implemented: {type}.");
         if (type.Array is { } array) _ = ArrayShape(array);
         return new(type.Code, type.Identity, type.IsByReference, type.Code is SignatureTypeCode.Object or SignatureTypeCode.SZArray || type.Identity is { } identity && IsGc(identity), type.Array);
@@ -84,6 +85,13 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             var exception = new GcShape(identity);
             shapes.Add(identity, exception);
             return exception;
+        }
+        if (XuiNet.DotNet.Intrinsics.ManagedType.Is(identity))
+        {
+            ManagedTypesEnabled = true;
+            var descriptor = new GcShape(identity);
+            shapes.Add(identity, descriptor);
+            return descriptor;
         }
         if (XuiNet.DotNet.Intrinsics.DefaultEquality.Is(identity))
         {
@@ -212,10 +220,12 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             ExceptionReferenceBlock = writer.FunctionType([], ValueTypeCode.ExnRef);
             EmptyBlock = writer.FunctionType();
         }
-        if (Classes.Types.Count != 0 || DelegatesEnabled)
+        if (Classes.Types.Count != 0 || DelegatesEnabled || ManagedTypesEnabled)
         {
-            DescriptorType = writer.StructType([ValueTypeCode.I32, ValueTypeCode.EqRef, ValueTypeCode.I32,
-                WasmValue.RefNull(utf16ArrayType), ValueTypeCode.I32, ValueTypeCode.I32], Mutability.Immutable);
+            List<WasmValue> descriptorFields = [ValueTypeCode.I32, ValueTypeCode.EqRef, ValueTypeCode.I32,
+                WasmValue.RefNull(utf16ArrayType), ValueTypeCode.I32, ValueTypeCode.I32];
+            if (ManagedTypesEnabled) descriptorFields.Add(WasmValue.RefNull(utf16ArrayType));
+            DescriptorType = writer.StructType(descriptorFields.ToArray(), Mutability.Immutable);
             ClassRoot = writer.StructType([ValueTypeCode.EqRef], extensible: true);
             InstanceTestType = writer.FunctionType([ValueTypeCode.EqRef, ValueTypeCode.EqRef], ValueTypeCode.EqRef);
             foreach (var contract in Classes.Types.Where(type => type.IsInterface)) contract.WasmType = ClassRoot;
@@ -228,6 +238,11 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
         }
         foreach (var shape in shapes.Values)
         {
+            if (XuiNet.DotNet.Intrinsics.ManagedType.Is(shape.Identity))
+            {
+                shape.Type = DescriptorType;
+                continue;
+            }
             if (XuiNet.DotNet.Intrinsics.DefaultEquality.Is(shape.Identity))
             {
                 shape.Type = writer.StructType([]);

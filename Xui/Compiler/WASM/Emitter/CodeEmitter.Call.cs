@@ -15,6 +15,7 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryManagedType(instruction, offset)) return;
         if (TryInt32Formatting(instruction, offset)) return;
         if (TryConstructorFactory(instruction, offset)) return;
         if (TryArrayCopy(instruction, offset)) return;

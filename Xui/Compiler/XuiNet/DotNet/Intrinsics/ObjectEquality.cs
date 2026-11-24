@@ -11,7 +11,7 @@ public static class ObjectEquality
     /// <summary>Typed IEquatable class implementations and boxed/object-typed values need a separate path.</summary>
     public static bool Supports(SignatureType element) => !element.IsByReference &&
         element.Identity is { Handle.Kind: HandleKind.TypeDefinition, IsValueType: false, IsInterface: false } type &&
-        !FrameworkTypes.IsRuntimeBase(type) && !DelegateInfo.Is(type) &&
+        !FrameworkTypes.IsRuntimeBase(type) && !ManagedType.Is(type) && !DelegateInfo.Is(type) &&
         !type.Interfaces().Any(i => FrameworkTypes.Is(i, "System", "IEquatable`1") && i.Arguments?.Values.Length == 1 && i.Arguments.Values[0] == element);
 
     /// <summary>Finds the override of Object.Equals, ignoring hidden new virtual Equals slots.</summary>

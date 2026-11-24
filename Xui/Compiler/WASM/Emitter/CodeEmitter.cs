@@ -550,6 +550,15 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.ManagedType.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } managedType)
+                    {
+                        method.Storage.ManagedTypesEnabled = true;
+                        method.Storage.ExceptionsEnabled |= managedType.Signature.HasThis;
+                        method.RequireGcTemporaries();
+                        if (managedType.Signature.Result.Identity is { } typeIdentity) method.RequireGc(typeIdentity);
+                        break;
+                    }
                     if (method.InvariantFormatting.ContainsKey(offset) || instruction.Code == OpCode.Call && IR.Intrinsics.Int32Formatting.Is(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
                     {
