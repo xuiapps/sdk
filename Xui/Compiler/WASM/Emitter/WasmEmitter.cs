@@ -112,6 +112,7 @@ public sealed partial class WasmEmitter
             if (storage.StringEqualityEnabled) stringEqualsType = types.FunctionType([ExternRef, ExternRef], I32);
             storage.Interpolation.DefineTypes(ref types);
             storage.MathImports.DefineTypes(ref types);
+            storage.Formatting.DefineTypes(ref types);
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
             storage.DefineReferenceAddressTypes(ref types);
@@ -148,6 +149,7 @@ public sealed partial class WasmEmitter
             if (storage.StringEqualityEnabled) stringEquals = imports.Function("wasm:js-string", "equals", stringEqualsType);
             storage.Interpolation.Import(ref imports);
             storage.MathImports.Import(ref imports);
+            storage.Formatting.Import(ref imports);
             importedFunctionCount = imports.FunctionCount;
         }
         finally

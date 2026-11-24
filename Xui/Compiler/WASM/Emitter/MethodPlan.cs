@@ -37,6 +37,7 @@ internal sealed partial class MethodPlan
     public LocalVariable[] Locals { get; }
     public List<IR.MethodIdentity> Calls { get; } = new();
     public IReadOnlyDictionary<int, IR.Intrinsics.InterpolatedStringHandler> InterpolationCalls { get; } = new Dictionary<int, IR.Intrinsics.InterpolatedStringHandler>();
+    public IReadOnlyDictionary<int, InvariantFormattingCall> InvariantFormatting { get; } = new Dictionary<int, InvariantFormattingCall>();
     public InstructionGraph Graph { get; }
     public SequenceBlock? Flow { get; }
     public Dictionary<FlowNode, TypeIndex> BlockTypes { get; } = new();
@@ -96,6 +97,7 @@ internal sealed partial class MethodPlan
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
         if (Locals.Concat(Signature.Parameters).Any(p => p.IsReferenceAddress)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
+        InvariantFormatting = InvariantFormattingCalls.Read(source, Body, Graph);
         InterpolationCalls = XuiNet.CodeFlow.InterpolationCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
         if (CallsTimeSpanFactory() || Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
             Graph.Instructions.Any(n => n.Code is OpCode.Newobj or OpCode.Ldsfld or OpCode.Ldftn or OpCode.Ldvirtftn || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);

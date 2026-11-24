@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Unsupported local type in System.Number.NegativeInt32ToDecStr: Unsupported signature type: Pinned.
+Unsupported signature type: Pointer.
 ```
 
 ## Dependency path
@@ -36,15 +36,16 @@ Unsupported local type in System.Number.NegativeInt32ToDecStr: Unsupported signa
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
- → Method { Identity = Xui.Core.UI.View.AddProtectedChild }
- → Method { Identity = Xui.Core.UI.View.ActivateSubtree }
- → VirtualCall { Identity = Xui.Core.UI.View.OnActivate }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.OnActivate }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.UpdateFrameRate }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeActionButton.SetFrameRate }
- → Method { Identity = System.Int32.ToString }
- → Method { Identity = System.Number.FormatInt32 }
- → Method { Identity = System.Number.NegativeInt32ToDecStr }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel.AddExample<Xui.Apps.TestApp.BrowserCanvasExample> }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.BrowserCanvasExample>..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.BrowserCanvasExample>.NavigateToExample }
+ → VirtualCall { Identity = Xui.Apps.TestApp.Pages.IExampleNavigation.PushExamplePage<Xui.Apps.TestApp.BrowserCanvasExample> }
+ → Method { Identity = Xui.Apps.TestApp.MobileNavigation.PushExamplePage<Xui.Apps.TestApp.BrowserCanvasExample> }
+ → Method { Identity = Xui.Apps.TestApp.Pages.MobileExamplePage<Xui.Apps.TestApp.BrowserCanvasExample>..ctor }
+ → Method { Identity = Xui.Apps.TestApp.BrowserCanvasExample..ctor }
+ → Method { Identity = Example..ctor }
+ → Method { Identity = System.Object.GetType }
+ → Method { Identity = System.Runtime.CompilerServices.RuntimeHelpers.GetMethodTable }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

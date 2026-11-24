@@ -58,6 +58,8 @@ try {
     await result('True\n1234567890123\n1.25\n', 0);
     await run('using System; Console.WriteLine(Math.Pow(2,3)); Console.WriteLine(Math.Pow(1,double.NaN)); Console.WriteLine("abc".Equals("abc"));');
     await result('8\n1\nTrue\n', 0);
+    await run('using System; int value = int.MinValue; Console.WriteLine(value.ToString()); Console.WriteLine(value.ToString(System.Globalization.CultureInfo.InvariantCulture));');
+    await result('-2147483648\n-2147483648\n', 0);
     await run('using System;\nConsole.WriteLine( ;');
     assert.match(await page.locator('#error').innerText(), /Program.cs\(2,/);
     await run('using System; try { throw new InvalidOperationException("caught"); } catch (Exception error) { Console.WriteLine(error.Message); } finally { Console.WriteLine("cleanup"); }');

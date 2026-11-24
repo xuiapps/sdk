@@ -40,6 +40,7 @@ public sealed partial class Analyzer
 
         var graph = InstructionGraph.Read(body.Instructions);
         var interpolationCalls = InterpolationCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
+        var invariantFormatting = InvariantFormattingCalls.Read(module, body, graph);
         var reachable = new HashSet<InstructionNode>();
         var pending = new Stack<InstructionNode>();
         pending.Push(graph.Entry);
@@ -68,6 +69,16 @@ public sealed partial class Analyzer
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (invariantFormatting.ContainsKey(offset))
+                    {
+                        Add(new Dependency.Intrinsic("Int32.ToString.InvariantCulture"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.Int32Formatting.Is(module, token))
+                    {
+                        Add(new Dependency.Intrinsic("Int32.ToString"), node, DependencyReason.Call, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ConstructorFactory.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } constructor)
                     {
                         Add(new Dependency.Intrinsic("Activator.CreateInstance"), node, DependencyReason.Call, offset);

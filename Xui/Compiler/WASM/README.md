@@ -262,6 +262,13 @@ rounding boundaries, infinities, and exception messages. Composite overloads,
 formatting, parsing, and clock reads are not supplied by these intrinsics. Duration
 conversion has no JavaScript host dependency.
 
+`Int32.ToString()` reads the current managed integer address and imports
+`xui-string.int32-to-string`, producing invariant decimal native JS strings. An
+adjacent `CultureInfo.InvariantCulture` getter consumed only by
+`Int32.ToString(IFormatProvider)` uses the same path. The compiler proves that the
+provider cannot escape or be entered through another control-flow edge; arbitrary
+providers and format strings are unsupported.
+
 `DefaultInterpolatedStringHandler` has a compiler-owned eight-byte stack header:
 a frame-owned GC reference slot for a mutable packed UTF-16 array, plus a character
 count. Capacity grows geometrically; appends write code units directly. Supported

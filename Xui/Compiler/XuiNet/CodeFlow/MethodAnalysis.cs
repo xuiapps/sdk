@@ -12,6 +12,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     private readonly SignatureType[] locals = SignatureReader.Locals(module, body.LocalSignature, context.Arguments, methodArguments).ToArray();
     private readonly Dictionary<int, Signature> calls = new();
     private readonly IReadOnlyDictionary<int, Model.Intrinsics.InterpolatedStringHandler> interpolationCalls = InterpolationCalls.Read(module, body, graph, context, methodArguments);
+    private readonly IReadOnlyDictionary<int, InvariantFormattingCall> invariantFormatting = InvariantFormattingCalls.Read(module, body, graph);
 
     public void Apply(InstructionNode node)
     {
@@ -216,6 +217,17 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Callvirt:
             case OpCode.Call:
                 int callToken = instruction.ReadToken(ref reader).Value;
+                if (invariantFormatting.TryGetValue(node.Offset, out var formatting))
+                {
+                    if (formatting.IsProvider) stack.Push(StackEntry.From(formatting.Provider));
+                    else
+                    {
+                        stack.Pop(StackEntry.From(formatting.Provider));
+                        stack.Pop(StackEntry.From(new SignatureType(SignatureTypeCode.Int32, IsByReference: true)));
+                        stack.Push(StackType.String);
+                    }
+                    break;
+                }
                 if (Model.Intrinsics.ArrayCopy.Read(module, MetadataTokens.EntityHandle(callToken)) is { } copy)
                 {
                     stack.Pop(StackType.Int32);
@@ -357,7 +369,9 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     {
         if (calls.TryGetValue(token, out var signature)) return signature;
         var handle = MetadataTokens.EntityHandle(token);
-        if (Model.Intrinsics.ConstructorFactory.Read(module, handle, context.Arguments, methodArguments) is { } constructor)
+        if (Model.Intrinsics.Int32Formatting.Is(module, handle))
+            signature = new([new(SignatureTypeCode.Int32, IsByReference: true)], StackType.String);
+        else if (Model.Intrinsics.ConstructorFactory.Read(module, handle, context.Arguments, methodArguments) is { } constructor)
             signature = new([], StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, constructor.DeclaringType, IsReferenceType: true)));
         else if (Model.Intrinsics.InlineArrayAccess.Read(module, handle, context.Arguments, methodArguments) is { } inline)
             signature = new(inline.Signature.Parameters.ToArray(), StackEntry.From(inline.Signature.Result));
