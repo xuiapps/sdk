@@ -18,7 +18,28 @@ internal sealed class RegionContinuations
         FindContinuation(entry);
     }
 
-    public InstructionNode? Join(InstructionNode node) => continuations[node];
+    public InstructionNode? Join(InstructionNode node)
+    {
+        if (continuations[node] is { } join) return join;
+        if (node.Successors.Length == 2 && node.Successors[0] != node.Successors[1])
+        {
+            // A guard may return on one path while its other path rejoins the
+            // outer fallthrough. That continuation is not a strict postdominator.
+            foreach (var candidate in node.Successors)
+                if (!IsBoundary(candidate) && Reaches(node.Successors.First(s => s != candidate), candidate, []))
+                    return candidate;
+        }
+        return null;
+    }
+
+    private bool Reaches(InstructionNode node, InstructionNode target, HashSet<InstructionNode> visited)
+    {
+        if (node == target) return true;
+        if (IsBoundary(node) || !visited.Add(node)) return false;
+        if (loops.TryGetValue(node, out var nested) && nested != region)
+            return Reaches(nested.Block.Exit, target, visited);
+        return node.Successors.Any(next => Reaches(next, target, visited));
+    }
 
     private bool IsBoundary(InstructionNode node) => region is not null &&
         (node == region.Block.Header || node == region.Block.Exit);

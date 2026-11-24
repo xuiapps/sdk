@@ -34,6 +34,9 @@ internal sealed partial class MethodPlan
     public InstructionGraph Graph { get; }
     public SequenceBlock? Flow { get; }
     public Dictionary<FlowNode, TypeIndex> BlockTypes { get; } = new();
+    public bool UsesNativeFloatClamp { get; set; }
+    public LocalIndex NativeFloatMin { get; private set; }
+    public LocalIndex NativeFloatMax { get; private set; }
     public bool UsesNativeFloat { get; set; }
     public LocalIndex NativeFloatTemporary { get; private set; }
     public bool NeedsDup { get; set; }
@@ -77,17 +80,23 @@ internal sealed partial class MethodPlan
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
         if (Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
-            Graph.Instructions.Any(n => n.Code == OpCode.Newobj || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
+            Graph.Instructions.Any(n => n.Code is OpCode.Newobj or OpCode.Ldsfld || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
         if (Body.ExceptionRegions.Length != 0)
         {
             Graph = Analyzer.Analyze(source, identity);
-            Flow = ExceptionBlocks.Build(source, Body, Graph);
+            try { Flow = ExceptionBlocks.Build(source, Body, Graph); }
+            catch (NotSupportedException error) { AddFlowDiagnostic(error); throw; }
         }
         else if (Graph.Instructions.Any(node => node.Code is OpCode.Throw or OpCode.Rethrow || node.Successors.Length > 1 ||
             node.Code is OpCode.Br or OpCode.Br_s))
         {
             Graph = Analyzer.Analyze(source, identity);
-            Flow = StructuredBlocks.Build(Graph);
+            try { Flow = StructuredBlocks.Build(Graph); }
+            catch (NotSupportedException error)
+            {
+                AddFlowDiagnostic(error);
+                throw;
+            }
         }
         if (Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
             Graph.Instructions.Any(n => n.After?.Entry is { Type: StackType.ValueType, DeclaredType.Identity: { } id } && !storage.IsGc(id)))
@@ -97,6 +106,12 @@ internal sealed partial class MethodPlan
             if (Frame.References.Count != 0) { storage.ReferenceSlotsEnabled = true; storage.ExceptionsEnabled = true; }
             if (storage.ReferenceSlotsEnabled) RequireGcTemporaries();
         }
+    }
+
+    private void AddFlowDiagnostic(NotSupportedException error)
+    {
+        error.Data["Xui.Method"] = Identity.ToString();
+        error.Data["Xui.InstructionGraph"] = string.Join("\n", Graph.Instructions.Select(n => $"{n.Offset:x4} {n.Code} -> {string.Join(", ", n.Successors.Select(s => s.Offset.ToString("x4")))}"));
     }
 
     public void RequireGcTemporaries() => UsesGc = true;
@@ -112,6 +127,11 @@ internal sealed partial class MethodPlan
         var types = Locals.Select(local => local.WasmType).ToList();
         uint parameterCount = (uint)Signature.WasmParameterCount;
         if (UsesNativeFloat) { NativeFloatTemporary = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F32); }
+        if (UsesNativeFloatClamp)
+        {
+            NativeFloatMin = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F32);
+            NativeFloatMax = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F32);
+        }
         if (NeedsDup)
         {
             dupBase = parameterCount + (uint)types.Count;

@@ -99,7 +99,7 @@ initialization at joins. `while`, `do while`, `for`, nested loops, and structure
 exits pass loop results. Loop-local stores contribute to definite initialization
 only on paths that actually exit. Loops currently require one entry and one
 shared continuation; multiple-entry cycles, loops without a continuation, and
-overlapping regions throw `Code flow jumps unsupported`. Dead instructions in these methods are omitted
+arbitrary overlapping regions throw `Code flow jumps unsupported`. Short-circuit branches may share straight-line result/return tails; guard clauses may return early and rejoin the outer fallthrough. Linear struct values cross block boundaries as frame addresses. Dead instructions in these methods are omitted
 without modifying the PE or its IL offsets.
 
 Locals support `bool`, `char`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`,
@@ -172,12 +172,20 @@ See the [stack event demo](../Tests/Wasm/ReferenceSlots/Snapshots/Events.md).
 `System.Runtime.InteropServices.NFloat` has an intrinsic WASM32 scalar representation:
 f32 in storage and method signatures, promoted to the floating evaluation category.
 Conversions from Int32/Single/Double and back to Single/Double, plus addition,
-subtraction, multiplication, division, comparisons, and NaN/infinity constants are recognized by framework identity and signature.
+subtraction, multiplication, division, comparisons, unary negation, Abs, Min, Max, Clamp,
+IsFinite, IsNaN, IsInfinity, and NaN/infinity constants are recognized by framework identity and signature.
+Min/Max preserve IEEE signed-zero and NaN behavior; Clamp follows Single.Clamp
+(including NaN bounds) and throws ArgumentException for reversed bounds.
 Operations use f32 rounding. The known System.Runtime.InteropServices/System.Runtime/
 System.Private.CoreLib facade identities match across assembly field/method references.
 Other NFloat members remain unsupported; BCL implementation bodies are not compiled
 for these intrinsics. Supplied framework facades resolve type forwarders into the
 supplied implementation PE while retaining the target's f32 NFloat representation.
+
+The framework's immutable `TimeSpan.Zero` value load creates an independent zeroed
+linear struct. Taking its static address (`ldsflda`) and general static storage/type
+initialization remain unsupported. `IsExternalInit` required modifiers on void init
+setter returns preserve the ordinary setter ABI; other unknown required modifiers reject.
 
 Numeric layouts follow linked TypeRefs into their defining modules; caches and
 field maps retain module ownership. The [standalone canvas demos](../Tests/Wasm/Canvas/README.md)
@@ -363,7 +371,7 @@ supported operations that require no emitted bytes.
 | `ldfld` | Numeric load / `memory.copy` / `struct.get` / `struct.new` | Reads linear or flattened GC fields; struct values are copied. |
 | `ldflda` | `i32.add` or GC owner reference | Retains the owner and static field range for inline addresses. |
 | `stfld` | Numeric store / `memory.copy` / `struct.set` | Writes linear or flattened fields; struct assignment copies leaf values. |
-| `ldsfld` |  |  |
+| `ldsfld` | `memory.fill`, frame address | Only framework TimeSpan.Zero value loads; other static fields unsupported. |
 | `ldsflda` |  |  |
 | `stsfld` |  |  |
 | `stobj` | `memory.copy` or leaf loads/stores | Copies struct values into linear or flattened GC storage. |

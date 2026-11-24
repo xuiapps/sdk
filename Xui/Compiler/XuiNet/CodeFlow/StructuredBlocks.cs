@@ -45,10 +45,12 @@ public sealed class StructuredBlocks
                 node = nested.Block.Exit;
                 continue;
             }
-            if (!emitted.Add(node)) throw Unsupported(node, "overlapping regions");
+            // Roslyn shares terminal tails between short-circuit branches. Each arm may
+            // emit a straight-line tail ending at its join or returning/throwing.
+            if (!emitted.Add(node) && !IsStraightTail(node, stop)) throw Unsupported(node, "overlapping regions");
             if (node.Successors.Length == 2)
             {
-                var join = continuations.Join(node);
+                var join = continuations.Join(node) ?? stop;
                 var taken = Sequence(node.Successors[1], join, region, continuations);
                 var notTaken = Sequence(node.Successors[0], join, region, continuations);
                 int depth = Math.Min(Lowest(taken, node.After!.Depth), Lowest(notTaken, node.After.Depth));
@@ -64,6 +66,20 @@ public sealed class StructuredBlocks
             }
         }
         return new SequenceBlock(children.AsReadOnly());
+    }
+
+    private static bool IsStraightTail(InstructionNode node, InstructionNode? stop)
+    {
+        var visited = new HashSet<InstructionNode>();
+        while (visited.Add(node))
+        {
+            if (node == stop) return true;
+            if (node.Successors.Length == 0)
+                return node.Code is DotNet.Op.OpCode.Ret or DotNet.Op.OpCode.Throw or DotNet.Op.OpCode.Rethrow;
+            if (node.Successors.Length != 1) return false;
+            node = node.Successors[0];
+        }
+        return false;
     }
 
     private static int Lowest(SequenceBlock block, int depth)

@@ -46,6 +46,12 @@ public static class SignatureReader
                 return new(code, GenericParameterIndex: index);
             case SignatureTypeCode.RequiredModifier:
                 var modifier = module.ResolveType(reader.ReadTypeHandle());
+                if (FrameworkTypes.Is(modifier, "System.Runtime.CompilerServices", "IsExternalInit"))
+                {
+                    var result = Type(module, ref reader, arguments);
+                    if (result.Code != SignatureTypeCode.Void) throw new NotSupportedException("IsExternalInit requires a void setter result.");
+                    return result;
+                }
                 if (IsFrameworkInModifier(modifier))
                 {
                     var qualified = Type(module, ref reader, arguments);

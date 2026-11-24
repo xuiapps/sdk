@@ -126,6 +126,14 @@ public enum OpCode : byte
     I64ShrU = 0x88,
     /// <summary>Negates an f64 value, preserving signed zero.</summary>
     F64Neg = 0x9a,
+    /// <summary>Absolute value of f32.</summary>
+    F32Abs = 0x8b,
+    /// <summary>Negates f32.</summary>
+    F32Neg = 0x8c,
+    /// <summary>IEEE minimum of f32 values.</summary>
+    F32Min = 0x96,
+    /// <summary>IEEE maximum of f32 values.</summary>
+    F32Max = 0x97,
     /// <summary>Adds f32 values with single-precision rounding.</summary>
     F32Add = 0x92,
     /// <summary>Subtracts f32 values with single-precision rounding.</summary>

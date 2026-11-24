@@ -20,6 +20,11 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         var stack = new StackCursor(node);
         switch (instruction.Code)
         {
+            case OpCode.Ldsfld:
+                var zeroType = Model.Intrinsics.TimeSpanZero.Read(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context)
+                    ?? throw new NotSupportedException("Static field stack analysis is not implemented except TimeSpan.Zero.");
+                stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, zeroType)));
+                break;
             case OpCode.Newarr:
                 ArrayIndex(ref stack);
                 var element = SignatureReader.StorageType(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments);

@@ -134,6 +134,7 @@ public readonly ref partial struct CodeEmitter
                 EmitLdloca(instruction.ReadVariable(ref reader), offset); break;
             case OpCode.Ldloca_s:
                 EmitLdloca_s(instruction.ReadShortVariable(ref reader), offset); break;
+            case OpCode.Ldsfld: EmitLdsfld(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Ldfld:
                 EmitLdfld(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Ldflda:
@@ -469,6 +470,10 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Ldloc_s:
                 case OpCode.Stloc_s:
                     _ = instruction.ReadShortVariable(ref reader); break;
+                case OpCode.Ldsfld:
+                    if (IR.Intrinsics.TimeSpanZero.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType) is null)
+                        throw new NotSupportedException("Static field storage is not implemented except TimeSpan.Zero.");
+                    break;
                 case OpCode.Ldfld:
                 case OpCode.Ldflda:
                 case OpCode.Stfld:
@@ -511,9 +516,15 @@ public readonly ref partial struct CodeEmitter
                         method.RequireGcTemporaries();
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && IR.Intrinsics.NativeFloat.TryMethod(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out _, out _))
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.NativeFloat.TryMethod(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out var nativeOperation, out _))
                     {
                         method.UsesNativeFloat = true;
+                        if (nativeOperation == "Clamp")
+                        {
+                            method.UsesNativeFloatClamp = true;
+                            method.Storage.ExceptionsEnabled = true;
+                            method.RequireGcTemporaries();
+                        }
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.WellKnownMethods.IsObjectConstructor(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value))) break;

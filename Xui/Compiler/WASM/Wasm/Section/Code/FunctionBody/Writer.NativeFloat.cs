@@ -4,6 +4,14 @@ namespace Xui.Compiler.WASM.Wasm.Section.Code.FunctionBody;
 
 public ref partial struct Writer
 {
+    /// <summary>Computes the absolute value of f32.</summary>
+    public readonly Writer F32Abs() { body.Instruction(OpCode.F32Abs); return this; }
+    /// <summary>Negates f32.</summary>
+    public readonly Writer F32Neg() { body.Instruction(OpCode.F32Neg); return this; }
+    /// <summary>Computes the IEEE minimum, propagating NaN and choosing negative zero.</summary>
+    public readonly Writer F32Min() { body.Instruction(OpCode.F32Min); return this; }
+    /// <summary>Computes the IEEE maximum, propagating NaN and choosing positive zero.</summary>
+    public readonly Writer F32Max() { body.Instruction(OpCode.F32Max); return this; }
     /// <summary>Adds two f32 values.</summary>
     public readonly Writer F32Add() { body.Instruction(OpCode.F32Add); return this; }
     /// <summary>Subtracts two f32 values.</summary>

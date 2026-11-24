@@ -33,7 +33,24 @@ public sealed partial class Analyzer
     {
         var analyzer = new Analyzer(rewrite);
         foreach (var root in roots) analyzer.Add(new Dependency.Root(root));
-        for (int i = 0; i < analyzer.nodes.Count; i++) analyzer.Visit(analyzer.nodes[i]);
+        for (int i = 0; i < analyzer.nodes.Count; i++)
+        {
+            try { analyzer.Visit(analyzer.nodes[i]); }
+            catch (NotSupportedException error)
+            {
+                var path = new List<string>();
+                var seen = new HashSet<Dependency>();
+                Dependency? current = analyzer.nodes[i];
+                while (current is not null && seen.Add(current))
+                {
+                    path.Add(current.ToString()!);
+                    current = analyzer.edges.Where(edge => edge.Target == current).Select(edge => edge.Source).FirstOrDefault();
+                }
+                path.Reverse();
+                error.Data["Xui.DependencyPath"] = string.Join("\n → ", path);
+                throw;
+            }
+        }
         return new(analyzer.nodes, analyzer.edges, analyzer.dispatch);
     }
 

@@ -118,7 +118,14 @@ public sealed partial class Analyzer
                 case OpCode.Ldsfld:
                 case OpCode.Stsfld:
                 case OpCode.Ldsflda:
-                    var field = MemberResolver.Field(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), identity.DeclaringType);
+                    var fieldToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (instruction.Code == OpCode.Ldsfld && DotNet.Intrinsics.TimeSpanZero.Read(module, fieldToken, identity.DeclaringType) is { } zeroType)
+                    {
+                        Add(new Dependency.Intrinsic("TimeSpan.Zero"), node, DependencyReason.FieldRead, offset);
+                        Signature(node, new(SignatureTypeCode.TypeHandle, zeroType), DependencyReason.FieldType, offset);
+                        break;
+                    }
+                    var field = MemberResolver.Field(module, fieldToken, identity.DeclaringType);
                     var reason = instruction.Code switch
                     {
                         OpCode.Ldfld or OpCode.Ldsfld => DependencyReason.FieldRead,
