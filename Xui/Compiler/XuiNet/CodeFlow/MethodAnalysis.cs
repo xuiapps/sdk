@@ -240,6 +240,10 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Sub:
             case OpCode.Mul:
                 stack.Push(NumericPair(ref stack)); break;
+            case OpCode.Div:
+                if (NumericPair(ref stack) != StackType.Float)
+                    throw new NotSupportedException("Integer division is not implemented.");
+                stack.Push(StackType.Float); break;
             case OpCode.And:
             case OpCode.Or:
             case OpCode.Xor:

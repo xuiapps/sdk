@@ -41,6 +41,12 @@ public class NativeFloatMathTests
         """, "2\n4\n3\n-2\nTrue\nTrue\nTrue\nFalse\nFalse\nTrue\nFalse\nTrue\nTrue\n0\n10\nNaN\nNaN\nTrue\nFalse\n", 42);
 
     [Fact]
+    public Task PiHasTargetFloatPrecision() => GcTests.AssertExecution("""
+        using System.Runtime.InteropServices;
+        public static class Program { public static int Main() => (float)NFloat.Pi == float.Pi ? 42 : 1; }
+        """, "", 42);
+
+    [Fact]
     public Task InitOnlyPropertiesUseTheOrdinarySetterAbi() => GcTests.AssertExecution("""
         public struct Point { public int X { get; init; } }
         public class Box { public Point Point { get; init; } }

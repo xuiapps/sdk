@@ -342,6 +342,9 @@ public ref partial struct Writer
         return this;
     }
 
+    /// <summary>Divides two floating evaluation-stack values.</summary>
+    public readonly Writer F64Div() { body.Instruction(OpCode.F64Div); return this; }
+
     /// <summary>Keeps the low 32 bits of an i64 value.</summary>
     public readonly Writer I32WrapI64()
     {

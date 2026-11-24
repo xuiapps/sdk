@@ -160,6 +160,8 @@ public enum OpCode : byte
     F64Sub = 0xa1,
     /// <summary>Multiplies f64 values.</summary>
     F64Mul = 0xa2,
+    /// <summary>Divides two IEEE 754 binary64 values.</summary>
+    F64Div = 0xa3,
     /// <summary>Keeps the low 32 bits of an i64 value.</summary>
     I32WrapI64 = 0xa7,
     /// <summary>Sign-extends i32 to i64.</summary>

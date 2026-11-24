@@ -50,7 +50,7 @@ public sealed class StructuredBlocks
             if (!emitted.Add(node) && !IsStraightTail(node, stop)) throw Unsupported(node, "overlapping regions");
             if (node.Successors.Length == 2)
             {
-                var join = continuations.Join(node) ?? stop;
+                var join = continuations.Join(node, stop);
                 var taken = Sequence(node.Successors[1], join, region, continuations);
                 var notTaken = Sequence(node.Successors[0], join, region, continuations);
                 int depth = Math.Min(Lowest(taken, node.After!.Depth), Lowest(notTaken, node.After.Depth));

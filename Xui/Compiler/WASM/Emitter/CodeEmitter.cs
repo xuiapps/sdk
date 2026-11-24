@@ -225,6 +225,8 @@ public readonly ref partial struct CodeEmitter
                 EmitSub(offset); break;
             case OpCode.Mul:
                 EmitMul(offset); break;
+            case OpCode.Div:
+                EmitDiv(offset); break;
             case OpCode.And:
                 EmitAnd(offset); break;
             case OpCode.Or:
@@ -420,6 +422,7 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Add:
                 case OpCode.Pop:
                 case OpCode.Sub:
+                case OpCode.Div:
                 case OpCode.Mul:
                 case OpCode.And:
                 case OpCode.Or:

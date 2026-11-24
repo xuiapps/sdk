@@ -54,4 +54,20 @@ public class SharedTailTests
             }
         }
         """, "", 42);
+    [Fact]
+    public Task GuardsInBothArmsKeepTheEnclosingContinuation() => GcTests.AssertExecution("""
+        using System;
+        public static class Program {
+            static int Guard(bool select, int value) {
+                if (select) { if (value < 0 || value > 2) return -1; value += 1; }
+                else if (value == 0) return -2;
+                return value > 1 ? value * 10 : value + 1;
+            }
+            public static int Main() {
+                for (int i = -1; i <= 3; i++) Console.WriteLine(Guard(true, i));
+                for (int i = -1; i <= 3; i++) Console.WriteLine(Guard(false, i));
+                return 42;
+            }
+        }
+        """, "-1\n2\n20\n30\n-1\n0\n-2\n2\n20\n30\n", 42);
 }

@@ -54,6 +54,9 @@ internal sealed partial class DispatchTable
             {
                 var method = module.GetMethod(handle);
                 if ((method.Attributes & MethodAttributes.Virtual) == 0) continue;
+                // Unsupported generic methods must not root otherwise unused bodies.
+                // A reachable generic call still rejects when its signature is read.
+                if (method.GenericParameters.Count != 0) continue;
                 var specialized = new MethodIdentity(identity, handle);
                 if (!SignatureReader.Method(module, method.Signature, identity.Arguments).HasThis)
                     throw new BadImageFormatException("Virtual methods require an instance receiver.");

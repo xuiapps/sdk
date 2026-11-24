@@ -32,7 +32,7 @@ public static class NativeFloat
             "op_Addition" or "op_Subtraction" or "op_Multiply" or "op_Division" => signature.Parameters.Length == 2 && N(signature.Result) && signature.Parameters.All(N),
             "op_Equality" or "op_Inequality" or "op_LessThan" or "op_LessThanOrEqual" or "op_GreaterThan" or "op_GreaterThanOrEqual" =>
                 signature.Parameters.Length == 2 && signature.Result.Code == SignatureTypeCode.Boolean && signature.Parameters.All(N),
-            "get_PositiveInfinity" or "get_NegativeInfinity" or "get_NaN" => signature.Parameters.Length == 0 && N(signature.Result),
+            "get_PositiveInfinity" or "get_NegativeInfinity" or "get_NaN" or "get_Pi" => signature.Parameters.Length == 0 && N(signature.Result),
             _ => false
         };
     }
