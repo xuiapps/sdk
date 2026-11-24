@@ -85,6 +85,74 @@ public class DefaultEqualityTests
         """, "True\nFalse\nTrue\n", 42);
 
     [Fact]
+    public Task ClassEqualityPreservesNullIdentityAndVirtualOverrides() => InlineArrayTests.AssertLinked("""
+        using System;
+        using System.Collections.Generic;
+        public class Plain { }
+        public class Base {
+            public int Value;
+            public override bool Equals(object other) => other is Base b && Value == b.Value;
+            public override int GetHashCode() => Value;
+        }
+        public class Derived : Base {
+            public int Calls;
+            public override bool Equals(object other) { Calls++; return false; }
+            public override int GetHashCode() => 0;
+        }
+        public class Hidden : Base { public new virtual bool Equals(object other) => false; }
+        public class HiddenChild : Hidden { public override bool Equals(object other) => false; }
+        public static class Program { public static int Main() {
+            var identity=EqualityComparer<Plain>.Default; var p=new Plain();
+            Console.WriteLine(identity.Equals(null,null)); Console.WriteLine(identity.Equals(p,null));
+            Console.WriteLine(identity.Equals(null,p)); Console.WriteLine(identity.Equals(p,p));
+            Console.WriteLine(identity.Equals(p,new Plain()));
+            var c=EqualityComparer<Base>.Default;
+            Console.WriteLine(c.Equals(new Base { Value=7 },new Base { Value=7 }));
+            Console.WriteLine(c.Equals(new Base { Value=7 },new Base { Value=8 }));
+            var d=new Derived(); Console.WriteLine(c.Equals(d,d)); Console.WriteLine(d.Calls);
+            Console.WriteLine(c.Equals(new HiddenChild { Value=7 },new Base { Value=7 }));
+            return 42;
+        } }
+        """, "True\nFalse\nFalse\nTrue\nFalse\nTrue\nFalse\nFalse\n1\nTrue\n", 42);
+
+    [Fact]
+    public Task ArraySearchUsesDefaultClassEquality() => InlineArrayTests.AssertLinked("""
+        using System;
+        public class Item {
+            public int Value;
+            public override bool Equals(object other) => other is Item item && Value == item.Value;
+            public override int GetHashCode() => Value;
+        }
+        public static class Program { public static int Main() {
+            var a=new Item[4]; a[1]=new Item { Value=42 }; a[3]=new Item { Value=42 };
+            Console.WriteLine(Array.IndexOf(a,new Item { Value=42 }));
+            Console.WriteLine(Array.IndexOf(a,new Item { Value=42 },2,2));
+            Console.WriteLine(Array.IndexOf(a,new Item { Value=43 }));
+            Console.WriteLine(Array.IndexOf(a,null));
+            Console.WriteLine(Array.IndexOf(a,null,4,0));
+            return 42;
+        } }
+        """, "1\n3\n-1\n0\n-1\n", 42);
+
+    [Fact]
+    public Task ArraySearchUsesValueEqualityAndManagedBoundsFailures() => InlineArrayTests.AssertLinked("""
+        using System;
+        public static class Program { public static int Main() {
+            var numbers=new double[2]; numbers[0]=double.NaN; numbers[1]=-0d;
+            Console.WriteLine(Array.IndexOf(numbers,double.NaN)); Console.WriteLine(Array.IndexOf(numbers,0d));
+            var text=new string[3]; text[1]="🙂"; text[2]="A";
+            Console.WriteLine(Array.IndexOf(text,"🙂")); Console.WriteLine(Array.IndexOf(text,"a"));
+            Console.WriteLine(Array.IndexOf(text,null)); Console.WriteLine(Array.IndexOf(text,"A",2));
+            try { Array.IndexOf<string>(null,"x"); } catch(ArgumentNullException e) { Console.WriteLine(e.ParamName); }
+            try { Array.IndexOf(text,"x",-1); } catch(ArgumentOutOfRangeException e) { Console.WriteLine(e.ParamName); }
+            try { Array.IndexOf(text,"x",4,0); } catch(ArgumentOutOfRangeException e) { Console.WriteLine(e.ParamName); }
+            try { Array.IndexOf(text,"x",0,-1); } catch(ArgumentOutOfRangeException e) { Console.WriteLine(e.ParamName); }
+            try { Array.IndexOf(text,"x",2,int.MaxValue); } catch(ArgumentOutOfRangeException e) { Console.WriteLine(e.ParamName); }
+            return 42;
+        } }
+        """, "0\n1\n1\n-1\n0\n2\narray\nstartIndex\nstartIndex\ncount\ncount\n", 42);
+
+    [Fact]
     public void InterfaceDispatchDoesNotTreatTheDefaultSingletonAsAnOrdinaryClass()
     {
         using var app = CanvasTests.Read(Frontend.Roslyn.Compile("""

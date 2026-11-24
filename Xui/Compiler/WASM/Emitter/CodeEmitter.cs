@@ -600,14 +600,28 @@ public readonly ref partial struct CodeEmitter
                     if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.DefaultEquality.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } equality)
                     {
-                        method.RequireGc(equality.Owner);
-                        if (equality.Operation == "Equals")
+                        if (IR.Intrinsics.DefaultEquality.Is(equality.Owner)) method.RequireGc(equality.Owner);
+                        else method.RequireGcTemporaries();
+                        if (equality.Operation is "Equals" or "IndexOf")
                         {
                             method.Storage.ExceptionsEnabled = true;
                             var storage = method.Storage.Bind(equality.Element);
                             method.EqualityTemporaries.TryAdd(storage, default);
                             if (storage.TypeCode == SignatureTypeCode.String) method.Storage.StringEqualityEnabled = true;
                             if (equality.Implementation is { } equals && !method.Calls.Contains(equals)) method.Calls.Add(equals);
+                            if (equality.UsesObjectEquality)
+                                foreach (var equalityTarget in method.Storage.EqualityTargets(equality.Element.Identity!.Value))
+                                    if (!method.Calls.Contains(equalityTarget.Method)) method.Calls.Add(equalityTarget.Method);
+                            if (equality.Operation == "IndexOf")
+                            {
+                                method.UsesEqualitySearch = method.UsesArrays = true;
+                                _ = method.Storage.ArrayShape(new(equality.Element));
+                                method.Storage.ArgumentExceptionsEnabled = true;
+                                method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentNullException);
+                                method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
+                                foreach (var name in new[] { "array", "startIndex", "count" })
+                                    if (seenLiterals.Add(name)) literals.Add(name);
+                            }
                         }
                         break;
                     }

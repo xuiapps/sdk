@@ -16,6 +16,7 @@ public sealed partial class Analyzer
     private readonly DispatchTable dispatch = new();
     private readonly Dictionary<TypeIdentity, List<Root.Type>> typeRoots = new();
     private readonly Dictionary<TypeIdentity, List<Dependency.VirtualCall>> virtualCalls = new();
+    private readonly Dictionary<TypeIdentity, Dependency.Equality> equalityCalls = new();
     private readonly Dictionary<TypeIdentity, List<Dependency.Instantiation>> instantiated = new();
     private readonly HashSet<Model.Module> modules = new();
     private readonly InstructionRewriter? rewrite;
@@ -84,6 +85,7 @@ public sealed partial class Analyzer
             case Dependency.Initialization initialization: ReadInitializer(initialization); break;
             case Dependency.Instantiation allocation: Instantiate(allocation); break;
             case Dependency.VirtualCall call: InvokeVirtual(call); break;
+            case Dependency.Equality equality: InvokeEquality(equality); break;
         }
     }
 

@@ -731,8 +731,8 @@ Structs implementing IEquatable<T> call their concrete typed equality method,
 including explicit implementations and closed generic structs. Arguments retain
 value-copy semantics; NFloat field Equals handles NaN and signed zero.
 Null comparer receivers throw managed NullReferenceException. Custom comparer
-subclasses, IEqualityComparer interface dispatch, hashing, class equality, and
-fallback ValueType.Equals remain explicitly unsupported.
+subclasses, IEqualityComparer interface dispatch, hashing, IEquatable class contracts,
+object-typed/boxed equality, and fallback ValueType.Equals remain explicitly unsupported.
 
 String equality operators, static Equals(string, string), and instance Equals(string)
 use ordinal UTF-16 equality over JavaScript strings. Static comparisons accept null;
@@ -747,3 +747,11 @@ and capacity failures throw managed argument exceptions before mutation. Struct
 elements are explicitly rejected until copying preserves element storage aliases.
 System.Array-typed operands, covariance, element conversions, multidimensional
 arrays, and 64-bit index overloads are not supported.
+
+Default equality for named classes preserves null and reference-identity behavior,
+retaining virtual Object.Equals overrides on reachable instantiated receivers.
+Hidden new virtual Equals slots do not replace Object.Equals. Generic Array.IndexOf
+and the comparer search helper execute scalar/string/class searches with managed
+argument checks, including NaN equality, nulls, and range slices. Struct-element
+search remains unsupported. The dependency graph explicitly records equality edges
+so override bodies survive tree shaking even without an ordinary callvirt instruction.

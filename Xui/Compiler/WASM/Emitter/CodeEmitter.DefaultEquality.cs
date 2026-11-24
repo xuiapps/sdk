@@ -19,8 +19,8 @@ public readonly ref partial struct CodeEmitter
             stack.Push(new(SignatureTypeCode.TypeHandle, access.Owner));
             return true;
         }
+        if (access.Operation == "IndexOf") return TryComparerIndexOf(access, instruction, offset);
         var storage = method.Storage.Bind(access.Element);
-        var category = storage.StackType == SignatureTypeCode.IntPtr ? SignatureTypeCode.Int32 : storage.StackType;
         var (left, right) = method.EqualityTemporaries[storage];
         PopAssignable(storage, instruction.Code, offset); writer.LocalSet(right);
         PopAssignable(storage, instruction.Code, offset); writer.LocalSet(left);
@@ -28,8 +28,18 @@ public readonly ref partial struct CodeEmitter
         if (receiver.IsByReference || receiver.Identity is not null && receiver.Identity != access.Owner)
             throw new InvalidProgramException("Default equality requires its declared comparer receiver.");
         writer.RefIsNull().If(); ThrowException(ExceptionKind.NullReferenceException); writer.End();
+        CompareEquality(access, left, right);
+        stack.Push(new(SignatureTypeCode.Int32));
+        return true;
+    }
+
+    private void CompareEquality(DefaultEquality access, LocalIndex left, LocalIndex right)
+    {
+        var storage = method.Storage.Bind(access.Element);
+        var category = storage.StackType == SignatureTypeCode.IntPtr ? SignatureTypeCode.Int32 : storage.StackType;
         if (access.Implementation is { } equals)
             writer.LocalGet(left).LocalGet(right).Call(methods[equals].Function);
+        else if (access.UsesObjectEquality) CompareObjects(access.Element.Identity!.Value, left, right);
         else if (category == SignatureTypeCode.String) CompareStrings(left, right);
         else
         {
@@ -46,8 +56,6 @@ public readonly ref partial struct CodeEmitter
                 default: throw new NotSupportedException($"Default equality category {category} is unsupported.");
             }
         }
-        stack.Push(new(SignatureTypeCode.Int32));
-        return true;
     }
 
     private void CompareStrings(LocalIndex left, LocalIndex right)

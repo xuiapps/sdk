@@ -33,7 +33,21 @@ public sealed partial class Analyzer
             instances.Add(node);
             if (virtualCalls.TryGetValue(key, out var calls))
                 foreach (var call in calls) Connect(call, node);
+            if (equalityCalls.TryGetValue(key, out var equality)) ConnectEquality(equality, node);
         }
+    }
+
+    private void InvokeEquality(Dependency.Equality node)
+    {
+        equalityCalls.Add(node.Identity, node);
+        if (instantiated.TryGetValue(node.Identity, out var instances))
+            foreach (var instance in instances) ConnectEquality(node, instance);
+    }
+
+    private void ConnectEquality(Dependency.Equality equality, Dependency.Instantiation instance)
+    {
+        if (DotNet.Intrinsics.ObjectEquality.Implementation(dispatch.Resolve(instance.Identity)) is { } method)
+            Add(new Dependency.Method(method), equality, DependencyReason.VirtualImplementation, condition: instance);
     }
 
     private void InvokeVirtual(Dependency.VirtualCall node)

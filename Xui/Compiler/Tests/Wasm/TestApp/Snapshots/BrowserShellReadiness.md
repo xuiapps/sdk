@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Default equality is not implemented for Xui.Core.UI.View.
+Unsupported local type in ActivatorCache.CreateUninitializedObject: Unsupported signature type: FunctionPointer.
 ```
 
 ## Dependency path
@@ -35,15 +35,16 @@ Default equality is not implemented for Xui.Core.UI.View.
 ```text
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
- → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileNavigation..ctor }
- → Method { Identity = Xui.DevKit.UI.Mobile.Navigation.NavigationView.set_OverlayContent }
- → VirtualCall { Identity = Xui.Core.UI.ViewCollection.Remove }
- → Method { Identity = Xui.Core.UI.ViewCollection.Remove }
- → VirtualCall { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Remove }
- → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.Remove }
- → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.IndexOf }
- → Method { Identity = System.Array.IndexOf<Xui.Core.UI.View> }
+ → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel.AddExample<Xui.Apps.TestApp.BrowserCanvasExample> }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.BrowserCanvasExample>..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoButton<Xui.Apps.TestApp.BrowserCanvasExample>.NavigateToExample }
+ → VirtualCall { Identity = Xui.Apps.TestApp.Pages.IExampleNavigation.PushExamplePage<Xui.Apps.TestApp.BrowserCanvasExample> }
+ → Method { Identity = Xui.Apps.TestApp.MobileNavigation.PushExamplePage<Xui.Apps.TestApp.BrowserCanvasExample> }
+ → Method { Identity = Xui.Apps.TestApp.Pages.MobileExamplePage<Xui.Apps.TestApp.BrowserCanvasExample>..ctor }
+ → Method { Identity = System.Activator.CreateInstance<Xui.Apps.TestApp.BrowserCanvasExample> }
+ → Method { Identity = System.RuntimeType.CreateInstanceOfT }
+ → Method { Identity = ActivatorCache.CreateUninitializedObject }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

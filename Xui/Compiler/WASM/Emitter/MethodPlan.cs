@@ -53,6 +53,9 @@ internal sealed partial class MethodPlan
     public Dictionary<LocalVariable, (LocalIndex Left, LocalIndex Right)> EqualityTemporaries { get; } = new();
     public bool UsesArrays { get; set; }
     public bool UsesArrayCopy { get; set; }
+    public bool UsesEqualitySearch { get; set; }
+    public LocalIndex EqualitySearchEnd { get; private set; }
+    public LocalIndex EqualitySearchResult { get; private set; }
     public LocalIndex CopyLength { get; private set; }
     public LocalIndex CopySourceIndex { get; private set; }
     public LocalIndex CopyDestinationIndex { get; private set; }
@@ -144,6 +147,11 @@ internal sealed partial class MethodPlan
     {
         var types = Locals.Select(local => local.WasmType).ToList();
         uint parameterCount = (uint)Signature.WasmParameterCount;
+        if (UsesEqualitySearch)
+        {
+            EqualitySearchEnd = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            EqualitySearchResult = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+        }
         if (UsesArrayCopy)
         {
             CopyLength = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);

@@ -111,10 +111,13 @@ public sealed partial class Analyzer
                     if (instruction.Code is OpCode.Call or OpCode.Callvirt && DotNet.Intrinsics.DefaultEquality.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } equality)
                     {
                         Add(new Dependency.Intrinsic("DefaultEquality." + equality.Operation), node, DependencyReason.Call, offset);
-                        Add(new Dependency.Layout(equality.Owner), node, DependencyReason.Layout, offset);
+                        if (DotNet.Intrinsics.DefaultEquality.Is(equality.Owner))
+                            Add(new Dependency.Layout(equality.Owner), node, DependencyReason.Layout, offset);
                         Signature(node, equality.Element, DependencyReason.Signature, offset);
-                        if (equality.Operation == "Equals" && equality.Implementation is { } equals)
+                        if (equality.Operation is "Equals" or "IndexOf" && equality.Implementation is { } equals)
                             Add(new Dependency.Method(equals), node, DependencyReason.Call, offset);
+                        if (equality.Operation is "Equals" or "IndexOf" && equality.UsesObjectEquality)
+                            Add(new Dependency.Equality(equality.Element.Identity!.Value), node, DependencyReason.VirtualCall, offset);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.TimeSpanFactory.Read(module, token) is { } duration)

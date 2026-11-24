@@ -35,7 +35,7 @@ The rating panel's interpolated strings now use compiler-owned mutable UTF-16 GC
 buffers. Strings, characters, booleans, and default integer formatting execute in
 WASM; handler bodies, ArrayPool, and pointer-based Span<char> are not retained.
 Closed generic interface navigation calls now have specialized dispatch slots.
-The full-menu probe currently reaches HashSet<View> default equality in diagnostics.
+The full-menu probe currently reaches the optional Lazy/async floorplan preload.
 Optional floorplan preloading retains known unsupported Lazy/async dependencies. The full application has not executed yet.
 
 The next sequence is:
@@ -44,9 +44,10 @@ The next sequence is:
    unchanged default catalogue. Default string/scalar and typed IEquatable struct equality now execute, including
    Color and its NFloat fields. Ordinary string equality in Button also executes.
    Header easing now uses the shared Pow runtime; same-type scalar/reference Array.Copy
-   executes directly with overlap and managed range checks. Navigation child removal
-   next reaches View default equality through Array.IndexOf; continue through
-   collections, then the window and service paths.
+   executes directly with overlap and managed range checks. Class default equality and Array.IndexOf now execute, including virtual Equals
+   overrides. The browser probe next reaches Activator.CreateInstance<TPage> from
+   generic navigation; specialize that constructor, then continue through the
+   window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real
