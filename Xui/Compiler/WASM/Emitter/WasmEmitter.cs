@@ -104,7 +104,7 @@ public sealed partial class WasmEmitter
         {
             utf16ArrayType = types.ArrayType(PackedTypeCode.I16, Mutability.Mutable);
             fromCharCodeArrayType = types.FunctionType([RefNull(utf16ArrayType), I32, I32], NonNullExternRef);
-            if (storage.ArgumentExceptionsEnabled)
+            if (storage.ArgumentExceptionsEnabled || storage.StringConcatEnabled)
             {
                 stringConcatType = types.FunctionType([ExternRef, ExternRef], NonNullExternRef);
             }
@@ -141,7 +141,7 @@ public sealed partial class WasmEmitter
         {
             rewriter.ImportFunctions(ref imports);
             fromCharCodeArrayFunction = imports.Function("wasm:js-string", "fromCharCodeArray", fromCharCodeArrayType);
-            if (storage.ArgumentExceptionsEnabled)
+            if (storage.ArgumentExceptionsEnabled || storage.StringConcatEnabled)
             {
                 stringConcat = imports.Function("wasm:js-string", "concat", stringConcatType);
             }

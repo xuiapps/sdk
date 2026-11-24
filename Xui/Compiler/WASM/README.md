@@ -268,6 +268,12 @@ rounding boundaries, infinities, and exception messages. Composite overloads,
 formatting, parsing, and clock reads are not supplied by these intrinsics. Duration
 conversion has no JavaScript host dependency.
 
+`String.Concat` with two, three, or four string arguments calls `wasm:js-string.concat`.
+The emitter preserves evaluation order and normalizes null arguments to empty strings;
+UTF-16 contents remain native JS strings. Object, array, and enumerable Concat
+overloads are not intrinsic. This also covers Roslyn's short string interpolation
+optimization, such as `$"Example.{GetType().Name}"`.
+
 `Int32.ToString()` reads the current managed integer address and imports
 `xui-string.int32-to-string`, producing invariant decimal native JS strings. An
 adjacent `CultureInfo.InvariantCulture` getter consumed only by

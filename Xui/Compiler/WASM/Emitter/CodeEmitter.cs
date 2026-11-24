@@ -559,6 +559,14 @@ public readonly ref partial struct CodeEmitter
                         if (managedType.Signature.Result.Identity is { } typeIdentity) method.RequireGc(typeIdentity);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.StringConcatenation.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } concat)
+                    {
+                        method.StringConcatArgumentCount = Math.Max(method.StringConcatArgumentCount, concat.Signature.Parameters.Length);
+                        method.Storage.StringConcatEnabled = true;
+                        literals.Add("");
+                        break;
+                    }
                     if (method.InvariantFormatting.ContainsKey(offset) || instruction.Code == OpCode.Call && IR.Intrinsics.Int32Formatting.Is(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
                     {

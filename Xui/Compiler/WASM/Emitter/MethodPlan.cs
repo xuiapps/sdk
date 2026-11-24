@@ -52,6 +52,8 @@ internal sealed partial class MethodPlan
     public FunctionIndex Function { get; set; }
     public Dictionary<IR.MethodIdentity, LocalIndex[]> CallTemporaries { get; } = new();
     public Dictionary<LocalVariable, (LocalIndex Left, LocalIndex Right)> EqualityTemporaries { get; } = new();
+    public int StringConcatArgumentCount { get; set; }
+    public LocalIndex[] StringConcatArguments { get; private set; } = [];
     public bool UsesArrays { get; set; }
     public bool UsesArrayCopy { get; set; }
     public bool UsesEqualitySearch { get; set; }
@@ -260,6 +262,12 @@ internal sealed partial class MethodPlan
         {
             CompareExchangeReplacement = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
             CompareExchangeOriginal = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
+        }
+        StringConcatArguments = new LocalIndex[StringConcatArgumentCount];
+        for (int i = 0; i < StringConcatArgumentCount; i++)
+        {
+            StringConcatArguments[i] = new(parameterCount + (uint)types.Count);
+            types.Add(ValueTypeCode.ExternRef);
         }
         LocalTypes = types.ToArray();
     }

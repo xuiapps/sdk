@@ -45,6 +45,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     public FormattingRuntime Formatting { get; } = new();
     public Dictionary<TypeIdentity, GlobalIndex> DefaultComparers { get; } = new();
     public bool ManagedTypesEnabled { get; set; }
+    public bool StringConcatEnabled { get; set; }
     public bool StringEqualityEnabled { get; set; }
 
     public bool ArgumentExceptionsEnabled { get; set; }

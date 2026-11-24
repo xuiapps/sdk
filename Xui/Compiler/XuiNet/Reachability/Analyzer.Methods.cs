@@ -75,6 +75,11 @@ public sealed partial class Analyzer
                         Signature(node, managedType.Signature.Result, DependencyReason.Signature, offset);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.StringConcatenation.Read(module, token) is not null)
+                    {
+                        Add(new Dependency.Intrinsic("String.Concat"), node, DependencyReason.Call, offset);
+                        break;
+                    }
                     if (invariantFormatting.ContainsKey(offset))
                     {
                         Add(new Dependency.Intrinsic("Int32.ToString.InvariantCulture"), node, DependencyReason.Call, offset);
