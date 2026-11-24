@@ -50,3 +50,57 @@ node Xui/Compiler/Tests/Wasm/Canvas/browser.mjs
 The shared browser runner checks offline execution, exact recorded commands,
 rectangle colours/overlap/position, reruns, and a narrow viewport. It uses the
 playground's installed Playwright dependency; see the Canvas test README for setup.
+
+
+## Persistent phone preview
+
+[MobilePhone.html](Snapshots/MobilePhone.html) opens a white browser surface with
+the existing emulator middleware's `PhoneFrameGeometry` and `PhoneChromeRenderer`.
+It runs the actual FillRectTest view in a persistent managed session. A fixture
+subclass adds a draggable contact marker and a one-second release animation. The
+normal `View.Animate`, animation request flags, Measure/Arrange/Render, and
+`PointerEventRef` handler execute in WASM.
+
+JavaScript holds the session as an opaque WASM GC reference. Named exports handle
+frames, pointer packets, and inspection. `requestAnimationFrame` runs only when a
+resize/input event invalidates the surface or the View requests another animation
+frame. Frame timestamps cross the boundary as i64 100ns ticks (`BigInt`), preserving
+TimeSpan precision. Canvas backing pixels follow devicePixelRatio; pointer packets
+stay in CSS pixels and the middleware geometry maps them to phone coordinates.
+The host handles capture, release, cancel/lost capture, blur, visibility, resize,
+and disposal. It clears per-frame command recordings and releases the held session
+when disposed.
+
+This milestone forwards one contact directly to one View. It does **not** yet run
+`EmulatorAppWindow`, `EmulatedWindow`, `PhoneFrameView`, RootView/EventRouter,
+keyboard/text input, multitouch gesture routing, or the complete mobile navigation
+shell. The explicit emulator compiler profile constructs its immutable device,
+chrome specification, and colour defaults directly until static initialization is
+supported. Normal builds retain the existing cached values.
+
+```sh
+dotnet test Xui/Compiler/Tests/Xui.Compiler.Tests.csproj -c Release --filter FullyQualifiedName~Mobile
+node Xui/Compiler/Tests/Wasm/TestApp/mobile.browser.mjs
+```
+
+The browser test runs offline, checks the real chrome/rectangle pixels at 2× DPR,
+drags a contact, verifies its release fade and idle scheduling, cancels through blur,
+uses touch input, resizes to a narrow viewport, and verifies disposal. Screenshots
+are written to the ignored playground browser-test output directory.
+
+## Full mobile shell: measured blocker
+
+[MobileShellReadiness.md](Snapshots/MobileShellReadiness.md) is an explicit
+expected-unsupported regression. Complete Core, Core.DI, Fonts, DevKit.UI,
+Software, Emulator, and TestApp sources compile into separate PEs. TestApp's real
+shader generator runs; desktop Program/Platform startup is excluded. This metadata
+probe does not package embedded font or GPU assets; the complete app will also need
+those assets supplied by the browser host. The .NET SDK's
+ASP.NET shared framework supplies the Microsoft.Extensions metadata for Core.DI.
+
+Constructing `MobileTestAppShell` reaches `MobileHomePage`, then fails at
+`ScrollView.Content` calling `SetProtectedChild<ScrollContent>(ref scrollContent, value)`.
+The next compiler work is closed generic **method** specialization and byrefs to
+class-reference fields. After that, continue probing static initialization,
+collections, service/type lookup, text measurement/drawing, and the complete
+window/input lifecycle. This test does not claim the full application executes.

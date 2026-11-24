@@ -180,7 +180,7 @@ See the [stack event demo](../Tests/Wasm/ReferenceSlots/Snapshots/Events.md).
 f32 in storage and method signatures, promoted to the floating evaluation category.
 Conversions from Int32/Single/Double and back to Single/Double, plus addition,
 subtraction, multiplication, division, comparisons, unary negation, Abs, Min, Max, Clamp,
-IsFinite, IsNaN, IsInfinity, and NaN/infinity constants are recognized by framework identity and signature.
+IsFinite, IsNaN, IsInfinity, Pi, and NaN/infinity constants are recognized by framework identity and signature.
 Min/Max preserve IEEE signed-zero and NaN behavior; Clamp follows Single.Clamp
 (including NaN bounds) and throws ArgumentException for reversed bounds.
 Operations use f32 rounding. The known System.Runtime.InteropServices/System.Runtime/
@@ -345,7 +345,7 @@ supported operations that require no emitted bytes.
 | `add` | `i32.add` / `i64.add` / `f64.add` | Type stack selects integer width or f64; integer overflow wraps. |
 | `sub` | `i32.sub` / `i64.sub` / `f64.sub` | Type stack selects integer width or f64; integer overflow wraps. |
 | `mul` | `i32.mul` / `i64.mul` / `f64.mul` | Type stack selects integer width or f64; integer overflow wraps. |
-| `div` |  |  |
+| `div` | `f64.div` | Floating operands only; integer division and its exceptions remain unsupported. |
 | `div.un` |  |  |
 | `rem` |  |  |
 | `rem.un` |  |  |
@@ -599,3 +599,12 @@ See [enum widths](../Tests/Wasm/Enums/Snapshots/Widths.md).
 Enum byref parameters/locals and address-taking of scalar enum locals remain unsupported,
 as do boxing, enum-name formatting, reflection, and arbitrary System.Enum helpers.
 This milestone does not add general primitive-address or generic initobj support.
+
+
+The [persistent mobile preview](../Tests/Wasm/TestApp/Snapshots/MobilePhone.html)
+uses named exports to retain a session across frame/input calls and the real
+emulator middleware's phone geometry/chrome. The full mobile-shell readiness probe
+currently stops at `ScrollView.Content → SetProtectedChild<ScrollContent>`.
+Unused generic virtual declarations no longer prevent ordinary vtable construction;
+reachable generic method calls still reject explicitly. See the
+[readiness snapshot](../Tests/Wasm/TestApp/Snapshots/MobileShellReadiness.md).

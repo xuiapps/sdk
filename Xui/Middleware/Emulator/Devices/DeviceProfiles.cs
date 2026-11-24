@@ -5,7 +5,12 @@ namespace Xui.Middleware.Emulator.Devices;
 /// <summary>The initial device profiles supported by the emulator.</summary>
 internal static class DeviceProfiles
 {
+#if XUI_COMPILER_CANVAS
+    // Compiler profile: construct immutable defaults until static initialization is supported.
+    public static DeviceProfile IPhone15Pro => new()
+#else
     public static DeviceProfile IPhone15Pro { get; } = new()
+#endif
     {
         Model = "iPhone 15 Pro",
         LogicalResolution = new Size(393, 852),

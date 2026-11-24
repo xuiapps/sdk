@@ -52,9 +52,9 @@ public sealed class CanvasContext : IContext
     public void DrawImage(IImage image, Rect dest) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
     public void DrawImage(IImage image, Rect dest, NFloat opacity) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
     public void DrawImage(IImage image, Rect source, Rect dest, NFloat opacity) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
-    public void Translate(Vector value) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
+    public void Translate(Vector value) => NativeCanvas.Command("Translate", (double)value.X, (double)value.Y);
     public void Rotate(NFloat value) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
-    public void Scale(Vector value) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
+    public void Scale(Vector value) => NativeCanvas.Command("Scale", (double)value.X, (double)value.Y);
     public void SetTransform(AffineTransform value) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
     public void Transform(AffineTransform value) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
     public void MoveTo(Point value) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
@@ -66,11 +66,15 @@ public sealed class CanvasContext : IContext
     public void ArcTo(Point control1, Point control2, NFloat radius) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
     public void Ellipse(Point center, NFloat radiusX, NFloat radiusY, NFloat rotation, NFloat startAngle, NFloat endAngle, Winding winding = Winding.ClockWise) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
     public void Rect(Rect value) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
-    public void RoundRect(Rect value, NFloat radius) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
+    public void RoundRect(Rect value, NFloat radius)
+    {
+        NativeCanvas.Command("PathRect", (double)value.X, (double)value.Y, (double)value.Width, (double)value.Height);
+        NativeCanvas.Command("RoundRect", (double)radius);
+    }
     public void RoundRect(Rect value, CornerRadius radius) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
-    public void Fill(FillRule rule = FillRule.NonZero) => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
+    public void Fill(FillRule rule = FillRule.NonZero) => NativeCanvas.Command("Fill", (int)rule);
     public void Stroke() => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
-    public void Clip() => throw new InvalidOperationException("Unsupported Canvas operation in the first-frame host.");
+    public void Clip() => NativeCanvas.Command("Clip");
 }
 
 // Rewritten only at this explicit host boundary. The CLR body records the same calls.

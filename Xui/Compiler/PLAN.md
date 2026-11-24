@@ -8,6 +8,35 @@ The route is a dedicated compiler sample that supplies Xui Core and the sample a
 
 The first visible frame is deliberately a **Xui canvas slice**, not a claim that arbitrary `Application`, `Window`, or `View` code works. A later acceptance gate requires the real framework lifecycle, rendering, and input paths.
 
+## Persistent browser host and mobile-shell readiness
+
+The [phone preview](Tests/Wasm/TestApp/Snapshots/MobilePhone.html) now supplies a
+white browser surface, real emulator phone geometry/chrome, persistent managed
+state, frame exports, resize, and pointer capture/cancel. It executes the real
+FillRectTest with a fixture interaction/animation overlay. Browser tests verify
+pixels, 2× DPR, drag/touch input, fade completion, idle scheduling, and disposal.
+
+This is a direct single-view bridge, not the full emulator/window/event-router
+composition. The [full-shell probe](Tests/Wasm/TestApp/Snapshots/MobileShellReadiness.md)
+compiles all application dependencies as separate PEs with the real shader
+generator. It reaches MobileHomePage but stops at ScrollView.SetContent calling
+`View.SetProtectedChild<ScrollContent>(ref scrollContent, value)`.
+
+The next sequence is:
+
+1. Specialize closed generic methods and support managed byrefs to class-reference
+   fields, with aliasing and writeback tests for SetProtectedChild.
+2. Re-run the full-shell probe; implement reachable static initialization and the
+   collections/delegates it actually uses instead of preloading the BCL.
+3. Supply service/type lookup and a persistent Actual window, then connect the real
+   RootView/EventRouter and EmulatedWindow rather than the single-view bridge.
+4. Expand the Canvas host to text measurement, text drawing, paths and clipping
+   required by the mobile home/navigation, then test scrolling and navigation in-browser.
+
+The Canvas source profile still explicitly omits instrumentation and constructs
+immutable defaults directly. Keep these cuts documented until their general
+compiler support exists. See [host details and limits](Tests/Wasm/TestApp/README.md).
+
 ## Real View first frame now executes
 
 [FillRectRender](Tests/Wasm/TestApp/Snapshots/FillRectRender.html) runs the unchanged
@@ -22,8 +51,8 @@ static fields. Normal Core behavior is unchanged. Compiler additions include
 layout NFloat helpers, init-only setter signatures, TimeSpan.Zero value loads,
 shared short-circuit tails/early-return joins, and linear struct block results.
 
-The next small milestone is persistent state: keep a View alive across exported
-resize/frame calls, then add pointer input through the real RootView/EventRouter.
+Persistent state across exported resize/frame calls is now implemented in the phone
+preview above. Input through the real RootView/EventRouter remains outstanding.
 Before full TestApp navigation, address general static initialization, collections,
 text measurement/drawing, remaining Canvas operations, and Window/service setup.
 The first-frame host is intentionally incomplete and rejects unsupported operations.
