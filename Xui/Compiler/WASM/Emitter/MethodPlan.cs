@@ -50,6 +50,7 @@ internal sealed partial class MethodPlan
     public TypeIndex Type { get; set; }
     public FunctionIndex Function { get; set; }
     public Dictionary<IR.MethodIdentity, LocalIndex[]> CallTemporaries { get; } = new();
+    public Dictionary<SignatureTypeCode, (LocalIndex Left, LocalIndex Right)> EqualityTemporaries { get; } = new();
     public bool UsesArrays { get; set; }
     public LocalIndex ArrayReference { get; private set; }
     public LocalIndex ArrayIndex { get; private set; }
@@ -221,6 +222,17 @@ internal sealed partial class MethodPlan
             GcF64 = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F64);
             GcExtern = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
             if (Storage.ArgumentExceptionsEnabled) { ExceptionParamName = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef); }
+        }
+        foreach (var category in EqualityTemporaries.Keys.ToArray())
+        {
+            EqualityTemporaries[category] = (new(parameterCount + (uint)types.Count), new(parameterCount + (uint)types.Count + 1));
+            var wasm = category switch {
+                SignatureTypeCode.String => ValueTypeCode.ExternRef,
+                SignatureTypeCode.Double => ValueTypeCode.F64,
+                SignatureTypeCode.Int64 => ValueTypeCode.I64,
+                _ => ValueTypeCode.I32
+            };
+            types.Add(wasm); types.Add(wasm);
         }
         if (UsesReferenceCompareExchange)
         {

@@ -1,0 +1,59 @@
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using Xui.Compiler.XuiNet.DotNet.Exceptions;
+using Xui.Compiler.XuiNet.DotNet.Intrinsics;
+using Xui.Compiler.XuiNet.DotNet.Op;
+using Xui.Compiler.WASM.Wasm.Indices;
+
+namespace Xui.Compiler.WASM.Emitter;
+
+public readonly ref partial struct CodeEmitter
+{
+    private bool TryDefaultEquality(Instruction.Token instruction, int offset)
+    {
+        var access = DefaultEquality.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+        if (access is null) return false;
+        if (access.Operation == "get_Default")
+        {
+            writer.GlobalGet(method.Storage.DefaultComparers[access.Owner]);
+            stack.Push(new(SignatureTypeCode.TypeHandle, access.Owner));
+            return true;
+        }
+        var storage = method.Storage.Bind(access.Element);
+        var category = storage.StackType == SignatureTypeCode.IntPtr ? SignatureTypeCode.Int32 : storage.StackType;
+        var (left, right) = method.EqualityTemporaries[category];
+        PopAssignable(storage, instruction.Code, offset); writer.LocalSet(right);
+        PopAssignable(storage, instruction.Code, offset); writer.LocalSet(left);
+        var receiver = Pop(instruction.Code, offset);
+        if (receiver.IsByReference || receiver.Identity is not null && receiver.Identity != access.Owner)
+            throw new InvalidProgramException("Default equality requires its declared comparer receiver.");
+        writer.RefIsNull().If(); ThrowException(ExceptionKind.NullReferenceException); writer.End();
+        if (category == SignatureTypeCode.String) CompareStrings(left, right);
+        else
+        {
+            writer.LocalGet(left).LocalGet(right);
+            switch (category)
+            {
+                case SignatureTypeCode.Int32: writer.I32Eq(); break;
+                case SignatureTypeCode.Int64: writer.I64Eq(); break;
+                case SignatureTypeCode.Double:
+                    // .NET Equals regards every NaN as equal; signed zeros compare equal too.
+                    writer.F64Eq().LocalGet(left).LocalGet(left).F64Eq().I32Eqz()
+                        .LocalGet(right).LocalGet(right).F64Eq().I32Eqz().I32And().I32Or();
+                    break;
+                default: throw new NotSupportedException($"Default equality category {category} is unsupported.");
+            }
+        }
+        stack.Push(new(SignatureTypeCode.Int32));
+        return true;
+    }
+
+    private void CompareStrings(LocalIndex left, LocalIndex right)
+    {
+        writer.LocalGet(left).RefIsNull().If();
+        writer.LocalGet(right).RefIsNull().LocalSet(method.GcI32).Else();
+        writer.LocalGet(right).RefIsNull().If().I32Const(0).LocalSet(method.GcI32).Else();
+        writer.LocalGet(left).LocalGet(right).Call(Runtime.StringEquals!.Value).LocalSet(method.GcI32);
+        writer.End().End().LocalGet(method.GcI32);
+    }
+}

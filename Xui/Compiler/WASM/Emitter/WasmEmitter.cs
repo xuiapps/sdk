@@ -98,7 +98,7 @@ public sealed partial class WasmEmitter
         writer.Header().V1();
         TypeIndex utf16ArrayType;
         TypeIndex fromCharCodeArrayType;
-        TypeIndex stringConcatType = default, stringLengthType = default;
+        TypeIndex stringConcatType = default, stringLengthType = default, stringEqualsType = default;
         var types = writer.TypeDefinitionsSection();
         try
         {
@@ -109,6 +109,7 @@ public sealed partial class WasmEmitter
                 stringConcatType = types.FunctionType([ExternRef, ExternRef], NonNullExternRef);
             }
             if (storage.ArgumentExceptionsEnabled || storage.Interpolation.Enabled) stringLengthType = types.FunctionType([ExternRef], I32);
+            if (storage.StringEqualityEnabled) stringEqualsType = types.FunctionType([ExternRef, ExternRef], I32);
             storage.Interpolation.DefineTypes(ref types);
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
@@ -131,7 +132,7 @@ public sealed partial class WasmEmitter
             types.Dispose();
         }
         FunctionIndex fromCharCodeArrayFunction;
-        FunctionIndex? stringConcat = null, stringLength = null;
+        FunctionIndex? stringConcat = null, stringLength = null, stringEquals = null;
         uint importedFunctionCount;
         var imports = writer.ImportSection();
         try
@@ -143,6 +144,7 @@ public sealed partial class WasmEmitter
                 stringConcat = imports.Function("wasm:js-string", "concat", stringConcatType);
             }
             if (storage.ArgumentExceptionsEnabled || storage.Interpolation.Enabled) stringLength = imports.Function("wasm:js-string", "length", stringLengthType);
+            if (storage.StringEqualityEnabled) stringEquals = imports.Function("wasm:js-string", "equals", stringEqualsType);
             storage.Interpolation.Import(ref imports);
             importedFunctionCount = imports.FunctionCount;
         }
@@ -191,6 +193,11 @@ public sealed partial class WasmEmitter
                 literalIndices.Add(literals[i], (new DataIndex((uint)i), globals.RefNull(ExternRef, Mutability.Mutable)));
             if (hasFrames) stackPointer = globals.I32(MemoryFrame.Start, Mutability.Mutable);
             if (storage.ReferenceSlotsEnabled) referenceStackPointer = globals.I32(0, Mutability.Mutable);
+            foreach (var comparer in storage.DefaultComparers.Keys.ToArray())
+            {
+                using var value = globals.Struct(storage.Shape(comparer).Type);
+                storage.DefaultComparers[comparer] = value.Index;
+            }
             foreach (var type in storage.Classes.Types)
             {
                 using var descriptor = globals.Struct(storage.DescriptorType);
@@ -203,7 +210,7 @@ public sealed partial class WasmEmitter
             }
         }
         // Frame state follows the string-cache globals in the same index space.
-        var runtime = new EmissionRuntime(utf16ArrayType, fromCharCodeArrayFunction, stackPointer, referenceStackPointer, objectReferences, stringReferences, stringConcat, stringLength);
+        var runtime = new EmissionRuntime(utf16ArrayType, fromCharCodeArrayFunction, stackPointer, referenceStackPointer, objectReferences, stringReferences, stringConcat, stringLength, stringEquals);
         using (var exports = writer.ExportSection())
         {
             exports.Function("main", main.Function);

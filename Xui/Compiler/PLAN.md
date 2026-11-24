@@ -35,14 +35,14 @@ The rating panel's interpolated strings now use compiler-owned mutable UTF-16 GC
 buffers. Strings, characters, booleans, and default integer formatting execute in
 WASM; handler bodies, ArrayPool, and pointer-based Span<char> are not retained.
 Closed generic interface navigation calls now have specialized dispatch slots.
-The full-menu probe next reaches optional floorplan preloading: Lazy<Task<FloorplanDrawing>>
-uses unsupported IsVolatile metadata, followed by async/resource dependencies. The full application has not executed yet.
+The full-menu probe currently reaches HashSet<View> default equality in diagnostics.
+Optional floorplan preloading retains known unsupported Lazy/async dependencies. The full application has not executed yet.
 
 The next sequence is:
 
 1. The browser catalogue is now injected into the real shell, separately from the
-   unchanged default catalogue. Continue through EqualityComparer<string>.Default
-   used by View.SetViewProperty, then the window and service paths.
+   unchanged default catalogue. Default string/scalar equality now executes; continue
+   through IEquatable<Color> used by View.SetViewRenderProperty, then the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

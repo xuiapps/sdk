@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Layout requires a closed resolved type: System.IEquatable`1.
+Default equality is not implemented for Xui.Core.Canvas.Color.
 ```
 
 ## Dependency path
@@ -37,13 +37,8 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel..ctor }
- → Method { Identity = Xui.Core.UI.Label.set_Text }
- → Method { Identity = Xui.Core.UI.View.SetViewProperty<String> }
- → Method { Identity = System.Collections.Generic.EqualityComparer<String>.get_Default }
- → Initialization { Identity = System.Collections.Generic.EqualityComparer<String> }
- → Method { Identity = System.Collections.Generic.EqualityComparer<String>..cctor }
- → Method { Identity = System.Collections.Generic.ComparerHelpers.CreateDefaultEqualityComparer }
- → Layout { Identity = System.IEquatable`1 }
+ → Method { Identity = Xui.Core.UI.Label.set_TextColor }
+ → Method { Identity = Xui.Core.UI.View.SetViewRenderProperty<Xui.Core.Canvas.Color> }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

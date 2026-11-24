@@ -10,6 +10,7 @@ namespace Xui.Compiler.WASM.Emitter;
 /// <param name="ObjectReferences">GC-visible slots holding object/interface references.</param>
 /// <param name="StringReferences">GC-visible slots holding native JavaScript strings.</param>
 /// <param name="StringConcat">Optional JS string concatenation used for argument exception messages.</param>
+/// <param name="StringEquals">Optional ordinal JS string equality for default string comparers.</param>
 /// <param name="StringLength">Optional JS string length used for argument exception messages.</param>
 public readonly record struct EmissionRuntime(
     TypeIndex Utf16ArrayType,
@@ -19,4 +20,5 @@ public readonly record struct EmissionRuntime(
     TableIndex? ObjectReferences = null,
     TableIndex? StringReferences = null,
     FunctionIndex? StringConcat = null,
-    FunctionIndex? StringLength = null);
+    FunctionIndex? StringLength = null,
+    FunctionIndex? StringEquals = null);

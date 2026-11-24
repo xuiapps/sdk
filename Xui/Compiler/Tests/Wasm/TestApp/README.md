@@ -117,8 +117,8 @@ is not retained. Separate CLR/Node tests cover growth, copies, nested calls, int
 limits, Unicode, and exceptional cleanup.
 
 Generic interface navigation methods now specialize into separate dispatch slots.
-The full-menu probe next reaches IsVolatile in Lazy<Task<FloorplanDrawing>> through
-optional preload handlers. Separate optional async/resource-heavy showcases for
+The full-menu probe currently reaches HashSet<View> default equality in diagnostics;
+optional preload handlers also retain known Lazy/async dependencies. Separate optional async/resource-heavy showcases for
 the first browser profile, then continue through clocks,
 static initialization, collections, service/type lookup, text measurement/drawing,
 and the complete window/input lifecycle. This test does not claim the full
@@ -133,5 +133,5 @@ fixture uses the real mobile category card, demo button, navigation, and page wr
 for a FillRectTest page; optional async/GPU showcases are not included in its menu.
 LayoutFrameInstruments.CreateCountersOnly omits unique-view tracking while the
 normal constructors retain their preallocated HashSet. Core's existing compiler
-profile still omits diagnostic instrumentation. The next browser construction
-blocker is EqualityComparer<string>.Default used by View.SetViewProperty.
+profile still omits diagnostic instrumentation. Default string/scalar equality now executes. The next browser construction blocker
+is EqualityComparer<Color>.Default used by View.SetViewRenderProperty.

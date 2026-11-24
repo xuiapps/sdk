@@ -29,7 +29,8 @@ FillRectTest now lays out and renders in the browser phone preview. The
 framework assemblies for services and collections. It now passes generated event
 subscriptions, ArgumentNullException guards, TimeSpan factories, and the rating
 panel’s UTF-16 interpolation and generic interface dispatch for demo navigation.
-Optional floorplan preloading now reaches unsupported Lazy/async machinery. See [PLAN.md](PLAN.md) for the remaining gates.
+The full catalogue reaches diagnostic HashSet<View> equality; the smaller browser
+catalogue reaches Color equality. Optional preloading also needs Lazy/async support. See [PLAN.md](PLAN.md) for the remaining gates.
 
 Managed vectors and inline arrays now have distinct storage paths. See [array execution](Tests/Wasm/Arrays/Snapshots/Vectors.md)
 and [real Xui gradient stops](Tests/Wasm/InlineArrays/Snapshots/Gradients.md): the latter

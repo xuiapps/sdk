@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Xui.Compiler.Tests.Wasm.TestApp;
 
-public class BrowserShellReadinessTests
+public class BrowserShellReadinessTests(Xunit.Abstractions.ITestOutputHelper output)
 {
     [Fact]
     public void BrowserCatalogueReportsRemainingCompilerGap()
@@ -30,8 +30,8 @@ public class BrowserShellReadinessTests
             var error = Assert.Throws<NotSupportedException>(() => new WasmEmitter().Emit(app));
 
             string path = error.Data["Xui.DependencyPath"]?.ToString() ?? "";
-            Assert.Contains("System.IEquatable`1", error.Message);
-            Assert.Contains("EqualityComparer<String>", path);
+            output.WriteLine(error.Message + "\n" + path);
+            Assert.Contains("Default equality is not implemented for Xui.Core.Canvas.Color", error.Message);
 
             string frameworkInputs = string.Join(", ", framework.Assemblies.Select(assembly => $"`{assembly.Identity.Name}`"));
             string projects = string.Join("\n", images.Keys.Select(name => $"- `{name}`"));

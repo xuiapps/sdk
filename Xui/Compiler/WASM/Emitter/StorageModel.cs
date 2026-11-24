@@ -41,6 +41,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     private readonly HashSet<TypeIdentity> flattening = new();
 
     public InterpolationRuntime Interpolation { get; } = new();
+    public Dictionary<TypeIdentity, GlobalIndex> DefaultComparers { get; } = new();
+    public bool StringEqualityEnabled { get; set; }
 
     public bool ArgumentExceptionsEnabled { get; set; }
 
@@ -81,6 +83,13 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             var exception = new GcShape(identity);
             shapes.Add(identity, exception);
             return exception;
+        }
+        if (XuiNet.DotNet.Intrinsics.DefaultEquality.Is(identity))
+        {
+            DefaultComparers.TryAdd(identity, default);
+            var comparer = new GcShape(identity);
+            shapes.Add(identity, comparer);
+            return comparer;
         }
         if (XuiNet.DotNet.Intrinsics.InterpolatedStringHandler.Is(identity))
         {
@@ -217,6 +226,11 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
         }
         foreach (var shape in shapes.Values)
         {
+            if (XuiNet.DotNet.Intrinsics.DefaultEquality.Is(shape.Identity))
+            {
+                shape.Type = writer.StructType([]);
+                continue;
+            }
             if (XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(shape.Identity) is not null)
             {
                 shape.Type = ExceptionType;

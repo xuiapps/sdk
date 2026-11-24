@@ -722,3 +722,11 @@ managed exception tag, including CallerArgumentExpression parameter names and
 null/empty names. Strings, arrays, classes, and delegates retain their existing
 reference representation. The helper's BCL body and localization resources are
 not retained; pointer overloads and arbitrary boxing remain unsupported.
+
+Default EqualityComparer<T> instances are rooted singleton GC values per closed T.
+Default/Equals specialize for strings, numeric primitives, bool, char, enums, and
+NFloat without loading ComparerHelpers or reflection. String equality is ordinal
+and null-safe; floating equality preserves .NET NaN and signed-zero semantics.
+Null comparer receivers throw managed NullReferenceException. Custom comparer
+subclasses, IEqualityComparer interface dispatch, hashing, and non-scalar element
+equality remain explicitly unsupported.

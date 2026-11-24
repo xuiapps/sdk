@@ -351,6 +351,10 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         else if (Model.Intrinsics.InterpolatedStringHandler.Read(module, handle, context.Arguments, methodArguments) is { } interpolation)
             signature = new([new SignatureType(SignatureTypeCode.TypeHandle, interpolation.Owner, IsByReference: true), .. interpolation.Signature.Parameters],
                 interpolation.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(interpolation.Signature.Result));
+        else if (Model.Intrinsics.DefaultEquality.Read(module, handle, context.Arguments, methodArguments) is { } equality)
+            signature = new(equality.Signature.HasThis
+                ? [new SignatureType(SignatureTypeCode.TypeHandle, equality.Owner, IsReferenceType: true), .. equality.Signature.Parameters]
+                : equality.Signature.Parameters.ToArray(), StackEntry.From(equality.Signature.Result));
         else if (Model.Intrinsics.TimeSpanFactory.Read(module, handle) is { } duration)
             signature = new(duration.Signature.Parameters.ToArray(), StackEntry.From(duration.Signature.Result));
         else if (Model.Intrinsics.ReferenceCompareExchange.Read(module, handle, context.Arguments, methodArguments) is { } exchange)

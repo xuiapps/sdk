@@ -93,6 +93,12 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("ArgumentNullException.ThrowIfNull"), node, DependencyReason.Call, offset);
                         break;
                     }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && DotNet.Intrinsics.DefaultEquality.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } equality)
+                    {
+                        Add(new Dependency.Intrinsic("DefaultEquality." + equality.Operation), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Layout(equality.Owner), node, DependencyReason.Layout, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.TimeSpanFactory.Read(module, token) is { } duration)
                     {
                         Add(new Dependency.Intrinsic("TimeSpan." + duration.Name), node, DependencyReason.Call, offset);
