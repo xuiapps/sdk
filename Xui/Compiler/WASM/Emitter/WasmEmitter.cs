@@ -13,7 +13,7 @@ using static Xui.Compiler.WASM.Wasm.Section.TypeDefinitions.ValueType;
 namespace Xui.Compiler.WASM.Emitter;
 
 /// <summary>Builds the WebAssembly module layout and delegates MSIL translation to CodeEmitter.</summary>
-public sealed class WasmEmitter
+public sealed partial class WasmEmitter
 {
     /// <summary>The class descriptors from the most recent successful emission.</summary>
     public IReadOnlyList<Runtime.Type> Types { get; private set; } = [];
@@ -22,8 +22,9 @@ public sealed class WasmEmitter
     public DependencyGraph? Dependencies { get; private set; }
 
     /// <summary>Emits the managed entry point and its dependencies, with optional rewrites and additional preservation roots.</summary>
-    /// <remarks>Additional roots retain code and layouts but do not create WASM exports.</remarks>
-    public byte[] Emit(IR.Assembly assembly, CodeRewriter? rewriter = null, IEnumerable<Root>? additionalRoots = null)
+    /// <remarks>Additional roots preserve code. Named exports also root static methods with a host-callable ABI.</remarks>
+    public byte[] Emit(IR.Assembly assembly, CodeRewriter? rewriter = null, IEnumerable<Root>? additionalRoots = null,
+        IReadOnlyDictionary<string, IR.MethodIdentity>? namedExports = null)
     {
         var source = assembly.ManifestModule;
         if (source.EntryPoint.IsNil)
@@ -40,6 +41,12 @@ public sealed class WasmEmitter
         rewriter.BeginModule(source);
         var roots = new List<Root> { Root.EntryPoint(assembly) };
         if (additionalRoots is not null) roots.AddRange(additionalRoots);
+        if (namedExports is not null)
+            foreach (var (name, identity) in namedExports)
+            {
+                ValidateExport(name, identity);
+                roots.Add(new Root.Method(identity));
+            }
         var dependencies = Analyzer.Analyze(roots,
             (IR.MethodIdentity method, int offset, XuiNet.DotNet.Op.Instruction instruction, ref XuiNet.ILReader reader) =>
             {
@@ -173,6 +180,9 @@ public sealed class WasmEmitter
         using (var exports = writer.ExportSection())
         {
             exports.Function("main", main.Function);
+            if (namedExports is not null)
+                foreach (var (name, identity) in namedExports)
+                    exports.Function(name, methods[identity].Function);
         }
         if (storage.TableSize != 0)
         {

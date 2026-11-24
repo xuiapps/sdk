@@ -10,6 +10,13 @@ MSIL `Int32` and `Int64` use WASM `i32` and `i64`; floating-point evaluation val
 use `f64`. Strings use `externref`, with passive UTF-16LE data materialized through
 `wasm:js-string.fromCharCodeArray` and cached in globals.
 
+`WasmEmitter.Emit(..., namedExports: ...)` also roots and exports selected static
+methods. Host calls accept full-width integer/float scalars, strings, and opaque
+managed references; a returned GC class instance can be retained by JavaScript and
+passed back across frame/input calls. Struct values, managed byrefs, narrow scalar
+parameters, and instance methods require wrappers and currently reject. The `main`
+export remains reserved. Export roots do not retain unrelated methods.
+
 Classes from supplied assemblies use WASM GC objects with reference identity.
 Structs classified as `ContainsManagedReferences` use GC objects with value-copy
 semantics unless selected for addressable stack storage, described below. Their string fields remain native JavaScript `externref` values.
