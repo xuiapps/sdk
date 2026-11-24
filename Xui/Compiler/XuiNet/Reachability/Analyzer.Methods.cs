@@ -30,7 +30,7 @@ public sealed partial class Analyzer
             }
         }
         System.Collections.Immutable.ImmutableArray<SignatureType> locals;
-        try { locals = SignatureReader.Locals(module, body.LocalSignature, identity.DeclaringType.Arguments); }
+        try { locals = SignatureReader.Locals(module, body.LocalSignature, identity.DeclaringType.Arguments, identity.Arguments); }
         catch (NotSupportedException error)
         {
             throw new NotSupportedException($"Unsupported local type in {identity}: {error.Message}", error);
@@ -67,14 +67,14 @@ public sealed partial class Analyzer
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
-                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.InlineArrayAccess.Read(module, token, identity.DeclaringType.Arguments) is { } inline)
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.InlineArrayAccess.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } inline)
                     {
                         Add(new Dependency.Intrinsic(inline.Operation), node, DependencyReason.Call, offset);
                         Signature(node, inline.Signature.Result, DependencyReason.Signature, offset);
                         Signature(node, inline.Signature.Parameters[0], DependencyReason.Signature, offset);
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.SpanAccess.Read(module, token, identity.DeclaringType.Arguments) is { } span)
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.SpanAccess.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } span)
                     {
                         Add(new Dependency.Intrinsic($"Span.{span.Operation}"), node, DependencyReason.Call, offset);
                         Signature(node, span.Signature.Result, DependencyReason.Signature, offset);
@@ -100,13 +100,14 @@ public sealed partial class Analyzer
                             (HandleKind.TypeDefinition or HandleKind.TypeSpecification))
                         throw new NotSupportedException($"Unsupported {instruction.Code} at IL_{offset:x4}; only same-module method definitions or explicit rewrites are supported.");
                     MethodIdentity target;
-                    try { target = MemberResolver.Method(module, token, identity.DeclaringType); }
+                    try { target = MemberResolver.Method(module, token, identity.DeclaringType, identity.Arguments); }
                     catch (NotSupportedException error)
                     {
                         throw new NotSupportedException($"Unsupported {instruction.Code} at IL_{offset:x4} in {identity}: {error.Message}", error);
                     }
                     bool isVirtual = instruction.Code is OpCode.Callvirt or OpCode.Ldvirtftn &&
                         (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & MethodAttributes.Virtual) != 0;
+                    if (isVirtual && target.Arguments is not null) throw new NotSupportedException("Generic virtual method dispatch is not implemented.");
                     Add(isVirtual ? new Dependency.VirtualCall(target) : new Dependency.Method(target), node,
                         isVirtual ? DependencyReason.VirtualCall : DependencyReason.Call, offset);
                     if (instruction.Code == OpCode.Newobj)
@@ -125,7 +126,7 @@ public sealed partial class Analyzer
                         Signature(node, new(SignatureTypeCode.TypeHandle, zeroType), DependencyReason.FieldType, offset);
                         break;
                     }
-                    var field = MemberResolver.Field(module, fieldToken, identity.DeclaringType);
+                    var field = MemberResolver.Field(module, fieldToken, identity.DeclaringType, identity.Arguments);
                     var reason = instruction.Code switch
                     {
                         OpCode.Ldfld or OpCode.Ldsfld => DependencyReason.FieldRead,
@@ -158,7 +159,7 @@ public sealed partial class Analyzer
                 case OpCode.Refanyval:
                 case OpCode.Constrained:
                     Signature(node, SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value),
-                        identity.DeclaringType.Arguments), DependencyReason.TypeOperand, offset);
+                        identity.DeclaringType.Arguments, identity.Arguments), DependencyReason.TypeOperand, offset);
                     break;
                 case OpCode.Ldtoken:
                     ReadHandle(node, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), offset);
@@ -175,8 +176,8 @@ public sealed partial class Analyzer
     {
         var module = identity.DeclaringType.Module;
         var method = module.GetMethod(identity.Handle);
-        if (IsOpen(identity.DeclaringType) || method.GenericParameters.Count != 0)
-            throw new NotSupportedException($"Method reachability requires a closed declaring type and a non-generic method: {identity}.");
+        if (IsOpen(identity.DeclaringType) || (method.GenericParameters.Count != (identity.Arguments?.Values.Length ?? 0)) || identity.Arguments?.ContainsGenericParameters == true)
+            throw new NotSupportedException($"Method reachability requires a closed declaring type and closed method arguments: {identity}.");
         if (retainBody) UseModule(module, node);
         Add(new Dependency.Type(identity.DeclaringType), node, DependencyReason.DeclaringType);
         // BeforeFieldInit permits deferring initialization until the first static field access.
@@ -184,7 +185,7 @@ public sealed partial class Analyzer
         if (retainBody && method.Name != ".cctor" &&
             (module.GetType((TypeDefinitionHandle)identity.DeclaringType.Handle).Attributes & TypeAttributes.BeforeFieldInit) == 0)
             Add(new Dependency.Initialization(identity.DeclaringType), node, DependencyReason.Initialization);
-        var signature = SignatureReader.Method(module, method.Signature, identity.DeclaringType.Arguments);
+        var signature = SignatureReader.Method(module, method.Signature, identity.DeclaringType.Arguments, identity.Arguments);
         if (signature.HasThis)
         {
             Add(new Dependency.Layout(identity.DeclaringType), node, DependencyReason.Layout);
@@ -202,18 +203,18 @@ public sealed partial class Analyzer
             case HandleKind.TypeDefinition:
             case HandleKind.TypeReference:
             case HandleKind.TypeSpecification:
-                Signature(node, SignatureReader.Resolve(module, handle, node.Identity.DeclaringType.Arguments), DependencyReason.TypeOperand, offset);
+                Signature(node, SignatureReader.Resolve(module, handle, node.Identity.DeclaringType.Arguments, node.Identity.Arguments), DependencyReason.TypeOperand, offset);
                 break;
             case HandleKind.FieldDefinition:
-                Add(new Dependency.Field(MemberResolver.Field(module, handle, node.Identity.DeclaringType)), node, DependencyReason.TypeOperand, offset);
+                Add(new Dependency.Field(MemberResolver.Field(module, handle, node.Identity.DeclaringType, node.Identity.Arguments)), node, DependencyReason.TypeOperand, offset);
                 break;
             case HandleKind.MethodDefinition:
-                Add(new Dependency.Method(MemberResolver.Method(module, handle, node.Identity.DeclaringType)), node, DependencyReason.TypeOperand, offset);
+                Add(new Dependency.Method(MemberResolver.Method(module, handle, node.Identity.DeclaringType, node.Identity.Arguments)), node, DependencyReason.TypeOperand, offset);
                 break;
             case HandleKind.MemberReference:
                 if (module.GetMemberReference((MemberReferenceHandle)handle).Kind == MemberReferenceKind.Field)
-                    Add(new Dependency.Field(MemberResolver.Field(module, handle, node.Identity.DeclaringType)), node, DependencyReason.TypeOperand, offset);
-                else Add(new Dependency.Method(MemberResolver.Method(module, handle, node.Identity.DeclaringType)), node, DependencyReason.TypeOperand, offset);
+                    Add(new Dependency.Field(MemberResolver.Field(module, handle, node.Identity.DeclaringType, node.Identity.Arguments)), node, DependencyReason.TypeOperand, offset);
+                else Add(new Dependency.Method(MemberResolver.Method(module, handle, node.Identity.DeclaringType, node.Identity.Arguments)), node, DependencyReason.TypeOperand, offset);
                 break;
             default: throw new NotSupportedException($"Metadata token reachability is not implemented: {handle.Kind}.");
         }

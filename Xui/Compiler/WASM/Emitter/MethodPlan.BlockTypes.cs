@@ -23,12 +23,12 @@ internal sealed partial class MethodPlan
                     foreach (var handler in exception.Handlers) DefineBlockTypes(handler.Body, ref types);
                     break;
                 case ConditionalBlock block:
-                    BlockTypes.Add(block, types.FunctionType(block.Parameters.Select(Type).ToArray(), block.Results.Select(Type).ToArray()));
+                    BlockTypes.Add(block, types.FunctionType(block.Parameters.SelectMany(Types).ToArray(), block.Results.SelectMany(Types).ToArray()));
                     DefineBlockTypes(block.Taken, ref types);
                     DefineBlockTypes(block.NotTaken, ref types);
                     break;
                 case LoopBlock loop:
-                    BlockTypes.Add(loop, types.FunctionType(loop.Parameters.Select(Type).ToArray(), loop.Results.Select(Type).ToArray()));
+                    BlockTypes.Add(loop, types.FunctionType(loop.Parameters.SelectMany(Types).ToArray(), loop.Results.SelectMany(Types).ToArray()));
                     DefineBlockTypes(loop.Body, ref types);
                     break;
                 case InstructionBlock or LoopTransfer:
@@ -36,6 +36,13 @@ internal sealed partial class MethodPlan
                 default:
                     throw new NotSupportedException($"Unsupported structured node {child.GetType().Name}.");
             }
+        }
+
+        IEnumerable<WasmType> Types(StackEntry type)
+        {
+            if (type.Type == StackType.ManagedPointer && type.DeclaredType is { } declared && Storage.Bind(declared).IsReferenceAddress)
+                return [(WasmType)ValueTypeCode.EqRef, (WasmType)ValueTypeCode.I32];
+            return [Type(type)];
         }
 
         WasmType Type(StackEntry type) => type.Type switch

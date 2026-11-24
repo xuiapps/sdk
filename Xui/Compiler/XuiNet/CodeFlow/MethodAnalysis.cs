@@ -7,9 +7,9 @@ using Model = Xui.Compiler.XuiNet.DotNet;
 namespace Xui.Compiler.XuiNet.CodeFlow;
 
 /// <summary>Applies supported MSIL stack effects using signatures, independently of any backend.</summary>
-internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body, Signature signature, Model.TypeIdentity context)
+internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body, Signature signature, Model.TypeIdentity context, GenericArguments? methodArguments = null)
 {
-    private readonly SignatureType[] locals = SignatureReader.Locals(module, body.LocalSignature, context.Arguments).ToArray();
+    private readonly SignatureType[] locals = SignatureReader.Locals(module, body.LocalSignature, context.Arguments, methodArguments).ToArray();
     private readonly Dictionary<int, Signature> calls = new();
 
     public void Apply(InstructionNode node)
@@ -27,7 +27,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Newarr:
                 ArrayIndex(ref stack);
-                var element = SignatureReader.StorageType(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments);
+                var element = SignatureReader.StorageType(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments);
                 stack.Push(StackEntry.From(SignatureType.Vector(element)));
                 break;
             case OpCode.Ldlen:
@@ -43,7 +43,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 var arrayElement = arrayEntry.DeclaredType?.Array?.Element
                     ?? throw stack.Error("Array element operations require an exact vector type");
                 var explicitElement = node.Code is OpCode.Ldelema or OpCode.Ldelem or OpCode.Stelem
-                    ? SignatureReader.StorageType(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments) : (SignatureType?)null;
+                    ? SignatureReader.StorageType(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments) : (SignatureType?)null;
                 ArrayOperations.Validate(node.Code, arrayElement, explicitElement);
                 if (stored is { } item) { stack.Push(item); stack.Store(StackEntry.From(arrayElement)); }
                 else stack.Push(StackEntry.From(node.Code == OpCode.Ldelema ? arrayElement.ByReference() : arrayElement));
@@ -125,7 +125,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Ldflda:
             case OpCode.Stfld:
                 var fieldToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
-                var resolvedField = Model.MemberResolver.Field(module, fieldToken, context);
+                var resolvedField = Model.MemberResolver.Field(module, fieldToken, context, methodArguments);
                 var field = resolvedField.DeclaringType.Module.GetField(resolvedField.Handle);
                 if ((field.Attributes & System.Reflection.FieldAttributes.Static) != 0)
                     throw stack.Error("Instance field instruction targets a static field");
@@ -144,7 +144,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Isinst:
             case OpCode.Castclass:
-                var targetType = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments).Identity!.Value;
+                var targetType = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments).Identity!.Value;
                 if ((targetType.Handle.Kind != HandleKind.TypeDefinition && Model.Exceptions.ExceptionTypes.Kind(targetType) is null) || targetType.IsValueType)
                     throw new NotSupportedException("Type tests currently require same-module classes.");
                 var tested = stack.Pop();
@@ -161,22 +161,29 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     stack.Push(StackEntry.From(constructor.Parameters[0]));
                     break;
                 }
-                var constructorHandle = Model.MemberResolver.Method(module, MetadataTokens.EntityHandle(constructorToken), context);
+                var constructorHandle = Model.MemberResolver.Method(module, MetadataTokens.EntityHandle(constructorToken), context, methodArguments);
                 if (constructorHandle.DeclaringType.Module.GetMethod(constructorHandle.Handle).Name != ".ctor" ||
                     constructor.Parameters.Length == 0 || constructor.Result is not null)
                     throw new NotSupportedException("Only same-module constructors are currently analyzed.");
                 for (int i = constructor.Parameters.Length - 1; i >= 1; i--) stack.Store(StackEntry.From(constructor.Parameters[i]));
                 stack.Push(StackEntry.From(constructor.Parameters[0] with { IsByReference = false }));
                 break;
+            case OpCode.Box:
+                var boxed = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments);
+                if (!boxed.IsReferenceType && boxed.Code is not (SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray))
+                    throw new NotSupportedException("Boxing value types is not implemented.");
+                stack.Store(StackEntry.From(boxed));
+                stack.Push(StackEntry.From(boxed));
+                break;
             case OpCode.Initobj:
             case OpCode.Ldobj:
             case OpCode.Stobj:
             case OpCode.Cpobj:
                 var valueHandle = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
-                var resolvedValue = SignatureReader.Resolve(module, valueHandle, context.Arguments);
-                if (resolvedValue.Identity is not { IsValueType: true } valueIdentity)
-                    throw new NotSupportedException("Only same-module value-type object operations are currently analyzed; primitive/reference generic initobj is not implemented.");
-                var value = new SignatureType(SignatureTypeCode.TypeHandle, valueIdentity);
+                var resolvedValue = SignatureReader.Resolve(module, valueHandle, context.Arguments, methodArguments);
+                if (resolvedValue.Identity is not { } && resolvedValue.Code is not (SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray))
+                    throw new NotSupportedException("Primitive generic initobj/object operations are not implemented.");
+                var value = resolvedValue;
                 var pointer = StackEntry.From(value.ByReference());
                 if (node.Code == OpCode.Stobj) stack.Store(StackEntry.From(value));
                 if (node.Code == OpCode.Cpobj) stack.Pop(pointer);
@@ -305,9 +312,9 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     {
         if (calls.TryGetValue(token, out var signature)) return signature;
         var handle = MetadataTokens.EntityHandle(token);
-        if (Model.Intrinsics.InlineArrayAccess.Read(module, handle, context.Arguments) is { } inline)
+        if (Model.Intrinsics.InlineArrayAccess.Read(module, handle, context.Arguments, methodArguments) is { } inline)
             signature = new(inline.Signature.Parameters.ToArray(), StackEntry.From(inline.Signature.Result));
-        else if (Model.Intrinsics.SpanAccess.Read(module, handle, context.Arguments) is { } span)
+        else if (Model.Intrinsics.SpanAccess.Read(module, handle, context.Arguments, methodArguments) is { } span)
             signature = new([new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters], StackEntry.From(span.Signature.Result));
         else if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _, out _))
         {
@@ -323,8 +330,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         }
         else
         {
-            var resolved = Model.MemberResolver.Method(module, handle, context);
-            signature = Signature.Read(resolved.DeclaringType.Module, resolved.DeclaringType.Module.GetMethod(resolved.Handle).Signature, resolved.DeclaringType);
+            var resolved = Model.MemberResolver.Method(module, handle, context, methodArguments);
+            signature = Signature.Read(resolved.DeclaringType.Module, resolved.DeclaringType.Module.GetMethod(resolved.Handle).Signature, resolved.DeclaringType, resolved.Arguments);
         }
         calls.Add(token, signature);
         return signature;

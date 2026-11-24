@@ -26,7 +26,7 @@ public readonly ref partial struct CodeEmitter
 
     private bool TryInlineArrayAccess(Instruction.Token instruction, int offset)
     {
-        var access = InlineArrayAccess.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments);
+        var access = InlineArrayAccess.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
         if (access is null) return false;
         bool first = access.Operation == "InlineArrayFirstElementRef";
         bool span = access.Operation is "InlineArrayAsSpan" or "InlineArrayAsReadOnlySpan";
@@ -55,6 +55,8 @@ public readonly ref partial struct CodeEmitter
         {
             if (!first) writer.LocalGet(Frame.I32Scratch).I32Const(ElementSize(access.Layout.Element)).I32Mul().I32Add();
             var element = EnumInfo.Storage(access.Layout.Element);
+            if (StorageModel.IsReference(method.Storage.Bind(element)))
+                LinearReferenceAddress();
             stack.Push(new(element.Code, element.Identity, true, element.Array));
         }
         return true;
@@ -62,7 +64,7 @@ public readonly ref partial struct CodeEmitter
 
     private bool TrySpanAccess(Instruction.Token instruction, int offset)
     {
-        var access = SpanAccess.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments);
+        var access = SpanAccess.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
         if (access is null) return false;
         if (access.Operation == "get_Item")
         {
@@ -85,6 +87,8 @@ public readonly ref partial struct CodeEmitter
             writer.End().LocalGet(Frame.AddressScratch).I32Load().LocalGet(Frame.I32Scratch)
                 .I32Const(ElementSize(access.Owner.Arguments!.Values[0])).I32Mul().I32Add();
             var element = EnumInfo.Storage(access.Owner.Arguments.Values[0]);
+            if (StorageModel.IsReference(method.Storage.Bind(element)))
+                LinearReferenceAddress();
             stack.Push(new(element.Code, element.Identity, true, element.Array));
         }
         return true;

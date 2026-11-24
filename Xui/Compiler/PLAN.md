@@ -19,15 +19,17 @@ pixels, 2× DPR, drag/touch input, fade completion, idle scheduling, and disposa
 This is a direct single-view bridge, not the full emulator/window/event-router
 composition. The [full-shell probe](Tests/Wasm/TestApp/Snapshots/MobileShellReadiness.md)
 compiles all application dependencies as separate PEs with the real shader
-generator. It reaches MobileHomePage but stops at ScrollView.SetContent calling
-`View.SetProtectedChild<ScrollContent>(ref scrollContent, value)`.
+generator. Closed generic methods and reference byrefs now execute with aliasing,
+linked-call, and unwind tests, covering the SetProtectedChild pattern. The full-shell
+probe now stops at `System.Action<Vector>..ctor` from `MobileHomePage`: delegates
+need compiler/runtime support because their constructor has no managed IL body.
 
 The next sequence is:
 
-1. Specialize closed generic methods and support managed byrefs to class-reference
-   fields, with aliasing and writeback tests for SetProtectedChild.
+1. Implement the reachable delegate constructor/invocation path (`Action<Vector>`),
+   including the target receiver and method function reference.
 2. Re-run the full-shell probe; implement reachable static initialization and the
-   collections/delegates it actually uses instead of preloading the BCL.
+   collections it actually uses instead of preloading the BCL.
 3. Supply service/type lookup and a persistent Actual window, then connect the real
    RootView/EventRouter and EmulatedWindow rather than the single-view bridge.
 4. Expand the Canvas host to text measurement, text drawing, paths and clipping
@@ -139,7 +141,7 @@ persistent frame/input exports remain later gates. The full TestApp is not runni
 
 Class-backed interface calls now support implicit/explicit implementations, inherited and reimplemented mappings, virtual overrides, and closed generic interfaces with reference-type covariance and contravariance. `is`/`as`/explicit casts work with nominal interface membership, including class references stored as `object`. Interface contracts may come from a separate supplied assembly. See the [interface execution snapshot](Tests/Wasm/Interfaces/Snapshots/Units.md).
 
-This removes the basic interface dispatch/MethodImpl blocker. It does not yet implement boxed/constrained struct dispatch, representation-changing variance adapters, static-abstract interface dispatch, generic methods, or every signature used by `IContext`. Interface methods still use the existing supported argument/result ABI. Dependency-defined numeric structs and the initial NFloat intrinsic set now execute; ordinary Canvas signatures can now use supported struct values; remaining framework types and operations still need implementation.
+This removes the basic interface dispatch/MethodImpl blocker. It does not yet implement boxed/constrained struct dispatch, representation-changing variance adapters, static-abstract interface dispatch, generic virtual methods, or every signature used by `IContext`. Interface methods still use the existing supported argument/result ABI. Dependency-defined numeric structs and the initial NFloat intrinsic set now execute; ordinary Canvas signatures can now use supported struct values; remaining framework types and operations still need implementation.
 
 ## Exception prerequisite — initial support implemented
 

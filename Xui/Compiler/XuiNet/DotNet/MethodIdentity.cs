@@ -1,16 +1,17 @@
 using System.Reflection.Metadata;
+using Xui.Compiler.XuiNet.DotNet.Signatures;
 
 namespace Xui.Compiler.XuiNet.DotNet;
 
 /// <summary>A method definition in its declaring type's specialization context.</summary>
-/// <remarks>Generic method arguments will be added when MethodSpec compilation is implemented.</remarks>
 public readonly record struct MethodIdentity(
     TypeIdentity DeclaringType,
-    MethodDefinitionHandle Handle)
+    MethodDefinitionHandle Handle,
+    GenericArguments? Arguments = null)
 {
     /// <summary>Creates the identity of a method on its unconstructed declaring type.</summary>
     public static MethodIdentity FromDefinition(Module module, MethodDefinitionHandle handle) =>
         new(new(module, module.GetMethod(handle).DeclaringType), handle);
 
-    public override string ToString() => DeclaringType + "." + DeclaringType.Module.GetMethod(Handle).Name;
+    public override string ToString() => DeclaringType + "." + DeclaringType.Module.GetMethod(Handle).Name + (Arguments is null ? "" : "<" + string.Join(", ", Arguments.Values.ToArray()) + ">");
 }

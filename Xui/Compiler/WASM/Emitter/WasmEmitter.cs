@@ -102,10 +102,12 @@ public sealed partial class WasmEmitter
             fromCharCodeArrayType = types.FunctionType([RefNull(utf16ArrayType), I32, I32], NonNullExternRef);
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
+            storage.DefineReferenceAddressTypes(ref types);
             foreach (var method in orderedMethods)
             {
                 var parameters = Array.ConvertAll(method.Signature.Parameters,
                     parameter => (Wasm.Section.TypeDefinitions.ValueType)parameter.WasmType);
+                parameters = [.. parameters, .. Enumerable.Repeat((Wasm.Section.TypeDefinitions.ValueType)I32, method.Signature.ReferenceParameterCount)];
                 if (method.Signature.HasResultAddress) parameters = [.. parameters, I32];
                 Wasm.Section.TypeDefinitions.ValueType? result = method.Signature.ReturnType == SignatureTypeCode.Void
                     ? null : method.Signature.Result.WasmType;
@@ -136,6 +138,7 @@ public sealed partial class WasmEmitter
         using (var functions = writer.FunctionSection(importedFunctionCount))
         {
             foreach (var method in orderedMethods.Where(method => !method.IsDeclaration)) method.Function = functions.Function(method.Type);
+            foreach (var accessorType in storage.ReferenceAccessorTypes) storage.ReferenceAccessorFunctions.Add(functions.Function(accessorType));
             if (storage.Classes.Types.Count != 0) storage.InstanceTest = functions.Function(storage.InstanceTestType);
         }
         if (storage.TableSize != 0 || storage.ReferenceSlotsEnabled)
@@ -209,6 +212,11 @@ public sealed partial class WasmEmitter
                 rewriter.UseSource(method.Identity.DeclaringType.Module);
                 var emitter = new CodeEmitter(method.Identity.DeclaringType.Module, bodyWriter, literalIndices, runtime, rewriter, method, methods);
                 emitter.Emit(method.Body.Instructions);
+            }
+            for (int i = 0; i < storage.ReferenceAccessorFunctions.Count; i++)
+            {
+                using var body = code.FunctionBody();
+                storage.EmitReferenceAccessor(body, i, runtime);
             }
             if (storage.Classes.Types.Count != 0)
             {

@@ -29,6 +29,12 @@ public readonly ref partial struct CodeEmitter
                     .I32Const(frame.ValueSize(locals[i].Identity!.Value)).MemoryFill();
         }
         EnterReferenceFrame();
+        foreach (var (index, displacement) in frame.ReferenceArguments)
+        {
+            FrameAddress(displacement);
+            writer.LocalGet(new((uint)index));
+            StoreReference(parameters[index]);
+        }
         // The incoming address names an evaluation-stack snapshot. Copy it again so
         // aliases into the parameter remain stable when starg replaces its value.
         for (int i = 0; i < frame.Arguments.Length; i++)
@@ -63,6 +69,7 @@ public readonly ref partial struct CodeEmitter
     private void LoadLocalAddress(ushort index, OpCode code, int offset)
     {
         var local = GetLocal(new LocalIndex(index), code, offset);
+        if (TryVariableReferenceAddress(index, false, local)) return;
         if (local.Identity is null || method.Storage.IsClass(local.Identity.Value)) throw new NotSupportedException("Only struct local addresses are implemented.");
         if (!initLocals) throw new NotSupportedException("Addressable struct locals currently require initlocals.");
         writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index));
@@ -73,7 +80,7 @@ public readonly ref partial struct CodeEmitter
     private (LocalVariable Type, TypeIdentity Owner, int Offset) Field(int token)
     {
         var handle = MetadataTokens.EntityHandle(token);
-        var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType);
+        var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType, method.Identity.Arguments);
         var field = resolvedField.DeclaringType.Module.GetField(resolvedField.Handle);
         if ((field.Attributes & FieldAttributes.Static) != 0) throw new NotSupportedException("Static field storage is not implemented.");
         var owner = resolvedField.DeclaringType;
@@ -91,7 +98,7 @@ public readonly ref partial struct CodeEmitter
 
     private TypeIdentity ObjectType(int token)
     {
-        var identity = SignatureReader.Resolve(source, MetadataTokens.EntityHandle(token), method.Identity.DeclaringType.Arguments).Identity
+        var identity = SignatureReader.Resolve(source, MetadataTokens.EntityHandle(token), method.Identity.DeclaringType.Arguments, method.Identity.Arguments).Identity
             ?? throw new NotSupportedException("Primitive generic object-copy instructions are not implemented.");
         _ = Frame.Layout(identity);
         return identity;

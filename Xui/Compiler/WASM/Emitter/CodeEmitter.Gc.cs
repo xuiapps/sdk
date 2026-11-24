@@ -63,7 +63,7 @@ public readonly ref partial struct CodeEmitter
         bool store = instruction.Code == OpCode.Stfld;
         var receiver = store ? stack.ElementAt(1) : stack.Peek();
         var handle = MetadataTokens.EntityHandle(instruction.Value);
-        var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType);
+        var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType, method.Identity.Arguments);
         var field = resolvedField.DeclaringType.Module.GetField(resolvedField.Handle);
         var declaring = resolvedField.DeclaringType;
         if (receiver.IsNull && method.Storage.IsClass(declaring)) receiver = new(SignatureTypeCode.TypeHandle, declaring);
@@ -79,7 +79,12 @@ public readonly ref partial struct CodeEmitter
         if (instruction.Code == OpCode.Ldflda)
         {
             writer.RefCast(location.Owner.Type); // The checked receiver must have the expected owner type.
-            stack.Push(new(range.Storage.TypeCode, range.Storage.Identity, true) { Location = location });
+            if (StorageModel.IsReference(range.Storage))
+            {
+                writer.I32Const(method.Storage.ReferenceField(location, range.Storage));
+                stack.Push(new(range.Storage.TypeCode, range.Storage.Identity, true, range.Storage.Array));
+            }
+            else stack.Push(new(range.Storage.TypeCode, range.Storage.Identity, true) { Location = location });
             return true;
         }
         if (store)
@@ -162,7 +167,7 @@ public readonly ref partial struct CodeEmitter
         var sourceValue = stack.Peek();
         var destination = copying ? stack.ElementAt(1) : sourceValue;
         if (!IsGc(destination) && (!copying || !IsGc(sourceValue))) return false;
-        var identity = Xui.Compiler.XuiNet.DotNet.Signatures.SignatureReader.Resolve(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments).Identity
+        var identity = Xui.Compiler.XuiNet.DotNet.Signatures.SignatureReader.Resolve(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments).Identity
             ?? throw new NotSupportedException("Primitive generic object-copy instructions are not implemented.");
         var shape = method.Storage.Shape(identity);
         if (!identity.IsValueType) throw new NotSupportedException("Object copy instructions require value types.");

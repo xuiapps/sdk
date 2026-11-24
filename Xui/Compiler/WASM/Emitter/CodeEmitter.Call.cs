@@ -7,10 +7,10 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    private static MethodIdentity ResolveCall(Xui.Compiler.XuiNet.DotNet.Module source, TypeIdentity context, int token, int offset)
+    private static MethodIdentity ResolveCall(Xui.Compiler.XuiNet.DotNet.Module source, MethodIdentity context, int token, int offset)
     {
         var handle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
-        return MemberResolver.Method(source, handle, context);
+        return MemberResolver.Method(source, handle, context.DeclaringType, context.Arguments);
     }
 
     private void EmitCall(Instruction.Token instruction, int offset)
@@ -27,7 +27,7 @@ public readonly ref partial struct CodeEmitter
             writer.Drop();
             return;
         }
-        var target = ResolveCall(source, method.Identity.DeclaringType, instruction.Value, offset);
+        var target = ResolveCall(source, method.Identity, instruction.Value, offset);
         var callee = methods[target];
         if (callee.Signature.HasEntryPointArguments)
             throw new NotSupportedException("Calls with string[] entry-point arguments are not implemented.");
@@ -41,6 +41,7 @@ public readonly ref partial struct CodeEmitter
             PopAssignable(arguments[i], instruction.Code, offset);
             if (temporaries is not null)
             {
+                if (arguments[i].IsReferenceAddress) writer.LocalSet(method.CallReferenceTemporaries[target][i]);
                 Narrow(arguments[i]);
                 writer.LocalSet(temporaries[i]);
             }
@@ -55,6 +56,8 @@ public readonly ref partial struct CodeEmitter
                     writer.RefCast(method.Storage.Shape(arguments[0].Identity!.Value).Type);
                 }
             }
+        for (int i = 0; i < arguments.Length; i++)
+            if (arguments[i].IsReferenceAddress) writer.LocalGet(method.CallReferenceTemporaries[target][i]);
         if (callee.Signature.HasResultAddress) FrameAddress(Frame.Values[offset]);
         if (instruction.Code == OpCode.Callvirt &&
             (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & System.Reflection.MethodAttributes.Virtual) != 0)

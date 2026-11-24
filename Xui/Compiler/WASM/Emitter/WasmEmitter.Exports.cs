@@ -12,7 +12,7 @@ public sealed partial class WasmEmitter
             throw new ArgumentException("Named exports need a nonempty name other than the reserved main export.");
         var module = identity.DeclaringType.Module;
         var method = module.GetMethod(identity.Handle);
-        var signature = SignatureReader.Method(module, method.Signature, identity.DeclaringType.Arguments);
+        var signature = SignatureReader.Method(module, method.Signature, identity.DeclaringType.Arguments, identity.Arguments);
         if (signature.HasThis || method.Name is ".ctor" or ".cctor")
             throw new NotSupportedException($"Export {name} must be an ordinary static method.");
         foreach (var parameter in signature.Parameters) Check(parameter, result: false);

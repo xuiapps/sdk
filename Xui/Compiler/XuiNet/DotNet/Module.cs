@@ -67,7 +67,10 @@ public sealed class Module
         }
     }
 
-    /// <summary>Creates a borrowed type-specification view.</summary>
+    /// <summary>Creates a borrowed method-instantiation view.</summary>
+    public MethodSpecification GetMethodSpecification(MethodSpecificationHandle handle) => new(this, handle);
+
+    /// <summary>Gets a borrowed type specification.</summary>
     public TypeSpecification GetTypeSpecification(TypeSpecificationHandle handle) => new(this, handle);
     /// <summary>Creates a borrowed generic-parameter view.</summary>
     public GenericParameter GetGenericParameter(GenericParameterHandle handle) => new(this, handle);

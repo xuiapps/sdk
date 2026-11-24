@@ -19,6 +19,15 @@ internal sealed class MemoryFrame
     private readonly StorageModel storage;
     public int[] Locals { get; }
     public int[] Arguments { get; }
+    public Dictionary<int, int> ReferenceLocals { get; } = new();
+    public Dictionary<int, int> ReferenceArguments { get; } = new();
+    public int AllocateReference(LocalVariable type)
+    {
+        int offset = Align(Size, 4);
+        Size = checked(offset + 4);
+        References.Add((offset, type));
+        return offset;
+    }
     public Dictionary<int, int> Values { get; } = new();
     public int Size { get; private set; }
     public List<(int Offset, LocalVariable Type)> References { get; } = new();

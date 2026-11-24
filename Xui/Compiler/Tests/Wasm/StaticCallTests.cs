@@ -257,7 +257,6 @@ public class StaticCallTests
     }
 
     [Theory]
-    [InlineData("public static class Program { static int F<T>(int x) => x; public static int Main() => F<int>(1); }")]
     [InlineData("public static class Program { static int F(ref int x) => x; public static int Main() { int x = 1; return F(ref x); } }")]
     [InlineData("public static class Program { static Program() { System.Console.WriteLine(1); } public static int Main() => 0; }")]
     [InlineData("public static class Program { public static int Main(string[] args) => args.Length; }")]

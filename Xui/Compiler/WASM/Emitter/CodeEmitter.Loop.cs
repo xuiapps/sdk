@@ -7,7 +7,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitLoop(LoopBlock loop)
     {
-        if (stack.Any(value => value.IsByReference)) throw new NotSupportedException("Managed addresses carried across loops are not implemented.");
+        if (stack.Any(value => value.IsByReference && !value.IsReferenceAddress)) throw new NotSupportedException("Managed addresses carried across loops are not implemented.");
         CheckStack(loop.Header.Before!, loop.Header.Offset);
         var type = method.BlockTypes[loop];
         writer.Block(type);

@@ -25,7 +25,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Unsupported Call at IL_003b in Xui.Core.UI.ScrollView.set_Content: Method token MethodSpecification is not implemented.
+The method has no managed body: System.Action<Xui.Core.Math2D.Vector>..ctor.
 ```
 
 ## Dependency path
@@ -35,10 +35,10 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
- → Method { Identity = Xui.Core.UI.ScrollView.set_Content }
+ → Method { Identity = System.Action<Xui.Core.Math2D.Vector>..ctor }
 ```
 
-The immediate call is View.SetProtectedChild<ScrollContent>(ref scrollContent, value). It requires closed generic method specialization and a managed reference to a class reference field. Generic type specialization alone does not supply either. Static initialization, collections, services, text measurement, and full event routing still require further probes after this call is supported.
+Closed generic method specialization and owner/selector byrefs are supported, including the SetProtectedChild pattern. Dependency discovery now reaches a runtime-provided delegate constructor: its implementation is not IL and needs compiler/runtime delegate support. Static initialization, collections, services, text measurement, and full event routing still require further probes.
 
 ## WAT
 

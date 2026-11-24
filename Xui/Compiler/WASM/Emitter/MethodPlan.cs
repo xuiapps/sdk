@@ -47,6 +47,8 @@ internal sealed partial class MethodPlan
     public bool UsesArrays { get; set; }
     public LocalIndex ArrayReference { get; private set; }
     public LocalIndex ArrayIndex { get; private set; }
+    public Dictionary<int, LocalIndex> ReferenceLocals { get; } = new();
+    public Dictionary<IR.MethodIdentity, LocalIndex[]> CallReferenceTemporaries { get; } = new();
     private uint dupBase;
 
     public MethodPlan(IR.Module source, IR.MethodIdentity identity, bool entryPoint, StorageModel storage, bool declarationOnly = false)
@@ -55,7 +57,7 @@ internal sealed partial class MethodPlan
         var handle = identity.Handle;
         Storage = storage;
         var method = source.GetMethod(handle);
-        Signature = MethodSignature.Read(source, method, identity.DeclaringType, entryPoint, storage);
+        Signature = MethodSignature.Read(source, method, identity.DeclaringType, entryPoint, storage, identity.Arguments);
         if (!declarationOnly && (method.ImplementationAttributes & MethodImplAttributes.Synchronized) != 0)
             throw new NotSupportedException($"Synchronized methods are not implemented: {method.Name}.");
         var declaringType = source.GetType(method.DeclaringType);
@@ -75,9 +77,10 @@ internal sealed partial class MethodPlan
         }
         Body = method.Body ?? throw new NotSupportedException($"The method has no managed body: {method.Name}.");
         if (Body.ExceptionRegions.Length != 0) { storage.ExceptionsEnabled = true; RequireGcTemporaries(); }
-        Locals = LocalVariable.Read(source, Body.LocalSignature, storage, identity.DeclaringType.Arguments);
+        Locals = LocalVariable.Read(source, Body.LocalSignature, storage, identity.DeclaringType.Arguments, identity.Arguments);
         foreach (var local in Locals.Concat(Signature.Parameters).Append(Signature.Result))
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
+        if (Locals.Concat(Signature.Parameters).Any(p => p.IsReferenceAddress)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
         if (Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
             Graph.Instructions.Any(n => n.Code is OpCode.Newobj or OpCode.Ldsfld || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
@@ -98,10 +101,13 @@ internal sealed partial class MethodPlan
                 throw;
             }
         }
-        if (Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
+        CollectReferenceVariables();
+        if (addressedReferenceLocals.Count + addressedReferenceArguments.Count != 0 || Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
             Graph.Instructions.Any(n => n.After?.Entry is { Type: StackType.ValueType, DeclaredType.Identity: { } id } && !storage.IsGc(id)))
         {
             Frame = new(source, Locals, Signature.Parameters, storage);
+            foreach (int index in addressedReferenceLocals) Frame.ReferenceLocals.Add(index, Frame.AllocateReference(Locals[index]));
+            foreach (int index in addressedReferenceArguments) Frame.ReferenceArguments.Add(index, Frame.AllocateReference(Signature.Parameters[index]));
             Frame.AllocateValues(Graph);
             if (Frame.References.Count != 0) { storage.ReferenceSlotsEnabled = true; storage.ExceptionsEnabled = true; }
             if (storage.ReferenceSlotsEnabled) RequireGcTemporaries();
@@ -126,6 +132,12 @@ internal sealed partial class MethodPlan
     {
         var types = Locals.Select(local => local.WasmType).ToList();
         uint parameterCount = (uint)Signature.WasmParameterCount;
+        for (int i = 0; i < Locals.Length; i++)
+            if (Locals[i].IsReferenceAddress)
+            {
+                ReferenceLocals.Add(i, new(parameterCount + (uint)types.Count));
+                types.Add(ValueTypeCode.I32);
+            }
         if (UsesNativeFloat) { NativeFloatTemporary = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F32); }
         if (UsesNativeFloatClamp)
         {
@@ -142,7 +154,7 @@ internal sealed partial class MethodPlan
         {
             var parameters = methods[target].Signature.Parameters;
             if (methods[target].Signature.Result.UsesGc || parameters.Any(parameter => parameter.UsesGc)) UsesGc = true;
-            if (!methods[target].Signature.HasThis && !parameters.Any(parameter => parameter.NeedsNarrowing)) continue;
+            if (!methods[target].Signature.HasThis && !parameters.Any(parameter => parameter.NeedsNarrowing || parameter.IsReferenceAddress)) continue;
             var slots = new LocalIndex[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
             {
@@ -150,6 +162,13 @@ internal sealed partial class MethodPlan
                 types.Add(parameters[i].WasmType);
             }
             CallTemporaries.Add(target, slots);
+            if (parameters.Any(p => p.IsReferenceAddress))
+            {
+                var selectors = new LocalIndex[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                    if (parameters[i].IsReferenceAddress) { selectors[i] = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32); }
+                CallReferenceTemporaries.Add(target, selectors);
+            }
         }
         if (!IsDeclaration) foreach (var region in Body.ExceptionRegions)
         {

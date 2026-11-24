@@ -8,12 +8,12 @@ public sealed record SpanAccess(string Operation, TypeIdentity Owner, MethodSign
 {
     public static bool Is(TypeIdentity type) => FrameworkTypes.Is(type, "System", "Span`1") || FrameworkTypes.Is(type, "System", "ReadOnlySpan`1");
 
-    public static SpanAccess? Read(Module module, EntityHandle token, GenericArguments? context)
+    public static SpanAccess? Read(Module module, EntityHandle token, GenericArguments? context, GenericArguments? methodArguments = null)
     {
         if (token.Kind != HandleKind.MemberReference) return null;
         var member = module.GetMemberReference((MemberReferenceHandle)token);
         if (member.Kind != MemberReferenceKind.Method || member.Parent.Kind != HandleKind.TypeSpecification) return null;
-        var owner = SignatureReader.Resolve(module, member.Parent, context).Identity;
+        var owner = SignatureReader.Resolve(module, member.Parent, context, methodArguments).Identity;
         if (owner is not { } span || !Is(span) || span.Arguments?.Values.Length != 1) return null;
         var signature = SignatureReader.Method(module, member.Signature, span.Arguments);
         if (!signature.HasThis) return null;

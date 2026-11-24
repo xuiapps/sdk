@@ -74,18 +74,34 @@ prefix. Overrides reuse inherited slots, while `new virtual` declarations append
 slots. Override matching uses the open declaring context so `F(T)` and `F(int)`
 stay distinct when `T` is `int`. [The DerivedBoxes demo](../Tests/Wasm/Generics/Snapshots/DerivedBoxes.md)
 shows specialized fields, tables, base calls, and nominal `is`/`as` tests across a
-three-level hierarchy. Primitive/reference `default(T)` via `initobj` is not
-implemented. Expanding instantiations stop at a nesting depth of 32.
+three-level hierarchy. Reference `default(T)` via `initobj` is supported; primitive generic object operations remain unsupported. Expanding instantiations stop at a nesting depth of 32.
 
-Generic methods, open generic structs, arbitrary external calls, switches, arbitrary
+Generic virtual methods, open generic structs, arbitrary external calls, switches, arbitrary
 jump graphs, lambdas, closures, delegates, multidimensional arrays, unmanaged pointers,
-boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
+value-type boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage currently holds emitted class/interface references and null, not strings,
 boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies,
 static-abstract interface dispatch, generic interface methods, boxed/constrained struct dispatch,
 and explicit class MethodImpl/covariant return overrides remain unsupported. Explicit-layout structs cannot
 be flattened into GC fields yet; their supported linear-memory layouts are unchanged.
-Struct `ref`/`in`/`out` parameters and local aliases work for linear stack locations. Byrefs into GC class fields and general primitive/reference byref parameters remain unsupported. Addresses
+Closed generic **methods** now specialize through MethodSpec tokens, including calls
+across supplied assemblies, nested type/method arguments, recursion, and overloads.
+Each cache key includes both the declaring type and method argument list. Open
+method templates are expanded only by closed calls. Generic virtual dispatch remains
+unsupported; `box T` is a no-op only when T specializes to a supported reference type.
+
+Reference `ref`/`in`/`out` arguments and local aliases carry an `eqref` owner plus an
+`i32` accessor selector. Generated getters/setters use constant WASM field indices.
+No descriptor object is allocated per byref. Class fields (including reference leaves
+inside flattened structs) keep their owner alive; saved refs keep pointing to the
+original object after the source variable changes. Address-taken reference locals and
+arguments use caller-owned GC-visible table slots, cleared on return and unwinding.
+Strings use the same convention with externref getters/setters. Calls, constructors,
+virtual/interface dispatch, ref locals, and conditional/loop stacks preserve the pair.
+Primitive byref parameters, escaping byref returns, and arbitrary array-element
+byrefs remain unsupported.
+
+Struct `ref`/`in`/`out` parameters and local aliases work for linear stack locations. Addresses
 of inline struct fields can be used within expressions and conditional arms, but
 cannot be passed as instance receivers or carried across loops. Class-reference
 joins widen to a common linked base class, including null/class joins.
@@ -376,7 +392,7 @@ supported operations that require no emitted bytes.
 | `unbox` |  |  |
 | `throw` | `throw` | Throws managed payload; null becomes a NullReferenceException object. |
 | `ldfld` | Numeric load / `memory.copy` / `struct.get` / `struct.new` | Reads linear or flattened GC fields; struct values are copied. |
-| `ldflda` | `i32.add` or GC owner reference | Retains the owner and static field range for inline addresses. |
+| `ldflda` | `i32.add`; owner + accessor selector | Reference fields preserve owner identity through calls and local aliases. |
 | `stfld` | Numeric store / `memory.copy` / `struct.set` | Writes linear or flattened fields; struct assignment copies leaf values. |
 | `ldsfld` | `memory.fill`, frame address | Only framework TimeSpan.Zero value loads; other static fields unsupported. |
 | `ldsflda` |  |  |
@@ -392,7 +408,7 @@ supported operations that require no emitted bytes.
 | `conv.ovf.u8.un` |  |  |
 | `conv.ovf.i.un` |  |  |
 | `conv.ovf.u.un` |  |  |
-| `box` |  |  |
+| `box` | no instruction for reference specializations | Generic reference identity is preserved; value-type boxing remains unsupported. |
 | `newarr` | `array.new_default` | Struct elements get independent mutable GC storage; negative lengths throw. |
 | `ldlen` | `array.len` | Returns native-width length; null throws a managed exception. |
 | `ldelema` | `array.get` | Struct element locations only; general array byref ABI remains unsupported. |
@@ -514,7 +530,7 @@ The [layout demo](../Tests/Wasm/Interfaces/Snapshots/Defaults.md) shows source, 
 selected dispatch targets, and WAT. Reachability retains a callable signature without
 retaining an overridden or uncalled default body. Conflicting defaults and reabstraction
 without a concrete implementation fail during compilation; runtime ambiguity exceptions
-are not implemented. Generic methods, static-abstract dispatch, and boxed or
+are not implemented. Generic virtual methods, static-abstract dispatch, and boxed or
 constrained struct receivers remain unsupported.
 
 ## Managed arrays and inline gradient buffers

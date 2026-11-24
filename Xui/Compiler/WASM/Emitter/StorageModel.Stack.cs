@@ -45,11 +45,11 @@ internal sealed partial class StorageModel
         {
             var owner = identity.DeclaringType;
             var method = owner.Module.GetMethod(identity.Handle);
-            var signature = SignatureReader.Method(owner.Module, method.Signature, owner.Arguments);
+            var signature = SignatureReader.Method(owner.Module, method.Signature, owner.Arguments, identity.Arguments);
             foreach (var parameter in signature.Parameters)
                 if (parameter.IsByReference && parameter.Identity is { IsValueType: true } type) Select(type);
             if (dependencies.Contains(new Dependency.Method(identity)) && method.Body is { } body)
-                foreach (var local in SignatureReader.Locals(owner.Module, body.LocalSignature, owner.Arguments))
+                foreach (var local in SignatureReader.Locals(owner.Module, body.LocalSignature, owner.Arguments, identity.Arguments))
                     if (local.Identity is { IsValueType: true } type && (local.IsByReference || InlineArrayInfo.Read(type) is not null)) Select(type);
         }
         void Select(TypeIdentity type)

@@ -10,7 +10,7 @@ public sealed record InlineArrayAccess(
     InlineArrayInfo Layout,
     MethodSignature Signature)
 {
-    public static InlineArrayAccess? Read(Module module, EntityHandle token, GenericArguments? context)
+    public static InlineArrayAccess? Read(Module module, EntityHandle token, GenericArguments? context, GenericArguments? methodArguments = null)
     {
         if (token.Kind != HandleKind.MethodSpecification) return null;
         var spec = module.Metadata.GetMethodSpecification((MethodSpecificationHandle)token);
@@ -26,8 +26,8 @@ public sealed record InlineArrayAccess(
         })) return null;
         var args = module.Metadata.GetBlobReader(spec.Signature);
         if (args.ReadSignatureHeader().Kind != SignatureKind.MethodSpecification || args.ReadCompressedInteger() != 2) return null;
-        var buffer = SignatureReader.Type(module, ref args, context);
-        var element = SignatureReader.Type(module, ref args, context);
+        var buffer = SignatureReader.Type(module, ref args, context, methodArguments);
+        var element = SignatureReader.Type(module, ref args, context, methodArguments);
         if (args.RemainingBytes != 0 || buffer.Identity is not { } identity || buffer.IsByReference ||
             InlineArrayInfo.Read(identity) is not { } layout || layout.Element != element) return null;
         var signature = method.Signature;

@@ -13,10 +13,10 @@ public readonly ref struct TypeSpecification
     /// <summary>The borrowed signature blob.</summary>
     public BlobReader Signature => module.Metadata.GetBlobReader(module.Metadata.GetTypeSpecification(Handle).Signature);
     /// <summary>Decodes the signature, optionally substituting the containing type's arguments.</summary>
-    public SignatureType Read(GenericArguments? arguments = null)
+    public SignatureType Read(GenericArguments? arguments = null, GenericArguments? methodArguments = null)
     {
         var reader = Signature;
-        var type = SignatureReader.Type(module, ref reader, arguments);
+        var type = SignatureReader.Type(module, ref reader, arguments, methodArguments);
         if (reader.RemainingBytes != 0) throw new BadImageFormatException("Unexpected trailing type-specification bytes.");
         return type;
     }

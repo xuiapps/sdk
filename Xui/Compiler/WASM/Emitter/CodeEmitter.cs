@@ -141,6 +141,8 @@ public readonly ref partial struct CodeEmitter
                 EmitLdflda(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Stfld:
                 EmitStfld(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Box:
+                EmitBox(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Initobj:
                 EmitInitobj(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Ldobj:
@@ -340,6 +342,12 @@ public readonly ref partial struct CodeEmitter
         var reader = method.Body.Instructions;
         var literals = new List<string>();
         var seenLiterals = new HashSet<string>(StringComparer.Ordinal);
+        if (method.Graph.Instructions.Any(n => n.After?.Entry is { DeclaredType: { IsByReference: true } type } &&
+            (type.IsReferenceType || type.Code is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray)))
+        {
+            method.Storage.ReferenceAddressesEnabled = true;
+            method.RequireGcTemporaries();
+        }
         foreach (var node in method.Graph.Instructions)
         {
             if (method.Flow is not null && !node.IsReachable) continue;
@@ -358,7 +366,7 @@ public readonly ref partial struct CodeEmitter
                     if (instruction.Code == OpCode.Newarr)
                     {
                         var element = IR.Signatures.SignatureReader.StorageType(source,
-                            System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments);
+                            System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
                         _ = method.Storage.ArrayShape(new(element));
                         if (element.Identity is { } elementIdentity) method.RequireGc(elementIdentity);
                     }
@@ -367,7 +375,7 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Castclass:
                     method.Storage.ExceptionsEnabled = true;
                     method.RequireGcTemporaries();
-                    var testedType = IR.Signatures.SignatureReader.Resolve(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments).Identity
+                    var testedType = IR.Signatures.SignatureReader.Resolve(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments).Identity
                         ?? throw new NotSupportedException("Type tests currently require same-module class types.");
                     if (!method.Storage.IsClass(testedType)) throw new NotSupportedException("Type tests currently require same-module classes.");
                     method.RequireGc(testedType);
@@ -481,13 +489,17 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Ldflda:
                 case OpCode.Stfld:
                     var fieldHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
-                    var resolvedField = IR.MemberResolver.Field(source, fieldHandle, method.Identity.DeclaringType);
+                    var resolvedField = IR.MemberResolver.Field(source, fieldHandle, method.Identity.DeclaringType, method.Identity.Arguments);
+                    if (instruction.Code == OpCode.Ldflda && StorageModel.IsReference(method.Storage.Bind(IR.Signatures.SignatureReader.Field(
+                        resolvedField.DeclaringType.Module, resolvedField.DeclaringType.Module.GetField(resolvedField.Handle).Signature, resolvedField.DeclaringType.Arguments))))
+                    { method.Storage.ReferenceAddressesEnabled = true; method.RequireGcTemporaries(); }
                     if (method.Storage.IsGc(resolvedField.DeclaringType))
                     {
                         method.RequireGc(resolvedField.DeclaringType);
                         if (method.Storage.IsClass(resolvedField.DeclaringType)) method.Storage.ExceptionsEnabled = true;
                     }
                     break;
+                case OpCode.Box:
                 case OpCode.Initobj:
                 case OpCode.Ldobj:
                 case OpCode.Stobj:
@@ -511,8 +523,8 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
-                    if (instruction.Code == OpCode.Call && (IR.Intrinsics.InlineArrayAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments) is not null ||
-                        IR.Intrinsics.SpanAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments) is not null))
+                    if (instruction.Code == OpCode.Call && (IR.Intrinsics.InlineArrayAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null ||
+                        IR.Intrinsics.SpanAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null))
                     {
                         method.Storage.ExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.IndexOutOfRangeException);
@@ -539,7 +551,7 @@ public readonly ref partial struct CodeEmitter
                         break;
                     }
                     if (instruction.Code == OpCode.Callvirt) { method.Storage.ExceptionsEnabled = true; method.RequireGcTemporaries(); }
-                    var target = ResolveCall(source, method.Identity.DeclaringType, call.Value, offset);
+                    var target = ResolveCall(source, method.Identity, call.Value, offset);
                     var attributes = target.DeclaringType.Module.GetMethod(target.Handle).Attributes;
                     if (instruction.Code == OpCode.Callvirt && (attributes & System.Reflection.MethodAttributes.Virtual) != 0)
                     {

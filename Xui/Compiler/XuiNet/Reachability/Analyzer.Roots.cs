@@ -51,6 +51,7 @@ public sealed partial class Analyzer
         {
             var method = identity.Module.GetMethod(handle);
             if (policy == MemberPolicy.PublicApi && !Visible(method.Attributes)) continue;
+            if (method.GenericParameters.Count != 0) continue; // Templates are instantiated by closed calls.
             RootMethod(source, new(identity, handle));
         }
         foreach (var handle in type.Fields)

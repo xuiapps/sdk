@@ -11,7 +11,7 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitTypeTest(Instruction.Token instruction, int offset, bool throwing)
     {
-        var target = Xui.Compiler.XuiNet.DotNet.Signatures.SignatureReader.Resolve(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments).Identity
+        var target = Xui.Compiler.XuiNet.DotNet.Signatures.SignatureReader.Resolve(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments).Identity
             ?? throw new NotSupportedException("Type tests currently require same-module classes.");
         var value = Pop(instruction.Code, offset);
         if (!IsObjectReference(value))

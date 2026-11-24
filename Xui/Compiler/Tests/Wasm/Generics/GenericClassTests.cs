@@ -96,11 +96,8 @@ public class GenericClassTests
         """, "original\n", 12);
 
     [Fact]
-    public void GenericMethodsRemainExplicitlyUnsupported()
-    {
-        var pe = Frontend.Roslyn.Compile("public static class Program { static T Id<T>(T x) => x; public static int Main() => Id(3); }");
-        Assert.Contains("MethodSpecification", Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
-    }
+    public Task GenericMethodsSpecializeFromCalls() => GcTests.AssertExecution(
+        "public static class Program { static T Id<T>(T x) => x; public static int Main() => Id(3); }", "", 3);
 
     [Fact]
     public void ExpandingGenericFieldGraphsStopWithADiagnostic()

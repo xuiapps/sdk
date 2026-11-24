@@ -7,13 +7,14 @@ public readonly ref partial struct CodeEmitter
     private void EmitNewobj(Instruction.Token instruction, int offset)
     {
         if (TryExceptionMember(instruction, offset)) return;
-        var callee = methods[ResolveCall(source, method.Identity.DeclaringType, instruction.Value, offset)];
+        var callee = methods[ResolveCall(source, method.Identity, instruction.Value, offset)];
         if (!callee.Signature.IsConstructor || !callee.Signature.HasThis) throw new InvalidProgramException("newobj requires an instance constructor.");
         var parameters = callee.Signature.Parameters;
         var temps = method.CallTemporaries[callee.Identity];
         for (int i = parameters.Length - 1; i >= 1; i--)
         {
             PopAssignable(parameters[i], instruction.Code, offset);
+            if (parameters[i].IsReferenceAddress) writer.LocalSet(method.CallReferenceTemporaries[callee.Identity][i]);
             Narrow(parameters[i]); writer.LocalSet(temps[i]);
         }
         var identity = parameters[0].Identity!.Value;
@@ -30,6 +31,8 @@ public readonly ref partial struct CodeEmitter
                 .StructSet(shape.Type, new(0));
         writer.LocalGet(temps[0]);
         for (int i = 1; i < parameters.Length; i++) writer.LocalGet(temps[i]);
+        for (int i = 1; i < parameters.Length; i++)
+            if (parameters[i].IsReferenceAddress) writer.LocalGet(method.CallReferenceTemporaries[callee.Identity][i]);
         writer.Call(callee.Function).LocalGet(temps[0]);
         stack.Push(new(System.Reflection.Metadata.SignatureTypeCode.TypeHandle, identity));
     }

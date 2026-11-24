@@ -19,7 +19,7 @@ public static class Analyzer
         var body = definition.Body ?? throw new NotSupportedException("The method has no managed body.");
         if (body.ExceptionRegions.Any(region => region.Kind == ExceptionRegionKind.Filter))
             throw new NotSupportedException("Exception filters are not implemented.");
-        var analysis = new MethodAnalysis(module, body, Signature.Read(module, definition.Signature, method.DeclaringType), method.DeclaringType);
+        var analysis = new MethodAnalysis(module, body, Signature.Read(module, definition.Signature, method.DeclaringType, method.Arguments), method.DeclaringType, method.Arguments);
         var graph = GraphReader.Read(body.Instructions);
         var work = new Queue<InstructionNode>();
         graph.Entry.Before = graph.Stacks.Empty;

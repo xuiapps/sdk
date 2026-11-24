@@ -7,7 +7,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitPop(int offset)
     {
-        _ = Pop(OpCode.Pop, offset);
+        if (Pop(OpCode.Pop, offset).IsReferenceAddress) writer.Drop();
         writer.Drop();
     }
 }

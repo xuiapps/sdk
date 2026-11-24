@@ -10,7 +10,7 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    private SignatureType ArrayElement(int token) => SignatureReader.StorageType(source, MetadataTokens.EntityHandle(token), method.Identity.DeclaringType.Arguments);
+    private SignatureType ArrayElement(int token) => SignatureReader.StorageType(source, MetadataTokens.EntityHandle(token), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
 
     private void PopArrayIndex(OpCode code, int offset)
     {
