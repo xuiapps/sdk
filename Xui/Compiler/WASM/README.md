@@ -70,7 +70,7 @@ three-level hierarchy. Primitive/reference `default(T)` via `initobj` is not
 implemented. Expanding instantiations stop at a nesting depth of 32.
 
 Generic methods, open generic structs, arbitrary external calls, switches, arbitrary
-jump graphs, lambdas, closures, delegates, managed arrays, unmanaged pointers,
+jump graphs, lambdas, closures, delegates, multidimensional arrays, unmanaged pointers,
 boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage currently holds emitted class/interface references and null, not strings,
 boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies, variant interfaces,
@@ -308,24 +308,24 @@ supported operations that require no emitted bytes.
 | `ble.un` | `integer gt_u / f64.gt; i32.eqz; if` | Unsigned integers; inverted ordered floating-point comparison includes NaN as true. |
 | `blt.un` | `integer lt_u / f64.ge; i32.eqz; if` | Unsigned integers; inverted ordered floating-point comparison includes NaN as true. |
 | `switch` |  |  |
-| `ldind.i1` |  |  |
-| `ldind.u1` |  |  |
-| `ldind.i2` |  |  |
-| `ldind.u2` |  |  |
+| `ldind.i1` | `i32.load8_s` | Reads typed addresses; reference slots remain GC-visible. |
+| `ldind.u1` | `i32.load8_u` | Reads typed addresses; reference slots remain GC-visible. |
+| `ldind.i2` | `i32.load16_s` | Reads typed addresses; reference slots remain GC-visible. |
+| `ldind.u2` | `i32.load16_u` | Reads typed addresses; reference slots remain GC-visible. |
 | `ldind.i4` | `i32.load` / `struct.get` | Reads typed Int32/UInt32 addresses, including existing GC field locations. |
-| `ldind.u4` |  |  |
-| `ldind.i8` |  |  |
-| `ldind.i` |  |  |
-| `ldind.r4` |  |  |
-| `ldind.r8` |  |  |
-| `ldind.ref` |  |  |
-| `stind.ref` |  |  |
-| `stind.i1` |  |  |
-| `stind.i2` |  |  |
+| `ldind.u4` | `i32.load` | Reads typed addresses; reference slots remain GC-visible. |
+| `ldind.i8` | `i64.load` | Reads typed addresses; reference slots remain GC-visible. |
+| `ldind.i` | `i32.load` | Reads typed addresses; reference slots remain GC-visible. |
+| `ldind.r4` | `f32.load; f64.promote_f32` | Reads typed addresses; reference slots remain GC-visible. |
+| `ldind.r8` | `f64.load` | Reads typed addresses; reference slots remain GC-visible. |
+| `ldind.ref` | `table.get / struct.get` | Reads typed addresses; reference slots remain GC-visible. |
+| `stind.ref` | `table.set / struct.set` | Updates typed addresses, including inline-array elements. |
+| `stind.i1` | `i32.store8` | Updates typed addresses, including inline-array elements. |
+| `stind.i2` | `i32.store16` | Updates typed addresses, including inline-array elements. |
 | `stind.i4` | `i32.store` / `struct.set` | Updates typed Int32/UInt32 addresses without copying their owning struct. |
-| `stind.i8` |  |  |
-| `stind.r4` |  |  |
-| `stind.r8` |  |  |
+| `stind.i8` | `i64.store` | Updates typed addresses, including inline-array elements. |
+| `stind.r4` | `f32.demote_f64; f32.store` | Updates typed addresses, including inline-array elements. |
+| `stind.r8` | `f64.store` | Updates typed addresses, including inline-array elements. |
 | `add` | `i32.add` / `i64.add` / `f64.add` | Type stack selects integer width or f64; integer overflow wraps. |
 | `sub` | `i32.sub` / `i64.sub` / `f64.sub` | Type stack selects integer width or f64; integer overflow wraps. |
 | `mul` | `i32.mul` / `i64.mul` / `f64.mul` | Type stack selects integer width or f64; integer overflow wraps. |
@@ -377,30 +377,30 @@ supported operations that require no emitted bytes.
 | `conv.ovf.i.un` |  |  |
 | `conv.ovf.u.un` |  |  |
 | `box` |  |  |
-| `newarr` |  |  |
-| `ldlen` |  |  |
-| `ldelema` |  |  |
-| `ldelem.i1` |  |  |
-| `ldelem.u1` |  |  |
-| `ldelem.i2` |  |  |
-| `ldelem.u2` |  |  |
-| `ldelem.i4` |  |  |
-| `ldelem.u4` |  |  |
-| `ldelem.i8` |  |  |
-| `ldelem.i` |  |  |
-| `ldelem.r4` |  |  |
-| `ldelem.r8` |  |  |
-| `ldelem.ref` |  |  |
-| `stelem.i` |  |  |
-| `stelem.i1` |  |  |
-| `stelem.i2` |  |  |
-| `stelem.i4` |  |  |
-| `stelem.i8` |  |  |
-| `stelem.r4` |  |  |
-| `stelem.r8` |  |  |
-| `stelem.ref` |  |  |
-| `ldelem` |  |  |
-| `stelem` |  |  |
+| `newarr` | `array.new_default` | Struct elements get independent mutable GC storage; negative lengths throw. |
+| `ldlen` | `array.len` | Returns native-width length; null throws a managed exception. |
+| `ldelema` | `array.get` | Struct element locations only; general array byref ABI remains unsupported. |
+| `ldelem.i1` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.u1` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.i2` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.u2` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.i4` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.u4` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.i8` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.i` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.r4` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.r8` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `ldelem.ref` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
+| `stelem.i` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
+| `stelem.i1` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
+| `stelem.i2` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
+| `stelem.i4` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
+| `stelem.i8` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
+| `stelem.r4` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
+| `stelem.r8` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
+| `stelem.ref` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
+| `ldelem` | `array.get; struct.get` | Struct loads copy values into independent evaluation-stack storage. |
+| `stelem` | `array.get; struct.set` | Copies struct fields while preserving the destination element identity. |
 | `unbox.any` |  |  |
 | `conv.ovf.i1` |  |  |
 | `conv.ovf.u1` |  |  |
@@ -428,7 +428,7 @@ supported operations that require no emitted bytes.
 | `endfinally` | `br`; `throw_ref` | Completes cleanup, then resumes normal leave or exception unwinding. |
 | `leave` | `drop`; `br` | Clears evaluation stack and follows structured cleanup before continuation. |
 | `leave.s` | `drop`; `br` | Short relative target; same cleanup behavior as long leave. |
-| `stind.i` |  |  |
+| `stind.i` | `i32.store` | Updates typed addresses, including inline-array elements. |
 | `conv.u` | No instruction (i32/native) / `i32.wrap_i64` (i64) | Native integers use 32 bits; floating-point inputs remain unsupported. |
 | `arglist` |  |  |
 | `ceq` | Numeric equality / `ref.eq` / `ref.is_null` | Compares numbers, class identity, or null; produces int32 Boolean. |
@@ -482,8 +482,8 @@ uses tuple syntax in an offline browser artifact.
 
 The [real TestApp construction gate](../Tests/Wasm/TestApp/Snapshots/FillRectConstruction.md)
 has passed tuple resolution and default-interface validation. With the framework
-assemblies for `IServiceProvider` and collections supplied, it now stops at unsupported
-array signatures in its dependency closure. The full TestApp is still not running.
+assemblies for `IServiceProvider` and collections supplied, it now passes array-signature resolution and stops at variant generic interface
+validation in the collection dependency closure. The full TestApp is still not running.
 
 ## Default interface implementations
 
@@ -499,3 +499,36 @@ retaining an overridden or uncalled default body. Conflicting defaults and reabs
 without a concrete implementation fail during compilation; runtime ambiguity exceptions
 are not implemented. Variance, generic methods, static-abstract dispatch, and boxed or
 constrained struct receivers remain unsupported.
+
+## Managed arrays and inline gradient buffers
+
+Vector signatures (`T[]`) preserve their exact element types through fields, locals,
+arguments, results, generic substitution, and jagged arrays. [The array demo](../Tests/Wasm/Arrays/Snapshots/Vectors.md)
+executes primitive/reference arrays and independent struct element copies. Storage is
+a WASM GC array: small integers currently use i32 elements with narrowing, strings
+use externref, and classes/jagged arrays use eqref. Struct elements currently each
+use a separate GC struct, allocated eagerly and updated in place; these arrays do
+not promise contiguous linear-memory element layout. Null access, bounds failures,
+and negative allocation lengths throw managed exceptions. Engine resource exhaustion
+remains outside the managed exception surface.
+
+Inline arrays repeat the element's storage with size `length * elementSize`. Numeric
+buffers use the linear frame; string/object buffers repeat frame-owned reference slots.
+Copies retain independent values/slots, and class fields flatten every repeated leaf.
+Roslyn's inline-array helpers and the length/indexer operations of Span/ReadOnlySpan
+over this linear backing are recognized intrinsically. A span borrows an address
+and length; it does not own or copy its backing elements. This compiler ABI does
+not change XuiNet's classification of CLR spans as containing managed references.
+
+[The gradient demo](../Tests/Wasm/InlineArrays/Snapshots/Gradients.md) compiles the real
+Xui `ReadOnlySpan<GradientStop> stops = [(0, 0xff0000ffu), (1, 0x0000ffffu)]`,
+constructs `LinearGradient`, and reads its stops in a separate method. The supplied
+Core/framework PEs provide Point/Color/GradientStop and tuple constructors; the
+unsigned NFloat conversion used by Color is a scalar intrinsic.
+
+Still unsupported: multidimensional arrays, array covariance/type tests/object
+conversions, primitive/reference array-element byrefs, general escaping GC-element
+byrefs, bulk static-data initializers (`RuntimeHelpers.InitializeArray/CreateSpan`),
+and arbitrary Array/BCL collection methods. Span construction from managed arrays,
+slicing, enumeration helpers, stackalloc, and inline-array access through GC-field
+addresses are not implemented. Unsupported paths throw during compilation.

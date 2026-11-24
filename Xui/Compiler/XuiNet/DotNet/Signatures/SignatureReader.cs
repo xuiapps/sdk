@@ -56,9 +56,7 @@ public static class SignatureReader
             case SignatureTypeCode.ByReference:
                 return Type(module, ref reader, arguments).ByReference();
             case SignatureTypeCode.SZArray:
-                if (reader.ReadSignatureTypeCode() != SignatureTypeCode.String)
-                    throw new NotSupportedException("Only string[] entry-point array signatures are supported.");
-                return new(code);
+                return SignatureType.Vector(NonVoid(module, ref reader, arguments));
             case SignatureTypeCode.Object:
                 return new(code, IsReferenceType: true);
             case SignatureTypeCode.Void:
@@ -129,6 +127,20 @@ public static class SignatureReader
             throw new NotSupportedException($"Unsupported type token: {handle.Kind}.");
         var identity = module.ResolveType(handle);
         return new(SignatureTypeCode.TypeHandle, identity, IsReferenceType: !identity.IsValueType);
+    }
+
+    /// <summary>Resolves a storage operand, normalizing named framework primitives to signature codes.</summary>
+    public static SignatureType StorageType(Module module, EntityHandle handle, GenericArguments? arguments = null)
+    {
+        var type = Resolve(module, handle, arguments);
+        if (type.Identity is not { } identity) return type;
+        foreach (var code in new[] { SignatureTypeCode.Boolean, SignatureTypeCode.Char, SignatureTypeCode.SByte,
+            SignatureTypeCode.Byte, SignatureTypeCode.Int16, SignatureTypeCode.UInt16, SignatureTypeCode.Int32,
+            SignatureTypeCode.UInt32, SignatureTypeCode.Int64, SignatureTypeCode.UInt64, SignatureTypeCode.Single,
+            SignatureTypeCode.Double, SignatureTypeCode.IntPtr, SignatureTypeCode.UIntPtr, SignatureTypeCode.String, SignatureTypeCode.Object })
+            if (FrameworkTypes.Is(identity, "System", code.ToString()))
+                return new(code, IsReferenceType: code == SignatureTypeCode.Object);
+        return type;
     }
 
     // C# emits this required modifier for readonly byrefs on virtual/interface methods.

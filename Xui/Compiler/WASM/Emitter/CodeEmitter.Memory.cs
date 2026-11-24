@@ -119,7 +119,7 @@ public readonly ref partial struct CodeEmitter
             case SignatureTypeCode.Double: writer.F64Load(); break;
             default: throw new NotSupportedException($"Field load for {type} is not implemented.");
         }
-        stack.Push(new(type.StackType, type.Identity));
+        stack.Push(new(type.StackType, type.Identity, array: type.Array));
     }
 
     private LocalIndex FieldScratch(LocalVariable type) => StorageModel.IsReference(type) ? GcScratch(type) : type.StackType switch

@@ -8,7 +8,7 @@ namespace Xui.Compiler.XuiNet.Layout;
 
 /// <summary>Calculates and caches target-specific layouts of unmanaged structs and enums from PE metadata.</summary>
 /// <remarks>Keep the source assembly alive. Closed generic fields are specialized before layout. Reference fields, open generics,
-/// arbitrary auto layouts, inline arrays, and unresolved external values are rejected. Framework
+/// arbitrary auto layouts and unresolved external values are rejected. Framework
 /// ValueTuple auto layouts use declaration-order target storage, not a host CLR interop layout.</remarks>
 public sealed partial class LayoutResolver
 {
@@ -60,21 +60,19 @@ public sealed partial class LayoutResolver
         var definition = module.Metadata.GetTypeDefinition(handle);
         if (definition.GetGenericParameters().Count != (identity.Arguments?.Values.Length ?? 0) || identity.Arguments?.ContainsGenericParameters == true)
             throw new NotSupportedException($"Generic layout requires a closed specialization: {type.Name}.");
-        foreach (var attributeHandle in definition.GetCustomAttributes())
-        {
-            var attribute = module.Metadata.GetCustomAttribute(attributeHandle);
-            if (attribute.Constructor.Kind == HandleKind.MemberReference &&
-                IsCoreType(module.GetMemberReference((MemberReferenceHandle)attribute.Constructor).Parent,
-                    "System.Runtime.CompilerServices", "InlineArrayAttribute"))
-                throw new NotSupportedException($"Inline-array layout is not supported: {type.Name}.");
-        }
-        var kind = type.Attributes & TypeAttributes.LayoutMask;
-        if (!isEnum && kind is not (TypeAttributes.SequentialLayout or TypeAttributes.ExplicitLayout) && !FrameworkTypes.IsValueTuple(identity))
-            throw new NotSupportedException($"Auto layout is not supported: {type.Name}.");
         var declared = type.DeclaredLayout;
         int pack = declared.PackingSize == 0 ? Target.DefaultPackingSize : declared.PackingSize;
         if (pack is not (1 or 2 or 4 or 8 or 16 or 32 or 64 or 128))
             throw new BadImageFormatException($"Invalid packing size {pack} for {type.Name}.");
+        if (InlineArrayInfo.Read(identity) is { } inline)
+        {
+            var element = StorageOf(inline.Element);
+            return new(checked(element.Size * inline.Length), Math.Min(pack, element.Alignment),
+                new() { [inline.Field.Handle] = new(0, element.Size) });
+        }
+        var kind = type.Attributes & TypeAttributes.LayoutMask;
+        if (!isEnum && kind is not (TypeAttributes.SequentialLayout or TypeAttributes.ExplicitLayout) && !FrameworkTypes.IsValueTuple(identity))
+            throw new NotSupportedException($"Auto layout is not supported: {type.Name}.");
         var fields = new Dictionary<FieldDefinitionHandle, FieldLayout>();
         int end = 0, alignment = 1;
         foreach (var fieldHandle in type.Fields)

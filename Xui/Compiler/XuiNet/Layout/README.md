@@ -10,6 +10,13 @@ Sequential fields retain metadata order, with each offset aligned to the smaller
 
 Supported storage includes primitive numeric fields, one-byte managed Boolean, two-byte managed Char, native integers, enums, linked and closed generic nested structs, and the well-known `System.Runtime.InteropServices.NFloat` type. WASM32 uses four-byte native integers and NFloat; X64 uses eight bytes. These are managed storage sizes, not marshalled representations: `MarshalAs` and character-set transformations are outside this resolver.
 
-Reference fields, classes, arbitrary auto-layout structs, open generics, inline arrays, and other unresolved external value types throw `NotSupportedException` from numeric layout. Framework `ValueTuple` auto layouts are deliberately laid out in declaration order for our target; these compiler-owned bytes are not a CLR interop guarantee. Reference-containing generic specializations classify correctly and are lowered separately by the backend. Resolved framework NFloat definitions still use the target width rather than the host PE's scalar field width.
+Reference fields, classes, arbitrary auto-layout structs, open generics, and other unresolved external value types throw `NotSupportedException` from numeric layout. Framework `ValueTuple` auto layouts are deliberately laid out in declaration order for our target; these compiler-owned bytes are not a CLR interop guarantee. Reference-containing generic specializations classify correctly and are lowered separately by the backend. Resolved framework NFloat definitions still use the target width rather than the host PE's scalar field width.
 
 The PE views expose `TypeDefinition.DeclaredLayout` and `FieldDefinition.DeclaredOffset` separately from calculated layout. A sequential field usually has no declared offset. Assembly snapshots report the selected layout target, struct alignment and size, and field offsets and sizes; unsupported struct layouts retain an explicit diagnostic.
+
+`InlineArrayInfo.Read` decodes InlineArrayAttribute from the PE and retains the repeated
+field, length, and substituted element type. Numeric inline arrays, including Roslyn's
+generated auto-layout buffers, use the element's stride, packed alignment, and `length * elementSize`
+without extra inter-element padding. The single metadata field describes element zero.
+Reference inline arrays classify as containing managed references and receive their
+frame/GC storage from the backend. See the [layout snapshot](../../Tests/XuiNet/DotNet/Snapshots/Buffers.md).

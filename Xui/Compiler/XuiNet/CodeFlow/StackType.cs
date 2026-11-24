@@ -11,8 +11,8 @@ public enum StackType
     NativeInt,
     Float,
     String,
-    /// <summary>The exact string[] category, retained for entry point signatures.</summary>
-    StringArray,
+    /// <summary>A managed vector with its exact element signature.</summary>
+    ArrayReference,
     /// <summary>A named value type; StackEntry retains its module-qualified identity.</summary>
     ValueType,
     /// <summary>A managed address; StackEntry retains its exact declared element type.</summary>

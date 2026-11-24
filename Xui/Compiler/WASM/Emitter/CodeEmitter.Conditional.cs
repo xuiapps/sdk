@@ -115,10 +115,10 @@ public readonly ref partial struct CodeEmitter
             var wanted = SourceEntry(entry);
             if (!SameSourceType(actual, wanted))
             {
-                if (entry.Type != StackType.ObjectReference ||
+                if (!(entry.Type == StackType.ArrayReference && actual.IsNull) && (entry.Type != StackType.ObjectReference ||
                     !(wanted.TypeCode == SignatureTypeCode.Object && IsObjectReference(actual)) &&
                     (wanted.Identity is not { } target || (!actual.IsNull &&
-                    (actual.IsByReference || actual.Identity is not { } from || !from.IsAssignableTo(target)))))
+                    (actual.IsByReference || actual.Identity is not { } from || !from.IsAssignableTo(target))))))
                     throw new InvalidProgramException($"Emission stack differs from analysis at IL_{offset:x4}.");
                 widen = true;
             }
@@ -138,11 +138,11 @@ public readonly ref partial struct CodeEmitter
     }
 
     private static bool SameSourceType(MsilStackEntry left, MsilStackEntry right) =>
-        left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull;
+        left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull && left.Array == right.Array;
 
     private static MsilStackEntry SourceEntry(StackEntry entry) => entry.Type == StackType.Null
         ? new(SignatureTypeCode.Object) { IsNull = true } : entry.DeclaredType is { } declared
-        ? new(declared.Code, declared.Identity, declared.IsByReference)
+        ? new(declared.Code, declared.Identity, declared.IsByReference, declared.Array)
         : new(SourceType(entry.Type));
 
     private static SignatureTypeCode SourceType(StackType type) => type switch

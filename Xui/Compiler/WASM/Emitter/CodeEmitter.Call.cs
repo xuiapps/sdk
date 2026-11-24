@@ -15,6 +15,8 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryInlineArrayAccess(instruction, offset)) return;
+        if (TrySpanAccess(instruction, offset)) return;
         if (TryNativeFloat(instruction, offset)) return;
         if (TryExceptionMember(instruction, offset)) return;
         if (Xui.Compiler.XuiNet.DotNet.WellKnownMethods.IsObjectConstructor(source,
@@ -67,7 +69,7 @@ public readonly ref partial struct CodeEmitter
         {
             var result = callee.Signature.Result;
             if (result.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
-            stack.Push(new MsilStackEntry(result.StackType, result.Identity));
+            stack.Push(new MsilStackEntry(result.StackType, result.Identity, array: result.Array));
         }
     }
 }

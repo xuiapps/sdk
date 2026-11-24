@@ -113,6 +113,23 @@ public readonly ref partial struct CodeEmitter
             case OpCode.Endfinally: EmitEndfinally(); break;
             case OpCode.Leave: EmitLeave(instruction.ReadBranch(ref reader).Target); break;
             case OpCode.Leave_s: EmitLeave(instruction.ReadShortBranch(ref reader).Target); break;
+            case OpCode.Ldind_i1: EmitLdind_i1(offset); break;
+            case OpCode.Ldind_u1: EmitLdind_u1(offset); break;
+            case OpCode.Ldind_i2: EmitLdind_i2(offset); break;
+            case OpCode.Ldind_u2: EmitLdind_u2(offset); break;
+            case OpCode.Ldind_u4: EmitLdind_u4(offset); break;
+            case OpCode.Ldind_i8: EmitLdind_i8(offset); break;
+            case OpCode.Ldind_i: EmitLdind_i(offset); break;
+            case OpCode.Ldind_r4: EmitLdind_r4(offset); break;
+            case OpCode.Ldind_r8: EmitLdind_r8(offset); break;
+            case OpCode.Ldind_ref: EmitLdind_ref(offset); break;
+            case OpCode.Stind_i1: EmitStind_i1(offset); break;
+            case OpCode.Stind_i2: EmitStind_i2(offset); break;
+            case OpCode.Stind_i8: EmitStind_i8(offset); break;
+            case OpCode.Stind_i: EmitStind_i(offset); break;
+            case OpCode.Stind_r4: EmitStind_r4(offset); break;
+            case OpCode.Stind_r8: EmitStind_r8(offset); break;
+            case OpCode.Stind_ref: EmitStind_ref(offset); break;
             case OpCode.Ldloca:
                 EmitLdloca(instruction.ReadVariable(ref reader), offset); break;
             case OpCode.Ldloca_s:
@@ -145,6 +162,30 @@ public readonly ref partial struct CodeEmitter
                 EmitCallvirt(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Newobj:
                 EmitNewobj(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Newarr: EmitNewarr(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Ldlen: EmitLdlen(offset); break;
+            case OpCode.Ldelema: EmitLdelema(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Ldelem: EmitLdelem(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Stelem: EmitStelem(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Ldelem_i1: EmitLdelem_i1(offset); break;
+            case OpCode.Ldelem_u1: EmitLdelem_u1(offset); break;
+            case OpCode.Ldelem_i2: EmitLdelem_i2(offset); break;
+            case OpCode.Ldelem_u2: EmitLdelem_u2(offset); break;
+            case OpCode.Ldelem_i4: EmitLdelem_i4(offset); break;
+            case OpCode.Ldelem_u4: EmitLdelem_u4(offset); break;
+            case OpCode.Ldelem_i8: EmitLdelem_i8(offset); break;
+            case OpCode.Ldelem_i: EmitLdelem_i(offset); break;
+            case OpCode.Ldelem_r4: EmitLdelem_r4(offset); break;
+            case OpCode.Ldelem_r8: EmitLdelem_r8(offset); break;
+            case OpCode.Ldelem_ref: EmitLdelem_ref(offset); break;
+            case OpCode.Stelem_i1: EmitStelem_i1(offset); break;
+            case OpCode.Stelem_i2: EmitStelem_i2(offset); break;
+            case OpCode.Stelem_i4: EmitStelem_i4(offset); break;
+            case OpCode.Stelem_i8: EmitStelem_i8(offset); break;
+            case OpCode.Stelem_i: EmitStelem_i(offset); break;
+            case OpCode.Stelem_r4: EmitStelem_r4(offset); break;
+            case OpCode.Stelem_r8: EmitStelem_r8(offset); break;
+            case OpCode.Stelem_ref: EmitStelem_ref(offset); break;
             case OpCode.Nop:
                 EmitNop(); break;
             case OpCode.Ldc_i4_m1:
@@ -306,6 +347,19 @@ public readonly ref partial struct CodeEmitter
             if (node.Successors.Length == 2 || instruction.Code is OpCode.Br or OpCode.Br_s) continue;
             switch (instruction.Code)
             {
+                case >= OpCode.Newarr and <= OpCode.Stelem:
+                    method.UsesArrays = true;
+                    method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.IndexOutOfRangeException, IR.Exceptions.ExceptionKind.OverflowException]);
+                    method.Storage.ExceptionsEnabled = true;
+                    method.RequireGcTemporaries();
+                    if (instruction.Code == OpCode.Newarr)
+                    {
+                        var element = IR.Signatures.SignatureReader.StorageType(source,
+                            System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments);
+                        _ = method.Storage.ArrayShape(new(element));
+                        if (element.Identity is { } elementIdentity) method.RequireGc(elementIdentity);
+                    }
+                    break;
                 case OpCode.Isinst:
                 case OpCode.Castclass:
                     method.Storage.ExceptionsEnabled = true;
@@ -326,6 +380,24 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Leave_s:
                 case OpCode.Endfinally:
                     break;
+                case OpCode.Ldind_i1:
+                case OpCode.Ldind_u1:
+                case OpCode.Ldind_i2:
+                case OpCode.Ldind_u2:
+                case OpCode.Ldind_u4:
+                case OpCode.Ldind_i8:
+                case OpCode.Ldind_i:
+                case OpCode.Ldind_r4:
+                case OpCode.Ldind_r8:
+                case OpCode.Ldind_ref:
+                case OpCode.Stind_i1:
+                case OpCode.Stind_i2:
+                case OpCode.Stind_i8:
+                case OpCode.Stind_i:
+                case OpCode.Stind_r4:
+                case OpCode.Stind_r8:
+                case OpCode.Stind_ref:
+                    method.RequireGcTemporaries(); break;
                 case OpCode.Ldind_i4:
                 case OpCode.Stind_i4:
                 case OpCode.Nop:
@@ -431,15 +503,24 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
+                    if (instruction.Code == OpCode.Call && (IR.Intrinsics.InlineArrayAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments) is not null ||
+                        IR.Intrinsics.SpanAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments) is not null))
+                    {
+                        method.Storage.ExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.IndexOutOfRangeException);
+                        method.RequireGcTemporaries();
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.NativeFloat.TryMethod(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out _, out _))
                     {
                         method.UsesNativeFloat = true;
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.WellKnownMethods.IsObjectConstructor(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value))) break;
-                    if (IR.Exceptions.ExceptionTypes.TryMember(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out _, out _, out _))
+                    if (IR.Exceptions.ExceptionTypes.TryMember(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out var exceptionKind, out _, out _))
                     {
                         method.Storage.ExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(exceptionKind);
                         method.RequireGcTemporaries();
                         break;
                     }
@@ -459,7 +540,7 @@ public readonly ref partial struct CodeEmitter
                         if (constructor.Name != ".ctor")
                             throw new InvalidProgramException("newobj must target a constructor.");
                         if (method.Storage.IsGc(owner)) method.RequireGc(owner);
-                        else _ = method.Frame!.Layout(owner);
+                        else _ = (method.Frame ?? throw new NotSupportedException($"Constructor result storage is not implemented for {owner} in {method.Identity}.")).Layout(owner);
                         if (method.Storage.IsClass(owner))
                         {
                             var type = method.Storage.Classes.Resolve(owner);

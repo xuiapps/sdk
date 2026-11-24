@@ -18,8 +18,8 @@ internal static class StackMerge
     private static StackEntry Merge(StackEntry a, StackEntry b)
     {
         if (a == b) return a;
-        if (a.Type == StackType.Null && b.Type == StackType.ObjectReference) return b;
-        if (b.Type == StackType.Null && a.Type == StackType.ObjectReference) return a;
+        if (a.Type == StackType.Null && b.Type is StackType.ObjectReference or StackType.ArrayReference) return b;
+        if (b.Type == StackType.Null && a.Type is StackType.ObjectReference or StackType.ArrayReference) return a;
         if (a.Type == StackType.ObjectReference && b.Type == StackType.ObjectReference)
         {
             if (a.DeclaredType?.Code == SignatureTypeCode.Object) return a;

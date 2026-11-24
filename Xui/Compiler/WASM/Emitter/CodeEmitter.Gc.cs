@@ -9,7 +9,7 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    private bool IsGc(MsilStackEntry value) => value.TypeCode == SignatureTypeCode.Object || value.Location is not null ||
+    private bool IsGc(MsilStackEntry value) => value.TypeCode is SignatureTypeCode.Object or SignatureTypeCode.SZArray || value.Location is not null ||
         (value.Identity is { } identity && method.Storage.IsGc(identity));
 
     private GcLocation Location(MsilStackEntry value) => value.Location ?? new(method.Storage.Shape(value.Identity!.Value), 0);
@@ -103,7 +103,7 @@ public readonly ref partial struct CodeEmitter
             writer.RefCast(location.Owner.Type).StructGet(location.Owner.Type, new((uint)location.First));
             if (range.Storage.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
         }
-        if (!store) stack.Push(new(range.Storage.StackType, range.Storage.Identity));
+        if (!store) stack.Push(new(range.Storage.StackType, range.Storage.Identity, array: range.Storage.Array));
         return true;
     }
 

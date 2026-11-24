@@ -44,7 +44,7 @@ internal sealed partial class MethodPlan
             StackType.Int64 => ValueTypeCode.I64,
             StackType.Float => ValueTypeCode.F64,
             StackType.String => ValueTypeCode.ExternRef,
-            StackType.ObjectReference => ValueTypeCode.EqRef,
+            StackType.ObjectReference or StackType.ArrayReference => ValueTypeCode.EqRef,
             StackType.ValueType when Storage.IsGc(type.DeclaredType!.Value.Identity!.Value) => ValueTypeCode.EqRef,
             _ => throw new NotSupportedException($"Unsupported block type {type}.")
         };

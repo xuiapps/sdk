@@ -43,6 +43,7 @@ public readonly ref partial struct CodeEmitter
         else if (signature.Result.Identity is { } result && NativeFloat.Is(result))
         {
             if (signature.Parameters[0].Code == SignatureTypeCode.Int32) writer.F32ConvertI32S();
+            else if (signature.Parameters[0].Code == SignatureTypeCode.UInt32) writer.F64ConvertI32U().F32DemoteF64();
             else writer.F32DemoteF64();
             writer.F64PromoteF32();
         }

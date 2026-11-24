@@ -25,7 +25,7 @@ public readonly ref partial struct CodeEmitter
             else CopyValue(identity, offset);
         }
         if (local.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
-        stack.Push(new MsilStackEntry(local.StackType, local.Identity, local.IsByReference));
+        stack.Push(new MsilStackEntry(local.StackType, local.Identity, local.IsByReference, local.Array));
     }
 
     private void StoreLocal(LocalIndex index, OpCode code, int offset)

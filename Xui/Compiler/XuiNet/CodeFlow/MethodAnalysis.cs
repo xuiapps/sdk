@@ -20,7 +20,57 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         var stack = new StackCursor(node);
         switch (instruction.Code)
         {
+            case OpCode.Newarr:
+                ArrayIndex(ref stack);
+                var element = SignatureReader.StorageType(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments);
+                stack.Push(StackEntry.From(SignatureType.Vector(element)));
+                break;
+            case OpCode.Ldlen:
+                var vector = stack.Pop();
+                if (vector.Type is not (StackType.ArrayReference or StackType.Null)) throw stack.Error("Expected an array");
+                stack.Push(StackType.NativeInt);
+                break;
+            case >= OpCode.Ldelema and <= OpCode.Stelem:
+                bool storeElement = node.Code is >= OpCode.Stelem_i and <= OpCode.Stelem_ref or OpCode.Stelem;
+                StackEntry? stored = storeElement ? stack.Pop() : null;
+                ArrayIndex(ref stack);
+                var arrayEntry = stack.Pop();
+                var arrayElement = arrayEntry.DeclaredType?.Array?.Element
+                    ?? throw stack.Error("Array element operations require an exact vector type");
+                var explicitElement = node.Code is OpCode.Ldelema or OpCode.Ldelem or OpCode.Stelem
+                    ? SignatureReader.StorageType(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments) : (SignatureType?)null;
+                ArrayOperations.Validate(node.Code, arrayElement, explicitElement);
+                if (stored is { } item) { stack.Push(item); stack.Store(StackEntry.From(arrayElement)); }
+                else stack.Push(StackEntry.From(node.Code == OpCode.Ldelema ? arrayElement.ByReference() : arrayElement));
+                break;
             case OpCode.Nop: break;
+            case OpCode.Ldind_i1:
+            case OpCode.Ldind_u1:
+            case OpCode.Ldind_i2:
+            case OpCode.Ldind_u2:
+            case OpCode.Ldind_u4:
+            case OpCode.Ldind_i8:
+            case OpCode.Ldind_i:
+            case OpCode.Ldind_r4:
+            case OpCode.Ldind_r8:
+            case OpCode.Ldind_ref:
+            case OpCode.Stind_i1:
+            case OpCode.Stind_i2:
+            case OpCode.Stind_i8:
+            case OpCode.Stind_i:
+            case OpCode.Stind_r4:
+            case OpCode.Stind_r8:
+            case OpCode.Stind_ref:
+                bool storeIndirect = instruction.Code is >= OpCode.Stind_ref and <= OpCode.Stind_r8 or OpCode.Stind_i;
+                var indirectValue = storeIndirect ? stack.Pop() : (StackEntry?)null;
+                var indirectAddress = stack.Pop();
+                if (indirectAddress.Type != StackType.ManagedPointer || indirectAddress.DeclaredType is not { } indirectType)
+                    throw stack.Error("Indirect operation requires a managed address");
+                indirectType = indirectType with { IsByReference = false, IsReadOnlyByReference = false };
+                IndirectOperations.Validate(node.Code, indirectType);
+                if (indirectValue is { } storedIndirect) { stack.Push(storedIndirect); stack.Store(StackEntry.From(indirectType)); }
+                else stack.Push(StackEntry.From(indirectType));
+                break;
             case OpCode.Stind_i4:
                 stack.Store(StackType.Int32);
                 goto case OpCode.Ldind_i4;
@@ -169,7 +219,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Brtrue_s:
             case OpCode.Brfalse:
             case OpCode.Brfalse_s:
-                if (stack.Pop().Type is not (StackType.Int32 or StackType.Int64 or StackType.NativeInt or StackType.String or StackType.ObjectReference or StackType.Null))
+                if (stack.Pop().Type is not (StackType.Int32 or StackType.Int64 or StackType.NativeInt or StackType.String or StackType.ArrayReference or StackType.ObjectReference or StackType.Null))
                     throw stack.Error("Invalid truth-test type");
                 break;
             case OpCode.Switch: stack.Pop(StackType.Int32); break;
@@ -237,6 +287,11 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         node.Lowest = stack.Lowest;
     }
 
+    private static void ArrayIndex(ref StackCursor stack)
+    {
+        if (stack.Pop().Type is not (StackType.Int32 or StackType.NativeInt)) throw stack.Error("Array index/length requires an integer");
+    }
+
     private static StackEntry Slot(SignatureType[] slots, int index, InstructionNode instruction) =>
         index < slots.Length ? StackEntry.From(slots[index]) : throw new InvalidProgramException($"Invalid slot {index} at IL_{instruction.Offset:x4}.");
 
@@ -248,7 +303,11 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     {
         if (calls.TryGetValue(token, out var signature)) return signature;
         var handle = MetadataTokens.EntityHandle(token);
-        if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _, out _))
+        if (Model.Intrinsics.InlineArrayAccess.Read(module, handle, context.Arguments) is { } inline)
+            signature = new(inline.Signature.Parameters.ToArray(), StackEntry.From(inline.Signature.Result));
+        else if (Model.Intrinsics.SpanAccess.Read(module, handle, context.Arguments) is { } span)
+            signature = new([new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters], StackEntry.From(span.Signature.Result));
+        else if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _, out _))
         {
             var reference = module.GetMemberReference((MemberReferenceHandle)handle);
             signature = Signature.Read(module, reference.Signature, new Model.TypeIdentity(module, reference.Parent));
@@ -272,7 +331,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     private static void ComparePair(ref StackCursor stack, OpCode code)
     {
         var right = stack.Pop(); var left = stack.Pop();
-        bool Reference(StackEntry value) => value.Type is StackType.ObjectReference or StackType.String or StackType.Null;
+        bool Reference(StackEntry value) => value.Type is StackType.ObjectReference or StackType.ArrayReference or StackType.String or StackType.Null;
         if (Reference(left) && Reference(right))
         {
             if (code == OpCode.Cgt_un && right.Type != StackType.Null) throw stack.Error("Reference cgt.un requires null on the right");

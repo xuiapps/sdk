@@ -11,7 +11,8 @@ public readonly record struct LocalVariable(
     SignatureTypeCode TypeCode,
     TypeIdentity? Identity = null,
     bool IsByReference = false,
-    bool UsesGc = false)
+    bool UsesGc = false,
+    ArraySignature? Array = null)
 {
     /// <summary>The source MSIL type pushed by a load of this local.</summary>
     public SignatureTypeCode StackType => Identity is not null ? SignatureTypeCode.TypeHandle : TypeCode switch
@@ -24,6 +25,7 @@ public readonly record struct LocalVariable(
         SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr => SignatureTypeCode.IntPtr,
         SignatureTypeCode.String => SignatureTypeCode.String,
         SignatureTypeCode.Object => SignatureTypeCode.Object,
+        SignatureTypeCode.SZArray => SignatureTypeCode.SZArray,
         _ => throw new NotSupportedException($"Unsupported local type: {TypeCode}.")
     };
 

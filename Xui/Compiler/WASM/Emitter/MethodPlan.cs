@@ -41,6 +41,9 @@ internal sealed partial class MethodPlan
     public TypeIndex Type { get; set; }
     public FunctionIndex Function { get; set; }
     public Dictionary<IR.MethodIdentity, LocalIndex[]> CallTemporaries { get; } = new();
+    public bool UsesArrays { get; set; }
+    public LocalIndex ArrayReference { get; private set; }
+    public LocalIndex ArrayIndex { get; private set; }
     private uint dupBase;
 
     public MethodPlan(IR.Module source, IR.MethodIdentity identity, bool entryPoint, StorageModel storage, bool declarationOnly = false)
@@ -74,7 +77,7 @@ internal sealed partial class MethodPlan
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
         if (Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
-            Graph.Instructions.Any(n => n.Code == OpCode.Newobj)) Graph = Analyzer.Analyze(source, identity);
+            Graph.Instructions.Any(n => n.Code == OpCode.Newobj || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
         if (Body.ExceptionRegions.Length != 0)
         {
             Graph = Analyzer.Analyze(source, identity);
@@ -157,6 +160,11 @@ internal sealed partial class MethodPlan
             frame.I32Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
             frame.I64Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I64);
             frame.F64Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F64);
+        }
+        if (UsesArrays)
+        {
+            ArrayReference = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
+            ArrayIndex = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
         }
         if (UsesGc)
         {

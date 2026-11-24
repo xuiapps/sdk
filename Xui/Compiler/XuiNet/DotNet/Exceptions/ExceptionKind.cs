@@ -8,5 +8,7 @@ public enum ExceptionKind
     InvalidCastException,
     NullReferenceException,
     InvalidOperationException,
-    ArgumentException
+    ArgumentException,
+    IndexOutOfRangeException,
+    OverflowException
 }

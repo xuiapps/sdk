@@ -3,6 +3,15 @@ namespace Xui.Compiler.WASM.Wasm.Instructions;
 /// <summary>GC instruction subopcodes currently emitted after the GC prefix.</summary>
 public enum GcOpCode : uint
 {
+    /// <summary>Allocates a zero/null-filled array.</summary>
+    ArrayNewDefault = 0x07,
+    /// <summary>Reads an unpacked array element.</summary>
+    ArrayGet = 0x0b,
+    /// <summary>Writes an array element.</summary>
+    ArraySet = 0x0e,
+    /// <summary>Reads the array length.</summary>
+    ArrayLen = 0x0f,
+
     /// <summary>Tests a reference against a non-null heap type.</summary>
     RefTest = 0x14,
 

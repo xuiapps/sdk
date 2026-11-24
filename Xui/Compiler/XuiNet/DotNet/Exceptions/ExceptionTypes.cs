@@ -6,27 +6,16 @@ namespace Xui.Compiler.XuiNet.DotNet.Exceptions;
 /// <summary>Identifies the small built-in exception surface by assembly, type, and member signature.</summary>
 public static class ExceptionTypes
 {
-    /// <summary>Returns the built-in kind for a framework exception reference, or null.</summary>
+    /// <summary>Returns the built-in kind for a framework exception reference or resolved definition, or null.</summary>
     public static ExceptionKind? Kind(TypeIdentity type)
     {
-        if (type.Handle.Kind != HandleKind.TypeReference) return null;
-        var reference = type.Module.GetTypeReference((TypeReferenceHandle)type.Handle);
-        if (reference.Namespace != "System" || reference.ResolutionScope.Kind != HandleKind.AssemblyReference ||
-            type.Module.GetAssemblyReference((AssemblyReferenceHandle)reference.ResolutionScope).Name is not
-                ("System.Runtime" or "System.Private.CoreLib" or "mscorlib")) return null;
-        return Enum.TryParse<ExceptionKind>(reference.Name, out var kind) && Enum.IsDefined(kind) ? kind : null;
+        foreach (var kind in Enum.GetValues<ExceptionKind>())
+            if (FrameworkTypes.Is(type, "System", kind.ToString())) return kind;
+        return null;
     }
 
     /// <summary>Recognizes the CLI catch-all type used by an untyped C# catch.</summary>
-    public static bool IsCatchAll(TypeIdentity type)
-    {
-        if (type.Handle.Kind != HandleKind.TypeReference) return false;
-        var reference = type.Module.GetTypeReference((TypeReferenceHandle)type.Handle);
-        return reference.Namespace == "System" && reference.Name == "Object" &&
-            reference.ResolutionScope.Kind == HandleKind.AssemblyReference &&
-            type.Module.GetAssemblyReference((AssemblyReferenceHandle)reference.ResolutionScope).Name is
-                "System.Runtime" or "System.Private.CoreLib" or "mscorlib";
-    }
+    public static bool IsCatchAll(TypeIdentity type) => FrameworkTypes.Is(type, "System", "Object");
 
     /// <summary>Tests the supported nominal exception hierarchy.</summary>
     public static bool IsAssignable(ExceptionKind actual, ExceptionKind target) => actual == target ||
@@ -40,6 +29,8 @@ public static class ExceptionTypes
         ExceptionKind.InvalidCastException => "Specified cast is not valid.",
         ExceptionKind.NullReferenceException => "Object reference not set to an instance of an object.",
         ExceptionKind.InvalidOperationException => "Operation is not valid due to the current state of the object.",
+        ExceptionKind.IndexOutOfRangeException => "Index was outside the bounds of the array.",
+        ExceptionKind.OverflowException => "Arithmetic operation resulted in an overflow.",
         ExceptionKind.ArgumentException => "Value does not fall within the expected range.",
         _ => throw new ArgumentOutOfRangeException(nameof(kind))
     };

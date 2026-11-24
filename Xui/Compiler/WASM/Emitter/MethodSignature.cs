@@ -32,7 +32,7 @@ internal sealed class MethodSignature
         if (result.IsByReference)
             throw new NotSupportedException("Managed-address return values are not implemented.");
         if (result.Code != SignatureTypeCode.Void) _ = resultStorage.WasmType;
-        if (entryPoint && signature.Parameters.Length == 1 && signature.Parameters[0].Code == SignatureTypeCode.SZArray && !signature.Parameters[0].IsByReference)
+        if (entryPoint && signature.Parameters.Length == 1 && signature.Parameters[0].Array?.Element.Code == SignatureTypeCode.String && !signature.Parameters[0].IsByReference)
             return new() { Parameters = [], DeclaredReturnType = result, Result = resultStorage, HasEntryPointArguments = true };
         if (entryPoint && signature.Parameters.Length != 0)
             throw new NotSupportedException("Entry point parameters are unsupported except an unused string[] args.");

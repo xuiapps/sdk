@@ -66,7 +66,7 @@ internal sealed class MemoryFrame
             // no result slot; only instructions that actually push a value do.
             if (node.Lowest is null || node.After.Depth <= node.Lowest.Depth) continue;
             if (node.Code is OpCode.Ldloc or OpCode.Ldloc_s or OpCode.Ldloc_0 or OpCode.Ldloc_1 or
-                OpCode.Ldloc_2 or OpCode.Ldloc_3 or OpCode.Ldfld or OpCode.Ldobj or OpCode.Dup or OpCode.Newobj or
+                OpCode.Ldloc_2 or OpCode.Ldloc_3 or OpCode.Ldelem or OpCode.Ldfld or OpCode.Ldobj or OpCode.Dup or OpCode.Newobj or
                 OpCode.Ldarg or OpCode.Ldarg_s or OpCode.Ldarg_0 or OpCode.Ldarg_1 or OpCode.Ldarg_2 or OpCode.Ldarg_3 or
                 OpCode.Call or OpCode.Callvirt)
                 Values.Add(node.Offset, Allocate(identity));

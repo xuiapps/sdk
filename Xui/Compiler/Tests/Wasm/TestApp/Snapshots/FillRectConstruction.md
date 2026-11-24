@@ -23,5 +23,5 @@ Blocked during compilation. WASM was not emitted; no browser rendering is claime
 ## WASM / blocker
 
 ```text
-System.NotSupportedException: Only string[] entry-point array signatures are supported.
+System.NotSupportedException: Variant interface dispatch is not implemented.
 ```

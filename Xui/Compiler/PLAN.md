@@ -42,8 +42,8 @@ into a separate PE, linked with the actual Core implementation and a small drive
 It remains inconclusive. The ValueTuple constructor in `View..ctor` now resolves into
 supplied framework implementation PEs. Default interface validation now passes. The
 probe also supplies `System.ComponentModel` for `IServiceProvider` and
-`System.Collections` for collection types. Analysis next rejects array signatures
-while exploring this dependency closure; managed array storage/emission is not implemented.
+`System.Collections` for collection types. Vector storage executes in focused tests. The construction graph passes array signatures
+and next rejects variant generic interfaces in the collection dependency closure.
 No Core/View method is replaced or silently omitted by this gate.
 
 Completed in this step:
@@ -67,10 +67,14 @@ Default interface dispatch and reachability are implemented, including class pre
 most-specific defaults, linked assemblies, and pruning unselected bodies. See the
 [default layout methods](Tests/Wasm/Interfaces/Snapshots/Defaults.md).
 
-Next sequence: support the array signatures/storage required by the retained collection
-layouts, rerun the construction gate, then grow it to Measure/Arrange/Render with a Canvas host. Closed
+Array milestone: managed vectors, struct element copies, inline buffers, and linear-backed
+Span/ReadOnlySpan length/indexers execute. The [gradient fixture](Tests/Wasm/InlineArrays/Snapshots/Gradients.md)
+uses actual Xui GradientStop/LinearGradient and tuple collection syntax.
+
+Next sequence: handle variant interface metadata and the dispatch actually exercised by
+collections, rerun the construction gate, then grow it to Measure/Arrange/Render with a Canvas host. Closed
 Nullable storage is enabled by generic layout; its callable BCL surface still needs testing.
-Static initialization, GC-field byrefs, collections/spans, numeric helpers, and
+Static initialization, GC-field byrefs, collection methods and remaining span operations, numeric helpers, and
 persistent frame/input exports remain later gates. The full TestApp is not running yet.
 
 ## Interface prerequisite — implemented
@@ -166,7 +170,7 @@ Implement features in the order demonstrated by this fixture's dependency closur
 | General object and minimal type identity | `IServiceProvider.GetService(Type)`, casts, instrumentation names. | Nominal type tokens/equality and required reference conversions. A dictionary-backed or reflective DI container is unnecessary for the first app. |
 | Static fields and initialization | Geometry constants, singleton/null services, host state, cached values. | Defined once-only initialization and per-specialization static state. Preserve initializer side effects. |
 | Generic value types and methods | `Nullable<Rect>`, tuples, generic service helpers, collections. | Closed compile-time specialization; no runtime generic construction. |
-| Arrays and a small BCL surface | Child storage, `List<T>`, spans and input buffers. | Implement or explicitly substitute only the exercised operations. Lists still require an array/storage strategy; specialization alone does not provide it. |
+| Arrays and a small BCL surface | Child storage, `List<T>`, spans and input buffers. | Implement or explicitly substitute only the exercised operations. Vector storage now exists; collection constructors, methods, variance, and static state still need their own coverage. |
 | Math and time operations | `NFloat`, `TimeSpan`, layout calculations. | Small, tested intrinsic set; preserve WASM32 numeric rules. |
 | Delegates and exceptions | Event wiring, hot reload, disposal, validation paths. | Remove optional wiring in the compiler profile first; add real semantics when reachable application behavior requires them. |
 
@@ -207,7 +211,7 @@ byref fields, dependency-defined class storage, and the remaining geometry ABI s
 - Clear reclaimed slots, restore stack marks, and handle reentrant calls and exceptional exits. Traps need host-boundary cleanup if the module instance will be reused.
 - Preallocated capacity can avoid per-event allocations; initial allocation and growth remain explicit costs. This representation does not promise native CLR object-pointer layout.
 
-Allocation-free full Xui event dispatch remains a separate acceptance gate: the reference-slot mechanism is implemented, but actual events also contain spans and exercise additional framework dependencies.
+Allocation-free full Xui event dispatch remains a separate acceptance gate: the reference-slot mechanism is implemented, but actual events also need their backing-storage adapters and additional framework dependencies; spans over inline linear storage now execute.
 
 ## Immediate next work
 

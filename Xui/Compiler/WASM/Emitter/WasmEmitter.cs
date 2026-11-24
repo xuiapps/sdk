@@ -73,9 +73,11 @@ public sealed class WasmEmitter
         var main = methods[mainIdentity];
         foreach (var layout in dependencies.Nodes.OfType<Dependency.Layout>())
             if (storage.IsGc(layout.Identity)) _ = storage.Shape(layout.Identity);
+        storage.CollectArrayElementShapes();
         if (storage.ExceptionsEnabled)
             foreach (var kind in Enum.GetValues<XuiNet.DotNet.Exceptions.ExceptionKind>())
             {
+                if (kind > XuiNet.DotNet.Exceptions.ExceptionKind.ArgumentException && !storage.ExtraExceptionKinds.Contains(kind)) continue;
                 string message = XuiNet.DotNet.Exceptions.ExceptionTypes.Message(kind);
                 if (seenLiterals.Add(message)) literals.Add(message);
             }

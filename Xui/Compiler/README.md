@@ -24,4 +24,11 @@ qualified field identities. The [Values canvas demo](Tests/Wasm/Canvas/Snapshots
 executes `Rect.Inset` through this ABI and uses `Point point = (0, 0)` tuple syntax.
 Closed generic struct layouts and actual framework ValueTuple constructors now work;
 see [Xui tuple geometry](Tests/Wasm/Tuples/Snapshots/XuiGeometry.md). The TestApp gate
-has passed default-interface validation and now stops at unsupported array signatures in its dependency closure. The probe explicitly supplies the framework assemblies for `IServiceProvider` and collections. See [PLAN.md](PLAN.md) for the remaining gates.
+has passed default-interface validation and array-signature resolution; it now stops at variant generic interface validation in the collection dependency closure. The probe explicitly supplies the framework assemblies for `IServiceProvider` and collections. See [PLAN.md](PLAN.md) for the remaining gates.
+
+Managed vectors and inline arrays now have distinct storage paths. See [array execution](Tests/Wasm/Arrays/Snapshots/Vectors.md)
+and [real Xui gradient stops](Tests/Wasm/InlineArrays/Snapshots/Gradients.md): the latter
+uses collection expressions, tuple conversions, an inline buffer, and ReadOnlySpan
+inside LinearGradient. Numeric inline buffers remain in linear frames; reference
+elements use frame-owned handles. The WASM README records the supported array/span
+operations and remaining restrictions.

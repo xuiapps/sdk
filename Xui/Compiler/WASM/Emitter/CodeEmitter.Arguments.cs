@@ -22,7 +22,7 @@ public readonly ref partial struct CodeEmitter
         if (argument.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
         if (argument.UsesGc && argument.Identity is { IsValueType: true } id && !argument.IsByReference) CloneGc(id);
         if (argument.IsLinearValue) CopyValue(argument.Identity!.Value, offset);
-        stack.Push(new MsilStackEntry(argument.StackType, argument.Identity, argument.IsByReference)
+        stack.Push(new MsilStackEntry(argument.StackType, argument.Identity, argument.IsByReference, argument.Array)
         { Location = argument.UsesGc && argument.IsByReference ? new(method.Storage.Shape(argument.Identity!.Value), 0) : null });
     }
 

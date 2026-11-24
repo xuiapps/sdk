@@ -9,6 +9,7 @@ namespace Xui.Compiler.Tests.XuiNet.DotNet;
 public class AssemblySnapshotTests(ITestOutputHelper output)
 {
     [Theory]
+    [InlineData("InlineArrays", "Buffers", OutputKind.DynamicallyLinkedLibrary, 5)]
     [InlineData("Assemblies", "Contracts", OutputKind.DynamicallyLinkedLibrary, 5)]
     [InlineData("Assemblies", "ControlFlow", OutputKind.DynamicallyLinkedLibrary, 5)]
     [InlineData("Assemblies", "Inheritance", OutputKind.DynamicallyLinkedLibrary, 5)]

@@ -16,6 +16,7 @@ namespace Xui.Compiler.WASM.Emitter;
 internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph dependencies)
 {
     public Runtime.TypeRegistry Classes { get; } = new(dependencies);
+    public HashSet<XuiNet.DotNet.Exceptions.ExceptionKind> ExtraExceptionKinds { get; } = new();
     public bool ExceptionsEnabled { get; set; }
     public TypeIndex ExceptionType { get; private set; }
     public TypeIndex ExceptionTagType { get; private set; }
@@ -42,8 +43,9 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     public bool IsClass(TypeIdentity identity) => XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
     public bool IsGc(TypeIdentity identity)
     {
+        if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity)) return false;
         return IsClass(identity) || (!StackTypes.Contains(identity) && identity.Handle.Kind == HandleKind.TypeDefinition &&
-            Layouts(identity).Classify(identity) == StorageKind.ContainsManagedReferences);
+            HasStackReferences(identity));
     }
 
     public LocalVariable Bind(SignatureType type)
@@ -57,7 +59,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             throw new NotSupportedException("Open generic parameters cannot be emitted.");
         if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)
             throw new NotSupportedException($"External class storage is not implemented: {type}.");
-        return new(type.Code, type.Identity, type.IsByReference, type.Code == SignatureTypeCode.Object || type.Identity is { } identity && IsGc(identity));
+        if (type.Array is { } array) _ = ArrayShape(array);
+        return new(type.Code, type.Identity, type.IsByReference, type.Code is SignatureTypeCode.Object or SignatureTypeCode.SZArray || type.Identity is { } identity && IsGc(identity), type.Array);
     }
 
     public GcShape Shape(TypeIdentity identity)
@@ -70,6 +73,14 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             var exception = new GcShape(identity);
             shapes.Add(identity, exception);
             return exception;
+        }
+        if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity))
+        {
+            var span = new GcShape(identity);
+            span.Leaves.Add(new(new(SignatureTypeCode.Int32), 0));
+            span.Leaves.Add(new(new(SignatureTypeCode.Int32), 4));
+            shapes.Add(identity, span);
+            return span;
         }
         if (MemoryFrame.IsNativeFloat(identity))
         {
@@ -119,8 +130,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
                 var field = ownerModule.GetField(handle);
                 if ((field.Attributes & FieldAttributes.Static) != 0) continue;
                 var declared = SignatureReader.Field(ownerModule, field.Signature, identity.Arguments);
-                if (declared.IsByReference || declared.Code == SignatureTypeCode.SZArray)
-                    throw new NotSupportedException($"Managed byref and array GC fields are not implemented: {field.Name}.");
+                if (declared.IsByReference)
+                    throw new NotSupportedException($"Managed byref GC fields are not implemented: {field.Name}.");
                 var storage = Bind(declared);
                 int first = shape.Leaves.Count;
                 int byteOffset = byteLayout?.Fields[handle].Offset ?? 0;
@@ -131,6 +142,13 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
                 }
                 else shape.Leaves.Add(new(storage, byteOffset));
                 shape.Fields.Add(new(identity, handle), new(storage, first, shape.Leaves.Count - first));
+            }
+            if (InlineArrayInfo.Read(identity) is { } inline)
+            {
+                var elementLeaves = shape.Leaves.ToArray();
+                int stride = byteLayout?.Fields[inline.Field.Handle].Size ?? 0;
+                for (int index = 1; index < inline.Length; index++)
+                    foreach (var leaf in elementLeaves) shape.Leaves.Add(new(leaf.Storage, checked(leaf.MemoryOffset + index * stride)));
             }
         }
         catch { shapes.Remove(identity); throw; }
@@ -192,6 +210,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             }
             else shape.Type = writer.StructType(fields);
         }
+        DefineArrayTypes(ref writer);
         if (Classes.InterfaceMethods.Count != 0 && TableSize == 0) TableSize = (uint)Classes.InterfaceMethods.Count;
     }
 }

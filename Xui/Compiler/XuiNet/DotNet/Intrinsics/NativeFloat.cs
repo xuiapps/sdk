@@ -20,7 +20,7 @@ public static class NativeFloat
         if (signature.HasThis || signature.Parameters.Any(p => p.IsByReference) || signature.Result.IsByReference) return false;
         operation = member.Name;
         bool N(SignatureType type) => type.Identity is { } identity && Is(identity);
-        bool Scalar(SignatureType type) => type.Identity is null && type.Code is SignatureTypeCode.Int32 or SignatureTypeCode.Single or SignatureTypeCode.Double;
+        bool Scalar(SignatureType type) => type.Identity is null && type.Code is SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 or SignatureTypeCode.Single or SignatureTypeCode.Double;
         return operation switch
         {
             "op_Implicit" or "op_Explicit" => signature.Parameters.Length == 1 &&

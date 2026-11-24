@@ -67,6 +67,19 @@ public sealed partial class Analyzer
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.InlineArrayAccess.Read(module, token, identity.DeclaringType.Arguments) is { } inline)
+                    {
+                        Add(new Dependency.Intrinsic(inline.Operation), node, DependencyReason.Call, offset);
+                        Signature(node, inline.Signature.Result, DependencyReason.Signature, offset);
+                        Signature(node, inline.Signature.Parameters[0], DependencyReason.Signature, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.SpanAccess.Read(module, token, identity.DeclaringType.Arguments) is { } span)
+                    {
+                        Add(new Dependency.Intrinsic($"Span.{span.Operation}"), node, DependencyReason.Call, offset);
+                        Signature(node, span.Signature.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.NativeFloat.TryMethod(module, token, out var nativeOperation, out _))
                     {
                         Add(new Dependency.Intrinsic($"NFloat.{nativeOperation}"), node, DependencyReason.Call, offset);

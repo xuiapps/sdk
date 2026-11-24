@@ -100,7 +100,6 @@ public class LayoutTests
     [InlineData("public class Sample { public int Value; }", "Only unboxed value-type")]
     [InlineData("[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)] public struct Sample { public int Value; }", "Auto layout")]
     [InlineData("public struct Sample<T> { public T Value; }", "Generic layout")]
-    [InlineData("[System.Runtime.CompilerServices.InlineArray(4)] public struct Sample { private int element; }", "Inline-array layout")]
     [InlineData("public struct Sample { public System.DateTime Value; }", "External value-type")]
     [InlineData("public struct Sample { public object Value; }", "Field storage type Object")]
     public void UnsupportedLayoutsFailWithoutGuessing(string source, string reason)
