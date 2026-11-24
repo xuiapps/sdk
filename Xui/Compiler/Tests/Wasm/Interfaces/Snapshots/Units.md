@@ -68,9 +68,7 @@ Scout
 
 - Interface: `False`
 - Implements: `IMovable`, `IPosition`, `INamed`
-- Slot 0: `INamed.get_Name` → `Unit.INamed.get_Name`
-- Slot 1: `IMovable.Move` → `Unit.Move`
-- Slot 2: `IPosition.get_X` → `Unit.get_X`
+
 
 ### IMovable
 
@@ -165,15 +163,12 @@ Scout
   (elem (;0;) (i32.const 3) func 11)
   (elem (;1;) (i32.const 4) func 9)
   (elem (;2;) (i32.const 5) func 8)
-  (elem (;3;) (i32.const 0) func 8)
-  (elem (;4;) (i32.const 1) func 9)
-  (elem (;5;) (i32.const 2) func 11)
-  (elem (;6;) (i32.const 9) func 10)
-  (elem (;7;) (i32.const 10) func 9)
-  (elem (;8;) (i32.const 11) func 8)
-  (elem (;9;) (i32.const 6) func 8)
-  (elem (;10;) (i32.const 7) func 9)
-  (elem (;11;) (i32.const 8) func 10)
+  (elem (;3;) (i32.const 9) func 10)
+  (elem (;4;) (i32.const 10) func 9)
+  (elem (;5;) (i32.const 11) func 8)
+  (elem (;6;) (i32.const 6) func 8)
+  (elem (;7;) (i32.const 7) func 9)
+  (elem (;8;) (i32.const 8) func 10)
   (func (;4;) (type 16) (result i32)
     (local eqref eqref eqref i32 i64 f64 externref)
     struct.new_default 15

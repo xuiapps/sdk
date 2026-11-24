@@ -15,23 +15,7 @@ public sealed partial class Analyzer
         var identity = node.Identity;
         var module = identity.DeclaringType.Module;
         var method = module.GetMethod(identity.Handle);
-        if (IsOpen(identity.DeclaringType) || method.GenericParameters.Count != 0)
-            throw new NotSupportedException($"Method reachability requires a closed declaring type and a non-generic method: {identity}.");
-        UseModule(module, node);
-        Add(new Dependency.Type(identity.DeclaringType), node, DependencyReason.DeclaringType);
-        // BeforeFieldInit permits deferring initialization until the first static field access.
-        // Strict initializers remain required by calls and constructors.
-        if (method.Name != ".cctor" &&
-            (module.GetType((TypeDefinitionHandle)identity.DeclaringType.Handle).Attributes & TypeAttributes.BeforeFieldInit) == 0)
-            Add(new Dependency.Initialization(identity.DeclaringType), node, DependencyReason.Initialization);
-        var signature = SignatureReader.Method(module, method.Signature, identity.DeclaringType.Arguments);
-        if (signature.HasThis)
-        {
-            Add(new Dependency.Layout(identity.DeclaringType), node, DependencyReason.Layout);
-            if (!identity.DeclaringType.IsValueType) _ = dispatch.Resolve(identity.DeclaringType);
-        }
-        foreach (var parameter in signature.Parameters) Signature(node, parameter, DependencyReason.Signature);
-        Signature(node, signature.Result, DependencyReason.Signature);
+        ReadDeclaration(node, identity, true);
         if ((method.Attributes & MethodAttributes.Abstract) != 0) return;
         var body = method.Body ?? throw new NotSupportedException($"The method has no managed body: {identity}.");
         foreach (var region in body.ExceptionRegions)
@@ -165,6 +149,29 @@ public sealed partial class Analyzer
                 // Remaining opcodes carry no metadata dependencies; operands stay in the PE.
             }
         }
+    }
+
+    private void ReadDeclaration(Dependency node, MethodIdentity identity, bool retainBody)
+    {
+        var module = identity.DeclaringType.Module;
+        var method = module.GetMethod(identity.Handle);
+        if (IsOpen(identity.DeclaringType) || method.GenericParameters.Count != 0)
+            throw new NotSupportedException($"Method reachability requires a closed declaring type and a non-generic method: {identity}.");
+        if (retainBody) UseModule(module, node);
+        Add(new Dependency.Type(identity.DeclaringType), node, DependencyReason.DeclaringType);
+        // BeforeFieldInit permits deferring initialization until the first static field access.
+        // Strict initializers remain required by calls and constructors.
+        if (retainBody && method.Name != ".cctor" &&
+            (module.GetType((TypeDefinitionHandle)identity.DeclaringType.Handle).Attributes & TypeAttributes.BeforeFieldInit) == 0)
+            Add(new Dependency.Initialization(identity.DeclaringType), node, DependencyReason.Initialization);
+        var signature = SignatureReader.Method(module, method.Signature, identity.DeclaringType.Arguments);
+        if (signature.HasThis)
+        {
+            Add(new Dependency.Layout(identity.DeclaringType), node, DependencyReason.Layout);
+            if (!identity.DeclaringType.IsValueType) _ = dispatch.Resolve(identity.DeclaringType);
+        }
+        foreach (var parameter in signature.Parameters) Signature(node, parameter, DependencyReason.Signature);
+        Signature(node, signature.Result, DependencyReason.Signature);
     }
 
     private void ReadHandle(Dependency.Method node, EntityHandle handle, int offset)

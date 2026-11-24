@@ -292,6 +292,7 @@ public class ReachabilityTests
         Dependency.Layout layout => layout.Identity.ToString(),
         Dependency.Instantiation allocation => allocation.Identity.ToString(),
         Dependency.Method method => method.Identity.ToString(),
+        Dependency.Signature signature => signature.Identity.ToString(),
         Dependency.VirtualCall call => call.Identity.ToString(),
         Dependency.Initialization initialization => initialization.Identity.ToString(),
         Dependency.Field field => field.Identity.DeclaringType + "." + field.Identity.DeclaringType.Module.GetField(field.Identity.Handle).Name,

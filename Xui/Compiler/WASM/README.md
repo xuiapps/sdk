@@ -74,7 +74,7 @@ jump graphs, lambdas, closures, delegates, managed arrays, unmanaged pointers,
 boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage currently holds emitted class/interface references and null, not strings,
 boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies, variant interfaces,
-default/static interface methods, generic interface methods, boxed/constrained struct dispatch,
+static-abstract interface dispatch, generic interface methods, boxed/constrained struct dispatch,
 and explicit class MethodImpl/covariant return overrides remain unsupported. Explicit-layout structs cannot
 be flattened into GC fields yet; their supported linear-memory layouts are unchanged.
 Struct `ref`/`in`/`out` parameters and local aliases work for linear stack locations. Byrefs into GC class fields and general primitive/reference byref parameters remain unsupported. Addresses
@@ -481,6 +481,21 @@ the actual Core and framework implementation PEs. The [Values scene](../Tests/Wa
 uses tuple syntax in an offline browser artifact.
 
 The [real TestApp construction gate](../Tests/Wasm/TestApp/Snapshots/FillRectConstruction.md)
-has passed the tuple-resolution failure. Interface validation now stops at the default
-`ITextMeasureContext.MeasureText` member, even though this construction gate does not
-call it. The full TestApp is still not running.
+has passed tuple resolution and default-interface validation. With the framework
+assemblies for `IServiceProvider` and collections supplied, it now stops at unsupported
+array signatures in its dependency closure. The full TestApp is still not running.
+
+## Default interface implementations
+
+Class implementations take precedence; otherwise dispatch selects the most-specific
+interface implementation, including explicit interface overrides, inherited defaults,
+and closed generic contracts from linked assemblies. Default bodies can call ordinary
+private/static helpers and dispatch back into class implementations. Struct arguments
+and results use the existing value/byref ABI.
+
+The [layout demo](../Tests/Wasm/Interfaces/Snapshots/Defaults.md) shows source, output,
+selected dispatch targets, and WAT. Reachability retains a callable signature without
+retaining an overridden or uncalled default body. Conflicting defaults and reabstraction
+without a concrete implementation fail during compilation; runtime ambiguity exceptions
+are not implemented. Variance, generic methods, static-abstract dispatch, and boxed or
+constrained struct receivers remain unsupported.

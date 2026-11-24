@@ -23,5 +23,5 @@ Blocked during compilation. WASM was not emitted; no browser rendering is claime
 ## WASM / blocker
 
 ```text
-System.NotSupportedException: Static and default interface methods are not implemented: Xui.Core.Canvas.ITextMeasureContext.MeasureText.
+System.NotSupportedException: Only string[] entry-point array signatures are supported.
 ```

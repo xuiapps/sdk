@@ -38,7 +38,9 @@ public class TestAppTests(ITestOutputHelper output)
         using var core = CanvasTests.Read(coreImage);
         using var view = CanvasTests.Read(viewImage);
         using var framework = new Frontend.Framework();
-        _ = new Xui.Compiler.XuiNet.Compilation([app, view, core, .. framework.Assemblies]);
+        using var componentModel = CanvasTests.Read(File.ReadAllBytes(typeof(IServiceProvider).Assembly.Location));
+        using var collections = CanvasTests.Read(File.ReadAllBytes(Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "System.Collections.dll")));
+        _ = new Xui.Compiler.XuiNet.Compilation([app, view, core, componentModel, collections, .. framework.Assemblies]);
         string status, details;
         NotSupportedException? unsupported = null;
         try

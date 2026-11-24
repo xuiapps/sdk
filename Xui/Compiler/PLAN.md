@@ -40,9 +40,10 @@ The [construction snapshot](Tests/Wasm/TestApp/Snapshots/FillRectConstruction.md
 compiles the unchanged `FillRectTest.cs` and `ICanvasDrawingExample.cs` from TestApp
 into a separate PE, linked with the actual Core implementation and a small driver.
 It remains inconclusive. The ValueTuple constructor in `View..ctor` now resolves into
-supplied framework implementation PEs. Analysis next rejects the default interface
-member `Xui.Core.Canvas.ITextMeasureContext.MeasureText`; this is interface validation,
-not a call executed by this construction gate.
+supplied framework implementation PEs. Default interface validation now passes. The
+probe also supplies `System.ComponentModel` for `IServiceProvider` and
+`System.Collections` for collection types. Analysis next rejects array signatures
+while exploring this dependency closure; managed array storage/emission is not implemented.
 No Core/View method is replaced or silently omitted by this gate.
 
 Completed in this step:
@@ -62,8 +63,12 @@ BeforeFieldInit constants are implemented. Tests cover arities 2–7, named/nest
 ref copies, and actual Xui Point/Vector/Size/Rect/Frame conversions. See
 [tuple geometry](Tests/Wasm/Tuples/Snapshots/XuiGeometry.md).
 
-Next sequence: implement default interface dispatch and reachability, rerun the real
-construction gate, then grow it to Measure/Arrange/Render with a Canvas host. Closed
+Default interface dispatch and reachability are implemented, including class precedence,
+most-specific defaults, linked assemblies, and pruning unselected bodies. See the
+[default layout methods](Tests/Wasm/Interfaces/Snapshots/Defaults.md).
+
+Next sequence: support the array signatures/storage required by the retained collection
+layouts, rerun the construction gate, then grow it to Measure/Arrange/Render with a Canvas host. Closed
 Nullable storage is enabled by generic layout; its callable BCL surface still needs testing.
 Static initialization, GC-field byrefs, collections/spans, numeric helpers, and
 persistent frame/input exports remain later gates. The full TestApp is not running yet.
@@ -72,7 +77,7 @@ persistent frame/input exports remain later gates. The full TestApp is not runni
 
 Class-backed interface calls now support implicit/explicit implementations, inherited and reimplemented mappings, virtual overrides, and closed invariant generic interfaces. `is`/`as`/explicit casts work with nominal interface membership, including class references stored as `object`. Interface contracts may come from a separate supplied assembly. See the [interface execution snapshot](Tests/Wasm/Interfaces/Snapshots/Units.md).
 
-This removes the basic interface dispatch/MethodImpl blocker. It does not yet implement boxed/constrained struct dispatch, variance, default/static interface methods, generic methods, or every signature used by `IContext`. Interface methods still use the existing supported argument/result ABI. Dependency-defined numeric structs and the initial NFloat intrinsic set now execute; ordinary Canvas signatures can now use supported struct values; remaining framework types and operations still need implementation.
+This removes the basic interface dispatch/MethodImpl blocker. It does not yet implement boxed/constrained struct dispatch, variance, static-abstract interface dispatch, generic methods, or every signature used by `IContext`. Interface methods still use the existing supported argument/result ABI. Dependency-defined numeric structs and the initial NFloat intrinsic set now execute; ordinary Canvas signatures can now use supported struct values; remaining framework types and operations still need implementation.
 
 ## Exception prerequisite — initial support implemented
 

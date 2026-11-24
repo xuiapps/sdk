@@ -35,7 +35,9 @@ public sealed partial class Analyzer
 
     private void InvokeVirtual(Dependency.VirtualCall node)
     {
-        Add(new Dependency.Method(node.Identity), node, DependencyReason.VirtualCall);
+        bool defaultBody = node.Identity.DeclaringType.IsInterface &&
+            (node.Identity.DeclaringType.Module.GetMethod(node.Identity.Handle).Attributes & MethodAttributes.Abstract) == 0;
+        Add(defaultBody ? new Dependency.Signature(node.Identity) : new Dependency.Method(node.Identity), node, DependencyReason.VirtualCall);
         Add(new Dependency.Layout(node.Identity.DeclaringType), node, DependencyReason.Layout);
         if (!node.Identity.DeclaringType.IsInterface) _ = dispatch.Slot(node.Identity);
         else _ = dispatch.Resolve(node.Identity.DeclaringType);

@@ -18,7 +18,8 @@ internal sealed partial class MethodPlan
     public MethodDefinitionHandle Handle => Identity.Handle;
     public MethodSignature Signature { get; }
     public IR.MethodBody Body { get; }
-    public bool IsAbstract { get; }
+    /// <summary>Only a signature is needed: an abstract declaration or an unselected default body.</summary>
+    public bool IsDeclaration { get; }
     public MemoryFrame? Frame { get; }
     public StorageModel Storage { get; }
     public bool UsesGc { get; private set; }
@@ -42,22 +43,22 @@ internal sealed partial class MethodPlan
     public Dictionary<IR.MethodIdentity, LocalIndex[]> CallTemporaries { get; } = new();
     private uint dupBase;
 
-    public MethodPlan(IR.Module source, IR.MethodIdentity identity, bool entryPoint, StorageModel storage)
+    public MethodPlan(IR.Module source, IR.MethodIdentity identity, bool entryPoint, StorageModel storage, bool declarationOnly = false)
     {
         Identity = identity;
         var handle = identity.Handle;
         Storage = storage;
         var method = source.GetMethod(handle);
         Signature = MethodSignature.Read(source, method, identity.DeclaringType, entryPoint, storage);
-        if ((method.ImplementationAttributes & MethodImplAttributes.Synchronized) != 0)
+        if (!declarationOnly && (method.ImplementationAttributes & MethodImplAttributes.Synchronized) != 0)
             throw new NotSupportedException($"Synchronized methods are not implemented: {method.Name}.");
         var declaringType = source.GetType(method.DeclaringType);
         foreach (var sibling in declaringType.Methods)
-            if (source.GetMethod(sibling).Name == ".cctor" &&
+            if (!declarationOnly && source.GetMethod(sibling).Name == ".cctor" &&
                 (method.Name == ".cctor" || (declaringType.Attributes & TypeAttributes.BeforeFieldInit) == 0))
                 throw new NotSupportedException($"Type initialization is not implemented: {declaringType.Name}.");
-        IsAbstract = (method.Attributes & MethodAttributes.Abstract) != 0;
-        if (IsAbstract)
+        IsDeclaration = declarationOnly || (method.Attributes & MethodAttributes.Abstract) != 0;
+        if (IsDeclaration)
         {
             Body = null!;
             Locals = [];
@@ -127,7 +128,7 @@ internal sealed partial class MethodPlan
             }
             CallTemporaries.Add(target, slots);
         }
-        if (!IsAbstract) foreach (var region in Body.ExceptionRegions)
+        if (!IsDeclaration) foreach (var region in Body.ExceptionRegions)
         {
             ExceptionLocals[region.HandlerOffset] = new(parameterCount + (uint)types.Count);
             types.Add(region.Kind == ExceptionRegionKind.Catch ? ValueTypeCode.EqRef : ValueTypeCode.ExnRef);

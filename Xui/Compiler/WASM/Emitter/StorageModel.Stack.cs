@@ -23,14 +23,14 @@ internal sealed partial class StorageModel
 
     public void SelectStackTypes(DependencyGraph dependencies)
     {
-        foreach (var identity in dependencies.Methods)
+        foreach (var identity in dependencies.Methods.Concat(dependencies.Nodes.OfType<Dependency.Signature>().Select(n => n.Identity)).Distinct())
         {
             var owner = identity.DeclaringType;
             var method = owner.Module.GetMethod(identity.Handle);
             var signature = SignatureReader.Method(owner.Module, method.Signature, owner.Arguments);
             foreach (var parameter in signature.Parameters)
                 if (parameter.IsByReference && parameter.Identity is { IsValueType: true } type) Select(type);
-            if (method.Body is { } body)
+            if (dependencies.Contains(new Dependency.Method(identity)) && method.Body is { } body)
                 foreach (var local in SignatureReader.Locals(owner.Module, body.LocalSignature, owner.Arguments))
                     if (local.IsByReference && local.Identity is { IsValueType: true } type) Select(type);
         }

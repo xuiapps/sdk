@@ -14,6 +14,21 @@ internal sealed partial class DispatchTable
         if (InterfaceImplementations.TryGetValue((type, declaration), out var cached)) return cached;
         if (!type.IsAssignableTo(declaration.DeclaringType))
             throw new InvalidProgramException($"{type} does not implement {declaration.DeclaringType}.");
+        var target = ClassInterfaceImplementation(type, declaration);
+        if (target is { } implementation)
+        {
+            if ((implementation.DeclaringType.Module.GetMethod(implementation.Handle).Attributes & MethodAttributes.Virtual) != 0)
+                implementation = Resolve(type)[(int)Slot(implementation)].Implementation;
+        }
+        else implementation = DefaultInterfaceImplementation(type, declaration);
+        InterfaceImplementations.Add((type, declaration), implementation);
+        return implementation;
+    }
+
+    // Keep class mappings separate from defaults: a more-derived interface may override
+    // a default inherited through a base class, but never a concrete class implementation.
+    private MethodIdentity? ClassInterfaceImplementation(TypeIdentity type, MethodIdentity declaration)
+    {
         var definition = type.Module.GetType((TypeDefinitionHandle)type.Handle);
         TypeIdentity? templateContract = null;
         foreach (var handle in definition.Interfaces)
@@ -50,13 +65,8 @@ internal sealed partial class DispatchTable
             }
         }
         if (target is null && type.BaseType is { } parent && parent.IsAssignableTo(declaration.DeclaringType))
-            target = InterfaceImplementation(parent, declaration);
-        if (target is not { } implementation)
-            throw new NotSupportedException($"No class implementation of {declaration} on {type}; default interface methods are not implemented.");
-        if ((implementation.DeclaringType.Module.GetMethod(implementation.Handle).Attributes & MethodAttributes.Virtual) != 0)
-            implementation = Resolve(type)[(int)Slot(implementation)].Implementation;
-        InterfaceImplementations.Add((type, declaration), implementation);
-        return implementation;
+            target = ClassInterfaceImplementation(parent, declaration);
+        return target;
     }
 
     // Follow the same metadata path in open and substituted contexts. Matching only the
@@ -91,13 +101,7 @@ internal sealed partial class DispatchTable
         foreach (var parameter in definition.GenericParameters)
             if ((identity.Module.GetGenericParameter(parameter).Attributes & GenericParameterAttributes.VarianceMask) != 0)
                 throw new NotSupportedException("Variant interface dispatch is not implemented.");
-        foreach (var handle in definition.Methods)
-        {
-            var method = identity.Module.GetMethod(handle);
-            if ((method.Attributes & MethodAttributes.Static) != 0 || (method.Attributes & MethodAttributes.Abstract) == 0)
-                throw new NotSupportedException($"Static and default interface methods are not implemented: {identity}.{method.Name}.");
-            if (method.GenericParameters.Count != 0)
-                throw new NotSupportedException("Generic interface methods are not implemented.");
-        }
+        // Instance defaults and ordinary helpers are analyzed only if reachable. Static
+        // abstract dispatch and generic calls still fail in their unsupported call paths.
     }
 }

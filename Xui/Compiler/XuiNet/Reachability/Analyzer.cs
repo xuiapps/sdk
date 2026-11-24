@@ -60,6 +60,7 @@ public sealed partial class Analyzer
         {
             case Dependency.Root root: Expand(root); break;
             case Dependency.Method method: ReadMethod(method); break;
+            case Dependency.Signature signature: ReadDeclaration(signature, signature.Identity, false); break;
             case Dependency.Type type: ReadType(type); break;
             case Dependency.Layout layout: ReadLayout(layout); break;
             case Dependency.Field field: ReadField(field); break;

@@ -113,7 +113,6 @@ public class InterfaceTests
     }
 
     [Theory]
-    [InlineData("public interface I { int Read() => 1; } public class A : I { }", "default interface")]
     [InlineData("public interface I<out T> { T Read(); } public class A : I<string> { public string Read() => null; }", "Variant interface")]
     public void UnsupportedInterfaceModelsFailExplicitly(string declarations, string reason)
     {

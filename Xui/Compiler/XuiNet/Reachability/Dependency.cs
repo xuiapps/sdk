@@ -15,6 +15,8 @@ public abstract record Dependency
     public sealed record Instantiation(TypeIdentity Identity) : Dependency;
     /// <summary>A method body in its declaring type's specialization context.</summary>
     public sealed record Method(MethodIdentity Identity) : Dependency;
+    /// <summary>A callable signature without retaining its default interface body.</summary>
+    public sealed record Signature(MethodIdentity Identity) : Dependency;
     /// <summary>A virtual slot that can be invoked on compatible instantiated classes.</summary>
     public sealed record VirtualCall(MethodIdentity Identity) : Dependency;
     /// <summary>A field declaration, with access kinds recorded on incoming edges.</summary>

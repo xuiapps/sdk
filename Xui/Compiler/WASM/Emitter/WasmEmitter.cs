@@ -60,12 +60,13 @@ public sealed class WasmEmitter
         var storage = new StorageModel(dependencies);
         storage.SelectStackTypes(dependencies);
         var mainIdentity = IR.MethodIdentity.FromDefinition(source, source.EntryPoint);
-        foreach (var identity in dependencies.Methods)
+        foreach (var identity in dependencies.Methods.Concat(dependencies.Nodes.OfType<Dependency.Signature>().Select(n => n.Identity)).Distinct())
         {
-            var method = new MethodPlan(identity.DeclaringType.Module, identity, entryPoint: identity == mainIdentity, storage);
+            var method = new MethodPlan(identity.DeclaringType.Module, identity, entryPoint: identity == mainIdentity, storage,
+                declarationOnly: !dependencies.Contains(new Dependency.Method(identity)));
             methods.Add(identity, method);
             orderedMethods.Add(method);
-            if (method.IsAbstract) continue;
+            if (method.IsDeclaration) continue;
             foreach (string literal in CodeEmitter.CollectRequirements(identity.DeclaringType.Module, method, dependencies))
                 if (seenLiterals.Add(literal)) literals.Add(literal);
         }
@@ -125,7 +126,7 @@ public sealed class WasmEmitter
         TableIndex? objectReferences = null, stringReferences = null;
         using (var functions = writer.FunctionSection(importedFunctionCount))
         {
-            foreach (var method in orderedMethods.Where(method => !method.IsAbstract)) method.Function = functions.Function(method.Type);
+            foreach (var method in orderedMethods.Where(method => !method.IsDeclaration)) method.Function = functions.Function(method.Type);
             if (storage.Classes.Types.Count != 0) storage.InstanceTest = functions.Function(storage.InstanceTestType);
         }
         if (storage.TableSize != 0 || storage.ReferenceSlotsEnabled)
@@ -177,17 +178,17 @@ public sealed class WasmEmitter
             foreach (var type in storage.Classes.Types)
             {
                 foreach (var slot in type.VirtualSlots)
-                    if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsAbstract)
+                    if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsDeclaration)
                         elements.Functions(type.TableStart + (uint)storage.Classes.InterfaceMethods.Count + slot.Index, [implementation.Function]);
                 foreach (var slot in type.InterfaceSlots)
-                    if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsAbstract)
+                    if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsDeclaration)
                         elements.Functions(type.TableStart + slot.Index, [implementation.Function]);
             }
         }
         writer.DataCount((uint)literals.Count);
         using (var code = writer.CodeSection())
         {
-            foreach (var method in orderedMethods.Where(method => !method.IsAbstract))
+            foreach (var method in orderedMethods.Where(method => !method.IsDeclaration))
             {
                 using var bodyWriter = code.FunctionBody(method.LocalTypes);
                 rewriter.UseSource(method.Identity.DeclaringType.Module);
