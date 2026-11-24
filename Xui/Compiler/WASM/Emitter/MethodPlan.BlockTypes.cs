@@ -18,6 +18,10 @@ internal sealed partial class MethodPlan
         {
             switch (child)
             {
+                case ExceptionBlock exception:
+                    DefineBlockTypes(exception.Body, ref types);
+                    foreach (var handler in exception.Handlers) DefineBlockTypes(handler.Body, ref types);
+                    break;
                 case ConditionalBlock block:
                     BlockTypes.Add(block, types.FunctionType(block.Parameters.Select(Type).ToArray(), block.Results.Select(Type).ToArray()));
                     DefineBlockTypes(block.Taken, ref types);

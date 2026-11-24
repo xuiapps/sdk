@@ -64,6 +64,15 @@ public sealed class Compilation
             default:
                 throw new NotSupportedException($"Type resolution scope {reference.ResolutionScope.Kind} is not implemented.");
         }
+        identity = ResolveNamed(target, parent, reference.Namespace, reference.Name, new());
+        resolved.Add((module, handle), identity);
+        return identity;
+    }
+
+    private Model.TypeIdentity ResolveNamed(Model.Module target, TypeDefinitionHandle parent, string ns, string name,
+        HashSet<Model.Module> forwarding)
+    {
+        if (!forwarding.Add(target)) throw new BadImageFormatException($"Cyclic type forwarding for {ns}.{name}.");
         if (!definitions.TryGetValue(target, out var types))
         {
             types = new();
@@ -74,11 +83,22 @@ public sealed class Compilation
             }
             definitions.Add(target, types);
         }
-        if (!types.TryGetValue((parent, reference.Namespace, reference.Name), out var definition))
-            throw new NotSupportedException($"Cannot resolve type {reference.Namespace}.{reference.Name} in {target.Name}; type forwarding is not implemented.");
-        identity = new(target, definition);
-        resolved.Add((module, handle), identity);
-        return identity;
+        if (types.TryGetValue((parent, ns, name), out var definition)) return new(target, definition);
+        if (parent.IsNil)
+            foreach (var handle in target.Metadata.ExportedTypes)
+            {
+                var export = target.Metadata.GetExportedType(handle);
+                if (!export.IsForwarder || target.Metadata.GetString(export.Namespace) != ns || target.Metadata.GetString(export.Name) != name) continue;
+                if (export.Implementation.Kind != HandleKind.AssemblyReference)
+                    throw new NotSupportedException($"Unsupported type forwarder for {ns}.{name} in {target.Name}.");
+                var dependency = target.GetAssemblyReference((AssemblyReferenceHandle)export.Implementation);
+                if (!assemblies.TryGetValue(dependency.Name, out var implementation))
+                    throw new NotSupportedException($"Type {ns}.{name} is forwarded to {dependency.Name}; supply its implementation assembly.");
+                if (!Matches(implementation.Identity, dependency))
+                    throw new NotSupportedException($"Assembly identity mismatch for forwarded type {ns}.{name} in {dependency.Name}.");
+                return ResolveNamed(implementation.ManifestModule, default, ns, name, forwarding);
+            }
+        throw new NotSupportedException($"Cannot resolve type {ns}.{name} in {target.Name}.");
     }
 
     private static bool Matches(Model.AssemblyIdentity definition, Model.AssemblyReference reference)

@@ -3,16 +3,16 @@
 The backend emits a `void` or `int` entry point and reachable, non-generic static and instance
 methods. Primitive/string static calls can cross assemblies explicitly bound with
 `XuiNet.Compilation`; all retained bodies share one output module and function index space.
-Object/struct storage still requires declarations in the entry-point module. Method bodies support straight-line code, nested conditionals, and single-entry loops.
+Concrete classes, inheritance, constructors, virtual/interface dispatch, and casts can cross supplied assemblies. Inherited fields are keyed by their declaring type and metadata handle, preventing row-number collisions. Struct layouts and field access resolve declarations in supplied dependency assemblies. Method bodies support straight-line code, nested conditionals, and single-entry loops.
 It supports integer and floating-point constants, arithmetic, bitwise operations,
 shifts, numeric comparisons, selected conversions, primitive local and argument loads/stores, stack duplication/discard, and string literals.
 MSIL `Int32` and `Int64` use WASM `i32` and `i64`; floating-point evaluation values
 use `f64`. Strings use `externref`, with passive UTF-16LE data materialized through
 `wasm:js-string.fromCharCodeArray` and cached in globals.
 
-Classes declared in the same module use WASM GC objects with reference identity.
+Classes from supplied assemblies use WASM GC objects with reference identity.
 Structs classified as `ContainsManagedReferences` use GC objects with value-copy
-semantics. Their string fields remain native JavaScript `externref` values.
+semantics unless selected for addressable stack storage, described below. Their string fields remain native JavaScript `externref` values.
 Nested struct fields are recursively flattened into their owner's GC fields,
 including numeric structs: an embedded struct adds fields, not a child allocation.
 Class-reference fields stay references, including cycles. Struct loads, duplication,
@@ -20,7 +20,7 @@ arguments and returns preserve independent values while copying embedded referen
 shallowly. Stores update existing struct storage so outstanding field addresses stay
 valid. Numeric struct values transfer between linear memory and flattened GC fields.
 
-Same-module class and GC-struct constructors and direct instance calls are supported.
+Linked class and GC-struct constructors and direct instance calls are supported.
 Class inheritance preserves a GC field prefix, with a runtime type descriptor at
 field zero. Virtual and abstract class methods dispatch through a function table
 using `call_indirect`; overrides replace inherited slots, while `new virtual`
@@ -28,10 +28,9 @@ methods append slots. Nonvirtual calls and explicit `base.Method()` calls remain
 direct. `callvirt` checks its receiver for null. The parameterless core `System.Object`
 constructor has no emitted body. Class equality compares identity; null assignment,
 null tests, and default zero/null fields are supported. Null field access and null
-instance calls trap; translating these traps into catchable .NET exceptions remains
-unsupported. `is` and `as` lower to `isinst`, which follows nominal descriptor
+instance calls throw catchable `NullReferenceException` objects. `is` and `as` lower to `isinst`, which follows nominal descriptor
 parent links; identical field layouts do not make unrelated classes interchangeable.
-`castclass` uses the same check and traps on a non-null mismatch. See the
+`castclass` uses the same check and throws `InvalidCastException` on a non-null mismatch. See the
 [GC objects demo](../Tests/Wasm/Gc/Snapshots/Objects.md) and
 [polymorphism demo](../Tests/Wasm/Polymorphism/Snapshots/Units.md).
 
@@ -40,13 +39,12 @@ MethodImpl mappings, inherited implementations, reimplementation, and virtual ov
 Inherited interfaces and closed invariant generic interfaces retain nominal identity.
 Each concrete class's function-table range starts with a shared interface-slot prefix;
 only reachable interface calls retain their implementations. Interface `callvirt`
-uses `call_indirect` with the same scalar/reference ABI as class methods.
+uses `call_indirect` with the same scalar/reference/struct-value ABI as class methods.
 `is`, `as`, and explicit casts work between classes, interfaces, and class references
-stored as `object`. Null casts preserve null; failed non-null casts trap.
+stored as `object`. Null casts preserve null; failed non-null casts throw `InvalidCastException`.
 Interface membership is emitted as descriptor comparisons over the retained type set,
 while class tests continue walking parent descriptors. Identical layouts do not imply
-interface membership. Interface contracts may come from another supplied assembly;
-concrete class storage still belongs to the entry-point module.
+interface membership. Interface contracts and concrete classes may come from separate supplied assemblies.
 See the [interface demo](../Tests/Wasm/Interfaces/Snapshots/Units.md).
 
 [Runtime.Type](Runtime/Type.cs), exposed by `WasmEmitter.Types`, records source
@@ -71,19 +69,18 @@ shows specialized fields, tables, base calls, and nominal `is`/`as` tests across
 three-level hierarchy. Primitive/reference `default(T)` via `initobj` is not
 implemented. Expanding instantiations stop at a nesting depth of 32.
 
-Generic methods/structs, arbitrary external calls, switches, arbitrary
+Generic methods, open generic structs, arbitrary external calls, switches, arbitrary
 jump graphs, lambdas, closures, delegates, managed arrays, unmanaged pointers,
-boxing, and exception handling are not implemented. Class signatures and type tests
-currently require same-module concrete declarations; interface declarations can be linked.
+boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage currently holds emitted class/interface references and null, not strings,
-boxed values, arrays, or arbitrary BCL objects. External class hierarchies, variant interfaces,
+boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies, variant interfaces,
 default/static interface methods, generic interface methods, boxed/constrained struct dispatch,
 and explicit class MethodImpl/covariant return overrides remain unsupported. Explicit-layout structs cannot
 be flattened into GC fields yet; their supported linear-memory layouts are unchanged.
-Managed-address locals and explicit byref parameters remain unsupported. Addresses
+Struct `ref`/`in`/`out` parameters and local aliases work for linear stack locations. Byrefs into GC class fields and general primitive/reference byref parameters remain unsupported. Addresses
 of inline struct fields can be used within expressions and conditional arms, but
 cannot be passed as instance receivers or carried across loops. Class-reference
-joins widen to a common same-module base class, including null/class joins.
+joins widen to a common linked base class, including null/class joins.
 Class references can also join an existing assignable interface or `object` stack type.
 Other stack types still require exact matches; synthesizing a common interface for unrelated
 class stack types remains unsupported.
@@ -110,15 +107,17 @@ use a 32-bit WASM target representation. Stores narrow small integers and round
 `float` to f32; loads restore the MSIL stack representation. `InitLocals` supplies
 zero/null defaults; without it, each slot must be stored before it is read.
 Unmanaged structs with a supported XuiNet layout use linear-memory local storage;
-classes and reference-containing structs use GC locals. Unresolved external types
-(such as `decimal`), `object`/boxed values, pointers, byref locals, and pinned locals
+classes and reference-containing structs without stack-address requirements use GC locals. Unresolved external types
+(such as `decimal`), boxed values, pointers, and pinned locals
 remain unsupported. Primitive local addresses are not implemented.
 
 Struct locals classified as `LinearMemory` occupy aligned slots in a per-invocation
 frame in an internal, fixed 1 MiB memory. The mutable stack pointer starts at 16;
 entry checks available capacity and reserves the frame, and every normal return
-restores it. Frame overflow traps. A trap or a throwing host import does not unwind
-the pointer; discard the instance after such a failure. `InitLocals` clears local
+restores it. Modules with exception support also catch and rethrow exceptions around
+framed methods to restore the pointer during unwinding, including throwing host imports.
+Frame overflow and other WASM traps are not exceptions and do not run cleanup;
+discard the instance after a trap. `InitLocals` clears local
 storage on each invocation. Addressable struct locals currently require this flag.
 `ldloca`, field addresses, primitive/nested field loads and stores, `initobj`,
 `ldobj`, `stobj`, and `cpobj` use the calculated byte layout. Loads and `dup` copy
@@ -126,18 +125,94 @@ struct values into distinct frame temporaries; assignments copy bytes rather tha
 aliasing the source. Temporary slots are reused across iterations, not allocated
 per iteration. GC struct/class block parameters and results use references; linear struct block parameters/results remain unsupported.
 
-Linear struct parameters/returns, linear struct instance constructors, and NFloat
-arithmetic/conversion calls remain unsupported. Numeric locals continue to use
-linear storage; GC-backed structs do not use this frame allocator.
+Linear struct arguments are copied into callee-owned frame slots. Argument loads snapshot
+values, while `starg` copies into the existing slot so aliases remain valid. Struct
+results use a trailing hidden destination address supplied by the caller, and are
+copied before the callee releases its frame. Direct, virtual, and interface calls
+share this ABI. Reference-containing stack values copy the references, never their
+slot indices, so results survive callee cleanup and unwinding. Constructors and direct
+instance receivers work with these value arguments too. Managed-address returns and
+primitive/reference argument addresses remain unsupported. GC-backed structs retain
+their GC copy representation. The [Point + Vector demo](../Tests/Wasm/Structs/Snapshots/PointVector.md)
+now executes rather than reporting an unsupported ABI.
+
+Virtual/interface `in` parameters preserve the framework `InAttribute` required
+modifier in signature metadata. Stack analysis normalizes it to the existing managed
+address representation; mutable addresses can be supplied to readonly parameters.
+Unknown required modifiers still fail explicitly.
 See the [linear-memory copy demo](../Tests/Wasm/Structs/Snapshots/LinearMemory.md).
+
+Addressable structs containing strings, objects, or interfaces use compiler-owned
+linear layouts with **32-bit reference-slot indices** in their reference fields.
+Before method planning, explicit struct byref parameters and byref locals select
+this representation for that type and its nested value fields. This selection is
+module-wide, so every method agrees on its address representation. Other existing
+GC struct values retain their previous representation. This is not native CLR
+pointer layout, and explicit-layout reference-containing structs are rejected.
+
+Two private WASM tables hold the actual references: `externref` for strings and
+`eqref` for objects/interfaces. Each frame reserves a contiguous range, assigns
+stable indices to its locals and value temporaries, and releases it by clearing
+both tables on normal return or exception unwinding. Struct copies transfer the
+references into the destination's own slots; they never copy indices or share
+mutable slots accidentally. `initobj` clears values while preserving slot identity.
+Copies to/from flattened class fields transfer the references as well. A callee
+borrows a caller's address; it does not release the caller's slots. Nested calls
+and reentrancy use independent frame ranges.
+
+The tables are allocated once per module instance, currently with 65,536 entries
+each. Calls and copies allocate no GC holders for these stack structs. Existing
+object creation and first-use string materialization still allocate. Capacity
+exhaustion traps, as for the byte stack; traps require discarding the instance.
+Spans, byref fields, escaping byref returns, linear struct values carried across
+control-flow blocks, and arbitrary GC interior references remain unsupported.
+See the [stack event demo](../Tests/Wasm/ReferenceSlots/Snapshots/Events.md).
+
+`System.Runtime.InteropServices.NFloat` has an intrinsic WASM32 scalar representation:
+f32 in storage and method signatures, promoted to the floating evaluation category.
+Conversions from Int32/Single/Double and back to Single/Double, plus addition,
+subtraction, multiplication, division, comparisons, and NaN/infinity constants are recognized by framework identity and signature.
+Operations use f32 rounding. The known System.Runtime.InteropServices/System.Runtime/
+System.Private.CoreLib facade identities match across assembly field/method references.
+Other NFloat members remain unsupported; BCL implementation bodies are not compiled
+for these intrinsics. Supplied framework facades resolve type forwarders into the
+supplied implementation PE while retaining the target's f32 NFloat representation.
+
+Numeric layouts follow linked TypeRefs into their defining modules; caches and
+field maps retain module ownership. The [standalone canvas demos](../Tests/Wasm/Canvas/README.md)
+use real Rect and Color fields, execute Rect.Right from Xui.Core.dll, and expose scalar
+drawing imports through a test host rewriter. Generated HTML includes all JS/WASM.
 
 Static method parameters and results support the same primitive/string types as
 locals, plus `void` results. Calls check argument types, preserve order, and narrow
 small integers and `float` at storage boundaries. Function indices are assigned
 before bodies are emitted, supporting forward and recursive references; unused
-method bodies remain unread. Calls currently require a `MethodDefinition` token.
-Type/module initializers, synchronized methods, and entry-point `string[] args`
-access are rejected. `dup` uses reusable typed temporary locals.
+method bodies remain unread. Calls resolve MethodDef and MemberRef tokens across supplied assemblies.
+Required type/module initializers, synchronized methods, and entry-point `string[] args`
+access are rejected. `BeforeFieldInit` types defer initialization until a static field is
+accessed, so unused static constants do not block ordinary geometry operations. `dup` uses reusable typed temporary locals.
+
+Exception regions lower to native WASM `try_table`, a module-local exception tag,
+`throw`, and `throw_ref`. Ordered typed catches, nested handlers, cross-method
+propagation, bare `catch`, `throw;`, `finally`, and MSIL `fault` are supported.
+`leave` clears the evaluation stack and routes through cleanup; `finally` runs on
+normal and exceptional exits, while `fault` runs only during unwinding. Cleanup
+handlers forward foreign host exceptions too; managed catches match our tag only.
+Rethrow preserves the original exception reference. See the
+[failed-cast demo](../Tests/Wasm/Exceptions/Snapshots/Casts.md).
+
+The initial managed payload is a GC struct containing a nominal exception kind and
+a native JavaScript message string. Recognized framework references are
+`Exception`, `SystemException`, `InvalidCastException`, `NullReferenceException`,
+`InvalidOperationException`, and `ArgumentException`. Their parameterless/string
+constructors, `Message`, hierarchy tests, and casts work without compiling BCL bodies.
+`throw null` throws `NullReferenceException`. Default messages are English;
+cast failures use the default message rather than CLR-generated runtime type names.
+Filters, custom exception subclasses, inner exceptions, managed stack traces, and
+protected regions with multiple normal continuations remain unsupported. This is
+an explicit intrinsic exception surface, not the full BCL exception implementation.
+WASM traps are not converted to managed exceptions; currently emitted null and
+cast checks throw before a trap can occur.
 
 [CodeRewriter](Emitter/Rewrite/CodeRewriter.cs) can supply replacements before normal
 emission. The default rewriter does nothing. The tests and browser playground plug in
@@ -166,10 +241,10 @@ supported operations that require no emitted bytes.
 | --- | --- | --- |
 | `nop` | No instruction | Elided entirely; leaves the MSIL evaluation stack unchanged. |
 | `break` |  |  |
-| `ldarg.0` | `local.get`; optional `f64.promote_f32` | Loads primitive/string arguments; float storage promotes to the f64 stack. |
-| `ldarg.1` | `local.get`; optional `f64.promote_f32` | Loads primitive/string arguments; float storage promotes to the f64 stack. |
-| `ldarg.2` | `local.get`; optional `f64.promote_f32` | Loads primitive/string arguments; float storage promotes to the f64 stack. |
-| `ldarg.3` | `local.get`; optional `f64.promote_f32` | Loads primitive/string arguments; float storage promotes to the f64 stack. |
+| `ldarg.0` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
+| `ldarg.1` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
+| `ldarg.2` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
+| `ldarg.3` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
 | `ldloc.0` | `local.get`; optional `f64.promote_f32`, `memory.copy`, or `struct.new` | Loads class references; struct loads copy values into independent storage. |
 | `ldloc.1` | `local.get`; optional `f64.promote_f32`, `memory.copy`, or `struct.new` | Loads class references; struct loads copy values into independent storage. |
 | `ldloc.2` | `local.get`; optional `f64.promote_f32`, `memory.copy`, or `struct.new` | Loads class references; struct loads copy values into independent storage. |
@@ -178,9 +253,9 @@ supported operations that require no emitted bytes.
 | `stloc.1` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
 | `stloc.2` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
 | `stloc.3` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
-| `ldarg.s` | `local.get`; optional `f64.promote_f32` | Loads primitive/string arguments; float storage promotes to the f64 stack. |
-| `ldarga.s` | `local.get` | Addresses a by-value GC struct parameter; other arguments remain unsupported. |
-| `starg.s` | Optional narrowing; `local.set` | Narrows small integers and floats before replacing the argument slot. |
+| `ldarg.s` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
+| `ldarga.s` | `local.get` | Addresses owned struct parameter storage; primitive argument addresses remain unsupported. |
+| `starg.s` | Optional narrowing; `local.set` | Replaces scalar arguments; copies structs into alias-preserving parameter storage. |
 | `ldloc.s` | `local.get`; optional `f64.promote_f32`, `memory.copy`, or `struct.new` | Loads class references; struct loads copy values into independent storage. |
 | `ldloca.s` | `local.get` | Returns a linear address or GC owner for struct locals. |
 | `stloc.s` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
@@ -203,9 +278,9 @@ supported operations that require no emitted bytes.
 | `dup` | `local.tee`; `local.get`; `memory.copy` or `struct.new` | Classes retain identity; struct duplicates receive independent value storage. |
 | `pop` | `drop` | Discards runtime value and its tracked MSIL stack type. |
 | `jmp` |  |  |
-| `call` | Optional argument narrowing/spills; `call`; optional `f64.promote_f32` | Calls linked static or same-module instance methods; preserves value semantics. |
+| `call` | Optional argument narrowing/spills; `call`; optional `f64.promote_f32` | Calls linked methods; struct results use caller-owned destination storage. |
 | `calli` |  |  |
-| `ret` | Optional result narrowing; `return` | Returns scalars, class references or copied GC struct values. |
+| `ret` | Optional result narrowing; `return` | Copies struct results to caller storage before releasing the frame. |
 | `br.s` | `Structured sequencing / br` | Sequences regions or branches to typed loop exit/repeat labels. |
 | `brfalse.s` | `zero/null test; if` | Consumes condition; typed arms may consume inputs and produce results. |
 | `brtrue.s` | `truth test; if` | Tests integers or references; supports typed inputs and results. |
@@ -237,7 +312,7 @@ supported operations that require no emitted bytes.
 | `ldind.u1` |  |  |
 | `ldind.i2` |  |  |
 | `ldind.u2` |  |  |
-| `ldind.i4` |  |  |
+| `ldind.i4` | `i32.load` / `struct.get` | Reads typed Int32/UInt32 addresses, including existing GC field locations. |
 | `ldind.u4` |  |  |
 | `ldind.i8` |  |  |
 | `ldind.i` |  |  |
@@ -247,7 +322,7 @@ supported operations that require no emitted bytes.
 | `stind.ref` |  |  |
 | `stind.i1` |  |  |
 | `stind.i2` |  |  |
-| `stind.i4` |  |  |
+| `stind.i4` | `i32.store` / `struct.set` | Updates typed Int32/UInt32 addresses without copying their owning struct. |
 | `stind.i8` |  |  |
 | `stind.r4` |  |  |
 | `stind.r8` |  |  |
@@ -278,12 +353,12 @@ supported operations that require no emitted bytes.
 | `cpobj` | `memory.copy` or leaf loads/stores | Copies matching structs, including transfers between GC and linear storage. |
 | `ldobj` | `memory.copy` or `struct.get`; `struct.new` | Loads an independent struct value from its managed address. |
 | `ldstr` | `global.get; ref.is_null; if; i32.const; i32.const; array.new_data; i32.const; i32.const; call; global.set; end; global.get` | Materializes passive UTF-16LE data through js-string; caches the JavaScript string. |
-| `newobj` | `struct.new_default`; `call` | Allocates storage, initializes class type header, then invokes constructor. |
+| `newobj` | Frame address / `struct.new_default`; `call` | Reserves stack values or GC objects, then invokes constructor. |
 | `castclass` | Descriptor helper `call`; `unreachable` on mismatch | Preserves null; checks class ancestry/interface membership; failed casts trap. |
 | `isinst` | Descriptor helper `call`; `ref.eq`; ancestry/membership checks | Returns original reference or null; supports class/interface is/as tests. |
 | `conv.r.un` | `f64.convert_i32_u` / `f64.convert_i64_u` | Interprets integer bits as unsigned before conversion to floating point. |
 | `unbox` |  |  |
-| `throw` |  |  |
+| `throw` | `throw` | Throws managed payload; null becomes a NullReferenceException object. |
 | `ldfld` | Numeric load / `memory.copy` / `struct.get` / `struct.new` | Reads linear or flattened GC fields; struct values are copied. |
 | `ldflda` | `i32.add` or GC owner reference | Retains the owner and static field range for inline addresses. |
 | `stfld` | Numeric store / `memory.copy` / `struct.set` | Writes linear or flattened fields; struct assignment copies leaf values. |
@@ -350,9 +425,9 @@ supported operations that require no emitted bytes.
 | `mul.ovf.un` |  |  |
 | `sub.ovf` |  |  |
 | `sub.ovf.un` |  |  |
-| `endfinally` |  |  |
-| `leave` |  |  |
-| `leave.s` |  |  |
+| `endfinally` | `br`; `throw_ref` | Completes cleanup, then resumes normal leave or exception unwinding. |
+| `leave` | `drop`; `br` | Clears evaluation stack and follows structured cleanup before continuation. |
+| `leave.s` | `drop`; `br` | Short relative target; same cleanup behavior as long leave. |
 | `stind.i` |  |  |
 | `conv.u` | No instruction (i32/native) / `i32.wrap_i64` (i64) | Native integers use 32 bits; floating-point inputs remain unsupported. |
 | `arglist` |  |  |
@@ -363,9 +438,9 @@ supported operations that require no emitted bytes.
 | `clt.un` | `i32.lt_u` / `i64.lt_u` / `f64.ge; i32.eqz` | Unsigned integers; inverted ordered floating comparison makes NaN yield true. |
 | `ldftn` |  |  |
 | `ldvirtftn` |  |  |
-| `ldarg` | `local.get`; optional `f64.promote_f32` | Loads primitive/string arguments; float storage promotes to the f64 stack. |
-| `ldarga` | `local.get` | Addresses a by-value GC struct parameter; other arguments remain unsupported. |
-| `starg` | Optional narrowing; `local.set` | Narrows small integers and floats before replacing the argument slot. |
+| `ldarg` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
+| `ldarga` | `local.get` | Addresses owned struct parameter storage; primitive argument addresses remain unsupported. |
+| `starg` | Optional narrowing; `local.set` | Replaces scalar arguments; copies structs into alias-preserving parameter storage. |
 | `ldloc` | `local.get`; optional `f64.promote_f32`, `memory.copy`, or `struct.new` | Loads class references; struct loads copy values into independent storage. |
 | `ldloca` | `local.get` | Returns a linear address or GC owner for struct locals. |
 | `stloc` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
@@ -379,7 +454,33 @@ supported operations that require no emitted bytes.
 | `cpblk` |  |  |
 | `initblk` |  |  |
 | `no.` |  |  |
-| `rethrow` |  |  |
+| `rethrow` | `throw_ref` | Preserves the original exception captured by the enclosing catch. |
 | `sizeof` |  |  |
 | `refanytype` |  |  |
 | `readonly.` |  |  |
+
+## Tuples and TestApp progress
+
+Closed generic structs specialize field types, layouts, and method signatures. Cache
+keys include the complete declaring identity and arguments, so `Pair<int>` and
+`Pair<long>` have distinct sizes and offsets. Numeric specializations use linear
+memory; reference-containing specializations use GC values or reference slots when
+selected for stack addresses.
+
+[Framework tuples](../Tests/Wasm/Tuples/Snapshots/Values.md) execute actual constructors
+from the supplied `System.Private.CoreLib` PE. Tests cover tuple arities 2–7, named
+fields, nested tuples, deconstruction, argument/result copies, and reference tuples
+passed by ref. This does not promise arbitrary tuple BCL methods, boxing, generic
+factory methods, or eight-plus-element constructor validation. Framework ValueTuple
+uses compiler-owned declaration-order layout, including its auto-layout declarations;
+this is not a CLR interop layout guarantee.
+
+[Xui geometry](../Tests/Wasm/Tuples/Snapshots/XuiGeometry.md) now executes
+`Point point = (0, 0)`, Vector/Size/Rect/Frame conversions, and `Point + Vector` against
+the actual Core and framework implementation PEs. The [Values scene](../Tests/Wasm/Canvas/Snapshots/Values.html)
+uses tuple syntax in an offline browser artifact.
+
+The [real TestApp construction gate](../Tests/Wasm/TestApp/Snapshots/FillRectConstruction.md)
+has passed the tuple-resolution failure. Interface validation now stops at the default
+`ITextMeasureContext.MeasureText` member, even though this construction gate does not
+call it. The full TestApp is still not running.

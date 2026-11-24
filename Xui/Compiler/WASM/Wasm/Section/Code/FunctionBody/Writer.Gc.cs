@@ -14,6 +14,8 @@ public ref partial struct Writer
     public readonly Writer StructGet(TypeIndex type, FieldIndex field) { body.Instruction(GcOpCode.StructGet).U32(type.Value).U32(field.Value); return this; }
     /// <summary>Writes a mutable field of a typed GC struct reference.</summary>
     public readonly Writer StructSet(TypeIndex type, FieldIndex field) { body.Instruction(GcOpCode.StructSet).U32(type.Value).U32(field.Value); return this; }
+    /// <summary>Tests whether a reference has a non-null instance of a heap type.</summary>
+    public readonly Writer RefTest(TypeIndex type) { body.Instruction(GcOpCode.RefTest).Signed(type.Value); return this; }
     /// <summary>Casts a GC reference to a non-null concrete struct type.</summary>
     public readonly Writer RefCast(TypeIndex type) { body.Instruction(GcOpCode.RefCast).Signed(type.Value); return this; }
     /// <summary>Compares two GC references by identity.</summary>

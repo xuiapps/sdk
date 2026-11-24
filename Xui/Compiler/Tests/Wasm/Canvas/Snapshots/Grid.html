@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xui WASM · Grid</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui,sans-serif; background:#081122; color:#edf4ff; }
+  body { max-width:880px; margin:48px auto; padding:0 20px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  h1 { font-size:26px; font-weight:600; margin:0; } p { color:#aabbcf; }
+  button { background:#204b78; color:white; border:1px solid #547da4; border-radius:8px; padding:10px 20px; cursor:pointer; }
+  canvas { display:block; width:100%; height:auto; border:1px solid #2b405c; border-radius:12px; }
+  #status { min-height:24px; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; line-height:1.5; }
+  details { margin-top:24px; } summary { cursor:pointer; color:#aabbcf; }
+</style>
+<header><h1>Xui WASM / Grid</h1><button id="run">Run again</button></header>
+<p>A small canvas scene compiled from C# with Xui geometry.</p>
+<canvas id="canvas" width="640" height="360" aria-label="Grid canvas demo"></canvas>
+<p id="status" role="status">Starting…</p>
+<details><summary>C# source</summary><pre>using System.Runtime.InteropServices;
+using CanvasDemo;
+using Xui.Core.Canvas;
+using Xui.Core.Math2D;
+
+public static class Program
+{
+    public static int Main()
+    {
+        NativeCanvas.Clear(0.0625, 0.125, 0.25, 1);
+        Color color = default;
+        color.Red = 0.25f; color.Green = 0.75f; color.Blue = 1; color.Alpha = 1;
+        Rect cell = default; cell.Width = 72; cell.Height = 56;
+        for (int row = 0; row &lt; 3; row++)
+        {
+            for (int column = 0; column &lt; 6; column++)
+            {
+                cell.X = (NFloat)40 + (NFloat)column * (NFloat)88;
+                cell.Y = (NFloat)96 + (NFloat)row * (NFloat)72;
+                Draw.Fill(ref cell, ref color);
+            }
+        }
+        Draw.Text(&quot;Geometry calculated in C#&quot;, 40, 56, 24, ref color);
+        return 18;
+    }
+}
+
+using System;
+using System.Runtime.InteropServices;
+using Xui.Core.Canvas;
+using Xui.Core.Math2D;
+
+namespace CanvasDemo;
+
+public static class Draw
+{
+    public static void Fill(ref Rect rectangle, ref Color color) =&gt; NativeCanvas.FillRect(
+        (double)rectangle.X, (double)rectangle.Y, (double)rectangle.Width, (double)rectangle.Height,
+        (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+
+    public static void Text(string text, NFloat x, NFloat y, NFloat size, ref Color color) =&gt; NativeCanvas.FillText(
+        text, (double)x, (double)y, (double)size, (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+}
+
+// Explicit host boundary. Tests replace only these exact signatures with drawing imports.
+public static class NativeCanvas
+{
+    public static void Clear(double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+    public static void FillRect(double x, double y, double width, double height, double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+    public static void FillText(string text, double x, double y, double size, double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+}
+</pre></details>
+<script>
+function canvasImports(context, commands) {
+    const color = (r,g,b,a) => `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`;
+    return {
+        Clear(r,g,b,a) {
+            commands.push(['Clear',r,g,b,a]);
+            if (context) { context.clearRect(0,0,640,360); context.fillStyle = color(r,g,b,a); context.fillRect(0,0,640,360); }
+        },
+        FillRect(x,y,width,height,r,g,b,a) {
+            commands.push(['FillRect',x,y,width,height,r,g,b,a]);
+            if (context) { context.fillStyle = color(r,g,b,a); context.fillRect(x,y,width,height); }
+        },
+        FillText(text,x,y,size,r,g,b,a) {
+            commands.push(['FillText',text,x,y,size,r,g,b,a]);
+            if (context) { context.fillStyle = color(r,g,b,a); context.font = `${size}px sans-serif`; context.fillText(text,x,y); }
+        }
+    };
+}
+const bytes = Uint8Array.from(atob('AGFzbQEAAAABy4CAgACMgICAAF53AWADYwB/fwFkb2AEfHx8fABgCHx8fHx8fHx8AGAIb3x8fHx8fHwAYAABf2AAAGAAAGAAAGAAAGACf38AYAVvfX19fwAC24CAgACEgICAAAZjYW52YXMFQ2xlYXIAAgZjYW52YXMIRmlsbFJlY3QAAwZjYW52YXMIRmlsbFRleHQABA53YXNtOmpzLXN0cmluZxFmcm9tQ2hhckNvZGVBcnJheQABA4iAgIAAg4CAgAAFCgsFiICAgACBgICAAAEQEAaPgICAAIKAgIAAbwHQbwt/AUEQCweMgICAAIGAgIAABG1haW4ABAyBgICAAAEKoYWAgACDgICAAMqDgIAABwR/AX0BbwN9BH8BfgF8IwEiCkHg/z9LBEAACyAKQSBqJAEgCkEAaiEAIABBAEEQ/AsAIApBEGohASABQQBBEPwLAEQAAAAAAACwP0QAAAAAAADAP0QAAAAAAADQP0QAAAAAAADwPxAAIABBAEEQ/AsAIABDAACAPru2uyEOQQBqIA62OAAAIABDAABAP7u2uyEOQQRqIA62OAAAIABBAbK7IQ5BCGogDrY4AAAgAEEBsrshDkEMaiAOtjgAACABQQBBEPwLACABQcgAsrshDkEIaiAOtjgAACABQTiyuyEOQQxqIA62OAAAQQAhAgIGAwYgAkEDSAQHQQAhAwIIAwggA0EGSAQJIAFBKLK7IAOyu0HYALK7tiEEtiAElLu2IQS2IASSuyEOQQBqIA62OAAAIAFB4ACyuyACsrtByACyu7YhBLYgBJS7tiEEtiAEkrshDkEEaiAOtjgAACABIAAQBSADQQFqIQMMAQUMAgsACwsgAkEBaiECDAEFDAILAAsLIwDRBEBBAEEZ+wkAAEEAQRkQAyQACyMAQSiyu0E4srtBGLK7IAAhCbYhCLYhB7YhBiEFIAUgBiAHIAggCRAGQRIgCiQBDwvugICAAAQBfQN/AX4BfCMBIgNBgIDAAEsEQAALIANBAGokASAAQQBqKgAAuyAAQQRqKgAAuyAAQQhqKgAAuyAAQQxqKgAAuyABQQBqKgAAuyABQQRqKgAAuyABQQhqKgAAuyABQQxqKgAAuxABIAMkAQ8L1YCAgAAEAX0DfwF+AXwjASIGQYCAwABLBEAACyAGQQBqJAEgACABuyACuyADuyAEQQBqKgAAuyAEQQRqKgAAuyAEQQhqKgAAuyAEQQxqKgAAuxACIAYkAQ8LC7mAgIAAgYCAgAABMkcAZQBvAG0AZQB0AHIAeQAgAGMAYQBsAGMAdQBsAGEAdABlAGQAIABpAG4AIABDACMA'), c => c.charCodeAt(0));
+async function run() {
+    const button = document.getElementById('run');
+    const status = document.getElementById('status');
+    button.disabled = true; window.demoResult = null;
+    try {
+        const commands = [];
+        const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
+        const context = document.getElementById('canvas').getContext('2d');
+        const instance = await WebAssembly.instantiate(module, { canvas: canvasImports(context, commands) });
+        const exitCode = instance.exports.main();
+        window.demoResult = { commands, exitCode };
+        status.textContent = `Rendered ${commands.length} drawing commands · Exit code ${exitCode}`;
+    } catch (error) {
+        window.demoResult = { error: String(error) };
+        status.textContent = `Unable to run this demo: ${error.message ?? error}. Requires a browser with WASM GC and JS string builtins.`;
+    } finally { button.disabled = false; }
+}
+document.getElementById('run').addEventListener('click', run);
+run();
+</script>
+</html>

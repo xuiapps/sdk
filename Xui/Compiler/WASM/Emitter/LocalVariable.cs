@@ -29,7 +29,7 @@ public readonly record struct LocalVariable(
 
     /// <summary>The local's storage type, before load promotion or after store narrowing.</summary>
     public ValueTypeCode WasmType => UsesGc ? ValueTypeCode.EqRef : IsByReference
-        ? throw new NotSupportedException($"Managed-address storage for {Identity?.ToString() ?? TypeCode.ToString()} is not implemented.")
+        ? ValueTypeCode.I32
         : Identity is not null
         ? ValueTypeCode.I32
         : TypeCode switch
@@ -44,6 +44,8 @@ public readonly record struct LocalVariable(
             _ => throw new NotSupportedException($"Unsupported local type: {TypeCode}.")
         }
     };
+
+    internal bool IsLinearValue => Identity is not null && !UsesGc && !IsByReference;
 
     internal bool NeedsNarrowing => TypeCode is SignatureTypeCode.Boolean or SignatureTypeCode.Char or
         SignatureTypeCode.SByte or SignatureTypeCode.Byte or SignatureTypeCode.Int16 or
@@ -61,7 +63,8 @@ public readonly record struct LocalVariable(
         for (int i = 0; i < declared.Length; i++)
         {
             var type = declared[i];
-            if (type.IsByReference) throw new NotSupportedException("Managed-address locals are not implemented.");
+            if (type.IsByReference && (type.Identity is not { IsValueType: true } id || storage.IsGc(id)))
+                throw new NotSupportedException("Managed-address locals require a stack-stored struct.");
             locals[i] = storage.Bind(type);
             _ = locals[i].WasmType;
         }

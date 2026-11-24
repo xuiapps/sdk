@@ -10,6 +10,6 @@ public readonly ref partial struct CodeEmitter
         var identity = ObjectType(instruction.Value);
         PopOwner(identity, true, instruction.Code, offset);
         PopOwner(identity, true, instruction.Code, offset);
-        writer.I32Const(Frame.ValueSize(identity)).MemoryCopy();
+        CopyStruct(identity);
     }
 }

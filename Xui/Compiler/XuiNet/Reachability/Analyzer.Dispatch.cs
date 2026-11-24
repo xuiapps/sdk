@@ -9,7 +9,8 @@ public sealed partial class Analyzer
     private void Instantiate(Dependency.Instantiation node)
     {
         Add(new Dependency.Layout(node.Identity), node, DependencyReason.Allocation);
-        Add(new Dependency.Initialization(node.Identity), node, DependencyReason.Initialization);
+        if ((node.Identity.Module.GetType((TypeDefinitionHandle)node.Identity.Handle).Attributes & TypeAttributes.BeforeFieldInit) == 0)
+            Add(new Dependency.Initialization(node.Identity), node, DependencyReason.Initialization);
         if (node.Identity.IsValueType) return;
         var definition = node.Identity.Module.GetType((TypeDefinitionHandle)node.Identity.Handle);
         if ((definition.Attributes & TypeAttributes.Abstract) != 0)

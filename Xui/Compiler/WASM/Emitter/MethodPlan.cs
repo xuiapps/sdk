@@ -11,6 +11,9 @@ namespace Xui.Compiler.WASM.Emitter;
 /// <summary>One reachable method's signature, source locals, temporary locals, and module indices.</summary>
 internal sealed partial class MethodPlan
 {
+    public Dictionary<int, LocalIndex> ExceptionLocals { get; } = new();
+    public Dictionary<int, LocalIndex> CatchExceptionRefs { get; } = new();
+    public LocalIndex UnwindException { get; private set; }
     public IR.MethodIdentity Identity { get; }
     public MethodDefinitionHandle Handle => Identity.Handle;
     public MethodSignature Signature { get; }
@@ -30,6 +33,8 @@ internal sealed partial class MethodPlan
     public InstructionGraph Graph { get; }
     public SequenceBlock? Flow { get; }
     public Dictionary<FlowNode, TypeIndex> BlockTypes { get; } = new();
+    public bool UsesNativeFloat { get; set; }
+    public LocalIndex NativeFloatTemporary { get; private set; }
     public bool NeedsDup { get; set; }
     public ValueTypeCode[] LocalTypes { get; private set; } = [];
     public TypeIndex Type { get; set; }
@@ -48,7 +53,8 @@ internal sealed partial class MethodPlan
             throw new NotSupportedException($"Synchronized methods are not implemented: {method.Name}.");
         var declaringType = source.GetType(method.DeclaringType);
         foreach (var sibling in declaringType.Methods)
-            if (source.GetMethod(sibling).Name == ".cctor")
+            if (source.GetMethod(sibling).Name == ".cctor" &&
+                (method.Name == ".cctor" || (declaringType.Attributes & TypeAttributes.BeforeFieldInit) == 0))
                 throw new NotSupportedException($"Type initialization is not implemented: {declaringType.Name}.");
         IsAbstract = (method.Attributes & MethodAttributes.Abstract) != 0;
         if (IsAbstract)
@@ -61,25 +67,31 @@ internal sealed partial class MethodPlan
             return;
         }
         Body = method.Body ?? throw new NotSupportedException($"The method has no managed body: {method.Name}.");
-        if (Body.ExceptionRegions.Length != 0)
-            throw new NotSupportedException("WASM exception handling is not implemented.");
+        if (Body.ExceptionRegions.Length != 0) { storage.ExceptionsEnabled = true; RequireGcTemporaries(); }
         Locals = LocalVariable.Read(source, Body.LocalSignature, storage, identity.DeclaringType.Arguments);
         foreach (var local in Locals.Concat(Signature.Parameters).Append(Signature.Result))
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
-        if (Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) ||
+        if (Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
             Graph.Instructions.Any(n => n.Code == OpCode.Newobj)) Graph = Analyzer.Analyze(source, identity);
-        if (Graph.Instructions.Any(node => node.Successors.Length > 1 ||
+        if (Body.ExceptionRegions.Length != 0)
+        {
+            Graph = Analyzer.Analyze(source, identity);
+            Flow = ExceptionBlocks.Build(source, Body, Graph);
+        }
+        else if (Graph.Instructions.Any(node => node.Code is OpCode.Throw or OpCode.Rethrow || node.Successors.Length > 1 ||
             node.Code is OpCode.Br or OpCode.Br_s))
         {
             Graph = Analyzer.Analyze(source, identity);
             Flow = StructuredBlocks.Build(Graph);
         }
-        if (Locals.Any(local => local.Identity is not null && !local.UsesGc) ||
+        if (Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
             Graph.Instructions.Any(n => n.After?.Entry is { Type: StackType.ValueType, DeclaredType.Identity: { } id } && !storage.IsGc(id)))
         {
-            Frame = new(source, Locals, storage);
+            Frame = new(source, Locals, Signature.Parameters, storage);
             Frame.AllocateValues(Graph);
+            if (Frame.References.Count != 0) { storage.ReferenceSlotsEnabled = true; storage.ExceptionsEnabled = true; }
+            if (storage.ReferenceSlotsEnabled) RequireGcTemporaries();
         }
     }
 
@@ -94,7 +106,8 @@ internal sealed partial class MethodPlan
     public void AllocateTemporaries(IReadOnlyDictionary<IR.MethodIdentity, MethodPlan> methods)
     {
         var types = Locals.Select(local => local.WasmType).ToList();
-        uint parameterCount = (uint)Signature.Parameters.Length;
+        uint parameterCount = (uint)Signature.WasmParameterCount;
+        if (UsesNativeFloat) { NativeFloatTemporary = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F32); }
         if (NeedsDup)
         {
             dupBase = parameterCount + (uint)types.Count;
@@ -114,8 +127,30 @@ internal sealed partial class MethodPlan
             }
             CallTemporaries.Add(target, slots);
         }
+        if (!IsAbstract) foreach (var region in Body.ExceptionRegions)
+        {
+            ExceptionLocals[region.HandlerOffset] = new(parameterCount + (uint)types.Count);
+            types.Add(region.Kind == ExceptionRegionKind.Catch ? ValueTypeCode.EqRef : ValueTypeCode.ExnRef);
+            if (region.Kind == ExceptionRegionKind.Catch)
+            {
+                CatchExceptionRefs[region.HandlerOffset] = new(parameterCount + (uint)types.Count);
+                types.Add(ValueTypeCode.ExnRef);
+            }
+        }
+        if (Frame is not null && Storage.ExceptionsEnabled)
+        {
+            UnwindException = new(parameterCount + (uint)types.Count);
+            types.Add(ValueTypeCode.ExnRef);
+        }
         if (Frame is { } frame)
         {
+            if (Storage.ReferenceSlotsEnabled)
+            {
+                frame.ReferenceValue = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
+                frame.ReferenceBase = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+                frame.CopySource = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+                frame.CopyDestination = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            }
             frame.Base = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
             frame.AddressScratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
             frame.I32Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);

@@ -31,4 +31,23 @@ internal static class WasmTools
             throw new InvalidOperationException($"wasm-tools print failed ({process.ExitCode}): {error}");
         return wat;
     }
+    /// <summary>Assembles WAT for tests that expose otherwise-private runtime state.</summary>
+    public static async Task<byte[]> FromWatAsync(string wat)
+    {
+        var start = new ProcessStartInfo("wasm-tools")
+        {
+            UseShellExecute = false, RedirectStandardInput = true,
+            RedirectStandardOutput = true, RedirectStandardError = true
+        };
+        start.ArgumentList.Add("parse"); start.ArgumentList.Add("-");
+        using var process = Process.Start(start)!;
+        using var output = new MemoryStream();
+        var stdout = process.StandardOutput.BaseStream.CopyToAsync(output);
+        var stderr = process.StandardError.ReadToEndAsync();
+        await process.StandardInput.WriteAsync(wat); process.StandardInput.Close();
+        await Task.WhenAll(stdout, process.WaitForExitAsync());
+        string error = await stderr;
+        if (process.ExitCode != 0) throw new InvalidOperationException($"wasm-tools parse failed: {error}");
+        return output.ToArray();
+    }
 }

@@ -19,7 +19,7 @@ public readonly ref partial struct CodeEmitter
         for (int i = 0; i < locals.Length; i++)
             if (locals[i].UsesGc && locals[i].Identity is { } identity && !method.Storage.IsClass(identity))
                 writer.StructNewDefault(method.Storage.Shape(locals[i].Identity!.Value).Type)
-                    .LocalSet(new LocalIndex((uint)(parameters.Length + i)));
+                    .LocalSet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i)));
     }
 
     private void CloneGc(TypeIdentity identity)
@@ -68,22 +68,25 @@ public readonly ref partial struct CodeEmitter
         var declaring = resolvedField.DeclaringType;
         if (receiver.IsNull && method.Storage.IsClass(declaring)) receiver = new(SignatureTypeCode.TypeHandle, declaring);
         if (!IsGc(receiver)) return false;
-        var range = method.Storage.Shape(declaring).Fields[resolvedField.Handle];
+        var range = method.Storage.Shape(declaring).Fields[resolvedField];
         if ((receiver.Identity is not { } receiverType || !receiverType.IsAssignableTo(declaring)) || (declaring.IsValueType && instruction.Code != OpCode.Ldfld && !receiver.IsByReference))
             throw new InvalidProgramException($"Invalid GC field receiver at IL_{offset:x4}.");
         if (store) PopAssignable(range.Storage, instruction.Code, offset);
         _ = Pop(instruction.Code, offset);
         var location = Location(receiver);
         location = location with { First = location.First + range.First };
+        if (!store && method.Storage.IsClass(declaring)) CheckExceptionNull();
         if (instruction.Code == OpCode.Ldflda)
         {
-            writer.RefCast(location.Owner.Type); // Null must trap even for an empty inline field.
+            writer.RefCast(location.Owner.Type); // The checked receiver must have the expected owner type.
             stack.Push(new(range.Storage.TypeCode, range.Storage.Identity, true) { Location = location });
             return true;
         }
         if (store)
         {
-            writer.LocalSet(GcScratch(range.Storage)).RefCast(location.Owner.Type).LocalSet(method.GcOwner);
+            writer.LocalSet(GcScratch(range.Storage));
+            if (method.Storage.IsClass(declaring)) CheckExceptionNull();
+            writer.RefCast(location.Owner.Type).LocalSet(method.GcOwner);
             if (range.Storage.Identity is { } identity && !method.Storage.IsClass(identity))
                 StoreInlineValue(identity, range.Storage.UsesGc, location);
             else

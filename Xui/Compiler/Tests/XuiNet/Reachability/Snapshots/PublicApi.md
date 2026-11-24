@@ -27,10 +27,7 @@ Source: [Collections.cs](Fixtures/Reachability/Collections.cs)
 | N18 | Method | `Program.Main` |
 | N19 | Method | `Program.OtherEntry` |
 | N20 | Type | `System.Object` |
-| N21 | Initialization | `Dictionary` |
-| N22 | Intrinsic | `System.Object..ctor` |
-| N23 | Initialization | `HashSet` |
-| N24 | Initialization | `Program` |
+| N21 | Intrinsic | `System.Object..ctor` |
 
 ## Dependencies
 
@@ -59,44 +56,32 @@ Source: [Collections.cs](Fixtures/Reachability/Collections.cs)
 | N5 | N4 | Layout | — | — |
 | N5 | N10 | InstanceField | — | — |
 | N6 | N4 | DeclaringType | — | — |
-| N6 | N21 | Initialization | — | — |
 | N6 | N5 | Layout | — | — |
 | N6 | N10 | FieldRead | IL_0001 | — |
 | N7 | N5 | Allocation | — | — |
-| N7 | N21 | Initialization | — | — |
 | N8 | N4 | DeclaringType | — | — |
-| N8 | N21 | Initialization | — | — |
 | N8 | N5 | Layout | — | — |
 | N9 | N4 | DeclaringType | — | — |
-| N9 | N21 | Initialization | — | — |
 | N9 | N5 | Layout | — | — |
-| N9 | N22 | Call | IL_0001 | — |
+| N9 | N21 | Call | IL_0001 | — |
 | N10 | N4 | DeclaringType | — | — |
 | N10 | N5 | Layout | — | — |
 | N11 | N20 | BaseType | — | — |
 | N12 | N11 | Layout | — | — |
 | N13 | N11 | DeclaringType | — | — |
-| N13 | N23 | Initialization | — | — |
 | N13 | N12 | Layout | — | — |
 | N14 | N12 | Allocation | — | — |
-| N14 | N23 | Initialization | — | — |
 | N15 | N11 | DeclaringType | — | — |
-| N15 | N23 | Initialization | — | — |
 | N15 | N12 | Layout | — | — |
-| N15 | N22 | Call | IL_0001 | — |
+| N15 | N21 | Call | IL_0001 | — |
 | N16 | N20 | BaseType | — | — |
 | N17 | N16 | Layout | — | — |
 | N18 | N16 | DeclaringType | — | — |
-| N18 | N24 | Initialization | — | — |
 | N18 | N9 | Call | IL_0000 | — |
 | N18 | N7 | Allocation | IL_0000 | — |
 | N18 | N10 | FieldWrite | IL_0008 | — |
 | N18 | N6 | Call | IL_000d | — |
 | N19 | N16 | DeclaringType | — | — |
-| N19 | N24 | Initialization | — | — |
 | N19 | N15 | Call | IL_0000 | — |
 | N19 | N14 | Allocation | IL_0000 | — |
 | N19 | N13 | Call | IL_0005 | — |
-| N21 | N4 | Initialization | — | — |
-| N23 | N11 | Initialization | — | — |
-| N24 | N16 | Initialization | — | — |

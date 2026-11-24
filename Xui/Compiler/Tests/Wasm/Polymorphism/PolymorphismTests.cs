@@ -113,7 +113,7 @@ public class PolymorphismTests
     [Theory]
     [InlineData("return ((C)a).F();", typeof(InvalidCastException))]
     [InlineData("a = null; return a.F();", typeof(NullReferenceException))]
-    public async Task InvalidCastsAndNullVirtualReceiversTrap(string body, System.Type exception)
+    public async Task InvalidCastsAndNullVirtualReceiversThrow(string body, System.Type exception)
     {
         string source = $$"""
             public class A { public virtual int F() => 1; }
@@ -129,7 +129,7 @@ public class PolymorphismTests
             var pe = Frontend.Roslyn.Compile(source, optimizationLevel: optimization);
             var error = Assert.Throws<TargetInvocationException>(() => Assembly.Load(pe).EntryPoint!.Invoke(null, null));
             Assert.IsType(exception, error.InnerException);
-            await Node.AssertTrapsAsync(GcTests.Emit(pe));
+            await Node.AssertThrowsAsync(GcTests.Emit(pe));
         }
     }
 

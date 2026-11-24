@@ -23,16 +23,28 @@ public readonly ref partial struct CodeEmitter
         {
             if (frame.Locals[i] < 0) continue;
             FrameAddress(frame.Locals[i]);
-            writer.LocalSet(new LocalIndex((uint)(parameters.Length + i)));
+            writer.LocalSet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i)));
             if (initLocals)
-                writer.LocalGet(new LocalIndex((uint)(parameters.Length + i))).I32Const(0)
+                writer.LocalGet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i))).I32Const(0)
                     .I32Const(frame.ValueSize(locals[i].Identity!.Value)).MemoryFill();
+        }
+        EnterReferenceFrame();
+        // The incoming address names an evaluation-stack snapshot. Copy it again so
+        // aliases into the parameter remain stable when starg replaces its value.
+        for (int i = 0; i < frame.Arguments.Length; i++)
+        {
+            if (frame.Arguments[i] < 0) continue;
+            FrameAddress(frame.Arguments[i]);
+            writer.LocalGet(new((uint)i));
+            CopyStruct(parameters[i].Identity!.Value);
+            FrameAddress(frame.Arguments[i]);
+            writer.LocalSet(new((uint)i));
         }
     }
 
     private void LeaveFrame()
     {
-        if (method.Frame is { } frame) writer.LocalGet(frame.Base).GlobalSet(Runtime.StackPointer!.Value);
+        if (method.Frame is { } frame) { LeaveReferenceFrame(); writer.LocalGet(frame.Base).GlobalSet(Runtime.StackPointer!.Value); }
     }
 
     private void FrameAddress(int displacement) => writer.LocalGet(Frame.Base).I32Const(displacement).I32Add();
@@ -43,7 +55,8 @@ public readonly ref partial struct CodeEmitter
         var frame = Frame;
         writer.LocalSet(frame.AddressScratch);
         FrameAddress(frame.Values[offset]);
-        writer.LocalGet(frame.AddressScratch).I32Const(frame.ValueSize(identity)).MemoryCopy();
+        writer.LocalGet(frame.AddressScratch);
+        CopyStruct(identity);
         FrameAddress(frame.Values[offset]);
     }
 
@@ -52,7 +65,7 @@ public readonly ref partial struct CodeEmitter
         var local = GetLocal(new LocalIndex(index), code, offset);
         if (local.Identity is null || method.Storage.IsClass(local.Identity.Value)) throw new NotSupportedException("Only struct local addresses are implemented.");
         if (!initLocals) throw new NotSupportedException("Addressable struct locals currently require initlocals.");
-        writer.LocalGet(new LocalIndex((uint)parameters.Length + index));
+        writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index));
         stack.Push(new MsilStackEntry(local.TypeCode, local.Identity, isByReference: true)
         { Location = local.UsesGc ? new(method.Storage.Shape(local.Identity!.Value), 0) : null });
     }
@@ -66,7 +79,7 @@ public readonly ref partial struct CodeEmitter
         var owner = resolvedField.DeclaringType;
         var layout = Frame.Layout(owner);
         var type = SignatureReader.Field(owner.Module, field.Signature, owner.Arguments);
-        return (new(type.Code, type.Identity, type.IsByReference), owner, layout.Fields[resolvedField.Handle].Offset);
+        return (method.Storage.Bind(type), owner, layout.Fields[resolvedField.Handle].Offset);
     }
 
     private void PopOwner(TypeIdentity owner, bool requireAddress, OpCode code, int offset)
@@ -86,7 +99,8 @@ public readonly ref partial struct CodeEmitter
 
     private void LoadField(LocalVariable type, int offset)
     {
-        if (type.Identity is { } identity) CopyValue(identity, offset);
+        if (StorageModel.IsReference(type)) LoadReference(type);
+        else if (type.Identity is { } identity) CopyValue(identity, offset);
         else switch (type.TypeCode)
         {
             case SignatureTypeCode.SByte: writer.I32Load8S(); break;
@@ -108,7 +122,7 @@ public readonly ref partial struct CodeEmitter
         stack.Push(new(type.StackType, type.Identity));
     }
 
-    private LocalIndex FieldScratch(LocalVariable type) => type.StackType switch
+    private LocalIndex FieldScratch(LocalVariable type) => StorageModel.IsReference(type) ? GcScratch(type) : type.StackType switch
     {
         SignatureTypeCode.Int64 => Frame.I64Scratch,
         SignatureTypeCode.Double => Frame.F64Scratch,
@@ -118,7 +132,8 @@ public readonly ref partial struct CodeEmitter
     private void StoreField(LocalVariable type)
     {
         writer.LocalGet(FieldScratch(type));
-        if (type.Identity is { } identity) writer.I32Const(Frame.ValueSize(identity)).MemoryCopy();
+        if (StorageModel.IsReference(type)) StoreReference(type);
+        else if (type.Identity is { } identity) CopyStruct(identity);
         else switch (type.TypeCode)
         {
             case SignatureTypeCode.SByte:

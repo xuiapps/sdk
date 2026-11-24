@@ -1,43 +1,65 @@
 using System.Reflection;
 using System.Reflection.Metadata;
+using Xui.Compiler.XuiNet.DotNet;
+using Xui.Compiler.XuiNet.DotNet.Signatures;
 using Model = Xui.Compiler.XuiNet.DotNet;
 
 namespace Xui.Compiler.XuiNet.Layout;
 
 /// <summary>Calculates and caches target-specific layouts of unmanaged structs and enums from PE metadata.</summary>
-/// <remarks>Keep the source assembly alive. Reference fields, generic and auto layouts, inline arrays,
-/// and unresolved external value types are rejected; no host-runtime layout is substituted.</remarks>
-public sealed partial class LayoutResolver(Model.Module module, TargetLayout target)
+/// <remarks>Keep the source assembly alive. Closed generic fields are specialized before layout. Reference fields, open generics,
+/// arbitrary auto layouts, inline arrays, and unresolved external values are rejected. Framework
+/// ValueTuple auto layouts use declaration-order target storage, not a host CLR interop layout.</remarks>
+public sealed partial class LayoutResolver
 {
-    private readonly Dictionary<TypeDefinitionHandle, StructLayout> cache = new();
-    private readonly HashSet<TypeDefinitionHandle> resolving = [];
+    private readonly Model.Module module;
+    private readonly Dictionary<Model.Module, LayoutResolver> modules;
+    /// <summary>Creates a layout resolver sharing target rules across linked implementation assemblies.</summary>
+    public LayoutResolver(Model.Module module, TargetLayout target) : this(module, target, new()) { }
+    private LayoutResolver(Model.Module module, TargetLayout target, Dictionary<Model.Module, LayoutResolver> modules)
+    { this.module = module; Target = target; this.modules = modules; modules.Add(module, this); }
+    private LayoutResolver For(Model.Module owner) => modules.TryGetValue(owner, out var resolver)
+        ? resolver : new(owner, Target, modules);
+
+    private readonly Dictionary<TypeIdentity, StructLayout> cache = new();
+    private readonly HashSet<TypeIdentity> resolving = [];
 
     /// <summary>The explicit target used for every layout in this resolver.</summary>
-    public TargetLayout Target { get; } = target;
+    public TargetLayout Target { get; }
 
     /// <summary>Resolves the instance layout of a struct or enum defined in the source module.</summary>
-    public StructLayout Resolve(TypeDefinitionHandle handle)
+    public StructLayout Resolve(TypeDefinitionHandle handle) => Resolve(new TypeIdentity(module, handle));
+
+    /// <summary>Resolves a closed value-type specialization using its defining module and arguments.</summary>
+    public StructLayout Resolve(TypeIdentity identity)
     {
-        if (cache.TryGetValue(handle, out var found)) return found;
-        if (!resolving.Add(handle)) throw new BadImageFormatException("Recursive value-type field layout.");
+        if (identity.Module != module) return For(identity.Module).Resolve(identity);
+        if (cache.TryGetValue(identity, out var found)) return found;
+        if (!resolving.Add(identity)) throw new BadImageFormatException("Recursive value-type field layout.");
         try
         {
-            var layout = Calculate(handle);
-            cache.Add(handle, layout);
+            var layout = Calculate(identity);
+            cache.Add(identity, layout);
             return layout;
         }
-        finally { resolving.Remove(handle); }
+        finally { resolving.Remove(identity); }
     }
 
-    private StructLayout Calculate(TypeDefinitionHandle handle)
+    private StructLayout Calculate(TypeIdentity identity)
     {
+        var handle = (TypeDefinitionHandle)identity.Handle;
         var type = module.GetType(handle);
+        if (DotNet.Intrinsics.NativeFloat.Is(identity))
+        {
+            var value = type.Fields.Single(h => (module.GetField(h).Attributes & FieldAttributes.Static) == 0);
+            return new(Target.NativeFloatSize, Target.NativeFloatSize, new() { [value] = new(0, Target.NativeFloatSize) });
+        }
         bool isEnum = IsCoreType(type.BaseType, "System", "Enum");
         if (!isEnum && !IsCoreType(type.BaseType, "System", "ValueType"))
             throw new NotSupportedException($"Only unboxed value-type layout is supported: {type.Name}.");
         var definition = module.Metadata.GetTypeDefinition(handle);
-        if (definition.GetGenericParameters().Count != 0)
-            throw new NotSupportedException($"Generic layout is not supported: {type.Name}.");
+        if (definition.GetGenericParameters().Count != (identity.Arguments?.Values.Length ?? 0) || identity.Arguments?.ContainsGenericParameters == true)
+            throw new NotSupportedException($"Generic layout requires a closed specialization: {type.Name}.");
         foreach (var attributeHandle in definition.GetCustomAttributes())
         {
             var attribute = module.Metadata.GetCustomAttribute(attributeHandle);
@@ -47,7 +69,7 @@ public sealed partial class LayoutResolver(Model.Module module, TargetLayout tar
                 throw new NotSupportedException($"Inline-array layout is not supported: {type.Name}.");
         }
         var kind = type.Attributes & TypeAttributes.LayoutMask;
-        if (!isEnum && kind is not (TypeAttributes.SequentialLayout or TypeAttributes.ExplicitLayout))
+        if (!isEnum && kind is not (TypeAttributes.SequentialLayout or TypeAttributes.ExplicitLayout) && !FrameworkTypes.IsValueTuple(identity))
             throw new NotSupportedException($"Auto layout is not supported: {type.Name}.");
         var declared = type.DeclaredLayout;
         int pack = declared.PackingSize == 0 ? Target.DefaultPackingSize : declared.PackingSize;
@@ -63,7 +85,7 @@ public sealed partial class LayoutResolver(Model.Module module, TargetLayout tar
             if (signature.ReadSignatureHeader().Kind != SignatureKind.Field)
                 throw new BadImageFormatException($"Invalid field signature: {type.Name}.{field.Name}.");
             Storage storage;
-            try { storage = ReadStorage(ref signature); }
+            try { storage = ReadStorage(ref signature, identity.Arguments); }
             catch (NotSupportedException error)
             {
                 throw new NotSupportedException($"Cannot lay out {type.Name}.{field.Name}: {error.Message}", error);
@@ -81,7 +103,7 @@ public sealed partial class LayoutResolver(Model.Module module, TargetLayout tar
         return new(Math.Max(1, size), alignment, fields);
     }
 
-    private Storage ReadStorage(ref BlobReader reader)
+    private Storage ReadStorage(ref BlobReader reader, GenericArguments? arguments = null)
     {
         var raw = reader;
         var code = reader.ReadSignatureTypeCode();
@@ -104,32 +126,39 @@ public sealed partial class LayoutResolver(Model.Module module, TargetLayout tar
             case SignatureTypeCode.OptionalModifier:
             case SignatureTypeCode.RequiredModifier:
                 _ = reader.ReadTypeHandle();
-                return ReadStorage(ref reader);
+                return ReadStorage(ref reader, arguments);
+            case SignatureTypeCode.GenericTypeParameter:
+            case SignatureTypeCode.GenericTypeInstance:
             case SignatureTypeCode.TypeHandle:
-                if (raw.ReadByte() != (byte)SignatureTypeKind.ValueType)
-                    throw new NotSupportedException("Reference-field storage is not supported.");
-                var handle = reader.ReadTypeHandle();
-                if (handle.Kind == HandleKind.TypeDefinition)
-                {
-                    var layout = Resolve((TypeDefinitionHandle)handle);
-                    return new(layout.Size, layout.Alignment);
-                }
-                if (IsCoreType(handle, "System.Runtime.InteropServices", "NFloat"))
-                    return new(Target.NativeFloatSize, Target.NativeFloatSize);
-                throw new NotSupportedException("External value-type layout is not resolved.");
+                reader = raw;
+                return StorageOf(SignatureReader.Type(module, ref reader, arguments));
             default:
                 throw new NotSupportedException($"Field storage type {code} is not supported.");
         }
     }
 
-    private bool IsCoreType(EntityHandle handle, string ns, string name)
+    private Storage StorageOf(SignatureType type)
     {
-        if (handle.Kind != HandleKind.TypeReference) return false;
-        var type = module.GetTypeReference((TypeReferenceHandle)handle);
-        if (type.Namespace != ns || type.Name != name || type.ResolutionScope.Kind != HandleKind.AssemblyReference) return false;
-        var assembly = module.GetAssemblyReference((AssemblyReferenceHandle)type.ResolutionScope);
-        return assembly.Name is "System.Private.CoreLib" or "System.Runtime" or "mscorlib";
+        if (type.IsReferenceType || type.IsByReference) throw new NotSupportedException("Reference-field storage is not supported.");
+        if (type.Identity is { } identity)
+        {
+            if (DotNet.Intrinsics.NativeFloat.Is(identity)) return new(Target.NativeFloatSize, Target.NativeFloatSize);
+            if (identity.Handle.Kind != HandleKind.TypeDefinition) throw new NotSupportedException("External value-type layout is not resolved.");
+            var layout = Resolve(identity);
+            return new(layout.Size, layout.Alignment);
+        }
+        return type.Code switch
+        {
+            SignatureTypeCode.Boolean or SignatureTypeCode.Byte or SignatureTypeCode.SByte => new(1, 1),
+            SignatureTypeCode.Char or SignatureTypeCode.Int16 or SignatureTypeCode.UInt16 => new(2, 2),
+            SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 or SignatureTypeCode.Single => new(4, 4),
+            SignatureTypeCode.Int64 or SignatureTypeCode.UInt64 or SignatureTypeCode.Double => new(8, 8),
+            SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr => new(Target.PointerSize, Target.PointerSize),
+            _ => throw new NotSupportedException($"Field storage type {type.Code} is not supported.")
+        };
     }
+
+    private bool IsCoreType(EntityHandle handle, string ns, string name) => FrameworkTypes.Is(new(module, handle), ns, name);
 
     private static int Align(int value, int alignment) => checked((value + alignment - 1) / alignment * alignment);
 

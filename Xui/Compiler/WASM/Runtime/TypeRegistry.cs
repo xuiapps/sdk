@@ -7,7 +7,7 @@ using Model = Xui.Compiler.XuiNet.DotNet;
 namespace Xui.Compiler.WASM.Runtime;
 
 /// <summary>Assigns runtime class/interface identities and dispatch locations retained by source reachability.</summary>
-internal sealed class TypeRegistry(Model.Module module, DependencyGraph dependencies)
+internal sealed class TypeRegistry(DependencyGraph dependencies)
 {
     private readonly Dictionary<TypeIdentity, Type> types = new();
     public IReadOnlyCollection<Type> Types => types.Values;
@@ -18,10 +18,10 @@ internal sealed class TypeRegistry(Model.Module module, DependencyGraph dependen
     public Type Resolve(TypeIdentity identity)
     {
         if (types.TryGetValue(identity, out var found)) return found;
-        if ((identity.Module != module && !identity.IsInterface) || identity.Handle.Kind != HandleKind.TypeDefinition || identity.IsValueType)
-            throw new NotSupportedException($"Runtime class metadata requires a same-module class: {identity}.");
+        if (identity.Handle.Kind != HandleKind.TypeDefinition || identity.IsValueType)
+            throw new NotSupportedException($"Runtime class metadata requires a linked class or interface definition: {identity}.");
         var definition = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
-        Type? parent = identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } baseIdentity ? Resolve(baseIdentity) : null;
+        Type? parent = identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } baseIdentity && !FrameworkTypes.Is(baseIdentity, "System", "Object") ? Resolve(baseIdentity) : null;
         var slots = dependencies.VirtualSlots(identity)
             .Select(slot => new VirtualSlot(slot.Index, slot.Declaration, slot.Implementation)).ToArray();
         var type = new Type((uint)types.Count + 1, identity, parent,

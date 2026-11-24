@@ -8,7 +8,7 @@ internal static class Roslyn
 {
     public static byte[] Compile(string source, OutputKind outputKind = OutputKind.ConsoleApplication,
         string assemblyName = "HelloWorld", OptimizationLevel optimizationLevel = OptimizationLevel.Release,
-        IEnumerable<MetadataReference>? additionalReferences = null)
+        IEnumerable<MetadataReference>? additionalReferences = null, IEnumerable<string>? additionalSources = null)
     {
         var references = new[]
         {
@@ -21,7 +21,7 @@ internal static class Roslyn
 
         var compilation = CSharpCompilation.Create(
             assemblyName,
-            [CSharpSyntaxTree.ParseText(source)],
+            new[] { source }.Concat(additionalSources ?? []).Select(text => CSharpSyntaxTree.ParseText(text)),
             references.Concat(additionalReferences ?? []),
             new CSharpCompilationOptions(
                 outputKind,

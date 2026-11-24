@@ -57,7 +57,8 @@ public sealed class WasmEmitter
         var orderedMethods = new List<MethodPlan>();
         var literals = new List<string>();
         var seenLiterals = new HashSet<string>(StringComparer.Ordinal);
-        var storage = new StorageModel(source, dependencies);
+        var storage = new StorageModel(dependencies);
+        storage.SelectStackTypes(dependencies);
         var mainIdentity = IR.MethodIdentity.FromDefinition(source, source.EntryPoint);
         foreach (var identity in dependencies.Methods)
         {
@@ -71,6 +72,12 @@ public sealed class WasmEmitter
         var main = methods[mainIdentity];
         foreach (var layout in dependencies.Nodes.OfType<Dependency.Layout>())
             if (storage.IsGc(layout.Identity)) _ = storage.Shape(layout.Identity);
+        if (storage.ExceptionsEnabled)
+            foreach (var kind in Enum.GetValues<XuiNet.DotNet.Exceptions.ExceptionKind>())
+            {
+                string message = XuiNet.DotNet.Exceptions.ExceptionTypes.Message(kind);
+                if (seenLiterals.Add(message)) literals.Add(message);
+            }
         foreach (var method in orderedMethods) method.AllocateTemporaries(methods);
         var literalIndices = new Dictionary<string, (DataIndex Data, GlobalIndex Global)>(StringComparer.Ordinal);
         using var module = new MemoryStream();
@@ -89,6 +96,7 @@ public sealed class WasmEmitter
             {
                 var parameters = Array.ConvertAll(method.Signature.Parameters,
                     parameter => (Wasm.Section.TypeDefinitions.ValueType)parameter.WasmType);
+                if (method.Signature.HasResultAddress) parameters = [.. parameters, I32];
                 Wasm.Section.TypeDefinitions.ValueType? result = method.Signature.ReturnType == SignatureTypeCode.Void
                     ? null : method.Signature.Result.WasmType;
                 method.Type = types.FunctionType(parameters, result);
@@ -113,27 +121,39 @@ public sealed class WasmEmitter
             imports.Dispose();
         }
         bool hasFrames = orderedMethods.Any(method => method.Frame is not null);
-        GlobalIndex? stackPointer = null;
+        GlobalIndex? stackPointer = null, referenceStackPointer = null;
+        TableIndex? objectReferences = null, stringReferences = null;
         using (var functions = writer.FunctionSection(importedFunctionCount))
         {
             foreach (var method in orderedMethods.Where(method => !method.IsAbstract)) method.Function = functions.Function(method.Type);
             if (storage.Classes.Types.Count != 0) storage.InstanceTest = functions.Function(storage.InstanceTestType);
         }
-        if (storage.TableSize != 0)
+        if (storage.TableSize != 0 || storage.ReferenceSlotsEnabled)
         {
             using var table = writer.TableSection();
-            table.Functions(storage.TableSize);
+            if (storage.TableSize != 0) table.Functions(storage.TableSize);
+            if (storage.ReferenceSlotsEnabled)
+            {
+                objectReferences = table.References(EqRef, StorageModel.ReferenceCapacity);
+                stringReferences = table.References(ExternRef, StorageModel.ReferenceCapacity);
+            }
         }
         if (hasFrames)
         {
             using var memory = writer.MemorySection();
             memory.Memory(MemoryFrame.PageCount, MemoryFrame.PageCount);
         }
+        if (storage.ExceptionsEnabled)
+        {
+            using var tags = writer.TagSection();
+            storage.ExceptionTag = tags.Exception(storage.ExceptionTagType);
+        }
         using (var globals = writer.GlobalSection())
         {
             for (int i = 0; i < literals.Count; i++)
                 literalIndices.Add(literals[i], (new DataIndex((uint)i), globals.RefNull(ExternRef, Mutability.Mutable)));
             if (hasFrames) stackPointer = globals.I32(MemoryFrame.Start, Mutability.Mutable);
+            if (storage.ReferenceSlotsEnabled) referenceStackPointer = globals.I32(0, Mutability.Mutable);
             foreach (var type in storage.Classes.Types)
             {
                 using var descriptor = globals.Struct(storage.DescriptorType);
@@ -146,7 +166,7 @@ public sealed class WasmEmitter
             }
         }
         // Frame state follows the string-cache globals in the same index space.
-        var runtime = new EmissionRuntime(utf16ArrayType, fromCharCodeArrayFunction, stackPointer);
+        var runtime = new EmissionRuntime(utf16ArrayType, fromCharCodeArrayFunction, stackPointer, referenceStackPointer, objectReferences, stringReferences);
         using (var exports = writer.ExportSection())
         {
             exports.Function("main", main.Function);

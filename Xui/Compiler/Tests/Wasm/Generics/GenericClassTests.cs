@@ -117,10 +117,10 @@ public class GenericClassTests
     }
 
     [Fact]
-    public void GenericStructLayoutRemainsExplicitlyUnsupported()
+    public async Task ClosedGenericStructLayoutExecutes()
     {
         var pe = Frontend.Roslyn.Compile("public struct Pair<T> { public T First; } public static class Program { public static int Main() { Pair<int> pair = default; pair.First = 3; return pair.First; } }");
-        Assert.Contains("Generic struct", Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
+        Assert.Equal(3, (await Node.ExecuteAsync(GcTests.Emit(pe))).ExitCode);
     }
 
     private static string SourceDirectory([CallerFilePath] string file = "") => Path.GetDirectoryName(file)!;

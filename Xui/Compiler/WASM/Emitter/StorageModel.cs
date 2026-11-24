@@ -13,34 +13,49 @@ using WasmValue = Xui.Compiler.WASM.Wasm.Section.TypeDefinitions.ValueType;
 namespace Xui.Compiler.WASM.Emitter;
 
 /// <summary>Selects linear or GC storage and recursively flattens value-type instance fields.</summary>
-internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.DependencyGraph dependencies)
+internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph dependencies)
 {
-    public Runtime.TypeRegistry Classes { get; } = new(module, dependencies);
+    public Runtime.TypeRegistry Classes { get; } = new(dependencies);
+    public bool ExceptionsEnabled { get; set; }
+    public TypeIndex ExceptionType { get; private set; }
+    public TypeIndex ExceptionTagType { get; private set; }
+    public TagIndex ExceptionTag { get; set; }
+    public TypeIndex ExceptionPayloadBlock { get; private set; }
+    public TypeIndex ExceptionCatchBlock { get; private set; }
+    public TypeIndex ExceptionReferenceBlock { get; private set; }
+    public TypeIndex EmptyBlock { get; private set; }
     public TypeIndex ClassRoot { get; private set; }
     public TypeIndex DescriptorType { get; private set; }
     public TypeIndex InstanceTestType { get; private set; }
     public FunctionIndex InstanceTest { get; set; }
     public uint TableSize { get; private set; }
-    private readonly LayoutResolver layouts = new(module, TargetLayout.Wasm32);
+    private readonly Dictionary<Model.Module, LayoutResolver> layoutResolvers = new();
+    private LayoutResolver Layouts(TypeIdentity identity)
+    {
+        if (!layoutResolvers.TryGetValue(identity.Module, out var resolver))
+            layoutResolvers.Add(identity.Module, resolver = new(identity.Module, TargetLayout.Wasm32));
+        return resolver;
+    }
     private readonly Dictionary<TypeIdentity, GcShape> shapes = new();
     private readonly HashSet<TypeIdentity> flattening = new();
 
-    public bool IsClass(TypeIdentity identity) => identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
+    public bool IsClass(TypeIdentity identity) => XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
     public bool IsGc(TypeIdentity identity)
     {
-        if (identity.Module != module && identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsInterface)
-            throw new NotSupportedException($"Cross-assembly struct and class storage is not implemented: {identity}.");
-        return IsClass(identity) || (identity.Handle.Kind == HandleKind.TypeDefinition &&
-            layouts.Classify((TypeDefinitionHandle)identity.Handle) == StorageKind.ContainsManagedReferences);
+        return IsClass(identity) || (!StackTypes.Contains(identity) && identity.Handle.Kind == HandleKind.TypeDefinition &&
+            Layouts(identity).Classify(identity) == StorageKind.ContainsManagedReferences);
     }
 
     public LocalVariable Bind(SignatureType type)
     {
+        if (type.Identity is { } native && XuiNet.DotNet.Intrinsics.NativeFloat.Is(native))
+        {
+            if (type.IsByReference) throw new NotSupportedException("NFloat managed-address ABI is not implemented.");
+            return new(SignatureTypeCode.Single);
+        }
         if (type.Code is SignatureTypeCode.GenericTypeParameter or SignatureTypeCode.GenericMethodParameter)
             throw new NotSupportedException("Open generic parameters cannot be emitted.");
-        if (type.Identity is { IsValueType: true, Arguments: not null })
-            throw new NotSupportedException("Generic struct storage is not implemented yet.");
-        if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition })
+        if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)
             throw new NotSupportedException($"External class storage is not implemented: {type}.");
         return new(type.Code, type.Identity, type.IsByReference, type.Code == SignatureTypeCode.Object || type.Identity is { } identity && IsGc(identity));
     }
@@ -49,6 +64,13 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
     {
         if (flattening.Contains(identity)) throw new NotSupportedException($"Recursive inline struct: {identity}.");
         if (shapes.TryGetValue(identity, out var found)) return found;
+        if (XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null)
+        {
+            ExceptionsEnabled = true;
+            var exception = new GcShape(identity);
+            shapes.Add(identity, exception);
+            return exception;
+        }
         if (MemoryFrame.IsNativeFloat(identity))
         {
             var scalar = new GcShape(identity);
@@ -63,9 +85,10 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
             shapes.Add(identity, contract);
             return contract;
         }
-        if (identity.Module != module || identity.Handle.Kind != HandleKind.TypeDefinition)
+        if (identity.Handle.Kind != HandleKind.TypeDefinition)
             throw new NotSupportedException($"External GC layout is not implemented: {identity}.");
-        var type = module.GetType((TypeDefinitionHandle)identity.Handle);
+        var ownerModule = identity.Module;
+        var type = ownerModule.GetType((TypeDefinitionHandle)identity.Handle);
         if (type.IsInterface || type.GenericParameterCount != (identity.Arguments?.Values.Length ?? 0))
             throw new NotSupportedException($"Interface and open generic GC layouts are not implemented: {identity}.");
         GcShape? parentShape = null;
@@ -90,24 +113,24 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
         flattening.Add(identity);
         try
         {
-            var byteLayout = identity.IsValueType && !IsGc(identity) ? layouts.Resolve((TypeDefinitionHandle)identity.Handle) : null;
+            var byteLayout = identity.IsValueType && !IsGc(identity) ? StackLayout(identity) : null;
             foreach (var handle in type.Fields)
             {
-                var field = module.GetField(handle);
+                var field = ownerModule.GetField(handle);
                 if ((field.Attributes & FieldAttributes.Static) != 0) continue;
-                var declared = SignatureReader.Field(module, field.Signature, identity.Arguments);
+                var declared = SignatureReader.Field(ownerModule, field.Signature, identity.Arguments);
                 if (declared.IsByReference || declared.Code == SignatureTypeCode.SZArray)
                     throw new NotSupportedException($"Managed byref and array GC fields are not implemented: {field.Name}.");
                 var storage = Bind(declared);
                 int first = shape.Leaves.Count;
                 int byteOffset = byteLayout?.Fields[handle].Offset ?? 0;
-                if (declared.Identity is { } nested && !declared.IsReferenceType)
+                if (declared.Identity is { } nested && !declared.IsReferenceType && !MemoryFrame.IsNativeFloat(nested))
                 {
                     foreach (var leaf in Shape(nested).Leaves)
                         shape.Leaves.Add(new(leaf.Storage, byteOffset + leaf.MemoryOffset));
                 }
                 else shape.Leaves.Add(new(storage, byteOffset));
-                shape.Fields.Add(handle, new(storage, first, shape.Leaves.Count - first));
+                shape.Fields.Add(new(identity, handle), new(storage, first, shape.Leaves.Count - first));
             }
         }
         catch { shapes.Remove(identity); throw; }
@@ -120,6 +143,15 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
 
     public void DefineTypes(ref TypeWriter writer, TypeIndex utf16ArrayType)
     {
+        if (ExceptionsEnabled)
+        {
+            ExceptionType = writer.StructType([ValueTypeCode.I32, ValueTypeCode.ExternRef], Mutability.Immutable);
+            ExceptionTagType = writer.FunctionType([ValueTypeCode.EqRef]);
+            ExceptionPayloadBlock = writer.FunctionType([], ValueTypeCode.EqRef);
+            ExceptionCatchBlock = writer.FunctionType([], [ValueTypeCode.EqRef, ValueTypeCode.ExnRef]);
+            ExceptionReferenceBlock = writer.FunctionType([], ValueTypeCode.ExnRef);
+            EmptyBlock = writer.FunctionType();
+        }
         if (Classes.Types.Count != 0)
         {
             DescriptorType = writer.StructType([ValueTypeCode.I32, ValueTypeCode.EqRef, ValueTypeCode.I32,
@@ -130,6 +162,11 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
         }
         foreach (var shape in shapes.Values)
         {
+            if (XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(shape.Identity) is not null)
+            {
+                shape.Type = ExceptionType;
+                continue;
+            }
             if (shape.Identity.IsInterface)
             {
                 shape.Type = ClassRoot;
@@ -145,11 +182,10 @@ internal sealed class StorageModel(Model.Module module, XuiNet.Reachability.Depe
                 type.FieldCount = (uint)shape.Leaves.Count;
                 type.Fields = Array.AsReadOnly(shape.Fields.Select(pair =>
                 {
-                    var field = module.GetField(pair.Key);
-                    var declaring = shape.Identity;
-                    while (declaring.Handle != field.DeclaringType) declaring = declaring.BaseType!.Value;
-                    return new Runtime.Field(pair.Key, field.Name, declaring,
-                        SignatureReader.Field(module, field.Signature, declaring.Arguments), new((uint)pair.Value.First), (uint)pair.Value.Count);
+                    var declaring = pair.Key.DeclaringType;
+                    var field = declaring.Module.GetField(pair.Key.Handle);
+                    return new Runtime.Field(pair.Key.Handle, field.Name, declaring,
+                        SignatureReader.Field(declaring.Module, field.Signature, declaring.Arguments), new((uint)pair.Value.First), (uint)pair.Value.Count);
                 }).ToArray());
                 type.TableStart = TableSize;
                 TableSize += (uint)(Classes.InterfaceMethods.Count + type.VirtualSlots.Count);

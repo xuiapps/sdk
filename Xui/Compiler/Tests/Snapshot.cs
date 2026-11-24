@@ -6,11 +6,14 @@ namespace Xui.Compiler.Tests;
 internal static class Snapshot
 {
     public static void AssertMatches(string name, string content, [CallerFilePath] string sourceFile = "")
+        => AssertFileMatches(name, ".md", content, sourceFile);
+
+    public static void AssertFileMatches(string name, string extension, string content, [CallerFilePath] string sourceFile = "")
     {
         content = content.ReplaceLineEndings("\n");
         string directory = Path.Combine(Path.GetDirectoryName(sourceFile)!, "Snapshots");
-        string expectedPath = Path.Combine(directory, name + ".md");
-        string receivedPath = Path.Combine(directory, name + ".received.md");
+        string expectedPath = Path.Combine(directory, name + extension);
+        string receivedPath = Path.Combine(directory, name + ".received" + extension);
         Directory.CreateDirectory(directory);
         if (Environment.GetEnvironmentVariable("XUI_UPDATE_SNAPSHOTS") == "1")
             File.WriteAllText(expectedPath, content);

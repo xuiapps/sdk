@@ -34,16 +34,16 @@ public readonly record struct TypeIdentity(
         return result;
     }
 
-    /// <summary>Whether a same-module definition derives directly from System.ValueType or System.Enum.</summary>
+    /// <summary>Whether a definition derives directly from the framework ValueType or Enum marker.</summary>
     public bool IsValueType
     {
         get
         {
-            if (Handle.Kind != HandleKind.TypeDefinition) return false;
+            if (Handle.Kind != HandleKind.TypeDefinition || FrameworkTypes.IsRuntimeBase(this)) return false;
             var type = Module.GetType((TypeDefinitionHandle)Handle);
-            if (type.BaseType.Kind != HandleKind.TypeReference) return false;
-            var parent = Module.GetTypeReference((TypeReferenceHandle)type.BaseType);
-            return parent.Namespace == "System" && parent.Name is "ValueType" or "Enum";
+            if (type.BaseType.IsNil) return false;
+            var parent = new TypeIdentity(Module, type.BaseType);
+            return FrameworkTypes.Is(parent, "System", "ValueType") || FrameworkTypes.Is(parent, "System", "Enum");
         }
     }
 
@@ -51,6 +51,8 @@ public readonly record struct TypeIdentity(
     public bool IsAssignableTo(TypeIdentity target)
     {
         if (this == target) return true;
+        if (Exceptions.ExceptionTypes.Kind(this) is { } exception && Exceptions.ExceptionTypes.Kind(target) is { } targetException)
+            return Exceptions.ExceptionTypes.IsAssignable(exception, targetException);
         if (IsValueType || target.IsValueType) return false;
         if (target.IsInterface) return Interfaces().Contains(target);
         var current = this;

@@ -14,7 +14,10 @@ public readonly record struct StackEntry(
     /// <summary>Normalizes value loads while retaining exact struct and address identities.</summary>
     public static StackEntry From(SignatureType type)
     {
-        if (type.IsByReference) return new(StackType.ManagedPointer, type);
+        // The readonly signature modifier restricts source use, not the address ABI.
+        // Mutable addresses can be supplied to an in parameter; stack joins use the element type.
+        if (type.IsByReference) return new(StackType.ManagedPointer, type with { IsReadOnlyByReference = false });
+        if (type.Identity is { } identity && DotNet.Intrinsics.NativeFloat.Is(identity)) return StackType.Float;
         return type.Code switch
         {
             SignatureTypeCode.Object => new(StackType.ObjectReference, type),

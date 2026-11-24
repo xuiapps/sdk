@@ -17,11 +17,22 @@ public readonly ref partial struct CodeEmitter
         if (!IsObjectReference(value))
             throw new NotSupportedException("Class type tests currently accept only same-module class references.");
         if (throwing) writer.LocalTee(method.GcSource);
-        writer.GlobalGet(method.Storage.Classes.Resolve(target).Descriptor).Call(method.Storage.InstanceTest);
+        if (XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(target) is { } exceptionKind)
+        {
+            writer.LocalSet(method.GcOwner).LocalGet(method.GcOwner).RefTest(method.Storage.ExceptionType)
+                .If(method.Storage.ExceptionPayloadBlock);
+            EmitExceptionMatch(method.GcOwner, exceptionKind);
+            writer.If(method.Storage.ExceptionPayloadBlock).LocalGet(method.GcOwner).Else()
+                .RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef).End().Else()
+                .RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef).End();
+        }
+        else writer.GlobalGet(method.Storage.Classes.Resolve(target).Descriptor).Call(method.Storage.InstanceTest);
         if (throwing)
         {
             writer.LocalSet(method.GcOwner).LocalGet(method.GcSource).RefIsNull().I32Eqz()
-                .LocalGet(method.GcOwner).RefIsNull().I32And().If().Unreachable().End().LocalGet(method.GcOwner);
+                .LocalGet(method.GcOwner).RefIsNull().I32And().If();
+            ThrowException(XuiNet.DotNet.Exceptions.ExceptionKind.InvalidCastException);
+            writer.End().LocalGet(method.GcOwner);
         }
         stack.Push(new(SignatureTypeCode.TypeHandle, target));
     }

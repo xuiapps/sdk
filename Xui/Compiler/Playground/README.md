@@ -17,7 +17,7 @@ dotnet publish Xui/Compiler/Playground/Xui.Compiler.Playground.csproj -c Release
 python3 -m http.server 8088 --directory Xui/Compiler/Playground/bin/Release/net10.0/publish/wwwroot
 ```
 
-Open `http://localhost:8088/`. A browser with WASM GC and the `js-string` builtins is required; the published app is smoke-tested in Chromium. Files must be served over HTTP(S), with JavaScript and `.wasm` MIME types. All asset and worker paths are relative, so the same bundle works at `/` or `/wasm/`. There is no shared-memory/thread requirement or server-side compilation service.
+Open `http://localhost:8088/`. A browser with WASM GC, native exception handling (`try_table`), and the `js-string` builtins is required; the published app is smoke-tested in Chromium. Files must be served over HTTP(S), with JavaScript and `.wasm` MIME types. All asset and worker paths are relative, so the same bundle works at `/` or `/wasm/`. There is no shared-memory/thread requirement or server-side compilation service.
 
 ## Verify
 

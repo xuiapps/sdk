@@ -21,6 +21,15 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         switch (instruction.Code)
         {
             case OpCode.Nop: break;
+            case OpCode.Stind_i4:
+                stack.Store(StackType.Int32);
+                goto case OpCode.Ldind_i4;
+            case OpCode.Ldind_i4:
+                var indirect = stack.Pop();
+                if (indirect.Type != StackType.ManagedPointer || indirect.DeclaredType?.Code is not (SignatureTypeCode.Int32 or SignatureTypeCode.UInt32))
+                    throw stack.Error("Expected an Int32/UInt32 managed address");
+                if (instruction.Code == OpCode.Ldind_i4) stack.Push(StackType.Int32);
+                break;
             case >= OpCode.Ldc_i4_m1 and <= OpCode.Ldc_i4_8:
             case OpCode.Ldc_i4:
             case OpCode.Ldc_i4_s: stack.Push(StackType.Int32); break;
@@ -88,7 +97,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Isinst:
             case OpCode.Castclass:
                 var targetType = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments).Identity!.Value;
-                if (targetType.Handle.Kind != HandleKind.TypeDefinition || targetType.IsValueType)
+                if ((targetType.Handle.Kind != HandleKind.TypeDefinition && Model.Exceptions.ExceptionTypes.Kind(targetType) is null) || targetType.IsValueType)
                     throw new NotSupportedException("Type tests currently require same-module classes.");
                 var tested = stack.Pop();
                 if (tested.Type is not (StackType.ObjectReference or StackType.Null))
@@ -98,6 +107,12 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Newobj:
                 var constructorToken = instruction.ReadToken(ref reader).Value;
                 var constructor = CallSignature(constructorToken);
+                if (Model.Exceptions.ExceptionTypes.TryMember(module, MetadataTokens.EntityHandle(constructorToken), out _, out bool intrinsicConstructor, out _) && intrinsicConstructor)
+                {
+                    for (int i = constructor.Parameters.Length - 1; i >= 1; i--) stack.Store(StackEntry.From(constructor.Parameters[i]));
+                    stack.Push(StackEntry.From(constructor.Parameters[0]));
+                    break;
+                }
                 var constructorHandle = Model.MemberResolver.Method(module, MetadataTokens.EntityHandle(constructorToken), context);
                 if (constructorHandle.DeclaringType.Module.GetMethod(constructorHandle.Handle).Name != ".ctor" ||
                     constructor.Parameters.Length == 0 || constructor.Result is not null)
@@ -131,6 +146,18 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 var called = CallSignature(callToken);
                 for (int i = called.Parameters.Length - 1; i >= 0; i--) stack.Store(StackEntry.From(called.Parameters[i]));
                 if (called.Result is StackEntry result) stack.Push(result);
+                break;
+            case OpCode.Throw:
+                if (stack.Pop().Type is not (StackType.ObjectReference or StackType.Null)) throw stack.Error("throw requires an exception reference");
+                while (stack.State.Depth != 0) stack.Pop();
+                break;
+            case OpCode.Leave:
+            case OpCode.Leave_s:
+                while (stack.State.Depth != 0) stack.Pop();
+                break;
+            case OpCode.Rethrow:
+            case OpCode.Endfinally:
+                if (stack.State.Depth != 0) throw stack.Error("Exception transfer requires an empty evaluation stack");
                 break;
             case OpCode.Ret:
                 if (signature.Result is StackEntry returned) stack.Store(returned);
@@ -221,7 +248,12 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     {
         if (calls.TryGetValue(token, out var signature)) return signature;
         var handle = MetadataTokens.EntityHandle(token);
-        if (handle.Kind == HandleKind.MemberReference &&
+        if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _, out _))
+        {
+            var reference = module.GetMemberReference((MemberReferenceHandle)handle);
+            signature = Signature.Read(module, reference.Signature, new Model.TypeIdentity(module, reference.Parent));
+        }
+        else if (handle.Kind == HandleKind.MemberReference &&
             module.GetMemberReference((MemberReferenceHandle)handle).Parent.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeSpecification) &&
             module.ResolveType(module.GetMemberReference((MemberReferenceHandle)handle).Parent).Handle.Kind != HandleKind.TypeDefinition)
         {

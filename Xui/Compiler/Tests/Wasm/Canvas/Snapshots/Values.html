@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xui WASM · Values</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui,sans-serif; background:#081122; color:#edf4ff; }
+  body { max-width:880px; margin:48px auto; padding:0 20px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  h1 { font-size:26px; font-weight:600; margin:0; } p { color:#aabbcf; }
+  button { background:#204b78; color:white; border:1px solid #547da4; border-radius:8px; padding:10px 20px; cursor:pointer; }
+  canvas { display:block; width:100%; height:auto; border:1px solid #2b405c; border-radius:12px; }
+  #status { min-height:24px; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; line-height:1.5; }
+  details { margin-top:24px; } summary { cursor:pointer; color:#aabbcf; }
+</style>
+<header><h1>Xui WASM / Values</h1><button id="run">Run again</button></header>
+<p>A small canvas scene compiled from C# with Xui geometry.</p>
+<canvas id="canvas" width="640" height="360" aria-label="Values canvas demo"></canvas>
+<p id="status" role="status">Starting…</p>
+<details><summary>C# source</summary><pre>using System.Runtime.InteropServices;
+using CanvasDemo;
+using Xui.Core.Canvas;
+using Xui.Core.Math2D;
+
+public interface ILayout { Rect Arrange(Rect bounds); }
+public class InsetLayout : ILayout
+{
+    public Rect Arrange(Rect bounds) =&gt; bounds.Inset((NFloat)20);
+}
+public static class Program
+{
+    static void Paint(Rect bounds, Color color) =&gt; Draw.Fill(ref bounds, ref color);
+
+    public static int Main()
+    {
+        NativeCanvas.Clear(0.0625, 0.125, 0.25, 1);
+        Point origin = (0, 0);
+        Vector shift = (40, 100);
+        origin += shift;
+        Rect outer = (origin.X, origin.Y, 520, 180);
+        ILayout layout = new InsetLayout();
+        Rect inner = layout.Arrange(outer);
+        Color blue = new Color((NFloat)0.125, (NFloat)0.5, (NFloat)1, (NFloat)1);
+        Color coral = new Color((NFloat)1, (NFloat)0.375, (NFloat)0.25, (NFloat)1);
+        Paint(outer, blue);
+        Paint(inner, coral);
+        Color white = new Color((NFloat)1, (NFloat)1, (NFloat)1, (NFloat)1);
+        Draw.Text(&quot;Rect values through interface calls&quot;, 40, 60, 26, ref white);
+        return inner.Width == (NFloat)480 ? 42 : 1;
+    }
+}
+
+using System;
+using System.Runtime.InteropServices;
+using Xui.Core.Canvas;
+using Xui.Core.Math2D;
+
+namespace CanvasDemo;
+
+public static class Draw
+{
+    public static void Fill(ref Rect rectangle, ref Color color) =&gt; NativeCanvas.FillRect(
+        (double)rectangle.X, (double)rectangle.Y, (double)rectangle.Width, (double)rectangle.Height,
+        (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+
+    public static void Text(string text, NFloat x, NFloat y, NFloat size, ref Color color) =&gt; NativeCanvas.FillText(
+        text, (double)x, (double)y, (double)size, (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+}
+
+// Explicit host boundary. Tests replace only these exact signatures with drawing imports.
+public static class NativeCanvas
+{
+    public static void Clear(double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+    public static void FillRect(double x, double y, double width, double height, double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+    public static void FillText(string text, double x, double y, double size, double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+}
+</pre></details>
+<script>
+function canvasImports(context, commands) {
+    const color = (r,g,b,a) => `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`;
+    return {
+        Clear(r,g,b,a) {
+            commands.push(['Clear',r,g,b,a]);
+            if (context) { context.clearRect(0,0,640,360); context.fillStyle = color(r,g,b,a); context.fillRect(0,0,640,360); }
+        },
+        FillRect(x,y,width,height,r,g,b,a) {
+            commands.push(['FillRect',x,y,width,height,r,g,b,a]);
+            if (context) { context.fillStyle = color(r,g,b,a); context.fillRect(x,y,width,height); }
+        },
+        FillText(text,x,y,size,r,g,b,a) {
+            commands.push(['FillText',text,x,y,size,r,g,b,a]);
+            if (context) { context.fillStyle = color(r,g,b,a); context.font = `${size}px sans-serif`; context.fillText(text,x,y); }
+        }
+    };
+}
+const bytes = Uint8Array.from(atob('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'), c => c.charCodeAt(0));
+async function run() {
+    const button = document.getElementById('run');
+    const status = document.getElementById('status');
+    button.disabled = true; window.demoResult = null;
+    try {
+        const commands = [];
+        const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
+        const context = document.getElementById('canvas').getContext('2d');
+        const instance = await WebAssembly.instantiate(module, { canvas: canvasImports(context, commands) });
+        const exitCode = instance.exports.main();
+        window.demoResult = { commands, exitCode };
+        status.textContent = `Rendered ${commands.length} drawing commands · Exit code ${exitCode}`;
+    } catch (error) {
+        window.demoResult = { error: String(error) };
+        status.textContent = `Unable to run this demo: ${error.message ?? error}. Requires a browser with WASM GC and JS string builtins.`;
+    } finally { button.disabled = false; }
+}
+document.getElementById('run').addEventListener('click', run);
+run();
+</script>
+</html>

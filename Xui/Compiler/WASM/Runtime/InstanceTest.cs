@@ -11,6 +11,7 @@ internal static class InstanceTest
     {
         LocalIndex value = new(0), target = new(1), current = new(2);
         writer.LocalGet(value).RefIsNull().If().RefNull(ValueTypeCode.EqRef).Return().End();
+        writer.LocalGet(value).RefTest(classRoot).I32Eqz().If().RefNull(ValueTypeCode.EqRef).Return().End();
         writer.LocalGet(value).RefCast(classRoot).StructGet(classRoot, new(0)).LocalSet(current);
         // Membership is a closed-world relation independent of WASM structural equivalence.
         // Generate only interfaces retained by this module, before the ordinary class-parent walk.

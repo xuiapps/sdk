@@ -44,6 +44,15 @@ public static class SignatureReader
                 if (code == SignatureTypeCode.GenericTypeParameter && arguments is not null)
                     return index < arguments.Values.Length ? arguments.Values[index] : throw new BadImageFormatException("Generic parameter index exceeds the supplied context.");
                 return new(code, GenericParameterIndex: index);
+            case SignatureTypeCode.RequiredModifier:
+                var modifier = module.ResolveType(reader.ReadTypeHandle());
+                if (IsFrameworkInModifier(modifier))
+                {
+                    var qualified = Type(module, ref reader, arguments);
+                    if (!qualified.IsByReference) throw new BadImageFormatException("InAttribute requires a managed-byref signature.");
+                    return qualified with { IsReadOnlyByReference = true };
+                }
+                throw new NotSupportedException($"Required signature modifier is not implemented: {modifier}.");
             case SignatureTypeCode.ByReference:
                 return Type(module, ref reader, arguments).ByReference();
             case SignatureTypeCode.SZArray:
@@ -121,6 +130,10 @@ public static class SignatureReader
         var identity = module.ResolveType(handle);
         return new(SignatureTypeCode.TypeHandle, identity, IsReferenceType: !identity.IsValueType);
     }
+
+    // C# emits this required modifier for readonly byrefs on virtual/interface methods.
+    // It changes the source contract, but uses the same managed-address calling convention.
+    private static bool IsFrameworkInModifier(TypeIdentity identity) => FrameworkTypes.Is(identity, "System.Runtime.InteropServices", "InAttribute");
 
     private static SignatureType NonVoid(Module module, ref BlobReader reader, GenericArguments? arguments)
     {

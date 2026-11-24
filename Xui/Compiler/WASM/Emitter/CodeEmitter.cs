@@ -26,6 +26,10 @@ public readonly ref partial struct CodeEmitter
     private readonly bool initLocals;
     private readonly Stack<MsilStackEntry> stack = new();
 
+    private readonly Stack<(int? Target, int Level)> exceptionExits = new();
+    private readonly Stack<int> cleanupExits = new();
+    private readonly Stack<LocalIndex> caughtExceptions = new();
+
     private readonly Stack<(LoopBlock? Loop, LoopTransferKind Kind)> labels = new();
     private readonly Dictionary<LoopBlock, bool[]> loopExitInitialization = new();
 
@@ -64,6 +68,24 @@ public readonly ref partial struct CodeEmitter
         Array.Fill(initializedLocals, initLocals);
         EnterFrame();
         InitializeGcLocals();
+        if (method.Frame is not null && method.Storage.ExceptionsEnabled)
+        {
+            OpenExceptionLabel(method.Storage.ExceptionReferenceBlock);
+            writer.TryCatchAllRef(new(0)); labels.Push((null, default));
+            EmitBody(reader);
+            writer.Unreachable();
+            CloseExceptionLabel();
+            writer.Unreachable(); // The void try_table has no normal result for the exnref handler block.
+            CloseExceptionLabel();
+            writer.LocalSet(method.UnwindException);
+            LeaveFrame();
+            writer.LocalGet(method.UnwindException).ThrowRef();
+        }
+        else EmitBody(reader);
+    }
+
+    private void EmitBody(ILReader reader)
+    {
         if (method.Flow is { } flow)
         {
             EmitFlow(flow);
@@ -84,6 +106,13 @@ public readonly ref partial struct CodeEmitter
         }
         switch (instruction.Code)
         {
+            case OpCode.Ldind_i4: EmitLdind_i4(offset); break;
+            case OpCode.Stind_i4: EmitStind_i4(offset); break;
+            case OpCode.Throw: EmitThrow(offset); break;
+            case OpCode.Rethrow: EmitRethrow(); break;
+            case OpCode.Endfinally: EmitEndfinally(); break;
+            case OpCode.Leave: EmitLeave(instruction.ReadBranch(ref reader).Target); break;
+            case OpCode.Leave_s: EmitLeave(instruction.ReadShortBranch(ref reader).Target); break;
             case OpCode.Ldloca:
                 EmitLdloca(instruction.ReadVariable(ref reader), offset); break;
             case OpCode.Ldloca_s:
@@ -279,6 +308,8 @@ public readonly ref partial struct CodeEmitter
             {
                 case OpCode.Isinst:
                 case OpCode.Castclass:
+                    method.Storage.ExceptionsEnabled = true;
+                    method.RequireGcTemporaries();
                     var testedType = IR.Signatures.SignatureReader.Resolve(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments).Identity
                         ?? throw new NotSupportedException("Type tests currently require same-module class types.");
                     if (!method.Storage.IsClass(testedType)) throw new NotSupportedException("Type tests currently require same-module classes.");
@@ -286,6 +317,17 @@ public readonly ref partial struct CodeEmitter
                     break;
                 case OpCode.Ldnull:
                     method.RequireGcTemporaries(); break;
+                case OpCode.Throw:
+                case OpCode.Rethrow:
+                    method.Storage.ExceptionsEnabled = true;
+                    method.RequireGcTemporaries();
+                    break;
+                case OpCode.Leave:
+                case OpCode.Leave_s:
+                case OpCode.Endfinally:
+                    break;
+                case OpCode.Ldind_i4:
+                case OpCode.Stind_i4:
                 case OpCode.Nop:
                 case OpCode.Ldarg_0:
                 case OpCode.Ldarg_1:
@@ -360,7 +402,11 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Stfld:
                     var fieldHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
                     var resolvedField = IR.MemberResolver.Field(source, fieldHandle, method.Identity.DeclaringType);
-                    if (method.Storage.IsGc(resolvedField.DeclaringType)) method.RequireGc(resolvedField.DeclaringType);
+                    if (method.Storage.IsGc(resolvedField.DeclaringType))
+                    {
+                        method.RequireGc(resolvedField.DeclaringType);
+                        if (method.Storage.IsClass(resolvedField.DeclaringType)) method.Storage.ExceptionsEnabled = true;
+                    }
                     break;
                 case OpCode.Initobj:
                 case OpCode.Ldobj:
@@ -385,7 +431,19 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.NativeFloat.TryMethod(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out _, out _))
+                    {
+                        method.UsesNativeFloat = true;
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.WellKnownMethods.IsObjectConstructor(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value))) break;
+                    if (IR.Exceptions.ExceptionTypes.TryMember(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out _, out _, out _))
+                    {
+                        method.Storage.ExceptionsEnabled = true;
+                        method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Callvirt) { method.Storage.ExceptionsEnabled = true; method.RequireGcTemporaries(); }
                     var target = ResolveCall(source, method.Identity.DeclaringType, call.Value, offset);
                     var attributes = target.DeclaringType.Module.GetMethod(target.Handle).Attributes;
                     if (instruction.Code == OpCode.Callvirt && (attributes & System.Reflection.MethodAttributes.Virtual) != 0)
@@ -398,9 +456,10 @@ public readonly ref partial struct CodeEmitter
                     {
                         var constructor = target.DeclaringType.Module.GetMethod(target.Handle);
                         var owner = target.DeclaringType;
-                        if (constructor.Name != ".ctor" || !method.Storage.IsGc(owner))
-                            throw new NotSupportedException("Only GC class/struct constructors are emitted by newobj.");
-                        method.RequireGc(owner);
+                        if (constructor.Name != ".ctor")
+                            throw new InvalidProgramException("newobj must target a constructor.");
+                        if (method.Storage.IsGc(owner)) method.RequireGc(owner);
+                        else _ = method.Frame!.Layout(owner);
                         if (method.Storage.IsClass(owner))
                         {
                             var type = method.Storage.Classes.Resolve(owner);

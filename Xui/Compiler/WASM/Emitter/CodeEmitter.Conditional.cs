@@ -12,6 +12,9 @@ public readonly ref partial struct CodeEmitter
         {
             switch (child)
             {
+                case ExceptionBlock exception:
+                    EmitExceptionBlock(exception);
+                    break;
                 case InstructionBlock block:
                     var node = block.Instruction;
                     CheckStack(node.Before!, node.Offset);

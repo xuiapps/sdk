@@ -96,7 +96,7 @@ public class InterfaceTests
     [Theory]
     [InlineData("return ((J)value).Read();", typeof(InvalidCastException))]
     [InlineData("value = null; return value.Read();", typeof(NullReferenceException))]
-    public async Task FailedInterfaceCastsAndNullReceiversTrap(string body, System.Type expected)
+    public async Task FailedInterfaceCastsAndNullReceiversThrow(string body, System.Type expected)
     {
         string source = $$"""
             public interface I { int Read(); } public interface J { int Read(); }
@@ -108,7 +108,7 @@ public class InterfaceTests
             var pe = Frontend.Roslyn.Compile(source, optimizationLevel: optimization);
             var error = Assert.Throws<TargetInvocationException>(() => Assembly.Load(pe).EntryPoint!.Invoke(null, null));
             Assert.IsType(expected, error.InnerException);
-            await Node.AssertTrapsAsync(GcTests.Emit(pe));
+            await Node.AssertThrowsAsync(GcTests.Emit(pe));
         }
     }
 
@@ -128,7 +128,7 @@ public class InterfaceTests
             public interface I { int Read(); }
             public static class Program { static int Read(I value) => value.Read(); public static int Main() => Read(null); }
             """);
-        await Node.AssertTrapsAsync(GcTests.Emit(pe));
+        await Node.AssertThrowsAsync(GcTests.Emit(pe));
     }
 
     [Fact]

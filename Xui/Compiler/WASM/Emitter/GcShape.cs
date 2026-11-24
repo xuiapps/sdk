@@ -10,5 +10,5 @@ internal sealed class GcShape(TypeIdentity identity)
     public TypeIdentity Identity { get; } = identity;
     public TypeIndex Type { get; set; }
     public List<GcLeaf> Leaves { get; } = new();
-    public Dictionary<FieldDefinitionHandle, GcField> Fields { get; } = new();
+    public Dictionary<FieldIdentity, GcField> Fields { get; } = new();
 }

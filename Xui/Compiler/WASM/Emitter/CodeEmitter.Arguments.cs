@@ -21,6 +21,7 @@ public readonly ref partial struct CodeEmitter
         writer.LocalGet(new LocalIndex(index));
         if (argument.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
         if (argument.UsesGc && argument.Identity is { IsValueType: true } id && !argument.IsByReference) CloneGc(id);
+        if (argument.IsLinearValue) CopyValue(argument.Identity!.Value, offset);
         stack.Push(new MsilStackEntry(argument.StackType, argument.Identity, argument.IsByReference)
         { Location = argument.UsesGc && argument.IsByReference ? new(method.Storage.Shape(argument.Identity!.Value), 0) : null });
     }
@@ -31,6 +32,11 @@ public readonly ref partial struct CodeEmitter
         PopAssignable(argument, code, offset);
         if (argument.UsesGc && argument.Identity is { IsValueType: true } id && !argument.IsByReference)
             StoreGcLocal(new LocalIndex(index), id);
+        else if (argument.IsLinearValue)
+        {
+            writer.LocalSet(Frame.AddressScratch).LocalGet(new(index)).LocalGet(Frame.AddressScratch);
+            CopyStruct(argument.Identity!.Value);
+        }
         else { Narrow(argument); writer.LocalSet(new LocalIndex(index)); }
     }
 }

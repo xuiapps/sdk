@@ -42,7 +42,7 @@ public static class MemberResolver
         foreach (var candidate in owner.Module.GetType((TypeDefinitionHandle)owner.Handle).Fields)
         {
             var field = owner.Module.GetField(candidate);
-            if (field.Name == reference.Name && SignatureReader.Field(owner.Module, field.Signature) == SignatureReader.Field(module, reference.Signature)) return new(owner, candidate);
+            if (field.Name == reference.Name && Equal(SignatureReader.Field(owner.Module, field.Signature), SignatureReader.Field(module, reference.Signature))) return new(owner, candidate);
         }
         throw new NotSupportedException($"Cannot resolve field reference {owner}.{reference.Name}.");
     }
@@ -59,5 +59,12 @@ public static class MemberResolver
         context.Module == module && context.Handle == declaringType ? context : new(module, declaringType);
 
     private static bool Equal(MethodSignature a, MethodSignature b) =>
-        a.HasThis == b.HasThis && a.Result == b.Result && a.Parameters.SequenceEqual(b.Parameters);
+        a.HasThis == b.HasThis && Equal(a.Result, b.Result) && a.Parameters.Length == b.Parameters.Length &&
+        a.Parameters.Zip(b.Parameters).All(pair => Equal(pair.First, pair.Second));
+
+    // The supported framework NFloat facades name the same intrinsic type across otherwise-unresolved assemblies.
+    private static bool Equal(SignatureType a, SignatureType b) => a == b ||
+        a.Code == b.Code && a.IsByReference == b.IsByReference && a.IsReferenceType == b.IsReferenceType &&
+        a.IsReadOnlyByReference == b.IsReadOnlyByReference &&
+        a.Identity is { } left && b.Identity is { } right && Intrinsics.NativeFloat.Is(left) && Intrinsics.NativeFloat.Is(right);
 }

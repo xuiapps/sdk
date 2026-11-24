@@ -3,6 +3,16 @@ namespace Xui.Compiler.WASM.Wasm.Instructions;
 /// <summary>Single-byte instruction codes currently emitted by the compiler.</summary>
 public enum OpCode : byte
 {
+    /// <summary>Reads a reference table entry.</summary>
+    TableGet = 0x25,
+    /// <summary>Writes a reference table entry.</summary>
+    TableSet = 0x26,
+    /// <summary>Begins a structured exception handler table.</summary>
+    TryTable = 0x1f,
+    /// <summary>Throws a tagged exception payload.</summary>
+    Throw = 0x08,
+    /// <summary>Rethrows an exception reference.</summary>
+    ThrowRef = 0x0a,
     /// <summary>Begins a block whose label receives its results.</summary>
     Block = 0x02,
     /// <summary>Begins a loop whose label receives its parameters.</summary>
@@ -116,6 +126,26 @@ public enum OpCode : byte
     I64ShrU = 0x88,
     /// <summary>Negates an f64 value, preserving signed zero.</summary>
     F64Neg = 0x9a,
+    /// <summary>Adds f32 values with single-precision rounding.</summary>
+    F32Add = 0x92,
+    /// <summary>Subtracts f32 values with single-precision rounding.</summary>
+    F32Sub = 0x93,
+    /// <summary>Multiplies f32 values with single-precision rounding.</summary>
+    F32Mul = 0x94,
+    /// <summary>Divides f32 values with IEEE 754 rounding, infinities, and NaNs.</summary>
+    F32Div = 0x95,
+    /// <summary>Compares f32 values for equality.</summary>
+    F32Eq = 0x5b,
+    /// <summary>Compares f32 values for inequality.</summary>
+    F32Ne = 0x5c,
+    /// <summary>Ordered f32 less-than comparison.</summary>
+    F32Lt = 0x5d,
+    /// <summary>Ordered f32 greater-than comparison.</summary>
+    F32Gt = 0x5e,
+    /// <summary>Ordered f32 less-than-or-equal comparison.</summary>
+    F32Le = 0x5f,
+    /// <summary>Ordered f32 greater-than-or-equal comparison.</summary>
+    F32Ge = 0x60,
     /// <summary>Adds two f64 values.</summary>
     F64Add = 0xa0,
     /// <summary>Subtracts f64 values.</summary>

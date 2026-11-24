@@ -10,10 +10,22 @@ Stack categories include `Int32`, `Int64`, `NativeInt`, `Float`, `String`, `Stri
 
 `DotNet.Signatures.SignatureReader` supplies shared declared types for parameters, results, locals, and fields. Supported analysis effects include constants, argument/local loads and stores, managed addresses, duplication/discard, unchecked arithmetic and bitwise operations, numeric comparisons and conversions, direct branches, switches, returns, and non-generic calls. Same-module class/value-type constructors, direct instance calls, fields, and object-copy/initialization instructions are analyzed with exact struct identities. Calls use MethodDefinition or MemberReference signatures without analyzing or executing the callee. The backend now supports linear struct locals, GC classes, and GC structs with value copies; the original NFloat Point/Vector demo still stops at its external conversion calls.
 
-Unsupported opcodes, generic method signatures, unsupported reference joins, and exception regions throw explicitly. Null can be assigned to class/interface/object/string storage; class joins can widen their canonical states to a common same-module base, an existing assignable interface, or an existing object stack type. Class-backed object storage uses GC references; boxed values and string-to-object conversions remain unsupported. Type references into explicitly supplied `XuiNet.Compilation` assemblies resolve to their defining modules. Call signatures are read from the resolved method owner. This is a stack-type analysis, not a complete CLI verifier: it does not check definite local initialization or the full set of CLI type-compatibility rules.
+Unsupported opcodes, generic method signatures, unsupported reference joins, and exception filters throw explicitly. Null can be assigned to class/interface/object/string storage; class joins can widen their canonical states to a common same-module base, an existing assignable interface, or an existing object stack type. Class-backed object storage uses GC references; boxed values and string-to-object conversions remain unsupported. Type references into explicitly supplied `XuiNet.Compilation` assemblies resolve to their defining modules. Call signatures are read from the resolved method owner. This is a stack-type analysis, not a complete CLI verifier: it does not check definite local initialization or the full set of CLI type-compatibility rules.
 
 Tests cover interning, joins, loop back-edges, non-linear traversal, dead instructions, and branches that consume existing stack entries and produce multiple results. Snapshots show C# source and every instruction's edges, `Before`, `After`, and `Lowest` states for Debug and Release, followed by the shared stack tree.
 
 [WASM control-flow demos](../../Tests/Wasm/CodeFlow/README.md) execute conditional and loop variations in Node and snapshot source, output, exit code, and WAT.
 
 `Analyzer.Analyze(module, MethodIdentity)` supplies a constructed declaring-type context. Generic class arguments substitute into locals, calls, and fields before stack effects are applied. Type identity includes the argument vector; generic method parameters remain unsupported by emission. The original method-handle overload continues to analyze nongeneric declaring types.
+
+`ExceptionBlocks.Build(module, body, graph)` composes lexical protected regions with
+conditional/loop reconstruction. Catch entry stacks contain the declared exception;
+finally/fault entries start empty. Handler roots are analyzed conservatively, and
+`leave` clears the evaluation stack. `ExceptionBlock` records the protected body,
+ordered handlers, and a single normal continuation. A finally with no reachable
+`endfinally` makes its normal continuation unreachable. Filters, overlapping scopes,
+and multiple normal continuations are rejected; no dispatcher is synthesized.
+
+The recognized framework NFloat intrinsic normalizes to the floating stack category.
+The WASM backend separately enforces target f32 storage/call/operation rounding;
+assembly metadata views and layout identities remain nominal.

@@ -3,6 +3,9 @@ namespace Xui.Compiler.WASM.Wasm.Instructions;
 /// <summary>GC instruction subopcodes currently emitted after the GC prefix.</summary>
 public enum GcOpCode : uint
 {
+    /// <summary>Tests a reference against a non-null heap type.</summary>
+    RefTest = 0x14,
+
     /// <summary>Creates an array from a fixed number of stack values, including in constant expressions.</summary>
     ArrayNewFixed = 0x08,
 

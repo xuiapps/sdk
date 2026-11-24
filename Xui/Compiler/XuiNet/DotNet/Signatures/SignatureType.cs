@@ -9,7 +9,8 @@ public readonly record struct SignatureType(
     TypeIdentity? Identity = null,
     bool IsByReference = false,
     bool IsReferenceType = false,
-    int GenericParameterIndex = -1)
+    int GenericParameterIndex = -1,
+    bool IsReadOnlyByReference = false)
 {
     /// <summary>Creates the managed-address form of this type without losing its exact element type.</summary>
     public SignatureType ByReference() => IsByReference || Code == SignatureTypeCode.Void
@@ -18,5 +19,5 @@ public readonly record struct SignatureType(
     /// <summary>A readable declared type, including its managed-address suffix.</summary>
     public override string ToString() => (Identity?.ToString() ?? (Code == SignatureTypeCode.GenericTypeParameter ? "!" + GenericParameterIndex :
         Code == SignatureTypeCode.GenericMethodParameter ? "!!" + GenericParameterIndex :
-        Code == SignatureTypeCode.SZArray ? "String[]" : Code.ToString())) + (IsByReference ? "&" : "");
+        Code == SignatureTypeCode.SZArray ? "String[]" : Code.ToString())) + (IsByReference ? "&" : "") + (IsReadOnlyByReference ? " readonly" : "");
 }

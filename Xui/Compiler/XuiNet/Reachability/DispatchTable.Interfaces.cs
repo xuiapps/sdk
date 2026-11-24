@@ -95,7 +95,7 @@ internal sealed partial class DispatchTable
         {
             var method = identity.Module.GetMethod(handle);
             if ((method.Attributes & MethodAttributes.Static) != 0 || (method.Attributes & MethodAttributes.Abstract) == 0)
-                throw new NotSupportedException("Static and default interface methods are not implemented.");
+                throw new NotSupportedException($"Static and default interface methods are not implemented: {identity}.{method.Name}.");
             if (method.GenericParameters.Count != 0)
                 throw new NotSupportedException("Generic interface methods are not implemented.");
         }

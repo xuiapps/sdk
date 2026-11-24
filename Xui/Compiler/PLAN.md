@@ -4,61 +4,108 @@
 
 Produce a visible canvas frame from C# compiled through **Roslyn → PE/MSIL → XuiNet → our WASM emitter**. Start with a small rendering slice using real Xui geometry and color types, then grow it into a persistent, interactive Xui window/view application.
 
-The route is a dedicated compiler sample that supplies Xui Core and the sample as separate implementation assemblies, uses a small explicit host adapter, and draws rectangles and text. Primitive/string calls across three assemblies now work in one WASM module. The next linking step is narrowly scoped to linear-memory structs defined in a dependency assembly; cross-assembly GC objects are not a prerequisite for the first frame. Source linking remains a fallback, not the default route. It does not start through `HostBuilder`, Microsoft DI, or the existing browser runtime. The framework .NET WASM runtime may continue hosting Roslyn in the playground; it must not execute the sample application.
+The route is a dedicated compiler sample that supplies Xui Core and the sample as separate implementation assemblies, uses a small explicit host adapter, and draws rectangles and text. Primitive/string calls across three assemblies now work in one WASM module. Dependency-defined numeric structs and GC classes now work, including cross-assembly inheritance and dispatch. Source linking remains a fallback, not the default route. It does not start through `HostBuilder`, Microsoft DI, or the existing browser runtime. The framework .NET WASM runtime may continue hosting Roslyn in the playground; it must not execute the sample application.
 
 The first visible frame is deliberately a **Xui canvas slice**, not a claim that arbitrary `Application`, `Window`, or `View` code works. A later acceptance gate requires the real framework lifecycle, rendering, and input paths.
 
-## Reassessment after multi-assembly linking
+## Reassessment after standalone canvas execution
 
-Reassessed on 2026-11-23 by inspecting the current compiler and playground. The latest compiler suite passed **542 tests with one existing skip**. The [three-assembly demo](Tests/Wasm/Repl/MultiAssembly/Snapshots/ThreeAssemblies.md) runs in Node and returns 42. The rendering fixture below has **not yet been implemented or executed**.
+Reassessed on 2026-11-24. The first canvas slice now runs: [Shapes](Tests/Wasm/Canvas/Snapshots/Shapes.html),
+[Grid](Tests/Wasm/Canvas/Snapshots/Grid.html), and [Events](Tests/Wasm/Canvas/Snapshots/Events.html)
+are standalone HTML artifacts with embedded JavaScript and Xui-generated WASM.
+Tests compile separate application/Core PEs in Debug and Release, verify exact drawing
+commands in Node, and open the files offline in Chromium to check pixels and text.
+Shapes executes the real `Rect.Right` method from Xui.Core.dll. Events carries Rect,
+Color, string, and interface values through a stack event and interface call.
 
-The goal remains achievable as a small rendering slice, but assembling three PEs does not yet make real Xui geometry executable. The shortest sequence is now:
-
-1. Prove an application can use an ordinary numeric struct from a separate DLL.
-2. Use actual `Xui.Core.dll` `Rect`/`Color` locals and implement their needed `NFloat` operations.
-3. Record drawing imports in Node, then replay the same commands on the browser canvas.
-
-| Area | Current evidence | Work needed for the first frame |
+| Area | Current evidence | Remaining work |
 | --- | --- | --- |
-| Assembly linking | Explicit implementation assemblies resolve types and direct/transitive static calls into one WASM module. Only reachable methods are retained. | Supply the real Core implementation PE alongside the application; do not load the BCL implementation closure. |
-| Foreign struct storage | `StorageModel.IsGc` rejects foreign definitions; `MemoryFrame.Layout` requires its own module. `LayoutResolver` is module-bound and rejects unresolved external value fields. | Resolve/classify/layout numeric structs using their defining modules, including nested fields. Key shared caches by module-qualified identities. |
-| `NFloat` | WASM32 layout already assigns four bytes, but this does not implement numeric calls or a scalar evaluation-stack representation. | Add a shared target-aware policy for discovery, stack typing, storage, and emission. Implement only conversions and operations reached by the fixture. |
-| Struct method ABI | Linear struct parameters, returns, constructors/instance receivers remain rejected. | Avoid them initially: initialize locals with `default`, assign/read public fields, and pass scalar values to the host. |
-| Core declarations | `Rect` and `Color` each have four public `nfloat` fields. Their interfaces and nested type dependencies can still appear in the graph. | Inspect the actual closure; preserve required layouts without unnecessarily rooting interface methods or unrelated Core methods. |
-| Browser execution | The worker already executes Xui-generated WASM, but supplies only console imports. | Add drawing imports, a bounded command batch, a canvas, and a rendering example. |
-| Browser compilation | Only System.Runtime/System.Console reference metadata is embedded; XuiNet currently reads only the editor PE. | Embed Core implementation PE bytes, use their metadata in Roslyn, and register those same bytes in the XuiNet compilation context. Keep PE lifetimes valid through emission. |
+| Assembly linking and layouts | Separate implementation assemblies share one module; numeric struct layouts and nested fields follow their defining modules. Three-library tests cover overlapping field row numbers. | Collections and remaining unresolved external dependencies remain. |
+| NFloat | Target f32 storage and signatures, Int32/Single/Double conversions, and add/subtract/multiply/divide, comparisons, and infinity/NaN constants execute without BCL bodies. | Add further members only when required, with explicit target rounding tests. |
+| Struct ABI | By-value arguments use callee-owned copies; results use caller-owned storage. Direct/virtual/interface calls, stack reference slots, recursion, and readonly `in` signatures are tested. | GC-field byrefs, primitive/reference byrefs, and further BCL operations remain. |
+| Drawing host | Explicit clear, rectangle, and text imports draw through Canvas 2D. Geometry runs in WASM. | Full IContext coverage, measurement, images, paths, clipping, and persistent rendering. |
+| Standalone output | Tests generate single-file HTML, with no runtime download or server needed. | Integrate the drawing host and Core compilation inputs into the editor playground separately. |
+| Actual app lifecycle | Ref-event/interface demo executes using a small application-defined adapter. | Instantiate the real Window/RootView/View path; support its remaining spans, static state, ABI, and BCL dependencies. |
 
-[Storage selection](WASM/Emitter/StorageModel.cs), [memory frames](WASM/Emitter/MemoryFrame.cs), [layout resolver](XuiNet/Layout/LayoutResolver.cs), [method ABI](WASM/Emitter/MethodSignature.cs), [playground compiler](Playground/PlaygroundCompiler.cs), and [execution worker](Playground/wwwroot/execute-worker.js) are the concrete change points.
+Closed generic struct layouts and framework ValueTuple constructors now execute,
+including Xui's `Point point = (0, 0)` conversions. The next compiler milestone is
+interface default implementation selection and avoiding rejection of unused bodies.
+The next visible host milestone is adding these scenes to the playground editor, followed by persistent
+state and frame/input exports. The current artifacts establish the canvas slice,
+not arbitrary Xui application compatibility.
 
-Earlier probes of the full framework found unsupported object signatures in Application/Window/View constructors and explicit MethodImpl mappings in RootView. Those findings predate linking and interface support and are not a fresh full-app execution result. Object signatures for class-backed references and explicit interface MethodImpl now have support; rerun the full-framework probe before treating these old first failures as current blockers. The existing Browser runtime's generated .NET JS interop is also not a binding layer for our emitted modules.
+## Real TestApp gate after struct calls and linked classes
+
+The [construction snapshot](Tests/Wasm/TestApp/Snapshots/FillRectConstruction.md) now
+compiles the unchanged `FillRectTest.cs` and `ICanvasDrawingExample.cs` from TestApp
+into a separate PE, linked with the actual Core implementation and a small driver.
+It remains inconclusive. The ValueTuple constructor in `View..ctor` now resolves into
+supplied framework implementation PEs. Analysis next rejects the default interface
+member `Xui.Core.Canvas.ITextMeasureContext.MeasureText`; this is interface validation,
+not a call executed by this construction gate.
+No Core/View method is replaced or silently omitted by this gate.
+
+Completed in this step:
+
+- Struct argument/return ownership, including recursive calls, alias-preserving
+  `starg`, results through interface/virtual calls, and reference slots surviving cleanup.
+- Classes and inheritance across supplied assemblies, with module-qualified inherited
+  field identities and assertions on runtime field descriptors.
+- Framework `InAttribute` required modifiers on readonly virtual/interface parameters.
+- NFloat division, comparisons, and infinity/NaN constants.
+- A fourth offline Canvas artifact, [Values](Tests/Wasm/Canvas/Snapshots/Values.html),
+  executing Core's `Rect.Inset` and passing Rect/Color values through ordinary methods.
+
+Tuple milestone: closed generic layouts/classification, actual ValueTuple constructors,
+assembly type forwarding, target-width NFloat definitions, and lawful deferral of unused
+BeforeFieldInit constants are implemented. Tests cover arities 2–7, named/nested tuples,
+ref copies, and actual Xui Point/Vector/Size/Rect/Frame conversions. See
+[tuple geometry](Tests/Wasm/Tuples/Snapshots/XuiGeometry.md).
+
+Next sequence: implement default interface dispatch and reachability, rerun the real
+construction gate, then grow it to Measure/Arrange/Render with a Canvas host. Closed
+Nullable storage is enabled by generic layout; its callable BCL surface still needs testing.
+Static initialization, GC-field byrefs, collections/spans, numeric helpers, and
+persistent frame/input exports remain later gates. The full TestApp is not running yet.
 
 ## Interface prerequisite — implemented
 
 Class-backed interface calls now support implicit/explicit implementations, inherited and reimplemented mappings, virtual overrides, and closed invariant generic interfaces. `is`/`as`/explicit casts work with nominal interface membership, including class references stored as `object`. Interface contracts may come from a separate supplied assembly. See the [interface execution snapshot](Tests/Wasm/Interfaces/Snapshots/Units.md).
 
-This removes the basic interface dispatch/MethodImpl blocker. It does not yet implement boxed/constrained struct dispatch, variance, default/static interface methods, generic methods, or every signature used by `IContext`. Interface methods still use the existing supported argument/result ABI. The next rendering prerequisites remain dependency-defined numeric structs and NFloat; ordinary Canvas calls also need their struct/byref ABI where exercised.
+This removes the basic interface dispatch/MethodImpl blocker. It does not yet implement boxed/constrained struct dispatch, variance, default/static interface methods, generic methods, or every signature used by `IContext`. Interface methods still use the existing supported argument/result ABI. Dependency-defined numeric structs and the initial NFloat intrinsic set now execute; ordinary Canvas signatures can now use supported struct values; remaining framework types and operations still need implementation.
+
+## Exception prerequisite — initial support implemented
+
+Failed casts and null instance access now throw managed exceptions through native
+WASM tags. Typed catches, throw/rethrow, finally/fault, cross-method propagation,
+and frame-stack restoration are executable. The [exception demo](Tests/Wasm/Exceptions/Snapshots/Casts.md)
+shows failed interface casts caught before execution continues. Six built-in exception
+types have intrinsic constructors and messages; filters, custom exception subclasses,
+managed stack traces, and multiple normal exits from one protected region remain unsupported.
+This enables basic validation and cleanup paths; it does not establish arbitrary BCL
+or disposal coverage. Native traps still require discarding the instance.
 
 ## Milestone 1 — one visible frame
 
 ### 1. Support dependency-defined linear structs, then add the real-Core fixture
 
 - [x] Prove separate-assembly compilation with three fixtures, direct/transitive calls, a shared output module, and unused-class pruning. See [ThreeAssemblies](Tests/Wasm/Repl/MultiAssembly/Snapshots/ThreeAssemblies.md).
-- [ ] Add a small separate-library fixture with a numeric struct, a nested numeric struct, and overlapping metadata row numbers in the application and library. Exercise `default`, field stores/loads, and value copies in Node. This isolates module ownership from NFloat and browser concerns.
-- [ ] Extend linear storage classification/layout/frame allocation to resolve each type in its defining module. Module-bound field maps can remain local to their owning layout; any shared field map must use a qualified identity. Include nested value fields across dependencies. Leave GC classes, inherited GC field maps, and cross-assembly virtual calls for a separate step.
-- [ ] Supply the compiled Xui Core implementation assembly alongside the sample entry point. Keep the normal Xui numeric aliases. Supplying Core must not root every declaration. Source linking is an optional temporary fallback only if this specific path reveals a hard stop.
-- [ ] Start with `Rect` and `Color` values, scalar field access, literal text, and calls to a small host adapter. Avoid `Window`, `View`, DI, tuples, collections, events, and optional services in this first fixture.
-- [ ] Use default initialization plus field assignments where this avoids an unsupported constructor. That is an initial test shape, not a permanent requirement for application code.
-- [ ] Add a REPL-style Markdown snapshot with source, discovery status/dependency graph, output, and WAT or the precise unsupported operation. Keep the fixture visibly inconclusive until execution succeeds; never replace rendering with a silent no-op.
+- [x] Add a small separate-library fixture with a numeric struct, a nested numeric struct, and overlapping metadata row numbers in the application and library. Exercise `default`, field stores/loads, and value copies in Node. This isolates module ownership from NFloat and browser concerns.
+- [x] Extend linear storage classification/layout/frame allocation to resolve each type in its defining module. Module-bound field maps can remain local to their owning layout; any shared field map must use a qualified identity. Include nested value fields across dependencies. The subsequent linked-class step also covers inherited GC field maps and cross-assembly virtual calls.
+- [x] Supply the compiled Xui Core implementation assembly alongside the sample entry point. Keep the normal Xui numeric aliases. Supplying Core must not root every declaration. Source linking is an optional temporary fallback only if this specific path reveals a hard stop.
+- [x] Start with `Rect` and `Color` values, scalar field access, literal text, and calls to a small host adapter. Avoid `Window`, `View`, DI, tuples, collections, events, and optional services in this first fixture.
+- [x] Use default initialization plus field assignments where this avoids an unsupported constructor. That is an initial test shape, not a permanent requirement for application code.
+- [x] Add a REPL-style Markdown snapshot with source, discovery status/dependency graph, output, and WAT or the precise unsupported operation. Keep the fixture visibly inconclusive until execution succeeds; never replace rendering with a silent no-op.
 
 **Gate:** the independent numeric-struct fixture executes across assemblies. The real-Core fixture compiles to PE using actual Xui types and records its dependency closure. Every remaining failure has a concrete method and, where applicable, IL offset.
 
 ### 2. Implement only the numeric support that fixture needs
 
-- [ ] Start with numeric-to-NFloat and NFloat-to-scalar conversions used by assignments and host arguments. Avoid emitting the general BCL NFloat implementation; recognize a narrow, identity/signature-checked intrinsic set.
-- [ ] Treat `NFloat` consistently as the target's scalar representation. Under the existing WASM32 layout policy this is `f32` storage; preserve the chosen MSIL floating evaluation behavior and round at storage/call boundaries as needed.
-- [ ] Add narrowly identified intrinsics for the required `NFloat` conversions/operators. Apply the same rules in dependency discovery, stack typing, storage binding, and code emission. An emission-only rewrite is insufficient if earlier analysis rejects the type or call.
-- [ ] Make the selected geometry/color fields work with that scalar representation, including initialization, loads, and stores. Use normalized color component assignments initially, avoiding the byte/packed Color constructors and their division calls. Add only arithmetic actually used by the fixture; general division is not a first-frame prerequisite.
-- [ ] Test numeric arguments delivered to host imports, including fractional values and f32 rounding. A native 64-bit managed run uses a different NFloat width; use explicitly rounded WASM32 reference calculations rather than treating host-native NFloat results as the target oracle.
+- [x] Start with numeric-to-NFloat and NFloat-to-scalar conversions used by assignments and host arguments. Avoid emitting the general BCL NFloat implementation; recognize a narrow, identity/signature-checked intrinsic set.
+- [x] Treat `NFloat` consistently as the target's scalar representation. Under the existing WASM32 layout policy this is `f32` storage; preserve the chosen MSIL floating evaluation behavior and round at storage/call boundaries as needed.
+- [x] Add narrowly identified intrinsics for the required `NFloat` conversions/operators. Apply the same rules in dependency discovery, stack typing, storage binding, and code emission. An emission-only rewrite is insufficient if earlier analysis rejects the type or call.
+- [x] Make the selected geometry/color fields work with that scalar representation, including initialization, loads, and stores. Use normalized color component assignments initially, avoiding the byte/packed Color constructors and their division calls. Add only arithmetic actually used by the fixture; general division is not a first-frame prerequisite.
+- [x] Test numeric arguments delivered to host imports, including fractional values and f32 rounding. A native 64-bit managed run uses a different NFloat width; use explicitly rounded WASM32 reference calculations rather than treating host-native NFloat results as the target oracle.
 
 Use the existing linear-memory struct frame where it works. **Do not make the full flattened-struct redesign, general byref support, or reference-slot runtime prerequisites for the first pixels.** Introduce flattened values as a subsequent representation optimization and ABI improvement, with the existing storage path available when an address is required.
 
@@ -68,14 +115,19 @@ Use the existing linear-memory struct frame where it works. **Do not make the fu
 
 The initial scene is a background, two colored rectangles, and a literal label. Use actual `Rect` and `Color` locals, with at least one coordinate derived in C#, then extract scalar fields at the host boundary. This establishes geometry execution and rendering without claiming `IContext`, `Window`, or `View` support.
 
-- [ ] Define explicit host operations such as `clear(r,g,b,a)`, `fill-rect(x,y,width,height,r,g,b,a)`, and `fill-text(text,x,y,size)` using scalar arguments and native JavaScript strings.
-- [ ] Supply these operations through the rewriter/import infrastructure. Keep browser policy outside `CodeEmitter`; match specific adapter methods by identity/signature.
-- [ ] Have the C# adapter read Xui values and pass their scalar components. Until struct arguments work, the initial sample can perform this extraction at its call sites.
-- [ ] Implement the same contract with a recording host in Node and a Canvas 2D host in the playground. Fonts, gradients, images, clipping, composition, and text measurement are outside the first contract; unsupported calls must report that fact.
+- [x] Define explicit host operations such as `clear(r,g,b,a)`, `fill-rect(x,y,width,height,r,g,b,a)`, and `fill-text(text,x,y,size)` using scalar arguments and native JavaScript strings.
+- [x] Supply these operations through the rewriter/import infrastructure. Keep browser policy outside `CodeEmitter`; match specific adapter methods by identity/signature.
+- [x] Have the C# adapter read Xui values and pass their scalar components. Until struct arguments work, the initial sample can perform this extraction at its call sites.
+- [x] Implement the same contract with a recording host in Node and a Canvas 2D host in standalone HTML. Editor-playground integration remains pending. Fonts, gradients, images, clipping, composition, and text measurement are outside the first contract; unsupported calls must report that fact.
 
 **Gate:** the Node command snapshot proves geometry/color calculations executed in our WASM, rather than being recreated in JavaScript.
 
-### 4. Display that frame in the playground
+### 4. Standalone output implemented; playground integration pending
+
+- [x] Generate self-contained HTML artifacts for three scenes, with embedded JS and WASM.
+- [x] Verify offline file opening, command output, pixels, labels, reruns, and narrow viewports.
+
+The following editor integration remains pending:
 
 - [ ] Add a canvas output area and a rendering example to the existing playground.
 - [ ] For the first static frame, record drawing imports in the execution worker and send one command batch to the page after `main` completes. The page replays that batch on Canvas 2D. This avoids making worker-owned canvas support or synchronous cross-thread measurement a first-frame dependency.
@@ -120,35 +172,55 @@ Implement features in the order demonstrated by this fixture's dependency closur
 Cuts must be visible in a named compiler sample/profile. Keep normal platform builds unchanged, test the profile on managed .NET as well, and document each omitted capability.
 
 - **Hosting/DI:** replace `HostBuilder` with direct construction and a small service provider. This still needs the object/interface/type-token semantics used by that provider; bypassing Microsoft DI does not remove those automatically.
-- **Cross-assembly compilation:** identity resolution, semantic signature matching, and module-qualified primitive/string static-call planning and emission now work with explicitly supplied PEs. Next extend numeric struct layout and linear storage across modules. Cross-assembly GC field identities, runtime descriptors, and object emission follow when a fixture needs classes. Type forwarding remains deferred with BCL support. Load implementation assemblies when method bodies are required; reference assemblies are insufficient.
+- **Cross-assembly compilation:** identity resolution, semantic signature matching, and module-qualified primitive/string static-call planning and emission now work with explicitly supplied PEs. Numeric struct layout and linear storage now resolve across modules. Cross-assembly GC field identities, runtime descriptors, and object emission follow when a fixture needs classes. Type forwarding remains deferred with BCL support. Load implementation assemblies when method bodies are required; reference assemblies are insufficient.
 - **Optional framework features:** omit hot reload, DevTools, instrumentation, overlays, class-name overflow, image loading, or advanced composition in the dedicated profile if they obstruct the minimal sample. Replace optional services with explicitly selected minimal implementations where useful.
 - **Retained field dependencies:** `View` contains `ClassNameCollection`, whose `HashSet<string>` overflow field contributes to its retained layout; `RootView` contains an overlay list. With our current conservative layout rules, unused methods alone do not remove these dependencies. A profile cut must remove/replace the relevant storage explicitly, or the compiler must learn that representation. Do not assume tree shaking will solve it.
 - **Browser binding:** inject the narrow drawing import contract instead of compiling generated .NET JS interop machinery. Reuse the existing Browser runtime's mapping ideas, not its runtime dependency graph.
 - **Text:** draw literal strings at explicit positions first. Real text layout later requires synchronous measurement in the execution context or a deliberately designed measurement protocol/cache; an asynchronous drawing batch cannot return a synchronous measurement result.
-- **Exceptions:** an uncaught failure may terminate the initial sample and surface a host error. Required catch/finally/disposal behavior cannot be silently dropped.
+- **Exceptions:** basic managed catch/finally now works. Keep required cleanup and reject unsupported filters/custom exception types explicitly; an uncaught failure surfaces a host error.
 
 No cut may fabricate successful rendering, silently ignore required operations, or erase observable initialization/mutation behavior.
 
-## Allocation-sensitive event structs
+## Allocation-sensitive event structs — reference-slot foundation implemented
 
-This is a follow-on runtime task, not a first-frame blocker.
+The [stack event demo](Tests/Wasm/ReferenceSlots/Snapshots/Events.md) now runs a
+`ref struct` containing numeric fields, a string, and an interface reference through
+nested `ref` calls. Interface dispatch with ref event parameters, in/out parameters,
+local aliases, and value copies are tested. Linear fields hold 32-bit indices into
+two GC-visible tables, reserved per frame and cleared on return or unwinding.
+Repeated exceptions and direct host inspection verify slot restoration and clearing.
+The tables have a fixed initial capacity; there is no per-event holder allocation.
+
+This establishes the storage mechanism, not complete Xui event dispatch. Spans,
+byref fields, dependency-defined class storage, and the remaining geometry ABI still need work.
+
 
 - Flatten values into locals when no shared runtime location is needed.
 - Use linear-memory frames for reference-free values requiring an address.
-- For temporary structs containing object/string references, evaluate frame-owned slots in GC-visible reference tables, with indices stored in our linear representation.
+- Implemented for selected addressable structs: frame-owned GC-visible reference slots, with indices in the linear representation.
 - Passing byref shares locations; copying by value copies reference values into independent destination slots. Returned/stored values must transfer references before the source frame is reclaimed.
 - Clear reclaimed slots, restore stack marks, and handle reentrant calls and exceptional exits. Traps need host-boundary cleanup if the module instance will be reused.
 - Preallocated capacity can avoid per-event allocations; initial allocation and growth remain explicit costs. This representation does not promise native CLR object-pointer layout.
 
-For the first real event demo, a GC holder is an acceptable correctness milestone if its allocation cost is reported. Allocation-free Xui event dispatch is a separate acceptance gate, not an implied property of `ref struct`.
+Allocation-free full Xui event dispatch remains a separate acceptance gate: the reference-slot mechanism is implemented, but actual events also contain spans and exercise additional framework dependencies.
 
 ## Immediate next work
 
-1. **Dependency-defined numeric structs:** a focused fixture, module-qualified layout/storage, and Node execution. No browser or NFloat work in this first change.
-2. **Actual Xui geometry:** a separate Core implementation PE, `default(Rect)`/`default(Color)` field operations, and the minimum shared NFloat intrinsic policy.
-3. **Drawing contract:** scalar rectangle/text imports and a deterministic Node command snapshot proving the geometry came from generated WASM.
-4. **Visible demo:** embed Core in the compiler host, add the canvas example and command replay, then verify pixels and text commands in the browser smoke test.
+The first canvas slice is complete: dependency-defined numeric structs, actual Xui
+geometry, a narrow NFloat policy, drawing imports, and standalone browser artifacts
+all execute with regression coverage.
 
-General BCL compilation, full struct ABI, cross-assembly GC classes, and the flattened-struct/reference-slot redesign are deferred from this first frame. The first follow-on for ordinary `new Rect(...)` and geometry method calls is linear struct constructors/receivers and value parameters/results. The real Window/View milestone additionally needs its remaining ABI, object-runtime, and static-state dependencies; it is a larger milestone than adding a canvas host.
+1. **Struct value ABI:** support geometry values as arguments and results, preserving
+   copies and aliasing. This unblocks ordinary operators and more Canvas signatures.
+2. **Editor integration:** supply Core to the playground compiler and replay drawing
+   commands from its worker into a canvas output area.
+3. **Persistent rendering:** export frame/input entry points, retain application state,
+   and keep one instance alive across callbacks.
+4. **Real Window/View:** use its dependency closure to drive remaining static-state,
+   span, class-storage, and BCL work, with explicit profile cuts where appropriate.
 
-Only after the static scene works should the demo grow persistent state, input, and the real framework lifecycle. Keep the reachability graph as the explanation of what each added feature brings into the emitted module.
+General BCL compilation and cross-assembly GC classes remain outside the first-frame
+scope. Linear struct constructors/receivers and frame-owned reference slots already
+work; flattened value representation can improve the ABI without removing the
+addressable storage path. Keep the reachability graph as the explanation of what
+each added feature brings into the emitted module.

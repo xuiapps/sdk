@@ -44,6 +44,9 @@ public sealed class ModuleWriter(Stream stream)
     /// <summary>Begins linear memory definitions.</summary>
     public Section.Memory.Writer MemorySection() => new(Section(SectionId.Memory));
 
+    /// <summary>Begins exception tag definitions, after memory and before globals.</summary>
+    public Section.Tag.Writer TagSection() => new(Section(SectionId.Tag));
+
     /// <summary>Begins global definitions, with indices following the imported globals.</summary>
     public Section.Global.Writer GlobalSection(uint importedGlobalCount = 0) =>
         new(Section(SectionId.Global), importedGlobalCount);

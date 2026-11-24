@@ -18,33 +18,36 @@ public readonly ref partial struct CodeEmitter
         var local = GetLocal(index, code, offset);
         if (!initializedLocals[(int)index.Value])
             throw new InvalidProgramException($"Uninitialized local {index.Value} for {code} at IL_{offset:x4}.");
-        writer.LocalGet(new LocalIndex((uint)parameters.Length + index.Value));
-        if (local.Identity is { } identity && !method.Storage.IsClass(identity))
+        writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value));
+        if (!local.IsByReference && local.Identity is { } identity && !method.Storage.IsClass(identity))
         {
             if (local.UsesGc) CloneGc(identity);
             else CopyValue(identity, offset);
         }
         if (local.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
-        stack.Push(new MsilStackEntry(local.StackType, local.Identity));
+        stack.Push(new MsilStackEntry(local.StackType, local.Identity, local.IsByReference));
     }
 
     private void StoreLocal(LocalIndex index, OpCode code, int offset)
     {
         var local = GetLocal(index, code, offset);
+        if (local.IsByReference && stack.Peek().Location is not null)
+            throw new NotSupportedException("Managed-address locals cannot capture a GC field location.");
         PopAssignable(local, code, offset);
-        if (local.UsesGc && local.Identity is { } gcIdentity && !method.Storage.IsClass(gcIdentity))
-            StoreGcLocal(new LocalIndex((uint)parameters.Length + index.Value), gcIdentity);
+        if (local.IsByReference) writer.LocalSet(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value));
+        else if (local.UsesGc && local.Identity is { } gcIdentity && !method.Storage.IsClass(gcIdentity))
+            StoreGcLocal(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value), gcIdentity);
         else if (!local.UsesGc && local.Identity is { } identity)
         {
             var frame = Frame;
             writer.LocalSet(frame.AddressScratch);
-            writer.LocalGet(new LocalIndex((uint)parameters.Length + index.Value)).LocalGet(frame.AddressScratch)
-                .I32Const(frame.ValueSize(identity)).MemoryCopy();
+            writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value)).LocalGet(frame.AddressScratch);
+            CopyStruct(identity);
         }
         else
         {
             Narrow(local);
-            writer.LocalSet(new LocalIndex((uint)parameters.Length + index.Value));
+            writer.LocalSet(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value));
         }
         initializedLocals[(int)index.Value] = true;
     }

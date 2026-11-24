@@ -12,6 +12,9 @@ public enum ValueTypeCode : byte
     /// <summary>A 32-bit integer.</summary>
     I32 = 0x7f,
 
+    /// <summary>A nullable exception reference, retained during cleanup and rethrow.</summary>
+    ExnRef = 0x69,
+
     /// <summary>A nullable GC reference with identity comparison.</summary>
     EqRef = 0x6d,
 

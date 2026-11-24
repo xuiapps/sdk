@@ -15,6 +15,8 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryNativeFloat(instruction, offset)) return;
+        if (TryExceptionMember(instruction, offset)) return;
         if (Xui.Compiler.XuiNet.DotNet.WellKnownMethods.IsObjectConstructor(source,
             System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.Value)))
         {
@@ -32,7 +34,7 @@ public readonly ref partial struct CodeEmitter
         for (int i = arguments.Length - 1; i >= 0; i--)
         {
             if (arguments[i].IsByReference && stack.Peek().Location is { } location &&
-                (location.First != 0 || location.Owner.Identity != arguments[i].Identity))
+                (!arguments[i].UsesGc || location.First != 0 || location.Owner.Identity != arguments[i].Identity))
                 throw new NotSupportedException("Instance calls through inline struct addresses are not implemented.");
             PopAssignable(arguments[i], instruction.Code, offset);
             if (temporaries is not null)
@@ -45,9 +47,13 @@ public readonly ref partial struct CodeEmitter
             for (int i = 0; i < temporaries.Length; i++)
             {
                 writer.LocalGet(temporaries[i]);
-                if (i == 0 && instruction.Code == OpCode.Callvirt)
+                if (i == 0 && instruction.Code == OpCode.Callvirt && arguments[0].UsesGc)
+                {
+                    CheckExceptionNull();
                     writer.RefCast(method.Storage.Shape(arguments[0].Identity!.Value).Type);
+                }
             }
+        if (callee.Signature.HasResultAddress) FrameAddress(Frame.Values[offset]);
         if (instruction.Code == OpCode.Callvirt &&
             (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & System.Reflection.MethodAttributes.Virtual) != 0)
         {

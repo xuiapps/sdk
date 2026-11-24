@@ -74,13 +74,14 @@ public sealed partial class Analyzer
         if (signature.Identity is not { } identity) return;
         Add(new Dependency.Type(identity), source, reason, offset);
         // Preserve the existing representation, including complete layouts of named reference fields.
-        if (identity.Handle.Kind == HandleKind.TypeDefinition)
+        if (identity.Handle.Kind == HandleKind.TypeDefinition && !FrameworkTypes.IsRuntimeBase(identity) && !DotNet.Intrinsics.NativeFloat.Is(identity))
             Add(new Dependency.Layout(identity), source, DependencyReason.Layout, offset);
     }
 
     private void ReadType(Dependency.Type node)
     {
         var identity = node.Identity;
+        if (FrameworkTypes.IsRuntimeBase(identity) || DotNet.Intrinsics.NativeFloat.Is(identity)) return;
         if (identity.Arguments is { } arguments)
         {
             foreach (var argument in arguments.Values) Signature(node, argument, DependencyReason.GenericArgument);
@@ -90,7 +91,9 @@ public sealed partial class Analyzer
         var type = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
         if (!type.BaseType.IsNil)
             Signature(node, SignatureReader.Resolve(identity.Module, type.BaseType, identity.Arguments), DependencyReason.BaseType);
-        foreach (var handle in type.Interfaces)
+        // Value-type interface membership matters when boxing/constrained dispatch is implemented;
+        // it contributes no fields or executable code to an unboxed tuple.
+        if (!identity.IsValueType) foreach (var handle in type.Interfaces)
             Add(new Dependency.Type(SignatureReader.Resolve(identity.Module, identity.Module.GetInterfaceType(handle), identity.Arguments).Identity!.Value),
                 node, DependencyReason.Interface);
         if (type.IsInterface) _ = dispatch.Resolve(identity);
@@ -106,7 +109,7 @@ public sealed partial class Analyzer
             throw new NotSupportedException($"Layout requires a closed resolved type: {identity}.");
         var type = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
         if (!identity.IsValueType && type.Name != "<Module>") _ = dispatch.Resolve(identity);
-        if (identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } parent)
+        if (identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } parent && !FrameworkTypes.IsRuntimeBase(parent))
             Add(new Dependency.Layout(parent), node, DependencyReason.BaseType);
         foreach (var handle in type.Fields)
             if ((identity.Module.GetField(handle).Attributes & FieldAttributes.Static) == 0)

@@ -6,11 +6,13 @@ namespace Xui.Compiler.Tests.Wasm.Repl;
 
 internal static class Node
 {
-    public static Task<NodeResult> ExecuteAsync(byte[] wasm) => ExecuteCoreAsync(wasm, expectTrap: false);
+    public static Task<NodeResult> ExecuteAsync(byte[] wasm) => ExecuteCoreAsync(wasm, expectedError: null);
 
-    public static async Task AssertTrapsAsync(byte[] wasm) => _ = await ExecuteCoreAsync(wasm, expectTrap: true);
+    public static async Task AssertThrowsAsync(byte[] wasm) => _ = await ExecuteCoreAsync(wasm, expectedError: "WebAssembly.Exception");
 
-    private static async Task<NodeResult> ExecuteCoreAsync(byte[] wasm, bool expectTrap)
+    public static async Task AssertTrapsAsync(byte[] wasm) => _ = await ExecuteCoreAsync(wasm, expectedError: "RuntimeError");
+
+    private static async Task<NodeResult> ExecuteCoreAsync(byte[] wasm, string? expectedError)
     {
         var start = new ProcessStartInfo("node")
         {
@@ -48,10 +50,10 @@ internal static class Node
         await node.WaitForExitAsync();
 
         string error = await stderr;
-        if (expectTrap)
+        if (expectedError is not null)
         {
             Assert.NotEqual(0, node.ExitCode);
-            Assert.Contains("RuntimeError", error);
+            Assert.Contains(expectedError, error);
             return default;
         }
         Assert.True(node.ExitCode == 0, error);

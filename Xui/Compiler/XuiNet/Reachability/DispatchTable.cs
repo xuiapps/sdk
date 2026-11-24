@@ -37,12 +37,13 @@ internal sealed partial class DispatchTable
                     throw new NotSupportedException("Explicit class method implementations and covariant overrides are not implemented.");
             }
             var slots = new List<VirtualSlot>();
-            if (identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } parent)
+            if (identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } parent && !FrameworkTypes.Is(parent, "System", "Object"))
             {
                 slots.AddRange(Resolve(parent));
                 if ((parent.Module.GetType((TypeDefinitionHandle)parent.Handle).Attributes & TypeAttributes.Sealed) != 0)
                     throw new BadImageFormatException("Cannot derive from a sealed class.");
             }
+            else if (identity.BaseType is { } root && FrameworkTypes.Is(root, "System", "Object")) { }
             else if (definition.BaseType.Kind == HandleKind.TypeReference)
             {
                 var reference = module.GetTypeReference((TypeReferenceHandle)definition.BaseType);

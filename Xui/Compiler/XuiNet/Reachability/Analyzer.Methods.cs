@@ -19,7 +19,10 @@ public sealed partial class Analyzer
             throw new NotSupportedException($"Method reachability requires a closed declaring type and a non-generic method: {identity}.");
         UseModule(module, node);
         Add(new Dependency.Type(identity.DeclaringType), node, DependencyReason.DeclaringType);
-        if (method.Name != ".cctor")
+        // BeforeFieldInit permits deferring initialization until the first static field access.
+        // Strict initializers remain required by calls and constructors.
+        if (method.Name != ".cctor" &&
+            (module.GetType((TypeDefinitionHandle)identity.DeclaringType.Handle).Attributes & TypeAttributes.BeforeFieldInit) == 0)
             Add(new Dependency.Initialization(identity.DeclaringType), node, DependencyReason.Initialization);
         var signature = SignatureReader.Method(module, method.Signature, identity.DeclaringType.Arguments);
         if (signature.HasThis)
@@ -31,8 +34,17 @@ public sealed partial class Analyzer
         Signature(node, signature.Result, DependencyReason.Signature);
         if ((method.Attributes & MethodAttributes.Abstract) != 0) return;
         var body = method.Body ?? throw new NotSupportedException($"The method has no managed body: {identity}.");
-        if (body.ExceptionRegions.Length != 0)
-            throw new NotSupportedException($"Exception-handler reachability is not implemented: {identity}.");
+        foreach (var region in body.ExceptionRegions)
+        {
+            if (region.Kind == ExceptionRegionKind.Filter) throw new NotSupportedException("Exception filters are not implemented.");
+            if (region.Kind == ExceptionRegionKind.Catch)
+            {
+                var caught = SignatureReader.Resolve(module, region.CatchType);
+                if (caught.Identity is not { } catchType || DotNet.Exceptions.ExceptionTypes.Kind(catchType) is null && !DotNet.Exceptions.ExceptionTypes.IsCatchAll(catchType))
+                    throw new NotSupportedException($"Catch type is not a supported built-in exception: {caught}.");
+                Signature(node, caught, DependencyReason.TypeOperand, region.HandlerOffset);
+            }
+        }
         System.Collections.Immutable.ImmutableArray<SignatureType> locals;
         try { locals = SignatureReader.Locals(module, body.LocalSignature, identity.DeclaringType.Arguments); }
         catch (NotSupportedException error)
@@ -46,6 +58,7 @@ public sealed partial class Analyzer
         var reachable = new HashSet<InstructionNode>();
         var pending = new Stack<InstructionNode>();
         pending.Push(graph.Entry);
+        foreach (var region in body.ExceptionRegions) pending.Push(graph.Instructions.Single(n => n.Offset == region.HandlerOffset));
         while (pending.TryPop(out var instruction))
             if (reachable.Add(instruction))
                 foreach (var successor in instruction.Successors) pending.Push(successor);
@@ -70,6 +83,16 @@ public sealed partial class Analyzer
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.NativeFloat.TryMethod(module, token, out var nativeOperation, out _))
+                    {
+                        Add(new Dependency.Intrinsic($"NFloat.{nativeOperation}"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (DotNet.Exceptions.ExceptionTypes.TryMember(module, token, out var exceptionKind, out _, out _))
+                    {
+                        Add(new Dependency.Intrinsic($"System.{exceptionKind}"), node, DependencyReason.Call, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && WellKnownMethods.IsObjectConstructor(module, token))
                     {
                         Add(new Dependency.Intrinsic("System.Object..ctor"), node, DependencyReason.Call, offset);

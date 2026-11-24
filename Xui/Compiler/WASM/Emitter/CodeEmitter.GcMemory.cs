@@ -6,6 +6,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void LoadRaw(LocalVariable type)
     {
+        if (StorageModel.IsReference(type)) { LoadReference(type); return; }
         switch (type.TypeCode)
         {
             case SignatureTypeCode.SByte: writer.I32Load8S(); break;
@@ -24,6 +25,7 @@ public readonly ref partial struct CodeEmitter
 
     private void StoreRaw(LocalVariable type)
     {
+        if (StorageModel.IsReference(type)) { StoreReference(type); return; }
         switch (type.TypeCode)
         {
             case SignatureTypeCode.SByte:

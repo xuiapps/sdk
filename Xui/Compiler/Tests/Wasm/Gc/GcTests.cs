@@ -203,7 +203,7 @@ public class GcTests
     [Theory]
     [InlineData("value.Read()")]
     [InlineData("value.Field")]
-    public async Task NullInstanceAccessTrapsEvenWhenMethodDoesNotReadFields(string access)
+    public async Task NullInstanceAccessThrowsEvenWhenMethodDoesNotReadFields(string access)
     {
         string source = $$"""
             public class Box { public int Field; public int Read() => 7; }
@@ -217,7 +217,7 @@ public class GcTests
             var pe = Frontend.Roslyn.Compile(source, optimizationLevel: optimization);
             var error = Assert.Throws<TargetInvocationException>(() => Assembly.Load(pe).EntryPoint!.Invoke(null, null));
             Assert.IsType<NullReferenceException>(error.InnerException);
-            await Node.AssertTrapsAsync(Emit(pe));
+            await Node.AssertThrowsAsync(Emit(pe));
         }
     }
 
@@ -263,12 +263,13 @@ public class GcTests
         """, "new\n", 11);
 
     [Fact]
-    public void ManagedAddressLocalsFailInsteadOfLosingTheirFieldPath()
+    public void ManagedAddressLocalsForGcFieldsFailInsteadOfLosingTheirFieldPath()
     {
         const string source = """
             public struct Label { public string Text; }
             public static class Program {
-                public static int Main() { Label value = default; ref Label alias = ref value; alias.Text = "x"; return 0; }
+                public static int Main() { var box = new Box(); ref Label alias = ref box.Value; alias.Text = "x"; return 0; }
+                public class Box { public Label Value; }
             }
             """;
         var pe = Frontend.Roslyn.Compile(source, optimizationLevel: OptimizationLevel.Debug);

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xui WASM · Events</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui,sans-serif; background:#081122; color:#edf4ff; }
+  body { max-width:880px; margin:48px auto; padding:0 20px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  h1 { font-size:26px; font-weight:600; margin:0; } p { color:#aabbcf; }
+  button { background:#204b78; color:white; border:1px solid #547da4; border-radius:8px; padding:10px 20px; cursor:pointer; }
+  canvas { display:block; width:100%; height:auto; border:1px solid #2b405c; border-radius:12px; }
+  #status { min-height:24px; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; line-height:1.5; }
+  details { margin-top:24px; } summary { cursor:pointer; color:#aabbcf; }
+</style>
+<header><h1>Xui WASM / Events</h1><button id="run">Run again</button></header>
+<p>A small canvas scene compiled from C# with Xui geometry.</p>
+<canvas id="canvas" width="640" height="360" aria-label="Events canvas demo"></canvas>
+<p id="status" role="status">Starting…</p>
+<details><summary>C# source</summary><pre>using CanvasDemo;
+using Xui.Core.Canvas;
+using Xui.Core.Math2D;
+
+public interface IPainter { void Paint(ref PaintEvent e); }
+public ref struct PaintEvent
+{
+    public Rect Bounds;
+    public Color Color;
+    public string Label;
+    public IPainter Painter;
+}
+public class Painter : IPainter
+{
+    public void Paint(ref PaintEvent e)
+    {
+        Draw.Fill(ref e.Bounds, ref e.Color);
+        e.Bounds.X = 40; e.Bounds.Y = 60;
+        Draw.Text(e.Label, e.Bounds.X, e.Bounds.Y, 26, ref e.Color);
+    }
+}
+public static class Program
+{
+    public static int Main()
+    {
+        NativeCanvas.Clear(0.0625, 0.125, 0.25, 1);
+        PaintEvent e = default;
+        e.Bounds.X = 40; e.Bounds.Y = 100; e.Bounds.Width = 520; e.Bounds.Height = 180;
+        e.Color.Red = 0.5f; e.Color.Green = 1; e.Color.Blue = 0.75f; e.Color.Alpha = 1;
+        e.Label = &quot;Stack event → interface → canvas&quot;;
+        e.Painter = new Painter();
+        e.Painter.Paint(ref e);
+        return 42;
+    }
+}
+
+using System;
+using System.Runtime.InteropServices;
+using Xui.Core.Canvas;
+using Xui.Core.Math2D;
+
+namespace CanvasDemo;
+
+public static class Draw
+{
+    public static void Fill(ref Rect rectangle, ref Color color) =&gt; NativeCanvas.FillRect(
+        (double)rectangle.X, (double)rectangle.Y, (double)rectangle.Width, (double)rectangle.Height,
+        (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+
+    public static void Text(string text, NFloat x, NFloat y, NFloat size, ref Color color) =&gt; NativeCanvas.FillText(
+        text, (double)x, (double)y, (double)size, (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+}
+
+// Explicit host boundary. Tests replace only these exact signatures with drawing imports.
+public static class NativeCanvas
+{
+    public static void Clear(double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+    public static void FillRect(double x, double y, double width, double height, double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+    public static void FillText(string text, double x, double y, double size, double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+}
+</pre></details>
+<script>
+function canvasImports(context, commands) {
+    const color = (r,g,b,a) => `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`;
+    return {
+        Clear(r,g,b,a) {
+            commands.push(['Clear',r,g,b,a]);
+            if (context) { context.clearRect(0,0,640,360); context.fillStyle = color(r,g,b,a); context.fillRect(0,0,640,360); }
+        },
+        FillRect(x,y,width,height,r,g,b,a) {
+            commands.push(['FillRect',x,y,width,height,r,g,b,a]);
+            if (context) { context.fillStyle = color(r,g,b,a); context.fillRect(x,y,width,height); }
+        },
+        FillText(text,x,y,size,r,g,b,a) {
+            commands.push(['FillText',text,x,y,size,r,g,b,a]);
+            if (context) { context.fillStyle = color(r,g,b,a); context.font = `${size}px sans-serif`; context.fillText(text,x,y); }
+        }
+    };
+}
+const bytes = Uint8Array.from(atob('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'), c => c.charCodeAt(0));
+async function run() {
+    const button = document.getElementById('run');
+    const status = document.getElementById('status');
+    button.disabled = true; window.demoResult = null;
+    try {
+        const commands = [];
+        const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
+        const context = document.getElementById('canvas').getContext('2d');
+        const instance = await WebAssembly.instantiate(module, { canvas: canvasImports(context, commands) });
+        const exitCode = instance.exports.main();
+        window.demoResult = { commands, exitCode };
+        status.textContent = `Rendered ${commands.length} drawing commands · Exit code ${exitCode}`;
+    } catch (error) {
+        window.demoResult = { error: String(error) };
+        status.textContent = `Unable to run this demo: ${error.message ?? error}. Requires a browser with WASM GC and JS string builtins.`;
+    } finally { button.disabled = false; }
+}
+document.getElementById('run').addEventListener('click', run);
+run();
+</script>
+</html>

@@ -58,13 +58,15 @@ try {
     await result('True\n1234567890123\n1.25\n', 0);
     await run('using System;\nConsole.WriteLine( ;');
     assert.match(await page.locator('#error').innerText(), /Program.cs\(2,/);
-    await run('throw new System.Exception("unsupported");');
+    await run('using System; try { throw new InvalidOperationException("caught"); } catch (Exception error) { Console.WriteLine(error.Message); } finally { Console.WriteLine("cleanup"); }');
+    await result('caught\ncleanup\n', 0);
+    await run('try { throw new System.Exception(); } catch (System.Exception e) when (e.Message != null) { }');
     assert.equal(await page.locator('#status').innerText(), 'Failed');
     assert.notEqual(await page.locator('#error').innerText(), '');
 
-    await run('using System; Console.WriteLine("before trap"); Box box = null; Console.WriteLine(box.Value); class Box { public int Value; }');
+    await run('using System; Console.WriteLine("before exception"); Box box = null; Console.WriteLine(box.Value); class Box { public int Value; }');
     assert.equal(await page.locator('#status').innerText(), 'Failed');
-    assert.equal(await page.locator('#output').textContent(), 'before trap\n');
+    assert.equal(await page.locator('#output').textContent(), 'before exception\n');
 
     await page.locator('#source').fill('Spin(1); static void Spin(int value) { while (value > 0) value = value | 1; }');
     await page.locator('#run').click();
@@ -90,7 +92,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: fileURLToPath(new URL('mobile.png', screenshots)), fullPage: true });
     assert.deepEqual(errors, []);
-    console.log('Browser smoke passed: examples, diagnostics, traps, console output, download, stop/re-run, worker reuse, and responsive layout.');
+    console.log('Browser smoke passed: examples, diagnostics, exceptions, console output, download, stop/re-run, worker reuse, and responsive layout.');
 } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));
