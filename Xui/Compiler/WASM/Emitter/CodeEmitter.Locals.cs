@@ -18,6 +18,8 @@ public readonly ref partial struct CodeEmitter
         var local = GetLocal(index, code, offset);
         if (!initializedLocals[(int)index.Value])
             throw new InvalidProgramException($"Uninitialized local {index.Value} for {code} at IL_{offset:x4}.");
+        if (method.Frame?.ScalarLocals.TryGetValue((int)index.Value, out int scalarAddress) == true)
+        { FrameAddress(scalarAddress); LoadField(local, offset); return; }
         if (method.Frame?.ReferenceLocals.TryGetValue((int)index.Value, out int address) == true) { FrameAddress(address); LoadReference(local); }
         else writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value));
         if (local.IsReferenceAddress) writer.LocalGet(method.ReferenceLocals[(int)index.Value]);
@@ -26,8 +28,8 @@ public readonly ref partial struct CodeEmitter
             if (local.UsesGc) CloneGc(identity);
             else CopyValue(identity, offset);
         }
-        if (local.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
-        stack.Push(new MsilStackEntry(local.StackType, local.Identity, local.IsByReference, local.Array));
+        if (local.TypeCode == SignatureTypeCode.Single && !local.IsByReference) writer.F64PromoteF32();
+        stack.Push(new MsilStackEntry(local.IsByReference ? local.TypeCode : local.StackType, local.Identity, local.IsByReference, local.Array));
     }
 
     private void StoreLocal(LocalIndex index, OpCode code, int offset)
@@ -37,7 +39,8 @@ public readonly ref partial struct CodeEmitter
             throw new NotSupportedException("Managed-address locals cannot capture a GC field location.");
         PopAssignable(local, code, offset);
         if (local.IsReferenceAddress) writer.LocalSet(method.ReferenceLocals[(int)index.Value]);
-        if (method.Frame?.ReferenceLocals.TryGetValue((int)index.Value, out int address) == true) StoreReferenceVariable(address, local);
+        if (method.Frame?.ScalarLocals.TryGetValue((int)index.Value, out int scalarAddress) == true) StoreScalarVariable(scalarAddress, local);
+        else if (method.Frame?.ReferenceLocals.TryGetValue((int)index.Value, out int address) == true) StoreReferenceVariable(address, local);
         else if (local.IsByReference) writer.LocalSet(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value));
         else if (local.UsesGc && local.Identity is { } gcIdentity && !method.Storage.IsClass(gcIdentity))
             StoreGcLocal(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value), gcIdentity);

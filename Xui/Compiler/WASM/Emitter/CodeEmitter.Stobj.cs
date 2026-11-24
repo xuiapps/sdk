@@ -6,6 +6,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitStobj(Instruction.Token instruction, int offset)
     {
+        if (TryScalarObject(instruction, offset)) return;
         if (TryReferenceObject(instruction, offset)) return;
         if (TryGcObject(instruction, offset)) return;
         var identity = ObjectType(instruction.Value);

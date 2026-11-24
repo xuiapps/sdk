@@ -256,8 +256,11 @@ public class StaticCallTests
         Assert.Contains("Invalid argument index", Assert.Throws<InvalidProgramException>(() => Emit(image)).Message);
     }
 
+    [Fact]
+    public Task PrimitiveRefParametersExecute() => AssertReturnMatchesDotNet(Frontend.Roslyn.Compile(
+        "public static class Program { static int F(ref int x) => x; public static int Main() { int x = 1; return F(ref x); } }"), 1);
+
     [Theory]
-    [InlineData("public static class Program { static int F(ref int x) => x; public static int Main() { int x = 1; return F(ref x); } }")]
     [InlineData("public static class Program { static Program() { System.Console.WriteLine(1); } public static int Main() => 0; }")]
     [InlineData("public static class Program { public static int Main(string[] args) => args.Length; }")]
     [InlineData("public static class Program { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.Synchronized)] static int F() => 1; public static int Main() => F(); }")]

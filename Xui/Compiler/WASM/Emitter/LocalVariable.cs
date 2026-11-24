@@ -50,6 +50,7 @@ public readonly record struct LocalVariable(
     };
 
     internal bool IsLinearValue => Identity is not null && !UsesGc && !IsByReference;
+    internal bool IsScalar => Identity is null && Array is null && TypeCode is not (SignatureTypeCode.Void or SignatureTypeCode.String or SignatureTypeCode.Object);
 
     internal bool NeedsNarrowing => TypeCode is SignatureTypeCode.Boolean or SignatureTypeCode.Char or
         SignatureTypeCode.SByte or SignatureTypeCode.Byte or SignatureTypeCode.Int16 or
@@ -67,7 +68,7 @@ public readonly record struct LocalVariable(
         for (int i = 0; i < declared.Length; i++)
         {
             var type = declared[i];
-            if (type.IsByReference && !storage.Bind(type).IsReferenceAddress && (type.Identity is not { IsValueType: true } id || storage.IsGc(id)))
+            if (type.IsByReference && !storage.Bind(type).IsReferenceAddress && !storage.Bind(type).IsScalar && (type.Identity is not { IsValueType: true } id || storage.IsGc(id)))
                 throw new NotSupportedException("Managed-address locals require a stack-stored struct.");
             locals[i] = storage.Bind(type);
             _ = locals[i].WasmType;

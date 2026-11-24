@@ -48,7 +48,7 @@ public readonly ref partial struct CodeEmitter
         {
             if (arguments[i].IsByReference && stack.Peek().Location is { } location &&
                 (!arguments[i].UsesGc || location.First != 0 || location.Owner.Identity != arguments[i].Identity))
-                throw new NotSupportedException("Instance calls through inline struct addresses are not implemented.");
+                throw new NotSupportedException("Calls through inline value field addresses are not implemented.");
             PopAssignable(arguments[i], instruction.Code, offset);
             if (temporaries is not null)
             {

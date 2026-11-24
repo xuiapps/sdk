@@ -19,7 +19,8 @@ public readonly ref partial struct CodeEmitter
             (!value.IsByReference && !storage.IsByReference && value.Identity is { } actual && storage.Identity is { } expected && actual.IsAssignableTo(expected));
         if (!compatibleIdentity || value.IsByReference != storage.IsByReference || value.Array != storage.Array)
             throw new InvalidProgramException($"Evaluation stack identity mismatch for {code} at IL_{offset:x4}.");
-        if (value.TypeCode != storage.StackType &&
+        var expectedType = storage.IsByReference ? storage.TypeCode : storage.StackType;
+        if (value.TypeCode != expectedType &&
             !(storage.StackType == SignatureTypeCode.IntPtr && value.TypeCode == SignatureTypeCode.Int32) &&
             !(storage.StackType == SignatureTypeCode.Int32 && value.TypeCode == SignatureTypeCode.IntPtr))
             throw new InvalidProgramException($"Evaluation stack type mismatch for {code} at IL_{offset:x4}; expected {storage.StackType}, found {value.TypeCode}.");
@@ -30,6 +31,7 @@ public readonly ref partial struct CodeEmitter
 
     private void Narrow(LocalVariable storage)
     {
+        if (storage.IsByReference) return;
         switch (storage.TypeCode)
         {
             case SignatureTypeCode.SByte: writer.I32Extend8S(); break;

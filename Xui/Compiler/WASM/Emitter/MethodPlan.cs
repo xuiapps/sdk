@@ -117,12 +117,14 @@ internal sealed partial class MethodPlan
             }
         }
         CollectReferenceVariables();
-        if (addressedReferenceLocals.Count + addressedReferenceArguments.Count != 0 || Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
+        if (addressedReferenceLocals.Count + addressedReferenceArguments.Count + addressedScalarLocals.Count + addressedScalarArguments.Count != 0 || Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
             Graph.Instructions.Any(n => n.After?.Entry is { Type: StackType.ValueType, DeclaredType.Identity: { } id } && !storage.IsGc(id)))
         {
             Frame = new(source, Locals, Signature.Parameters, storage);
             foreach (int index in addressedReferenceLocals) Frame.ReferenceLocals.Add(index, Frame.AllocateReference(Locals[index]));
             foreach (int index in addressedReferenceArguments) Frame.ReferenceArguments.Add(index, Frame.AllocateReference(Signature.Parameters[index]));
+            foreach (int index in addressedScalarLocals) Frame.ScalarLocals.Add(index, Frame.AllocateScalar(Locals[index]));
+            foreach (int index in addressedScalarArguments) Frame.ScalarArguments.Add(index, Frame.AllocateScalar(Signature.Parameters[index]));
             Frame.AllocateValues(Graph);
             if (Frame.References.Count != 0) { storage.ReferenceSlotsEnabled = true; storage.ExceptionsEnabled = true; }
             if (storage.ReferenceSlotsEnabled) RequireGcTemporaries();

@@ -19,6 +19,12 @@ public readonly ref partial struct CodeEmitter
         writer.GlobalGet(pointer).LocalTee(frame.Base).I32Const(MemoryFrame.Capacity - frame.Size)
             .I32GtU().If().Unreachable().End();
         writer.LocalGet(frame.Base).I32Const(frame.Size).I32Add().GlobalSet(pointer);
+        foreach (var (index, address) in frame.ScalarLocals)
+            if (initLocals) { FrameAddress(address); writer.I32Const(0).I32Const(MemoryFrame.ScalarSize(locals[index])).MemoryFill(); }
+        foreach (var (index, address) in frame.ScalarArguments)
+        {
+            FrameAddress(address); writer.LocalGet(new((uint)index)); StoreRaw(parameters[index]);
+        }
         for (int i = 0; i < frame.Locals.Length; i++)
         {
             if (frame.Locals[i] < 0) continue;
@@ -69,6 +75,7 @@ public readonly ref partial struct CodeEmitter
     private void LoadLocalAddress(ushort index, OpCode code, int offset)
     {
         var local = GetLocal(new LocalIndex(index), code, offset);
+        if (TryVariableScalarAddress(index, false, local)) return;
         if (TryVariableReferenceAddress(index, false, local)) return;
         if (local.Identity is null || method.Storage.IsClass(local.Identity.Value)) throw new NotSupportedException("Only struct local addresses are implemented.");
         if (!initLocals) throw new NotSupportedException("Addressable struct locals currently require initlocals.");

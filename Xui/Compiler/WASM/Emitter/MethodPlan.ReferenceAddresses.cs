@@ -6,6 +6,8 @@ internal sealed partial class MethodPlan
 {
     private readonly HashSet<int> addressedReferenceLocals = new();
     private readonly HashSet<int> addressedReferenceArguments = new();
+    private readonly HashSet<int> addressedScalarLocals = new();
+    private readonly HashSet<int> addressedScalarArguments = new();
 
     private void CollectReferenceVariables()
     {
@@ -20,6 +22,8 @@ internal sealed partial class MethodPlan
                 ? instruction.ReadShortVariable(ref reader).Index : instruction.ReadVariable(ref reader).Index;
             bool argument = node.Code is OpCode.Ldarga or OpCode.Ldarga_s;
             var variable = argument ? Signature.Parameters[index] : Locals[index];
+            if (!variable.IsByReference && variable.IsScalar)
+                (argument ? addressedScalarArguments : addressedScalarLocals).Add(index);
             if (variable.IsByReference || !StorageModel.IsReference(variable)) continue;
             (argument ? addressedReferenceArguments : addressedReferenceLocals).Add(index);
         }

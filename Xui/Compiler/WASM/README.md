@@ -369,10 +369,10 @@ supported operations that require no emitted bytes.
 | `stloc.2` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
 | `stloc.3` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
 | `ldarg.s` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
-| `ldarga.s` | `local.get` | Addresses owned struct parameter storage; primitive argument addresses remain unsupported. |
+| `ldarga.s` | `local.get` | Addresses frame-owned scalar/struct storage or a managed reference slot. |
 | `starg.s` | Optional narrowing; `local.set` | Replaces scalar arguments; copies structs into alias-preserving parameter storage. |
 | `ldloc.s` | `local.get`; optional `f64.promote_f32`, `memory.copy`, or `struct.new` | Loads class references; struct loads copy values into independent storage. |
-| `ldloca.s` | `local.get` | Returns a linear address or GC owner for struct locals. |
+| `ldloca.s` | `local.get` | Addresses scalar/struct locals or managed reference slots, preserving aliases. |
 | `stloc.s` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
 | `ldnull` | `ref.null` | Untyped null adapts to class or host-string assignment storage. |
 | `ldc.i4.m1` | `i32.const -1` |  |
@@ -554,10 +554,10 @@ supported operations that require no emitted bytes.
 | `ldftn` | `i32.const` | Captures a closed method adapter in the function table. |
 | `ldvirtftn` | `struct.get`; `i32.add` | Null-checks receiver and captures its selected virtual/interface table entry. |
 | `ldarg` | `local.get`; optional `f64.promote_f32` | Loads arguments; struct values copy and floats promote to f64. |
-| `ldarga` | `local.get` | Addresses owned struct parameter storage; primitive argument addresses remain unsupported. |
+| `ldarga` | `local.get` | Addresses frame-owned scalar/struct storage or a managed reference slot. |
 | `starg` | Optional narrowing; `local.set` | Replaces scalar arguments; copies structs into alias-preserving parameter storage. |
 | `ldloc` | `local.get`; optional `f64.promote_f32`, `memory.copy`, or `struct.new` | Loads class references; struct loads copy values into independent storage. |
-| `ldloca` | `local.get` | Returns a linear address or GC owner for struct locals. |
+| `ldloca` | `local.get` | Addresses scalar/struct locals or managed reference slots, preserving aliases. |
 | `stloc` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
 | `localloc` |  |  |
 | `endfilter` |  |  |
@@ -763,3 +763,10 @@ Managed constructor failures are wrapped in TargetInvocationException, preservin
 InnerException and the ApplicationException hierarchy. Direct newobj still exposes
 the original exception. Value-type factories, missing/private constructors, and
 reflection-based overload selection remain unsupported.
+
+Scalar locals/arguments whose addresses are taken use aligned frame slots, with
+loads and stores routed through that one location. Primitive, enum, and NFloat
+ref/in/out calls retain storage widths, float rounding, and aliasing. Frames unwind
+on managed exceptions. Generic scalar ldobj/stobj/cpobj/initobj use typed loads and
+stores. Scalar references into inline GC fields cannot yet cross a call boundary;
+managed-address return values remain unsupported.

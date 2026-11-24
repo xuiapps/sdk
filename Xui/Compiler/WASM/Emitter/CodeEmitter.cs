@@ -512,11 +512,15 @@ public readonly ref partial struct CodeEmitter
                     }
                     break;
                 case OpCode.Box:
+                    _ = instruction.ReadToken(ref reader); break;
                 case OpCode.Initobj:
                 case OpCode.Ldobj:
                 case OpCode.Stobj:
                 case OpCode.Cpobj:
-                    _ = instruction.ReadToken(ref reader); break;
+                    var objectStorage = method.Storage.Bind(IR.Signatures.SignatureReader.StorageType(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments));
+                    if (objectStorage.IsScalar) method.RequireGcTemporaries();
+                    break;
                 case OpCode.Ldc_i8:
                     _ = instruction.ReadLong(ref reader); break;
                 case OpCode.Ldc_i4:

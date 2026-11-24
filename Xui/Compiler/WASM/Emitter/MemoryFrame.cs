@@ -21,6 +21,23 @@ internal sealed class MemoryFrame
     public int[] Arguments { get; }
     public Dictionary<int, int> ReferenceLocals { get; } = new();
     public Dictionary<int, int> ReferenceArguments { get; } = new();
+    public Dictionary<int, int> ScalarLocals { get; } = new();
+    public Dictionary<int, int> ScalarArguments { get; } = new();
+    public static int ScalarSize(LocalVariable type) => type.TypeCode switch
+    {
+        SignatureTypeCode.Boolean or SignatureTypeCode.Byte or SignatureTypeCode.SByte => 1,
+        SignatureTypeCode.Char or SignatureTypeCode.UInt16 or SignatureTypeCode.Int16 => 2,
+        SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 or SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr or SignatureTypeCode.Single => 4,
+        SignatureTypeCode.Int64 or SignatureTypeCode.UInt64 or SignatureTypeCode.Double => 8,
+        _ => throw new NotSupportedException($"Scalar frame storage is not implemented for {type.TypeCode}.")
+    };
+    public int AllocateScalar(LocalVariable type)
+    {
+        int size = ScalarSize(type);
+        int offset = Align(Size, size);
+        Size = checked(offset + size);
+        return offset;
+    }
     public int AllocateReference(LocalVariable type)
     {
         int offset = Align(Size, 4);

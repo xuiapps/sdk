@@ -51,10 +51,10 @@ internal sealed class MethodSignature
         {
             var type = signature.Parameters[i - first];
             parameters[i] = storage.Bind(type);
-            if (type.IsByReference && !parameters[i].IsReferenceAddress && (type.Identity is not { IsValueType: true } || parameters[i].UsesGc))
+            if (type.IsByReference && !parameters[i].IsReferenceAddress && !parameters[i].IsScalar && (type.Identity is not { IsValueType: true } || parameters[i].UsesGc))
                 throw new NotSupportedException("This managed-address parameter representation is not implemented.");
             if (parameters[i].IsReferenceAddress) storage.ReferenceAddressesEnabled = true;
-            else if (type.IsByReference) _ = storage.StackLayout(type.Identity!.Value);
+            else if (type.IsByReference && !parameters[i].IsScalar) _ = storage.StackLayout(type.Identity!.Value);
             _ = parameters[i].WasmType;
         }
         return new() { Parameters = parameters, DeclaredReturnType = result, Result = resultStorage, HasThis = signature.HasThis, IsConstructor = method.Name == ".ctor" };

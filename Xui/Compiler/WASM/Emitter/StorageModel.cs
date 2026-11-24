@@ -62,11 +62,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     {
         if (type.Identity is { } native && XuiNet.DotNet.Intrinsics.NativeFloat.Is(native))
         {
-            if (type.IsByReference) throw new NotSupportedException("NFloat managed-address ABI is not implemented.");
-            return new(SignatureTypeCode.Single);
+            return new(SignatureTypeCode.Single, IsByReference: type.IsByReference);
         }
-        if (type.IsByReference && type.Identity is { } enumIdentity && EnumInfo.UnderlyingType(enumIdentity) is not null)
-            throw new NotSupportedException("Enum managed-address parameters and locals are not implemented.");
         type = EnumInfo.Storage(type);
         if (type.Code is SignatureTypeCode.GenericTypeParameter or SignatureTypeCode.GenericMethodParameter)
             throw new NotSupportedException("Open generic parameters cannot be emitted.");
