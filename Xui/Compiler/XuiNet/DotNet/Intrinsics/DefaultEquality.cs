@@ -4,7 +4,12 @@ using Xui.Compiler.XuiNet.DotNet.Signatures;
 namespace Xui.Compiler.XuiNet.DotNet.Intrinsics;
 
 /// <summary>Closed framework default equality comparers with an explicitly supported value representation.</summary>
-public sealed record DefaultEquality(string Operation, TypeIdentity Owner, SignatureType Element, MethodSignature Signature)
+public sealed record DefaultEquality(
+    string Operation,
+    TypeIdentity Owner,
+    SignatureType Element,
+    MethodSignature Signature,
+    MethodIdentity? Implementation = null)
 {
     /// <summary>Recognizes the trusted framework comparer definition.</summary>
     public static bool Is(TypeIdentity type) => FrameworkTypes.Is(type, "System.Collections.Generic", "EqualityComparer`1");
@@ -26,11 +31,12 @@ public sealed record DefaultEquality(string Operation, TypeIdentity Owner, Signa
             SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 or SignatureTypeCode.Int64 or SignatureTypeCode.UInt64 or
             SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr or SignatureTypeCode.Single or SignatureTypeCode.Double ||
             element.Identity is { } native && NativeFloat.Is(native));
-        if (!supported) throw new NotSupportedException($"Default equality is not implemented for {element}.");
+        var implementation = supported ? null : EquatableMethod.Find(element);
+        if (!supported && implementation is null) throw new NotSupportedException($"Default equality is not implemented for {element}.");
         if (member.Name == "get_Default" && !signature.HasThis && signature.Parameters.Length == 0 && signature.Result.Identity == comparer ||
             member.Name == "Equals" && signature.HasThis && signature.Result.Code == SignatureTypeCode.Boolean &&
             signature.Parameters.Length == 2 && signature.Parameters.All(p => p == element))
-            return new(member.Name, comparer, element, signature);
+            return new(member.Name, comparer, element, signature, implementation);
         throw new NotSupportedException($"Default comparer member is not implemented: {comparer}.{member.Name}.");
     }
 }

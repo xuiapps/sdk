@@ -9,7 +9,7 @@ public static class NativeFloat
     /// <summary>Recognizes the framework native floating-point value type.</summary>
     public static bool Is(TypeIdentity type) => FrameworkTypes.Is(type, "System.Runtime.InteropServices", "NFloat");
 
-    /// <summary>Recognizes scalar conversions and basic arithmetic, excluding instance methods and unchecked signatures.</summary>
+    /// <summary>Recognizes scalar conversions, arithmetic, and typed instance equality with checked signatures.</summary>
     public static bool TryMethod(Module module, EntityHandle token, out string operation, out MethodSignature signature)
     {
         operation = ""; signature = default!;
@@ -17,9 +17,11 @@ public static class NativeFloat
         var member = module.GetMemberReference((MemberReferenceHandle)token);
         if (member.Kind != MemberReferenceKind.Method || !Is(new(module, member.Parent))) return false;
         signature = SignatureReader.Method(module, member.Signature);
-        if (signature.HasThis || signature.Parameters.Any(p => p.IsByReference) || signature.Result.IsByReference) return false;
         operation = member.Name;
         bool N(SignatureType type) => type.Identity is { } identity && Is(identity);
+        if (signature.HasThis) return operation == "Equals" && signature.Parameters.Length == 1 &&
+            N(signature.Parameters[0]) && !signature.Parameters[0].IsByReference && signature.Result.Code == SignatureTypeCode.Boolean;
+        if (signature.Parameters.Any(p => p.IsByReference) || signature.Result.IsByReference) return false;
         bool Scalar(SignatureType type) => type.Identity is null && type.Code is SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 or SignatureTypeCode.Single or SignatureTypeCode.Double;
         return operation switch
         {

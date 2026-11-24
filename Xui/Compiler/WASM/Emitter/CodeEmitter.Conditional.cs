@@ -145,6 +145,8 @@ public readonly ref partial struct CodeEmitter
         if (entry.Type == StackType.MethodPointer) return new(SignatureTypeCode.IntPtr) { Method = entry.Method };
         if (entry.Type == StackType.Null) return new(SignatureTypeCode.Object) { IsNull = true };
         if (entry.DeclaredType is not { } declared) return new(SourceType(entry.Type));
+        if (declared.Identity is { } identity && XuiNet.DotNet.Intrinsics.NativeFloat.Is(identity))
+            return new(declared.IsByReference ? SignatureTypeCode.Single : SignatureTypeCode.Double, isByReference: declared.IsByReference);
         declared = XuiNet.DotNet.EnumInfo.Storage(declared);
         return new(declared.Code, declared.Identity, declared.IsByReference, declared.Array);
     }

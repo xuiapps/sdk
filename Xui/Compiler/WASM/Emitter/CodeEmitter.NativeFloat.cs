@@ -10,6 +10,11 @@ public readonly ref partial struct CodeEmitter
     private bool TryNativeFloat(Instruction.Token instruction, int offset)
     {
         if (instruction.Code != OpCode.Call || !NativeFloat.TryMethod(source, MetadataTokens.EntityHandle(instruction.Value), out var operation, out var signature)) return false;
+        if (operation == "Equals")
+        {
+            EmitNativeFloatEquals(instruction, offset);
+            return true;
+        }
         for (int i = signature.Parameters.Length - 1; i >= 0; i--)
             Pop(method.Storage.Bind(signature.Parameters[i]).StackType, instruction.Code, offset);
         if (operation == "Clamp")

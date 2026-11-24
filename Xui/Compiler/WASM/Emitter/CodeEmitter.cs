@@ -576,10 +576,10 @@ public readonly ref partial struct CodeEmitter
                         if (equality.Operation == "Equals")
                         {
                             method.Storage.ExceptionsEnabled = true;
-                            var category = method.Storage.Bind(equality.Element).StackType;
-                            if (category == SignatureTypeCode.IntPtr) category = SignatureTypeCode.Int32;
-                            method.EqualityTemporaries.TryAdd(category, default);
-                            if (category == SignatureTypeCode.String) method.Storage.StringEqualityEnabled = true;
+                            var storage = method.Storage.Bind(equality.Element);
+                            method.EqualityTemporaries.TryAdd(storage, default);
+                            if (storage.TypeCode == SignatureTypeCode.String) method.Storage.StringEqualityEnabled = true;
+                            if (equality.Implementation is { } equals && !method.Calls.Contains(equals)) method.Calls.Add(equals);
                         }
                         break;
                     }
@@ -608,6 +608,7 @@ public readonly ref partial struct CodeEmitter
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.NativeFloat.TryMethod(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out var nativeOperation, out _))
                     {
                         method.UsesNativeFloat = true;
+                        if (nativeOperation == "Equals") method.RequireGcTemporaries();
                         if (nativeOperation == "Clamp")
                         {
                             method.UsesNativeFloatClamp = true;

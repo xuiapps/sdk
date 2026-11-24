@@ -727,6 +727,9 @@ Default EqualityComparer<T> instances are rooted singleton GC values per closed 
 Default/Equals specialize for strings, numeric primitives, bool, char, enums, and
 NFloat without loading ComparerHelpers or reflection. String equality is ordinal
 and null-safe; floating equality preserves .NET NaN and signed-zero semantics.
+Structs implementing IEquatable<T> call their concrete typed equality method,
+including explicit implementations and closed generic structs. Arguments retain
+value-copy semantics; NFloat field Equals handles NaN and signed zero.
 Null comparer receivers throw managed NullReferenceException. Custom comparer
-subclasses, IEqualityComparer interface dispatch, hashing, and non-scalar element
-equality remain explicitly unsupported.
+subclasses, IEqualityComparer interface dispatch, hashing, class equality, and
+fallback ValueType.Equals remain explicitly unsupported.

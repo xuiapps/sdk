@@ -355,6 +355,11 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             signature = new(equality.Signature.HasThis
                 ? [new SignatureType(SignatureTypeCode.TypeHandle, equality.Owner, IsReferenceType: true), .. equality.Signature.Parameters]
                 : equality.Signature.Parameters.ToArray(), StackEntry.From(equality.Signature.Result));
+        else if (Model.Intrinsics.NativeFloat.TryMethod(module, handle, out _, out var native) && native.HasThis)
+        {
+            var member = module.GetMemberReference((MemberReferenceHandle)handle);
+            signature = new([new SignatureType(SignatureTypeCode.TypeHandle, module.ResolveType(member.Parent), IsByReference: true), .. native.Parameters], StackEntry.From(native.Result));
+        }
         else if (Model.Intrinsics.TimeSpanFactory.Read(module, handle) is { } duration)
             signature = new(duration.Signature.Parameters.ToArray(), StackEntry.From(duration.Signature.Result));
         else if (Model.Intrinsics.ReferenceCompareExchange.Read(module, handle, context.Arguments, methodArguments) is { } exchange)

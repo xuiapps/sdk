@@ -44,6 +44,47 @@ public class DefaultEqualityTests
         """, "True\nFalse\nTrue\nFalse\nTrue\nFalse\nTrue\nTrue\nTrue\nTrue\nFalse\nTrue\nFalse\nTrue\n", 42);
 
     [Fact]
+    public Task StructComparersCallTypedEqualityAndPreserveValueCopies() => InlineArrayTests.AssertLinked("""
+        using System;
+        using System.Collections.Generic;
+        public struct Parity : IEquatable<Parity> {
+            public int Value;
+            public bool Equals(Parity other) { Value++; return (Value & 1) == (other.Value & 1); }
+        }
+        public struct Explicit<T> : IEquatable<Explicit<T>> {
+            public T Value;
+            bool IEquatable<Explicit<T>>.Equals(Explicit<T> other) => true;
+        }
+        public static class Program { public static int Main() {
+            Parity a=new Parity { Value=40 }, b=new Parity { Value=1 };
+            Console.WriteLine(EqualityComparer<Parity>.Default.Equals(a,b)); Console.WriteLine(a.Value);
+            Console.WriteLine(EqualityComparer<Explicit<int>>.Default.Equals(default,default));
+            Console.WriteLine(EqualityComparer<Explicit<string>>.Default.Equals(default,default));
+            return 42;
+        } }
+        """, "True\n40\nTrue\nTrue\n", 42);
+
+    [Fact]
+    public Task ColorStyleNativeFloatFieldsUseTypedEquals() => InlineArrayTests.AssertLinked("""
+        using System;
+        using System.Collections.Generic;
+        using System.Runtime.InteropServices;
+        public struct Color : IEquatable<Color> {
+            public NFloat R, G;
+            public bool Equals(Color other) => R.Equals(other.R) && G.Equals(other.G);
+        }
+        public class Box { public NFloat Value; }
+        public static class Program { public static int Main() {
+            var a=new Color { R=NFloat.NaN, G=(NFloat)0 };
+            var b=new Color { R=NFloat.NaN, G=(NFloat)(-0.0) };
+            Console.WriteLine(EqualityComparer<Color>.Default.Equals(a,b));
+            b.G=(NFloat)1; Console.WriteLine(EqualityComparer<Color>.Default.Equals(a,b));
+            var box=new Box { Value=NFloat.NaN }; Console.WriteLine(box.Value.Equals(NFloat.NaN));
+            return 42;
+        } }
+        """, "True\nFalse\nTrue\n", 42);
+
+    [Fact]
     public void InterfaceDispatchDoesNotTreatTheDefaultSingletonAsAnOrdinaryClass()
     {
         using var app = CanvasTests.Read(Frontend.Roslyn.Compile("""

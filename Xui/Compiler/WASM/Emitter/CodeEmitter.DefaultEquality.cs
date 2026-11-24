@@ -21,14 +21,16 @@ public readonly ref partial struct CodeEmitter
         }
         var storage = method.Storage.Bind(access.Element);
         var category = storage.StackType == SignatureTypeCode.IntPtr ? SignatureTypeCode.Int32 : storage.StackType;
-        var (left, right) = method.EqualityTemporaries[category];
+        var (left, right) = method.EqualityTemporaries[storage];
         PopAssignable(storage, instruction.Code, offset); writer.LocalSet(right);
         PopAssignable(storage, instruction.Code, offset); writer.LocalSet(left);
         var receiver = Pop(instruction.Code, offset);
         if (receiver.IsByReference || receiver.Identity is not null && receiver.Identity != access.Owner)
             throw new InvalidProgramException("Default equality requires its declared comparer receiver.");
         writer.RefIsNull().If(); ThrowException(ExceptionKind.NullReferenceException); writer.End();
-        if (category == SignatureTypeCode.String) CompareStrings(left, right);
+        if (access.Implementation is { } equals)
+            writer.LocalGet(left).LocalGet(right).Call(methods[equals].Function);
+        else if (category == SignatureTypeCode.String) CompareStrings(left, right);
         else
         {
             writer.LocalGet(left).LocalGet(right);

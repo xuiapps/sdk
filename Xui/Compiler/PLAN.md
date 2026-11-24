@@ -41,8 +41,9 @@ Optional floorplan preloading retains known unsupported Lazy/async dependencies.
 The next sequence is:
 
 1. The browser catalogue is now injected into the real shell, separately from the
-   unchanged default catalogue. Default string/scalar equality now executes; continue
-   through IEquatable<Color> used by View.SetViewRenderProperty, then the window and service paths.
+   unchanged default catalogue. Default string/scalar and typed IEquatable struct equality now execute, including
+   Color and its NFloat fields. Continue through ordinary string equality in Button,
+   then the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

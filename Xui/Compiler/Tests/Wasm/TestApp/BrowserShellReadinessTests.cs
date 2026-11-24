@@ -29,9 +29,9 @@ public class BrowserShellReadinessTests(Xunit.Abstractions.ITestOutputHelper out
             _ = new Xui.Compiler.XuiNet.Compilation([app, .. assemblies, .. framework.Assemblies]);
             var error = Assert.Throws<NotSupportedException>(() => new WasmEmitter().Emit(app));
 
+            Assert.Contains("No virtual slot for System.Object.ToString", error.Message);
             string path = error.Data["Xui.DependencyPath"]?.ToString() ?? "";
             output.WriteLine(error.Message + "\n" + path);
-            Assert.Contains("Default equality is not implemented for Xui.Core.Canvas.Color", error.Message);
 
             string frameworkInputs = string.Join(", ", framework.Assemblies.Select(assembly => $"`{assembly.Identity.Name}`"));
             string projects = string.Join("\n", images.Keys.Select(name => $"- `{name}`"));

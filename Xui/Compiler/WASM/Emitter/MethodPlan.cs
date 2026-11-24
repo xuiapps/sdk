@@ -50,7 +50,7 @@ internal sealed partial class MethodPlan
     public TypeIndex Type { get; set; }
     public FunctionIndex Function { get; set; }
     public Dictionary<IR.MethodIdentity, LocalIndex[]> CallTemporaries { get; } = new();
-    public Dictionary<SignatureTypeCode, (LocalIndex Left, LocalIndex Right)> EqualityTemporaries { get; } = new();
+    public Dictionary<LocalVariable, (LocalIndex Left, LocalIndex Right)> EqualityTemporaries { get; } = new();
     public bool UsesArrays { get; set; }
     public LocalIndex ArrayReference { get; private set; }
     public LocalIndex ArrayIndex { get; private set; }
@@ -226,7 +226,7 @@ internal sealed partial class MethodPlan
         foreach (var category in EqualityTemporaries.Keys.ToArray())
         {
             EqualityTemporaries[category] = (new(parameterCount + (uint)types.Count), new(parameterCount + (uint)types.Count + 1));
-            var wasm = category switch {
+            var wasm = category.UsesGc ? ValueTypeCode.EqRef : category.Identity is not null ? ValueTypeCode.I32 : category.StackType switch {
                 SignatureTypeCode.String => ValueTypeCode.ExternRef,
                 SignatureTypeCode.Double => ValueTypeCode.F64,
                 SignatureTypeCode.Int64 => ValueTypeCode.I64,
