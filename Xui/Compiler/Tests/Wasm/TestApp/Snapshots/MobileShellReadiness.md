@@ -25,7 +25,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Catch type is not a supported built-in exception: System.Resources.MissingManifestResourceException.
+The method has no managed body: System.Threading.Interlocked.CompareExchangeObject.
 ```
 
 ## Dependency path
@@ -34,13 +34,14 @@ Catch type is not a supported built-in exception: System.Resources.MissingManife
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
- → Method { Identity = Xui.Core.UI.View.AddProtectedChild }
- → Method { Identity = System.ArgumentNullException..ctor }
- → Method { Identity = System.SR.get_ArgumentNull_Generic }
- → Method { Identity = System.SR.GetResourceString }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
+ → Method { Identity = Xui.Core.UI.ScrollView.add_ScrollChanged }
+ → Method { Identity = System.Threading.Interlocked.CompareExchange<System.Action<Xui.Core.Math2D.Vector>> }
+ → Method { Identity = System.Threading.Interlocked.CompareExchange }
+ → Method { Identity = System.Threading.Interlocked.CompareExchangeObject }
 ```
 
-Single-target and multicast delegates, captured closures, and the real Action<Vector> callback now execute. Dependency discovery passes Delegate.Combine and reaches the ArgumentNullException constructor used by View.AddProtectedChild, which pulls in BCL resource lookup and an unsupported MissingManifestResourceException catch. This is a compile-time dependency failure, not evidence that the app passed a null child at runtime. Event accessor synchronization, static initialization, collections, services, text measurement, and full event routing still require further probes.
+Single-target and multicast delegates, captured closures, and the real Action<Vector> callback now execute. ArgumentNullException now preserves ParamName, Message, and the ArgumentException hierarchy without pulling in BCL resource lookup. Dependency discovery reaches ScrollView event subscription and stops at Interlocked.CompareExchangeObject, the runtime-provided reference update used by the generated add accessor. This needs a compiler/runtime intrinsic for the supported execution model. Static initialization, collections, services, text measurement, and full event routing still require further probes.
 
 ## WAT
 

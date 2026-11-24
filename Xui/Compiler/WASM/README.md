@@ -262,11 +262,22 @@ handlers forward foreign host exceptions too; managed catches match our tag only
 Rethrow preserves the original exception reference. See the
 [failed-cast demo](../Tests/Wasm/Exceptions/Snapshots/Casts.md).
 
-The initial managed payload is a GC struct containing a nominal exception kind and
-a native JavaScript message string. Recognized framework references are
-`Exception`, `SystemException`, `InvalidCastException`, `NullReferenceException`,
-`InvalidOperationException`, and `ArgumentException`. Their parameterless/string
-constructors, `Message`, hierarchy tests, and casts work without compiling BCL bodies.
+The managed payload is a GC struct containing a nominal exception kind and a
+native JavaScript message string, with a parameter-name slot when needed.
+Recognized framework references are `Exception`, `SystemException`,
+`InvalidCastException`, `NullReferenceException`, `InvalidOperationException`,
+`ArgumentException`, `ArgumentNullException`, `IndexOutOfRangeException`, and
+`OverflowException`. Parameterless/string constructors, `Message`, hierarchy tests,
+and casts work without compiling BCL bodies. ArgumentNullException's single-string
+constructor takes a parameter name; its two-string overload takes (paramName,
+message). ArgumentException's two-string overload reverses those roles. `ParamName`
+preserves null and empty names, and `Message` appends a parameter suffix only for
+nonempty names. Dynamic names use the standard
+[JS string builtins](https://github.com/WebAssembly/js-string-builtins/blob/main/proposals/js-string-builtins/Overview.md)
+for length and concatenation; these imports are emitted only for modules needing
+parameter-name support. ArgumentNullException is catchable as ArgumentException,
+SystemException, and Exception. CLR/Node tests cover Debug and Release, with and
+without linked framework implementation PEs.
 `throw null` throws `NullReferenceException`. Default messages are English;
 cast failures use the default message rather than CLR-generated runtime type names.
 Filters, custom exception subclasses, inner exceptions, managed stack traces, and

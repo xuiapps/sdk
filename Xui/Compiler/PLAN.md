@@ -21,19 +21,22 @@ composition. The [full-shell probe](Tests/Wasm/TestApp/Snapshots/MobileShellRead
 compiles all application dependencies as separate PEs with the real shader
 generator. Closed generic methods and reference byrefs now execute with aliasing,
 linked-call, and unwind tests, covering the SetProtectedChild pattern. The full-shell
-probe now passes `Delegate.Combine` and stops at `View.AddProtectedChild` →
-`ArgumentNullException..ctor` → `System.SR.GetResourceString`, which catches an
-unsupported `MissingManifestResourceException`. This is dependency discovery, not
-a runtime null-child failure. Single-target and multicast delegates, captured
-closures, and the real Action<Xui.Core.Math2D.Vector> callback execute. Ordered
-invocation lists support Combine/Remove, last-result semantics, and equality.
+probe now passes `Delegate.Combine` and the `ArgumentNullException` guard in
+`View.AddProtectedChild`. Argument exceptions preserve parameter names, messages,
+and catch/type-test inheritance without traversing BCL resource lookup. The next
+failure is `ScrollView.add_ScrollChanged` → `Interlocked.CompareExchange<Action<Vector>>`
+→ `Interlocked.CompareExchangeObject`, a runtime-provided method with no MSIL body.
+Single-target and multicast delegates, captured closures, and the real
+Action<Xui.Core.Math2D.Vector> callback execute.
 
 The next sequence is:
 
-1. Extend the compiler's built-in exception surface for ArgumentNullException,
-   avoiding a full BCL resource-manager dependency for ordinary argument checks.
-2. Re-run the full-shell probe; handle event accessor synchronization, reachable
-   static initialization, and collections as their actual dependencies appear.
+1. Implement reference CompareExchange through the existing owner/selector byref
+   ABI for the browser's single-agent execution model. Preserve reference identity,
+   conditional replacement, and the returned original value. Shared multi-threaded
+   managed state will need an actual synchronization design.
+2. Re-run the full-shell probe; implement reachable static initialization and
+   collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real
    RootView/EventRouter and EmulatedWindow rather than the single-view bridge.
 4. Expand the Canvas host to text measurement, text drawing, paths and clipping

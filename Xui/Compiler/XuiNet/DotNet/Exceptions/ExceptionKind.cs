@@ -10,5 +10,6 @@ public enum ExceptionKind
     InvalidOperationException,
     ArgumentException,
     IndexOutOfRangeException,
-    OverflowException
+    OverflowException,
+    ArgumentNullException
 }

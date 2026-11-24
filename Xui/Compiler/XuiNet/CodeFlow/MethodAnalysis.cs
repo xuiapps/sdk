@@ -173,7 +173,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, delegateConstructor.DeclaringType, IsReferenceType: true)));
                     break;
                 }
-                if (Model.Exceptions.ExceptionTypes.TryMember(module, MetadataTokens.EntityHandle(constructorToken), out _, out bool intrinsicConstructor, out _) && intrinsicConstructor)
+                if (Model.Exceptions.ExceptionTypes.TryMember(module, MetadataTokens.EntityHandle(constructorToken), out _, out var exceptionMember) && Model.Exceptions.ExceptionTypes.IsConstructor(exceptionMember))
                 {
                     for (int i = constructor.Parameters.Length - 1; i >= 1; i--) stack.Store(StackEntry.From(constructor.Parameters[i]));
                     stack.Push(StackEntry.From(constructor.Parameters[0]));
@@ -334,7 +334,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             signature = new(inline.Signature.Parameters.ToArray(), StackEntry.From(inline.Signature.Result));
         else if (Model.Intrinsics.SpanAccess.Read(module, handle, context.Arguments, methodArguments) is { } span)
             signature = new([new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters], StackEntry.From(span.Signature.Result));
-        else if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _, out _))
+        else if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _))
         {
             var reference = module.GetMemberReference((MemberReferenceHandle)handle);
             signature = Signature.Read(module, reference.Signature, new Model.TypeIdentity(module, reference.Parent));

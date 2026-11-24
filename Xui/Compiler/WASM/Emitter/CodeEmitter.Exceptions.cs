@@ -87,7 +87,13 @@ public readonly ref partial struct CodeEmitter
         if (target == ExceptionKind.Exception) { writer.I32Const(1); return; }
         writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0));
         if (target == ExceptionKind.SystemException) writer.I32Const((int)ExceptionKind.Exception).I32Eq().I32Eqz();
-        else writer.I32Const((int)target).I32Eq();
+        else
+        {
+            writer.I32Const((int)target).I32Eq();
+            if (target == ExceptionKind.ArgumentException && method.Storage.ExtraExceptionKinds.Contains(ExceptionKind.ArgumentNullException))
+                writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
+                    .I32Const((int)ExceptionKind.ArgumentNullException).I32Eq().I32Or();
+        }
     }
 
     private void NewException(ExceptionKind kind, bool suppliedMessage = false)
@@ -103,6 +109,7 @@ public readonly ref partial struct CodeEmitter
             writer.I32Const((int)kind);
             EmitString(ExceptionTypes.Message(kind));
         }
+        if (method.Storage.ArgumentExceptionsEnabled) writer.RefNull(ValueTypeCode.ExternRef);
         writer.StructNew(method.Storage.ExceptionType);
     }
 
@@ -123,12 +130,17 @@ public readonly ref partial struct CodeEmitter
     private bool TryExceptionMember(Instruction.Token instruction, int offset)
     {
         var token = MetadataTokens.EntityHandle(instruction.Value);
-        if (!ExceptionTypes.TryMember(source, token, out var kind, out bool constructor, out bool message)) return false;
-        if (constructor)
+        if (!ExceptionTypes.TryMember(source, token, out var kind, out var member)) return false;
+        if (ExceptionTypes.IsConstructor(member))
         {
             if (instruction.Code != OpCode.Newobj) throw new NotSupportedException("Exception base-constructor calls are not implemented.");
-            if (message) Pop(SignatureTypeCode.String, instruction.Code, offset);
-            NewException(kind, message);
+            if (ExceptionTypes.UsesParameterName(member)) EmitArgumentException(kind, member, instruction, offset);
+            else
+            {
+                bool message = member == ExceptionMember.MessageConstructor;
+                if (message) Pop(SignatureTypeCode.String, instruction.Code, offset);
+                NewException(kind, message);
+            }
             var reference = source.GetMemberReference((MemberReferenceHandle)token);
             stack.Push(new(SignatureTypeCode.TypeHandle, new(source, reference.Parent)));
         }
@@ -136,7 +148,7 @@ public readonly ref partial struct CodeEmitter
         {
             _ = Pop(instruction.Code, offset);
             CheckExceptionNull();
-            writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(1));
+            writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(member == ExceptionMember.ParamName ? 2u : 1u));
             stack.Push(new(SignatureTypeCode.String));
         }
         return true;

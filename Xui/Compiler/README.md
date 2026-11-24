@@ -26,8 +26,8 @@ Closed generic struct layouts and actual framework ValueTuple constructors now w
 see [Xui tuple geometry](Tests/Wasm/Tuples/Snapshots/XuiGeometry.md). The real
 FillRectTest now lays out and renders in the browser phone preview. The
 [full-shell probe](Tests/Wasm/TestApp/Snapshots/MobileShellReadiness.md) supplies the
-framework assemblies for services and collections; it now passes Delegate.Combine and stops in BCL resource lookup pulled in by
-ArgumentNullException from View.AddProtectedChild. See [PLAN.md](PLAN.md) for
+framework assemblies for services and collections; it now passes Delegate.Combine and ArgumentNullException guards, then stops at
+Interlocked.CompareExchangeObject in ScrollView’s generated event accessor. See [PLAN.md](PLAN.md) for
 the remaining gates.
 
 Managed vectors and inline arrays now have distinct storage paths. See [array execution](Tests/Wasm/Arrays/Snapshots/Vectors.md)

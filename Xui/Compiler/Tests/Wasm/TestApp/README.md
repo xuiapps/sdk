@@ -98,13 +98,14 @@ probe does not package embedded font or GPU assets; the complete app will also n
 those assets supplied by the browser host. The .NET SDK's
 ASP.NET shared framework supplies the Microsoft.Extensions metadata for Core.DI.
 
-Constructing `MobileTestAppShell` now passes Delegate.Combine during dependency
-discovery. The next failure is View.AddProtectedChild → ArgumentNullException's
-constructor → System.SR.GetResourceString, which catches an unsupported
-MissingManifestResourceException. No app code executed to cause this failure.
+Constructing `MobileTestAppShell` now passes Delegate.Combine and the
+ArgumentNullException guard in View.AddProtectedChild during dependency discovery.
+Argument exceptions preserve parameter names, messages, and catch inheritance.
+The next failure is ScrollView.add_ScrollChanged → the generic reference
+Interlocked.CompareExchange overload → CompareExchangeObject, which has no managed
+body. It needs a compiler/runtime intrinsic through the reference-byref ABI.
 Single-target and multicast delegates and captured closures execute, including
-the actual Action<Xui.Core.Math2D.Vector> boundary. Closed generic methods and
-reference byrefs cover the SetProtectedChild pattern. Next extend built-in
-exception support, then probe event accessor synchronization, static initialization,
+the actual Action<Xui.Core.Math2D.Vector> boundary. Next handle reference
+CompareExchange for the supported execution model, then probe static initialization,
 collections, service/type lookup, text measurement/drawing, and the complete
 window/input lifecycle. This test does not claim the full application executes.

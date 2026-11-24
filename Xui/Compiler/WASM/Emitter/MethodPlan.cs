@@ -29,6 +29,7 @@ internal sealed partial class MethodPlan
     public LocalIndex GcI32 { get; private set; }
     public LocalIndex GcI64 { get; private set; }
     public LocalIndex GcF64 { get; private set; }
+    public LocalIndex ExceptionParamName { get; private set; }
     public LocalIndex GcExtern { get; private set; }
     public LocalVariable[] Locals { get; }
     public List<IR.MethodIdentity> Calls { get; } = new();
@@ -214,6 +215,7 @@ internal sealed partial class MethodPlan
             GcI64 = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I64);
             GcF64 = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F64);
             GcExtern = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+            if (Storage.ArgumentExceptionsEnabled) { ExceptionParamName = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef); }
         }
         LocalTypes = types.ToArray();
     }

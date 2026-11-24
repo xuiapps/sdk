@@ -85,7 +85,7 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic($"NFloat.{nativeOperation}"), node, DependencyReason.Call, offset);
                         break;
                     }
-                    if (DotNet.Exceptions.ExceptionTypes.TryMember(module, token, out var exceptionKind, out _, out _))
+                    if (DotNet.Exceptions.ExceptionTypes.TryMember(module, token, out var exceptionKind, out _))
                     {
                         Add(new Dependency.Intrinsic($"System.{exceptionKind}"), node, DependencyReason.Call, offset);
                         break;

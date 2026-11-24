@@ -88,6 +88,9 @@ public sealed partial class WasmEmitter
                 string message = XuiNet.DotNet.Exceptions.ExceptionTypes.Message(kind);
                 if (seenLiterals.Add(message)) literals.Add(message);
             }
+        if (storage.ArgumentExceptionsEnabled)
+            foreach (string text in new[] { " (Parameter '", "')" })
+                if (seenLiterals.Add(text)) literals.Add(text);
         foreach (var method in orderedMethods) method.AllocateTemporaries(methods);
         var literalIndices = new Dictionary<string, (DataIndex Data, GlobalIndex Global)>(StringComparer.Ordinal);
         using var module = new MemoryStream();
@@ -95,11 +98,17 @@ public sealed partial class WasmEmitter
         writer.Header().V1();
         TypeIndex utf16ArrayType;
         TypeIndex fromCharCodeArrayType;
+        TypeIndex stringConcatType = default, stringLengthType = default;
         var types = writer.TypeDefinitionsSection();
         try
         {
             utf16ArrayType = types.ArrayType(PackedTypeCode.I16, Mutability.Mutable);
             fromCharCodeArrayType = types.FunctionType([RefNull(utf16ArrayType), I32, I32], NonNullExternRef);
+            if (storage.ArgumentExceptionsEnabled)
+            {
+                stringConcatType = types.FunctionType([ExternRef, ExternRef], NonNullExternRef);
+                stringLengthType = types.FunctionType([ExternRef], I32);
+            }
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
             storage.DefineReferenceAddressTypes(ref types);
@@ -121,12 +130,18 @@ public sealed partial class WasmEmitter
             types.Dispose();
         }
         FunctionIndex fromCharCodeArrayFunction;
+        FunctionIndex? stringConcat = null, stringLength = null;
         uint importedFunctionCount;
         var imports = writer.ImportSection();
         try
         {
             rewriter.ImportFunctions(ref imports);
             fromCharCodeArrayFunction = imports.Function("wasm:js-string", "fromCharCodeArray", fromCharCodeArrayType);
+            if (storage.ArgumentExceptionsEnabled)
+            {
+                stringConcat = imports.Function("wasm:js-string", "concat", stringConcatType);
+                stringLength = imports.Function("wasm:js-string", "length", stringLengthType);
+            }
             importedFunctionCount = imports.FunctionCount;
         }
         finally
@@ -183,7 +198,7 @@ public sealed partial class WasmEmitter
             }
         }
         // Frame state follows the string-cache globals in the same index space.
-        var runtime = new EmissionRuntime(utf16ArrayType, fromCharCodeArrayFunction, stackPointer, referenceStackPointer, objectReferences, stringReferences);
+        var runtime = new EmissionRuntime(utf16ArrayType, fromCharCodeArrayFunction, stackPointer, referenceStackPointer, objectReferences, stringReferences, stringConcat, stringLength);
         using (var exports = writer.ExportSection())
         {
             exports.Function("main", main.Function);

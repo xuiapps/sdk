@@ -40,6 +40,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     private readonly Dictionary<TypeIdentity, GcShape> shapes = new();
     private readonly HashSet<TypeIdentity> flattening = new();
 
+    public bool ArgumentExceptionsEnabled { get; set; }
+
     public bool IsClass(TypeIdentity identity) => DelegateInfo.IsRuntimeBase(identity) || XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
     public bool IsGc(TypeIdentity identity)
     {
@@ -179,7 +181,9 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     {
         if (ExceptionsEnabled)
         {
-            ExceptionType = writer.StructType([ValueTypeCode.I32, ValueTypeCode.ExternRef], Mutability.Immutable);
+            ExceptionType = writer.StructType(ArgumentExceptionsEnabled
+                ? [ValueTypeCode.I32, ValueTypeCode.ExternRef, ValueTypeCode.ExternRef]
+                : [ValueTypeCode.I32, ValueTypeCode.ExternRef], Mutability.Immutable);
             ExceptionTagType = writer.FunctionType([ValueTypeCode.EqRef]);
             ExceptionPayloadBlock = writer.FunctionType([], ValueTypeCode.EqRef);
             ExceptionCatchBlock = writer.FunctionType([], [ValueTypeCode.EqRef, ValueTypeCode.ExnRef]);

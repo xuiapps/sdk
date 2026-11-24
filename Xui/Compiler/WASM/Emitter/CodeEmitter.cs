@@ -558,10 +558,11 @@ public readonly ref partial struct CodeEmitter
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.WellKnownMethods.IsObjectConstructor(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value))) break;
-                    if (IR.Exceptions.ExceptionTypes.TryMember(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out var exceptionKind, out _, out _))
+                    if (IR.Exceptions.ExceptionTypes.TryMember(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out var exceptionKind, out var exceptionMember))
                     {
                         method.Storage.ExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(exceptionKind);
+                        method.Storage.ArgumentExceptionsEnabled |= IR.Exceptions.ExceptionTypes.UsesParameterName(exceptionMember);
                         method.RequireGcTemporaries();
                         break;
                     }
