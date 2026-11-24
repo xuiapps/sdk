@@ -562,6 +562,13 @@ public readonly ref partial struct CodeEmitter
                         foreach (string text in new[] { "True", "False" }) if (seenLiterals.Add(text)) literals.Add(text);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.NullGuard.Is(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
+                    {
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentNullException);
+                        method.RequireGcTemporaries();
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.TimeSpanFactory.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } duration)
                     {
                         var shape = method.Storage.Shape(duration.Owner);

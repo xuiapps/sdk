@@ -716,3 +716,9 @@ Only reachable implementations on instantiated receiver types are emitted. Direc
 generic class-virtual calls remain unsupported; interface calls to generic class
 implementations are supported. Tests cover separate int/string/i64 specializations,
 struct results and byrefs, default overrides, and linked assemblies.
+
+`ArgumentNullException.ThrowIfNull(object, string)` lowers to a null test and the
+managed exception tag, including CallerArgumentExpression parameter names and
+null/empty names. Strings, arrays, classes, and delegates retain their existing
+reference representation. The helper's BCL body and localization resources are
+not retained; pointer overloads and arbitrary boxing remain unsupported.

@@ -88,6 +88,11 @@ public sealed partial class Analyzer
                         Add(new Dependency.Layout(interpolation.Owner), node, DependencyReason.Layout, offset);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.NullGuard.Is(module, token))
+                    {
+                        Add(new Dependency.Intrinsic("ArgumentNullException.ThrowIfNull"), node, DependencyReason.Call, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.TimeSpanFactory.Read(module, token) is { } duration)
                     {
                         Add(new Dependency.Intrinsic("TimeSpan." + duration.Name), node, DependencyReason.Call, offset);

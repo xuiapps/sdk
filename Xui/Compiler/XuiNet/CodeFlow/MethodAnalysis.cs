@@ -221,6 +221,13 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     if (stack.Pop().Type != StackType.ObjectReference) throw stack.Error("Object constructor requires a class receiver");
                     break;
                 }
+                if (Model.Intrinsics.NullGuard.Is(module, MetadataTokens.EntityHandle(callToken)))
+                {
+                    stack.Store(StackType.String);
+                    if (stack.Pop().Type is not (StackType.ObjectReference or StackType.String or StackType.ArrayReference or StackType.Null))
+                        throw stack.Error("ThrowIfNull requires a reference value");
+                    break;
+                }
                 var called = interpolationCalls.TryGetValue(node.Offset, out var handlerCall)
                     ? new Signature([new SignatureType(SignatureTypeCode.TypeHandle, handlerCall.Owner, IsByReference: true)], StackEntry.From(handlerCall.Signature.Result))
                     : CallSignature(callToken);

@@ -30,6 +30,11 @@ public readonly ref partial struct CodeEmitter
                 writer.LocalSet(method.GcExtern);
             }
         }
+        WriteArgumentException(kind);
+    }
+
+    private void WriteArgumentException(ExceptionKind kind)
+    {
         writer.LocalGet(method.GcExtern).RefIsNull().If();
         EmitString(ExceptionTypes.Message(kind));
         writer.LocalSet(method.GcExtern).End();
