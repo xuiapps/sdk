@@ -36,7 +36,8 @@ parent links; identical field layouts do not make unrelated classes interchangea
 
 Interfaces implemented by classes support implicit public implementations, explicit
 MethodImpl mappings, inherited implementations, reimplementation, and virtual overrides.
-Inherited interfaces and closed invariant generic interfaces retain nominal identity.
+Inherited interfaces and closed generic interfaces retain nominal identity; reference-type
+covariance and contravariance participate in dispatch and casts.
 Each concrete class's function-table range starts with a shared interface-slot prefix;
 only reachable interface calls retain their implementations. Interface `callvirt`
 uses `call_indirect` with the same scalar/reference/struct-value ABI as class methods.
@@ -73,7 +74,7 @@ Generic methods, open generic structs, arbitrary external calls, switches, arbit
 jump graphs, lambdas, closures, delegates, multidimensional arrays, unmanaged pointers,
 boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage currently holds emitted class/interface references and null, not strings,
-boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies, variant interfaces,
+boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies,
 static-abstract interface dispatch, generic interface methods, boxed/constrained struct dispatch,
 and explicit class MethodImpl/covariant return overrides remain unsupported. Explicit-layout structs cannot
 be flattened into GC fields yet; their supported linear-memory layouts are unchanged.
@@ -482,8 +483,8 @@ uses tuple syntax in an offline browser artifact.
 
 The [real TestApp construction gate](../Tests/Wasm/TestApp/Snapshots/FillRectConstruction.md)
 has passed tuple resolution and default-interface validation. With the framework
-assemblies for `IServiceProvider` and collections supplied, it now passes array-signature resolution and stops at variant generic interface
-validation in the collection dependency closure. The full TestApp is still not running.
+assemblies for `IServiceProvider` and collections supplied, it now passes array signatures and variant-interface metadata. It stops when stack analysis
+treats the `WritingMode` enum as a struct and rejects an otherwise valid integer field store. The full TestApp is still not running.
 
 ## Default interface implementations
 
@@ -497,7 +498,7 @@ The [layout demo](../Tests/Wasm/Interfaces/Snapshots/Defaults.md) shows source, 
 selected dispatch targets, and WAT. Reachability retains a callable signature without
 retaining an overridden or uncalled default body. Conflicting defaults and reabstraction
 without a concrete implementation fail during compilation; runtime ambiguity exceptions
-are not implemented. Variance, generic methods, static-abstract dispatch, and boxed or
+are not implemented. Generic methods, static-abstract dispatch, and boxed or
 constrained struct receivers remain unsupported.
 
 ## Managed arrays and inline gradient buffers
@@ -532,3 +533,27 @@ byrefs, bulk static-data initializers (`RuntimeHelpers.InitializeArray/CreateSpa
 and arbitrary Array/BCL collection methods. Span construction from managed arrays,
 slicing, enumeration helpers, stackalloc, and inline-array access through GC-field
 addresses are not implemented. Unsupported paths throw during compilation.
+
+## Generic interface variance
+
+Closed `out` and `in` interface arguments support reference conversions through class
+inheritance, inherited interfaces, and nested variant contracts. Calls, `is`, `as`,
+and explicit casts use the same nominal relation. Value-type arguments remain
+invariant; there is no implicit boxing. The [variance demo](../Tests/Wasm/Interfaces/Snapshots/Variance.md)
+shows covariant sources, contravariant sinks, a specialized default body, and casts.
+
+Reachability indexes constructed interface calls and allocations by generic definition,
+then retains only compatible implementations. At each class level exact mappings
+precede compatible variant mappings in declared interface order, before consulting the
+base class. Class virtual overrides remain effective. Default bodies execute in their
+original constructed interface, with interface inheritance determining specificity.
+
+Class/interface/object references share the existing eqref ABI. String/object and
+array/object calls, and covariant array parameter/result conversions, need adapters or
+additional runtime support and fail explicitly before a function-table entry is emitted.
+Unused variant contracts and nominal membership tests do not require those adapters.
+Synthesized array interface conversions remain explicitly unsupported; string interface
+relations require the framework implementation PE to be supplied.
+Multiple compatible variant default candidates without an exact contract are explicitly
+unsupported. Delegate variance, generic methods, and boxed struct dispatch remain outside
+this implementation.

@@ -10,7 +10,7 @@ internal sealed partial class DispatchTable
         var candidates = new HashSet<MethodIdentity> { declaration };
         foreach (var contract in type.Interfaces())
         {
-            if (!contract.IsAssignableTo(declaration.DeclaringType)) continue;
+            if (contract != declaration.DeclaringType && !contract.Interfaces().Contains(declaration.DeclaringType)) continue;
             var module = contract.Module;
             var definition = module.GetType((System.Reflection.Metadata.TypeDefinitionHandle)contract.Handle);
             foreach (var handle in definition.MethodImplementations)
@@ -22,7 +22,7 @@ internal sealed partial class DispatchTable
         }
         // Abstract overrides participate too: reabstraction must suppress a less-specific body.
         var mostSpecific = candidates.Where(candidate => !candidates.Any(other =>
-            other.DeclaringType != candidate.DeclaringType && other.DeclaringType.IsAssignableTo(candidate.DeclaringType))).ToArray();
+            other.DeclaringType != candidate.DeclaringType && other.DeclaringType.Interfaces().Contains(candidate.DeclaringType))).ToArray();
         if (mostSpecific.Length != 1)
             throw new NotSupportedException($"Ambiguous default interface implementation of {declaration} on {type}: {string.Join(", ", mostSpecific.Select(m => m.ToString()))}.");
         var selected = mostSpecific[0];

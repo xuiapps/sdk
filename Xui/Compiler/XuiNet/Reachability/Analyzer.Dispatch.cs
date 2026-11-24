@@ -17,6 +17,7 @@ public sealed partial class Analyzer
             throw new InvalidProgramException($"Cannot allocate an abstract class: {node.Identity}.");
         _ = dispatch.Resolve(node.Identity);
         // Index by each ancestor so a new slot only visits compatible instantiated classes.
+        var registered = new HashSet<TypeIdentity>();
         foreach (var contract in node.Identity.Interfaces()) Register(contract);
         TypeIdentity? ancestor = node.Identity;
         while (ancestor is { Handle.Kind: HandleKind.TypeDefinition } type)
@@ -26,9 +27,11 @@ public sealed partial class Analyzer
         }
         void Register(TypeIdentity type)
         {
-            if (!instantiated.TryGetValue(type, out var instances)) instantiated.Add(type, instances = new());
+            var key = DispatchKey(type);
+            if (!registered.Add(key)) return;
+            if (!instantiated.TryGetValue(key, out var instances)) instantiated.Add(key, instances = new());
             instances.Add(node);
-            if (virtualCalls.TryGetValue(type, out var calls))
+            if (virtualCalls.TryGetValue(key, out var calls))
                 foreach (var call in calls) Connect(call, node);
         }
     }
@@ -41,15 +44,19 @@ public sealed partial class Analyzer
         Add(new Dependency.Layout(node.Identity.DeclaringType), node, DependencyReason.Layout);
         if (!node.Identity.DeclaringType.IsInterface) _ = dispatch.Slot(node.Identity);
         else _ = dispatch.Resolve(node.Identity.DeclaringType);
-        if (!virtualCalls.TryGetValue(node.Identity.DeclaringType, out var calls))
-            virtualCalls.Add(node.Identity.DeclaringType, calls = new());
+        if (!virtualCalls.TryGetValue(DispatchKey(node.Identity.DeclaringType), out var calls))
+            virtualCalls.Add(DispatchKey(node.Identity.DeclaringType), calls = new());
         calls.Add(node);
-        if (instantiated.TryGetValue(node.Identity.DeclaringType, out var instances))
+        if (instantiated.TryGetValue(DispatchKey(node.Identity.DeclaringType), out var instances))
             foreach (var instance in instances) Connect(node, instance);
     }
 
+    // Constructed interfaces share an index by definition, limiting variance checks to that family.
+    private static TypeIdentity DispatchKey(TypeIdentity type) => type.IsInterface ? type.GenericDefinition : type;
+
     private void Connect(Dependency.VirtualCall call, Dependency.Instantiation instance)
     {
+        if (!instance.Identity.IsAssignableTo(call.Identity.DeclaringType)) return;
         var implementation = call.Identity.DeclaringType.IsInterface
             ? dispatch.InterfaceImplementation(instance.Identity, call.Identity)
             : dispatch.Resolve(instance.Identity)[(int)dispatch.Slot(call.Identity)].Implementation;

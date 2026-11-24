@@ -26,7 +26,6 @@ internal sealed partial class DispatchTable
                 throw new NotSupportedException("Interface and open generic runtime types are not implemented.");
             if (definition.IsInterface)
             {
-                ValidateInterface(identity);
                 Types.Add(identity, Array.Empty<VirtualSlot>());
                 return Types[identity];
             }

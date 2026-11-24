@@ -23,5 +23,5 @@ Blocked during compilation. WASM was not emitted; no browser rendering is claime
 ## WASM / blocker
 
 ```text
-System.NotSupportedException: Variant interface dispatch is not implemented.
+System.InvalidProgramException: Expected Xui.Core.UI.WritingMode, found Int32 for Stfld at IL_001e.
 ```

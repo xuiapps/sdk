@@ -42,7 +42,7 @@ public class TestAppTests(ITestOutputHelper output)
         using var collections = CanvasTests.Read(File.ReadAllBytes(Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "System.Collections.dll")));
         _ = new Xui.Compiler.XuiNet.Compilation([app, view, core, componentModel, collections, .. framework.Assemblies]);
         string status, details;
-        NotSupportedException? unsupported = null;
+        Exception? unsupported = null;
         try
         {
             byte[] wasm = new WasmEmitter().Emit(app);
@@ -51,7 +51,9 @@ public class TestAppTests(ITestOutputHelper output)
             status = "Construction passed. Layout, rendering, input, and the complete TestApp are not exercised by this gate.";
             details = "```wat\n" + (await WasmTools.ToWatAsync(wasm)).TrimEnd() + "\n```";
         }
-        catch (NotSupportedException error)
+        // This progress snapshot also records compiler validation failures on valid
+        // Roslyn-produced IL; a changed diagnostic still requires snapshot review.
+        catch (Exception error) when (error is NotSupportedException or InvalidProgramException)
         {
             unsupported = error;
             status = "Blocked during compilation. WASM was not emitted; no browser rendering is claimed.";

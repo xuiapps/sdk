@@ -184,7 +184,10 @@ public sealed class WasmEmitter
                         elements.Functions(type.TableStart + (uint)storage.Classes.InterfaceMethods.Count + slot.Index, [implementation.Function]);
                 foreach (var slot in type.InterfaceSlots)
                     if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsDeclaration)
+                    {
+                        InterfaceAbi.Validate(methods[slot.Declaration], implementation);
                         elements.Functions(type.TableStart + slot.Index, [implementation.Function]);
+                    }
             }
         }
         writer.DataCount((uint)literals.Count);

@@ -14,13 +14,39 @@ internal sealed partial class DispatchTable
         if (InterfaceImplementations.TryGetValue((type, declaration), out var cached)) return cached;
         if (!type.IsAssignableTo(declaration.DeclaringType))
             throw new InvalidProgramException($"{type} does not implement {declaration.DeclaringType}.");
-        var target = ClassInterfaceImplementation(type, declaration);
+        MethodIdentity? target = null;
+        for (TypeIdentity? current = type; current is { Handle.Kind: HandleKind.TypeDefinition } owner; current = owner.BaseType)
+        {
+            // A class level's exact mappings precede its variant mappings, before consulting its base.
+            target = ClassInterfaceImplementation(owner, declaration);
+            if (target is null)
+                foreach (var contract in DeclaredContracts(owner))
+                    if (contract != declaration.DeclaringType && contract.GenericDefinition == declaration.DeclaringType.GenericDefinition &&
+                        contract.IsAssignableTo(declaration.DeclaringType))
+                    {
+                        target = ClassInterfaceImplementation(owner, new(contract, declaration.Handle));
+                        if (target is not null) break;
+                    }
+            if (target is not null) break;
+        }
         if (target is { } implementation)
         {
             if ((implementation.DeclaringType.Module.GetMethod(implementation.Handle).Attributes & MethodAttributes.Virtual) != 0)
                 implementation = Resolve(type)[(int)Slot(implementation)].Implementation;
         }
-        else implementation = DefaultInterfaceImplementation(type, declaration);
+        else
+        {
+            if (type.Interfaces().Contains(declaration.DeclaringType))
+                implementation = DefaultInterfaceImplementation(type, declaration);
+            else
+            {
+                var contracts = type.Interfaces().Where(contract => contract.GenericDefinition == declaration.DeclaringType.GenericDefinition &&
+                    contract.IsAssignableTo(declaration.DeclaringType)).ToArray();
+                if (contracts.Length != 1)
+                    throw new NotSupportedException($"Multiple variant default interface candidates for {declaration} on {type} are not implemented.");
+                implementation = DefaultInterfaceImplementation(type, new(contracts[0], declaration.Handle));
+            }
+        }
         InterfaceImplementations.Add((type, declaration), implementation);
         return implementation;
     }
@@ -64,8 +90,6 @@ internal sealed partial class DispatchTable
                 template = openOwner.BaseType;
             }
         }
-        if (target is null && type.BaseType is { } parent && parent.IsAssignableTo(declaration.DeclaringType))
-            target = ClassInterfaceImplementation(parent, declaration);
         return target;
     }
 
@@ -95,13 +119,15 @@ internal sealed partial class DispatchTable
         return x.HasThis == y.HasThis && x.Result == y.Result && x.Parameters.SequenceEqual(y.Parameters);
     }
 
-    private static void ValidateInterface(TypeIdentity identity)
+    private static IEnumerable<TypeIdentity> DeclaredContracts(TypeIdentity type)
     {
-        var definition = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
-        foreach (var parameter in definition.GenericParameters)
-            if ((identity.Module.GetGenericParameter(parameter).Attributes & GenericParameterAttributes.VarianceMask) != 0)
-                throw new NotSupportedException("Variant interface dispatch is not implemented.");
-        // Instance defaults and ordinary helpers are analyzed only if reachable. Static
-        // abstract dispatch and generic calls still fail in their unsupported call paths.
+        var seen = new HashSet<TypeIdentity>();
+        foreach (var handle in type.Module.GetType((TypeDefinitionHandle)type.Handle).Interfaces)
+        {
+            var contract = SignatureReader.Resolve(type.Module, type.Module.GetInterfaceType(handle), type.Arguments).Identity!.Value;
+            if (seen.Add(contract)) yield return contract;
+            foreach (var inherited in contract.Interfaces())
+                if (seen.Add(inherited)) yield return inherited;
+        }
     }
 }

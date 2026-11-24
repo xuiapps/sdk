@@ -28,8 +28,8 @@ Color, string, and interface values through a stack event and interface call.
 | Actual app lifecycle | Ref-event/interface demo executes using a small application-defined adapter. | Instantiate the real Window/RootView/View path; support its remaining spans, static state, ABI, and BCL dependencies. |
 
 Closed generic struct layouts and framework ValueTuple constructors now execute,
-including Xui's `Point point = (0, 0)` conversions. The next compiler milestone is
-interface default implementation selection and avoiding rejection of unused bodies.
+including Xui's `Point point = (0, 0)` conversions. Default interface selection, arrays, and generic interface variance now execute.
+The next compiler milestone is enum stack/storage normalization.
 The next visible host milestone is adding these scenes to the playground editor, followed by persistent
 state and frame/input exports. The current artifacts establish the canvas slice,
 not arbitrary Xui application compatibility.
@@ -42,8 +42,8 @@ into a separate PE, linked with the actual Core implementation and a small drive
 It remains inconclusive. The ValueTuple constructor in `View..ctor` now resolves into
 supplied framework implementation PEs. Default interface validation now passes. The
 probe also supplies `System.ComponentModel` for `IServiceProvider` and
-`System.Collections` for collection types. Vector storage executes in focused tests. The construction graph passes array signatures
-and next rejects variant generic interfaces in the collection dependency closure.
+`System.Collections` for collection types. Vector storage executes in focused tests. The construction graph passes array signatures and variant-interface metadata. Stack
+analysis next mistakes `WritingMode` for a struct and rejects its valid integer field store.
 No Core/View method is replaced or silently omitted by this gate.
 
 Completed in this step:
@@ -71,17 +71,21 @@ Array milestone: managed vectors, struct element copies, inline buffers, and lin
 Span/ReadOnlySpan length/indexers execute. The [gradient fixture](Tests/Wasm/InlineArrays/Snapshots/Gradients.md)
 uses actual Xui GradientStop/LinearGradient and tuple collection syntax.
 
-Next sequence: handle variant interface metadata and the dispatch actually exercised by
-collections, rerun the construction gate, then grow it to Measure/Arrange/Render with a Canvas host. Closed
+Variance milestone: class/interface reference conversions, dispatch, casts, inherited contracts,
+and specialized default bodies execute. See [variance](Tests/Wasm/Interfaces/Snapshots/Variance.md).
+Representation-changing calls and multiple variant default candidates still fail explicitly.
+
+Next sequence: normalize enum values to their underlying integer stack/storage types,
+rerun the construction gate, then grow it to Measure/Arrange/Render with a Canvas host. Closed
 Nullable storage is enabled by generic layout; its callable BCL surface still needs testing.
 Static initialization, GC-field byrefs, collection methods and remaining span operations, numeric helpers, and
 persistent frame/input exports remain later gates. The full TestApp is not running yet.
 
 ## Interface prerequisite — implemented
 
-Class-backed interface calls now support implicit/explicit implementations, inherited and reimplemented mappings, virtual overrides, and closed invariant generic interfaces. `is`/`as`/explicit casts work with nominal interface membership, including class references stored as `object`. Interface contracts may come from a separate supplied assembly. See the [interface execution snapshot](Tests/Wasm/Interfaces/Snapshots/Units.md).
+Class-backed interface calls now support implicit/explicit implementations, inherited and reimplemented mappings, virtual overrides, and closed generic interfaces with reference-type covariance and contravariance. `is`/`as`/explicit casts work with nominal interface membership, including class references stored as `object`. Interface contracts may come from a separate supplied assembly. See the [interface execution snapshot](Tests/Wasm/Interfaces/Snapshots/Units.md).
 
-This removes the basic interface dispatch/MethodImpl blocker. It does not yet implement boxed/constrained struct dispatch, variance, static-abstract interface dispatch, generic methods, or every signature used by `IContext`. Interface methods still use the existing supported argument/result ABI. Dependency-defined numeric structs and the initial NFloat intrinsic set now execute; ordinary Canvas signatures can now use supported struct values; remaining framework types and operations still need implementation.
+This removes the basic interface dispatch/MethodImpl blocker. It does not yet implement boxed/constrained struct dispatch, representation-changing variance adapters, static-abstract interface dispatch, generic methods, or every signature used by `IContext`. Interface methods still use the existing supported argument/result ABI. Dependency-defined numeric structs and the initial NFloat intrinsic set now execute; ordinary Canvas signatures can now use supported struct values; remaining framework types and operations still need implementation.
 
 ## Exception prerequisite — initial support implemented
 
@@ -170,7 +174,7 @@ Implement features in the order demonstrated by this fixture's dependency closur
 | General object and minimal type identity | `IServiceProvider.GetService(Type)`, casts, instrumentation names. | Nominal type tokens/equality and required reference conversions. A dictionary-backed or reflective DI container is unnecessary for the first app. |
 | Static fields and initialization | Geometry constants, singleton/null services, host state, cached values. | Defined once-only initialization and per-specialization static state. Preserve initializer side effects. |
 | Generic value types and methods | `Nullable<Rect>`, tuples, generic service helpers, collections. | Closed compile-time specialization; no runtime generic construction. |
-| Arrays and a small BCL surface | Child storage, `List<T>`, spans and input buffers. | Implement or explicitly substitute only the exercised operations. Vector storage now exists; collection constructors, methods, variance, and static state still need their own coverage. |
+| Arrays and a small BCL surface | Child storage, `List<T>`, spans and input buffers. | Implement or explicitly substitute only the exercised operations. Vector storage now exists; collection constructors, methods, and static state still need their own coverage. |
 | Math and time operations | `NFloat`, `TimeSpan`, layout calculations. | Small, tested intrinsic set; preserve WASM32 numeric rules. |
 | Delegates and exceptions | Event wiring, hot reload, disposal, validation paths. | Remove optional wiring in the compiler profile first; add real semantics when reachable application behavior requires them. |
 
@@ -219,8 +223,9 @@ The first canvas slice is complete: dependency-defined numeric structs, actual X
 geometry, a narrow NFloat policy, drawing imports, and standalone browser artifacts
 all execute with regression coverage.
 
-1. **Struct value ABI:** support geometry values as arguments and results, preserving
-   copies and aliasing. This unblocks ordinary operators and more Canvas signatures.
+1. **Enum stack/storage normalization:** preserve the enum identity in metadata while
+   treating loads, stores, arguments, and results as the underlying integer type.
+   Rerun the unchanged TestApp construction gate to expose its next dependency.
 2. **Editor integration:** supply Core to the playground compiler and replay drawing
    commands from its worker into a canvas output area.
 3. **Persistent rendering:** export frame/input entry points, retain application state,
@@ -228,8 +233,8 @@ all execute with regression coverage.
 4. **Real Window/View:** use its dependency closure to drive remaining static-state,
    span, class-storage, and BCL work, with explicit profile cuts where appropriate.
 
-General BCL compilation and cross-assembly GC classes remain outside the first-frame
-scope. Linear struct constructors/receivers and frame-owned reference slots already
+General BCL compilation remains outside the first-frame scope; supplied cross-assembly
+GC classes already execute. Linear struct constructors/receivers and frame-owned reference slots already
 work; flattened value representation can improve the ABI without removing the
 addressable storage path. Keep the reachability graph as the explanation of what
 each added feature brings into the emitted module.

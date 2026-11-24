@@ -47,23 +47,8 @@ public readonly record struct TypeIdentity(
         }
     }
 
-    /// <summary>Tests identity or a resolved class base chain; value types remain invariant.</summary>
-    public bool IsAssignableTo(TypeIdentity target)
-    {
-        if (this == target) return true;
-        if (Exceptions.ExceptionTypes.Kind(this) is { } exception && Exceptions.ExceptionTypes.Kind(target) is { } targetException)
-            return Exceptions.ExceptionTypes.IsAssignable(exception, targetException);
-        if (IsValueType || target.IsValueType) return false;
-        if (target.IsInterface) return Interfaces().Contains(target);
-        var current = this;
-        var visited = new HashSet<TypeIdentity>();
-        while (current.BaseType is { } parent && visited.Add(current))
-        {
-            if (parent == target) return true;
-            current = parent;
-        }
-        return false;
-    }
+    /// <summary>Tests identity, class inheritance, and reference conversions through variant interfaces.</summary>
+    public bool IsAssignableTo(TypeIdentity target) => TypeRelations.IsAssignable(this, target);
 
     /// <summary>The open declaration underlying this identity.</summary>
     public TypeIdentity GenericDefinition => new(Module, Handle);

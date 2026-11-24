@@ -112,14 +112,6 @@ public class InterfaceTests
         }
     }
 
-    [Theory]
-    [InlineData("public interface I<out T> { T Read(); } public class A : I<string> { public string Read() => null; }", "Variant interface")]
-    public void UnsupportedInterfaceModelsFailExplicitly(string declarations, string reason)
-    {
-        var pe = Frontend.Roslyn.Compile(declarations + " public static class Program { public static int Main() { var a = new A(); return 0; } }");
-        Assert.Contains(reason, Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
-    }
-
     [Fact]
     public async Task NullOnlyInterfaceDispatchStillEmitsAValidModule()
     {
