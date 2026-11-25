@@ -62,13 +62,22 @@ public sealed partial class WasmEmitter
         var mainIdentity = IR.MethodIdentity.FromDefinition(source, source.EntryPoint);
         foreach (var identity in dependencies.Methods.Concat(dependencies.Nodes.OfType<Dependency.Signature>().Select(n => n.Identity)).Distinct())
         {
-            var method = new MethodPlan(identity.DeclaringType.Module, identity, entryPoint: identity == mainIdentity, storage,
-                declarationOnly: !dependencies.Contains(new Dependency.Method(identity)));
-            methods.Add(identity, method);
-            orderedMethods.Add(method);
-            if (method.IsDeclaration) continue;
-            foreach (string literal in CodeEmitter.CollectRequirements(identity.DeclaringType.Module, method, dependencies))
-                if (seenLiterals.Add(literal)) literals.Add(literal);
+            try
+            {
+                var method = new MethodPlan(identity.DeclaringType.Module, identity, entryPoint: identity == mainIdentity, storage,
+                    declarationOnly: !dependencies.Contains(new Dependency.Method(identity)));
+                methods.Add(identity, method);
+                orderedMethods.Add(method);
+                if (method.IsDeclaration) continue;
+                foreach (string literal in CodeEmitter.CollectRequirements(identity.DeclaringType.Module, method, dependencies))
+                    if (seenLiterals.Add(literal)) literals.Add(literal);
+            }
+            catch (NotSupportedException error)
+            {
+                error.Data["Xui.Method"] ??= identity;
+                error.Data["Xui.DependencyPath"] ??= string.Join("\n → ", dependencies.PathTo(new Dependency.Method(identity)));
+                throw;
+            }
         }
         var main = methods[mainIdentity];
         foreach (var layout in dependencies.Nodes.OfType<Dependency.Layout>())

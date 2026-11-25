@@ -22,8 +22,8 @@ culling, default drawing state, and render cleanup. Only the explicit
   therefore do not enter the reachable graph. This does not disable all possible
   diagnostics; `Trace` is outside this first-frame path.
 - Font's default weight and stretch construct the same immutable 400/100 values
-  directly, avoiding the unsupported static fields `FontWeight.Normal` and
-  `FontStretch.Normal`. General static storage/type initialization is still unsupported.
+  directly, preserving the original first-frame profile around static fields `FontWeight.Normal` and
+  `FontStretch.Normal`. General static storage/type initialization is now supported separately.
 
 Normal Core builds do not define this symbol. No View method or TestApp drawing
 source is substituted. The existing construction gate still tests the normal Core
@@ -139,6 +139,7 @@ Separate CLR/Node regressions execute integer-key Dictionary operations, resizin
 and struct values with string references. The browser catalogue completes reachability
 and now has static storage and guarded type/module initialization. A focused
 CLR/Node test executes the actual `FontWeight.SemiBold` initializer and reads its
-struct value. The next browser catalogue blocker is `System.DateTime.MinValue`:
-its auto-layout value type is not supported by the layout resolver. The complete
+struct value. DateTime now uses compiler-owned automatic layout, with real BCL tick
+constructor/accessor execution tested. The next browser catalogue blocker is an
+NFloat implicit conversion reached from the Color constructor. The complete
 shell is not yet emitted; see the readiness snapshot for its dependency path.

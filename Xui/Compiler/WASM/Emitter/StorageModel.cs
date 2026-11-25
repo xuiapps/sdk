@@ -34,7 +34,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     private LayoutResolver Layouts(TypeIdentity identity)
     {
         if (!layoutResolvers.TryGetValue(identity.Module, out var resolver))
-            layoutResolvers.Add(identity.Module, resolver = new(identity.Module, TargetLayout.Wasm32));
+            layoutResolvers.Add(identity.Module, resolver = new(identity.Module, TargetLayout.Wasm32, AutoLayoutPolicy.DeclarationOrder));
         return resolver;
     }
     private readonly Dictionary<TypeIdentity, GcShape> shapes = new();

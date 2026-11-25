@@ -114,6 +114,30 @@ public class LayoutTests
         Assert.Contains(reason, Assert.Throws<NotSupportedException>(() => resolver.Resolve(handle)).Message);
     }
 
+    [Fact]
+    public void CompilerOwnedAutoLayoutPolicyPropagatesIntoLinkedNestedValues()
+    {
+        byte[] libraryImage = Frontend.Roslyn.Compile("""
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+            public struct Value { public byte Tag; public long Number; public short Tail; }
+            """, OutputKind.DynamicallyLinkedLibrary, "AutoValues");
+        byte[] image = Frontend.Roslyn.Compile("public struct Container { public byte Tag; public Value Value; }",
+            OutputKind.DynamicallyLinkedLibrary, additionalReferences: [MetadataReference.CreateFromImage(libraryImage)]);
+        using var libraryStream = new MemoryStream(libraryImage);
+        using var library = AssemblyCompiler.Read(libraryStream);
+        using var stream = new MemoryStream(image);
+        using var assembly = AssemblyCompiler.Read(stream);
+        _ = new Xui.Compiler.XuiNet.Compilation([assembly, library]);
+        var module = assembly.ManifestModule;
+        var handle = module.Types.Single(h => module.GetType(h).Name == "Container");
+        Assert.Contains("Auto layout", Assert.Throws<NotSupportedException>(() => new LayoutResolver(module, TargetLayout.Wasm32).Resolve(handle)).Message);
+        var layout = new LayoutResolver(module, TargetLayout.Wasm32, AutoLayoutPolicy.DeclarationOrder).Resolve(handle);
+        Assert.Equal(32, layout.Size);
+        Assert.Equal(8, layout.Alignment);
+        var field = module.GetType(handle).Fields.Single(h => module.GetField(h).Name == "Value");
+        Assert.Equal(new FieldLayout(8, 24), layout.Fields[field]);
+    }
+
     private static byte[] CompileFixture(string fixture) => Frontend.Roslyn.Compile(
         File.ReadAllText(Path.Combine(SourceDirectory(), "..", "..", "Fixtures", "Structs", fixture + ".cs")),
         OutputKind.DynamicallyLinkedLibrary, "Layout." + fixture);

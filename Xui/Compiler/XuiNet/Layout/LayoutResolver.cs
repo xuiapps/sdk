@@ -8,24 +8,26 @@ namespace Xui.Compiler.XuiNet.Layout;
 
 /// <summary>Calculates and caches target-specific layouts of unmanaged structs and enums from PE metadata.</summary>
 /// <remarks>Keep the source assembly alive. Closed generic fields are specialized before layout. Reference fields, open generics,
-/// arbitrary auto layouts and unresolved external values are rejected. Framework
+/// unresolved external values are rejected. Auto layouts require an explicit storage policy. Framework
 /// ValueTuple auto layouts use declaration-order target storage, not a host CLR interop layout.</remarks>
 public sealed partial class LayoutResolver
 {
     private readonly Model.Module module;
     private readonly Dictionary<Model.Module, LayoutResolver> modules;
     /// <summary>Creates a layout resolver sharing target rules across linked implementation assemblies.</summary>
-    public LayoutResolver(Model.Module module, TargetLayout target) : this(module, target, new()) { }
-    private LayoutResolver(Model.Module module, TargetLayout target, Dictionary<Model.Module, LayoutResolver> modules)
-    { this.module = module; Target = target; this.modules = modules; modules.Add(module, this); }
+    public LayoutResolver(Model.Module module, TargetLayout target, AutoLayoutPolicy autoLayout = AutoLayoutPolicy.Reject) : this(module, target, autoLayout, new()) { }
+    private LayoutResolver(Model.Module module, TargetLayout target, AutoLayoutPolicy autoLayout, Dictionary<Model.Module, LayoutResolver> modules)
+    { this.module = module; Target = target; AutoLayout = autoLayout; this.modules = modules; modules.Add(module, this); }
     private LayoutResolver For(Model.Module owner) => modules.TryGetValue(owner, out var resolver)
-        ? resolver : new(owner, Target, modules);
+        ? resolver : new(owner, Target, AutoLayout, modules);
 
     private readonly Dictionary<TypeIdentity, StructLayout> cache = new();
     private readonly HashSet<TypeIdentity> resolving = [];
 
     /// <summary>The explicit target used for every layout in this resolver.</summary>
     public TargetLayout Target { get; }
+    /// <summary>Whether automatic layouts may use compiler-owned declaration-order bytes.</summary>
+    public AutoLayoutPolicy AutoLayout { get; }
 
     /// <summary>Resolves the instance layout of a struct or enum defined in the source module.</summary>
     public StructLayout Resolve(TypeDefinitionHandle handle) => Resolve(new TypeIdentity(module, handle));
@@ -71,7 +73,7 @@ public sealed partial class LayoutResolver
                 new() { [inline.Field.Handle] = new(0, element.Size) });
         }
         var kind = type.Attributes & TypeAttributes.LayoutMask;
-        if (!isEnum && kind is not (TypeAttributes.SequentialLayout or TypeAttributes.ExplicitLayout) && !FrameworkTypes.IsValueTuple(identity))
+        if (!isEnum && kind is not (TypeAttributes.SequentialLayout or TypeAttributes.ExplicitLayout) && !FrameworkTypes.IsValueTuple(identity) && AutoLayout != AutoLayoutPolicy.DeclarationOrder)
             throw new NotSupportedException($"Auto layout is not supported: {type.Name}.");
         var fields = new Dictionary<FieldDefinitionHandle, FieldLayout>();
         int end = 0, alignment = 1;

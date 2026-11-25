@@ -935,6 +935,12 @@ uses WASM global constant expressions; no explicit JavaScript init call is requi
 The [initialization REPL](../Tests/Wasm/Statics/Snapshots/Initialization.md) shows
 source, execution order, copied struct values, exit code, and WAT. Static storage
 currently shares the existing supported field layouts: explicit-layout flattening,
-auto-layout value types such as DateTime, and arbitrary direct RVA/literal storage
+arbitrary direct RVA/literal storage
 access remain unsupported. Existing static-span and framework-constant intrinsics
 keep their specialized paths.
+
+Automatic value-type layouts use compiler-owned declaration-order storage. Numeric
+values stay in linear storage and managed-reference fields use the existing GC or
+frame reference slots. This supports the real DateTime tick constructors/accessors
+and static MinValue/MaxValue; it does not imply CLR/native interop layout compatibility
+or support for wall-clock/time-zone APIs.

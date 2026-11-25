@@ -91,8 +91,8 @@ internal sealed partial class StorageModel
         if (HasStackReferences(identity)) { ReferenceSlotsEnabled = true; ExceptionsEnabled = true; }
         var ownerModule = identity.Module;
         var type = ownerModule.GetType((TypeDefinitionHandle)identity.Handle);
-        if ((type.Attributes & TypeAttributes.LayoutMask) != TypeAttributes.SequentialLayout && !FrameworkTypes.IsValueTuple(identity) && InlineArrayInfo.Read(identity) is null)
-            throw new NotSupportedException($"Reference-slot stack storage requires a sequential struct or framework ValueTuple: {identity}.");
+        if ((type.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.ExplicitLayout && InlineArrayInfo.Read(identity) is null)
+            throw new NotSupportedException($"Overlapping explicit layouts cannot use reference-slot stack storage: {identity}.");
         int pack = type.DeclaredLayout.PackingSize == 0 ? TargetLayout.Wasm32.DefaultPackingSize : type.DeclaredLayout.PackingSize;
         int end = 0, alignment = 1;
         var fields = new Dictionary<FieldDefinitionHandle, FieldLayout>();

@@ -27,8 +27,8 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Auto layout is not supported: DateTime.
-Static field: System.DateTime.MinValue
+Constructor result storage is not implemented for System.Runtime.InteropServices.NFloat in System.Runtime.InteropServices.NFloat.op_Implicit.
+Method: System.Runtime.InteropServices.NFloat.op_Implicit
 ```
 
 ## Dependency path
@@ -36,13 +36,10 @@ Static field: System.DateTime.MinValue
 ```text
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
- → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
- → Method { Identity = Xui.Core.UI.ScrollView..ctor }
- → Method { Identity = System.TimeProvider.get_System }
- → Initialization { Identity = System.TimeProvider }
- → Method { Identity = System.TimeProvider..cctor }
- → Field { Identity = FieldIdentity { DeclaringType = System.DateTime, Handle = System.Reflection.Metadata.FieldDefinitionHandle } }
+ → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel..ctor }
+ → Method { Identity = Xui.Core.Canvas.Color..ctor }
+ → Method { Identity = System.Runtime.InteropServices.NFloat.op_Implicit }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.
