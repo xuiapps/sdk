@@ -36,3 +36,8 @@ pre { margin: 0; padding: 22px; white-space: pre-wrap; overflow-wrap: anywhere; 
 .panel-footer { margin-top: auto; padding: 11px 18px; display: flex; justify-content: space-between; gap: 14px; border-top: 1px solid #eceaf1; color: #716b83; font-size: .8125rem; min-height: 41px; }
 footer { margin-top: 20px; display: flex; justify-content: space-between; gap: 16px; font-size: .8125rem; color: #716b83; }
 @media (max-width: 800px) { main { padding-top: 26px; } .intro { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 12px; } .workspace { grid-template-columns: 1fr; } textarea { height: 380px; min-height: 240px; } .toolbar { flex-wrap: wrap; } .actions { flex: 1; justify-content: flex-end; } #download { display: none; } footer { flex-direction: column; gap: 6px; } }
+
+.testapp-preview { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px 24px; padding:18px 22px; margin-bottom:16px; background:#fff; border:1px solid #dddae6; border-radius:10px; }
+.testapp-preview strong { font-size:1rem; }
+.testapp-preview p { font-size:.875rem; margin-top:4px; }
+.testapp-preview a { white-space:nowrap; font-weight:600; }

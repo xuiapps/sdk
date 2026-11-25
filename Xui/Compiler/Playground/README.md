@@ -34,3 +34,18 @@ The smoke test serves the published files at `/wasm/`, exercises the real .NET c
 ## Deployment
 
 `Web.yml` publishes and browser-tests this project, copies its `wwwroot` into `_site/wasm`, then uploads the combined documentation and playground artifact to GitHub Pages. The existing `xuiapps.com` CNAME is preserved. Deployment occurs when the changes reach `main` (or when that workflow is manually dispatched with the intended ref). The compiler's source and dependencies are built from that same checkout.
+
+
+## TestApp preview
+
+The playground links to [the self-contained TestApp](https://xuiapps.com/wasm/testapp.html).
+It runs the real mobile shell, event routing and animated Canvas Drawing/Back
+navigation with a measured FPS badge. The browser catalogue currently contains one
+example; diagnostics and async/GPU demos remain excluded. The expandable Page size
+panel accounts for HTML, embedded fonts, JavaScript and WASM sections.
+
+Publishing copies `Tests/Wasm/TestApp/Snapshots/BrowserInteractive.html` as
+`wwwroot/testapp.html`. This is a precompiled snapshot from `compiler-msil-wasm`. Regenerate and review it
+with `BrowserInteractionTests` on that branch as compiler support grows. It embeds its own WASM and JS
+runtime and does not load the playground's Roslyn/.NET runtime. The published-site
+smoke test checks the link, FPS warmup, Canvas Drawing navigation and Back.
