@@ -7,6 +7,7 @@ namespace Xui.Compiler.XuiNet.DotNet.Intrinsics;
 public enum ManagedTypeOperation
 {
     GetType,
+    FromHandle,
     Name,
     Equal,
     NotEqual
@@ -20,7 +21,20 @@ public sealed record ManagedType(
     /// <summary>Identifies the opaque managed reference backed by a module's immutable type descriptor.</summary>
     public static bool Is(TypeIdentity identity) => FrameworkTypes.Is(identity, "System", "Type");
 
-    /// <summary>Recognizes GetType, the inherited Name property, and typed equality operators.</summary>
+    /// <summary>Resolves a closed class/interface token for the supported typeof path.</summary>
+    public static TypeIdentity Token(Module module, EntityHandle token, GenericArguments? typeArguments = null, GenericArguments? methodArguments = null)
+    {
+        if (token.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification))
+            throw new NotSupportedException("Runtime field and method handles are not implemented.");
+        var signature = SignatureReader.Resolve(module, token, typeArguments, methodArguments);
+        if (signature.Identity is not { Handle.Kind: HandleKind.TypeDefinition, IsValueType: false } identity ||
+            FrameworkTypes.IsRuntimeBase(identity) || Is(identity) || DefaultEquality.Is(identity) ||
+            Exceptions.ExceptionTypes.Kind(identity) is not null)
+            throw new NotSupportedException($"typeof currently requires a linked class or interface descriptor: {signature}.");
+        return identity;
+    }
+
+    /// <summary>Recognizes GetType, GetTypeFromHandle, the inherited Name property, and typed equality operators.</summary>
     public static ManagedType? Read(Module module, EntityHandle token)
     {
         TypeIdentity owner;
@@ -41,6 +55,10 @@ public sealed record ManagedType(
         if (!Is(owner) && !FrameworkTypes.Is(owner, "System", "Object") && !FrameworkTypes.Is(owner, "System.Reflection", "MemberInfo")) return null;
         var signature = SignatureReader.Method(module, blob);
         if (signature.GenericParameterCount != 0) return null;
+        if (Is(owner) && name == "GetTypeFromHandle" && !signature.HasThis && signature.Parameters.Length == 1 &&
+            !signature.Parameters[0].IsByReference && signature.Parameters[0].Identity is { } handleType && FrameworkTypes.Is(handleType, "System", "RuntimeTypeHandle") &&
+            signature.Result.Identity is { } returnedType && Is(returnedType))
+            return new(ManagedTypeOperation.FromHandle, signature);
         if (signature.HasThis && signature.Parameters.Length == 0)
         {
             if (name == "GetType" && FrameworkTypes.Is(owner, "System", "Object") && signature.Result.Identity is { } result && Is(result))

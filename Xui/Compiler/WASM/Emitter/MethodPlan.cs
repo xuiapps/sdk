@@ -102,7 +102,7 @@ internal sealed partial class MethodPlan
         InvariantFormatting = InvariantFormattingCalls.Read(source, Body, Graph);
         InterpolationCalls = XuiNet.CodeFlow.InterpolationCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
         if (CallsTimeSpanFactory() || Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
-            Graph.Instructions.Any(n => n.Code is OpCode.Newobj or OpCode.Ldsfld or OpCode.Ldftn or OpCode.Ldvirtftn || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
+            Graph.Instructions.Any(n => n.Code is OpCode.Ldtoken or OpCode.Newobj or OpCode.Ldsfld or OpCode.Ldftn or OpCode.Ldvirtftn || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
         if (Body.ExceptionRegions.Length != 0)
         {
             Graph = Analyzer.Analyze(source, identity);

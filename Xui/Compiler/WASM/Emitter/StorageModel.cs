@@ -68,6 +68,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             return new(SignatureTypeCode.Single, IsByReference: type.IsByReference);
         }
         type = EnumInfo.Storage(type);
+        if (type.Identity is { } handleType && FrameworkTypes.Is(handleType, "System", "RuntimeTypeHandle"))
+            throw new NotSupportedException("RuntimeTypeHandle locals, fields, and call signatures are not implemented; use typeof directly.");
         if (type.Code is SignatureTypeCode.GenericTypeParameter or SignatureTypeCode.GenericMethodParameter)
             throw new NotSupportedException("Open generic parameters cannot be emitted.");
         if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && !XuiNet.DotNet.Intrinsics.ManagedType.Is(external) && !DelegateInfo.IsRuntimeBase(external) && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)

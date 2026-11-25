@@ -11,6 +11,8 @@ public enum StackType
     NativeInt,
     /// <summary>A callable method token used to construct a delegate.</summary>
     MethodPointer,
+    /// <summary>A transient closed type token consumed by Type.GetTypeFromHandle.</summary>
+    RuntimeTypeHandle,
     Float,
     String,
     /// <summary>A managed vector with its exact element signature.</summary>

@@ -22,6 +22,10 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         var stack = new StackCursor(node);
         switch (instruction.Code)
         {
+            case OpCode.Ldtoken:
+                var tokenType = Model.Intrinsics.ManagedType.Token(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments);
+                stack.Push(new(StackType.RuntimeTypeHandle, TypeToken: tokenType));
+                break;
             case OpCode.Ldsfld:
                 var zeroType = Model.Intrinsics.TimeSpanZero.Read(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context)
                     ?? throw new NotSupportedException("Static field stack analysis is not implemented except TimeSpan.Zero.");
@@ -217,6 +221,12 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Callvirt:
             case OpCode.Call:
                 int callToken = instruction.ReadToken(ref reader).Value;
+                if (Model.Intrinsics.ManagedType.Read(module, MetadataTokens.EntityHandle(callToken)) is { Operation: Model.Intrinsics.ManagedTypeOperation.FromHandle } typeHandle)
+                {
+                    if (stack.Pop().Type != StackType.RuntimeTypeHandle) throw stack.Error("GetTypeFromHandle requires a type token");
+                    stack.Push(StackEntry.From(typeHandle.Signature.Result));
+                    break;
+                }
                 if (invariantFormatting.TryGetValue(node.Offset, out var formatting))
                 {
                     if (formatting.IsProvider) stack.Push(StackEntry.From(formatting.Provider));

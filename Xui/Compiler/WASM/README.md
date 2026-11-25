@@ -65,7 +65,13 @@ generic arity, excluding namespace/nesting prefixes). Type equality compares
 immutable descriptor identity; locals, arguments, fields, and casts preserve it.
 GetType/Name on null throw managed NullReferenceException. Descriptor simple-name
 storage is added only when the facade is used. Object-typed/boxed/array/exception
-GetType receivers, `typeof`, and general reflection remain unsupported.
+GetType receivers and general reflection remain unsupported.
+`typeof` supports linked classes/interfaces, including closed generic specializations.
+`ldtoken` pushes the existing descriptor as a transient opaque runtime type handle;
+`Type.GetTypeFromHandle` exposes that same reference as `Type`, without allocation.
+This permits exact type comparisons in service lookup and agrees with instance
+GetType identity. Primitive/array/open-generic type tokens, raw RuntimeTypeHandle
+locals/fields/call ABIs, and method/field handles remain unsupported.
 
 Delegates use a compiler-owned GC object containing a nominal type descriptor,
 retained target/closure, callable table slot, canonical method identity, and an
@@ -547,7 +553,7 @@ supported operations that require no emitted bytes.
 | `refanyval` |  |  |
 | `ckfinite` |  |  |
 | `mkrefany` |  |  |
-| `ldtoken` |  |  |
+| `ldtoken` | `global.get` | Class/interface type tokens; immutable descriptors consumed by GetTypeFromHandle. |
 | `conv.u2` | Optional `i32.wrap_i64`; `i32.const 65535; i32.and` | Integer inputs only; narrow results occupy an int32 stack slot. |
 | `conv.u1` | Optional `i32.wrap_i64`; `i32.const 255; i32.and` | Integer inputs only; narrow results occupy an int32 stack slot. |
 | `conv.i` | No instruction (i32/native) / `i32.wrap_i64` (i64) | Native integers use 32 bits; floating-point inputs remain unsupported. |

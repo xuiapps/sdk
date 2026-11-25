@@ -134,6 +134,7 @@ public readonly ref partial struct CodeEmitter
             case OpCode.Stind_r4: EmitStind_r4(offset); break;
             case OpCode.Stind_r8: EmitStind_r8(offset); break;
             case OpCode.Stind_ref: EmitStind_ref(offset); break;
+            case OpCode.Ldtoken: EmitLdtoken(instruction.ReadToken(ref reader)); break;
             case OpCode.Ldloca:
                 EmitLdloca(instruction.ReadVariable(ref reader), offset); break;
             case OpCode.Ldloca_s:
@@ -382,6 +383,11 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Constrained:
                     _ = instruction.ReadToken(ref reader);
                     if (!method.InterpolationCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString.");
+                    break;
+                case OpCode.Ldtoken:
+                    var tokenType = IR.Intrinsics.ManagedType.Token(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+                    method.Storage.ManagedTypesEnabled = true;
+                    method.RequireGc(tokenType);
                     break;
                 case OpCode.Isinst:
                 case OpCode.Castclass:

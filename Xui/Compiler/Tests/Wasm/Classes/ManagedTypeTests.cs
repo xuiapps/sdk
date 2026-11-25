@@ -8,6 +8,50 @@ namespace Xui.Compiler.Tests.Wasm.Classes;
 public class ManagedTypeTests
 {
     [Fact]
+    public Task TypeOfSharesDescriptorsWithInstancesAndGenericSpecializations() => InlineArrayTests.AssertLinked("""
+        using System;
+        public interface IItem { }
+        public class Item : IItem { }
+        public class Box<T> { }
+        public class MetadataOnly { public MetadataOnly() { throw new Exception("must not run"); } }
+        namespace One { public class Item { } }
+        namespace Two { public class Item { } }
+        public static class Program {
+            static Type Kind<T>() where T : class => typeof(T);
+            public static int Main() {
+                Console.WriteLine(typeof(Item)==new Item().GetType());
+                Console.WriteLine(Kind<Box<int>>()==typeof(Box<int>));
+                Console.WriteLine(Kind<Box<int>>()!=typeof(Box<string>));
+                Console.WriteLine(typeof(IItem).Name); Console.WriteLine(typeof(MetadataOnly).Name);
+                Console.WriteLine(typeof(One.Item).Name==typeof(Two.Item).Name);
+                Console.WriteLine(typeof(One.Item)!=typeof(Two.Item));
+                return 42;
+            }
+        }
+        """, "True\nTrue\nTrue\nIItem\nMetadataOnly\nTrue\nTrue\n", 42);
+
+    [Fact]
+    public Task TypeOfDrivesInterfaceServiceLookup() => InlineArrayTests.AssertLinked("""
+        using System;
+        public interface ITheme { string Name { get; } }
+        public interface IMissing { }
+        public class Theme : ITheme { public string Name => "Canvas"; }
+        public class Services : IServiceProvider {
+            private ITheme theme=new Theme();
+            public object GetService(Type serviceType) => serviceType==typeof(ITheme) ? theme : null;
+        }
+        public static class Program {
+            public static int Main() {
+                IServiceProvider services=new Services();
+                Console.WriteLine(((ITheme)services.GetService(typeof(ITheme))).Name);
+                Console.WriteLine(services.GetService(typeof(IMissing))==null);
+                Console.WriteLine(services.GetService(null)==null);
+                return 42;
+            }
+        }
+        """, "Canvas\nTrue\nTrue\n", 42, typeof(IServiceProvider).Assembly);
+
+    [Fact]
     public Task DescriptorsKeepDynamicIdentityAndMetadataNames() => InlineArrayTests.AssertLinked("""
         using System;
         namespace Demo {

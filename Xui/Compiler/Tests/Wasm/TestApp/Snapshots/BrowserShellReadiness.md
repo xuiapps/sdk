@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Custom System.Type subclasses are not implemented.
+Catch type is not a supported built-in exception: System.Resources.MissingManifestResourceException.
 ```
 
 ## Dependency path
@@ -35,14 +35,18 @@ Custom System.Type subclasses are not implemented.
 ```text
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
- → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileHomeHeader.ShowRating }
- → Method { Identity = System.Type.GetTypeFromHandle }
- → Field { Identity = FieldIdentity { DeclaringType = System.RuntimeTypeHandle, Handle = System.Reflection.Metadata.FieldDefinitionHandle } }
- → Type { Identity = System.RuntimeType }
- → Type { Identity = System.Reflection.TypeInfo }
+ → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
+ → Method { Identity = Xui.Core.UI.View.AddProtectedChild }
+ → Method { Identity = Xui.Core.UI.View.AttachSubtree }
+ → VirtualCall { Identity = Xui.Core.UI.View.get_Item }
+ → Method { Identity = Xui.Core.UI.ViewCollection.get_Item }
+ → VirtualCall { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.get_Item }
+ → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.get_Item }
+ → Method { Identity = System.ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException }
+ → Method { Identity = System.ThrowHelper.GetArgumentOutOfRangeException }
+ → Method { Identity = System.ThrowHelper.GetResourceString }
+ → Method { Identity = System.SR.get_ArgumentOutOfRange_IndexMustBeLessOrEqual }
+ → Method { Identity = System.SR.GetResourceString }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

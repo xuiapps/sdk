@@ -68,15 +68,16 @@ public class InlineArrayTests
         }
         """, "", 42);
 
-    internal static async Task AssertLinked(string source, string output, int exitCode)
+    internal static async Task AssertLinked(string source, string output, int exitCode, params System.Reflection.Assembly[] additionalAssemblies)
     {
         foreach (var optimization in new[] { OptimizationLevel.Release, OptimizationLevel.Debug })
         {
-            byte[] image = Frontend.Roslyn.Compile(source, optimizationLevel: optimization);
+            byte[] image = Frontend.Roslyn.Compile(source, optimizationLevel: optimization,
+                additionalReferences: additionalAssemblies.Select(a => MetadataReference.CreateFromFile(a.Location)));
             var managed = GcTests.RunManaged(image);
             Assert.Equal(output, managed.Output); Assert.Equal(exitCode, managed.ExitCode);
             using var app = CanvasTests.Read(image);
-            using var framework = new Frontend.Framework();
+            using var framework = new Frontend.Framework(additionalAssemblies.Select(a => a.GetName().Name + ".dll").ToArray());
             _ = new Xui.Compiler.XuiNet.Compilation([app, .. framework.Assemblies]);
             Assert.Equal(managed, await Node.ExecuteAsync(new WasmEmitter().Emit(app, new ConsoleWriteLineRewriter())));
         }

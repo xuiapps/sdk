@@ -17,6 +17,12 @@ public readonly ref partial struct CodeEmitter
         var storage = method.Storage;
         switch (access.Operation)
         {
+            case ManagedTypeOperation.FromHandle:
+                if (Pop(instruction.Code, offset).TypeToken is null)
+                    throw new NotSupportedException("GetTypeFromHandle requires a compiler-known type token.");
+                // The transient handle already is the canonical descriptor reference.
+                stack.Push(new(SignatureTypeCode.TypeHandle, access.Signature.Result.Identity));
+                break;
             case ManagedTypeOperation.GetType:
                 var receiver = Pop(instruction.Code, offset);
                 if (!receiver.IsNull && (receiver.IsByReference || receiver.Identity is not { } identity ||

@@ -31,6 +31,7 @@ public readonly struct MsilStackEntry
     internal bool IsReferenceAddress => IsByReference && (TypeCode is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray || Identity is { IsValueType: false });
 
     internal MethodIdentity? Method { get; init; }
+    internal TypeIdentity? TypeToken { get; init; }
     internal bool IsNull { get; init; }
     internal GcLocation? Location { get; init; }
 

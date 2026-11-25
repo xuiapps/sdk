@@ -203,8 +203,18 @@ public class GraphTests
     {
         var underflow = Program(il => { il.OpCode(ILOpCode.Pop); il.LoadConstantI4(0); il.OpCode(ILOpCode.Ret); });
         Assert.Contains("IL_0000", Assert.Throws<InvalidProgramException>(() => Analyze(underflow)).Message);
-        var unsupported = Program(il => { il.OpCode(ILOpCode.Ldtoken); il.Token(MetadataTokens.TypeDefinitionHandle(1)); il.OpCode(ILOpCode.Pop); il.LoadConstantI4(0); il.OpCode(ILOpCode.Ret); });
-        Assert.Contains("Ldtoken", Assert.Throws<NotSupportedException>(() => Analyze(unsupported)).Message);
+        var unsupported = Program(il => { il.OpCode(ILOpCode.Ldtoken); il.Token(MetadataTokens.MethodDefinitionHandle(1)); il.OpCode(ILOpCode.Pop); il.LoadConstantI4(0); il.OpCode(ILOpCode.Ret); });
+        Assert.Contains("method handles", Assert.Throws<NotSupportedException>(() => Analyze(unsupported)).Message);
+    }
+
+    [Fact]
+    public void TypeTokensCarryDescriptorIdentityUntilConsumed()
+    {
+        var graph = Analyze(Program(il => { il.OpCode(ILOpCode.Ldtoken); il.Token(MetadataTokens.TypeDefinitionHandle(2)); il.OpCode(ILOpCode.Pop); il.LoadConstantI4(0); il.OpCode(ILOpCode.Ret); }));
+        var token = graph.Instructions[0];
+        Assert.Equal(StackType.RuntimeTypeHandle, token.After!.Entry!.Value.Type);
+        Assert.Equal(MetadataTokens.TypeDefinitionHandle(2), token.After.Entry.Value.TypeToken!.Value.Handle);
+        Assert.Same(graph.Stacks.Empty, graph.Instructions[1].After);
     }
 
     private static InstructionGraph Analyze(byte[] image, string methodName = "Main")

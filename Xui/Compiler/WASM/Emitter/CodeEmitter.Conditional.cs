@@ -138,10 +138,11 @@ public readonly ref partial struct CodeEmitter
     }
 
     private static bool SameSourceType(MsilStackEntry left, MsilStackEntry right) =>
-        left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull && left.Array == right.Array && left.Method == right.Method;
+        left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull && left.Array == right.Array && left.Method == right.Method && left.TypeToken == right.TypeToken;
 
     private static MsilStackEntry SourceEntry(StackEntry entry)
     {
+        if (entry.Type == StackType.RuntimeTypeHandle) return new(SignatureTypeCode.Object) { TypeToken = entry.TypeToken };
         if (entry.Type == StackType.MethodPointer) return new(SignatureTypeCode.IntPtr) { Method = entry.Method };
         if (entry.Type == StackType.Null) return new(SignatureTypeCode.Object) { IsNull = true };
         if (entry.DeclaredType is not { } declared) return new(SourceType(entry.Type));
