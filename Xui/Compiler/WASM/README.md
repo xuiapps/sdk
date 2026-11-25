@@ -944,3 +944,8 @@ values stay in linear storage and managed-reference fields use the existing GC o
 frame reference slots. This supports the real DateTime tick constructors/accessors
 and static MinValue/MaxValue; it does not imply CLR/native interop layout compatibility
 or support for wall-clock/time-zone APIs.
+
+NFloat conversions accept all integral scalar inputs, including byte/short color
+components, native integers, and signed/unsigned 64-bit integers. They convert
+directly to f32 before promoting to the MSIL floating stack representation, avoiding
+double rounding through f64. WASM32 native integers retain their 32-bit width.

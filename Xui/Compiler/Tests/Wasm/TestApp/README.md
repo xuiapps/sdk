@@ -141,5 +141,6 @@ and now has static storage and guarded type/module initialization. A focused
 CLR/Node test executes the actual `FontWeight.SemiBold` initializer and reads its
 struct value. DateTime now uses compiler-owned automatic layout, with real BCL tick
 constructor/accessor execution tested. The next browser catalogue blocker is an
-NFloat implicit conversion reached from the Color constructor. The complete
+shared conditional region in PressFeedbackLayer.End. Color byte-channel NFloat
+conversions now lower directly to the target scalar operations. The complete
 shell is not yet emitted; see the readiness snapshot for its dependency path.

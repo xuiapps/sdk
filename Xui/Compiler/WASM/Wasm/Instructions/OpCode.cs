@@ -199,8 +199,12 @@ public enum OpCode : byte
     I64TruncF64S = 0xb0,
     /// <summary>Converts signed i32 to f32.</summary>
     F32ConvertI32S = 0xb2,
+    /// <summary>Converts unsigned i32 directly to f32.</summary>
+    F32ConvertI32U = 0xb3,
     /// <summary>Converts signed i64 directly to f32.</summary>
     F32ConvertI64S = 0xb4,
+    /// <summary>Converts unsigned i64 directly to f32.</summary>
+    F32ConvertI64U = 0xb5,
     /// <summary>Rounds an f64 value to f32.</summary>
     F32DemoteF64 = 0xb6,
     /// <summary>Converts signed i32 to f64.</summary>

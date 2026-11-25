@@ -78,9 +78,16 @@ public readonly ref partial struct CodeEmitter
         }
         else if (signature.Result.Identity is { } result && NativeFloat.Is(result))
         {
-            if (signature.Parameters[0].Code == SignatureTypeCode.Int32) writer.F32ConvertI32S();
-            else if (signature.Parameters[0].Code == SignatureTypeCode.UInt32) writer.F64ConvertI32U().F32DemoteF64();
-            else writer.F32DemoteF64();
+            switch (signature.Parameters[0].Code)
+            {
+                case SignatureTypeCode.SByte: case SignatureTypeCode.Int16:
+                case SignatureTypeCode.Int32: case SignatureTypeCode.IntPtr: writer.F32ConvertI32S(); break;
+                case SignatureTypeCode.Byte: case SignatureTypeCode.UInt16: case SignatureTypeCode.Char:
+                case SignatureTypeCode.UInt32: case SignatureTypeCode.UIntPtr: writer.F32ConvertI32U(); break;
+                case SignatureTypeCode.Int64: writer.F32ConvertI64S(); break;
+                case SignatureTypeCode.UInt64: writer.F32ConvertI64U(); break;
+                default: writer.F32DemoteF64(); break;
+            }
             writer.F64PromoteF32();
         }
         // NFloat values already carry f32 rounding; conversion to double is an exact promotion.

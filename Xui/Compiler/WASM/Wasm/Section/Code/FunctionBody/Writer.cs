@@ -420,6 +420,12 @@ public ref partial struct Writer
         return this;
     }
 
+    /// <summary>Converts unsigned i32 directly to f32.</summary>
+    public readonly Writer F32ConvertI32U() { body.Instruction(OpCode.F32ConvertI32U); return this; }
+
+    /// <summary>Converts unsigned i64 directly to f32, with a single rounding.</summary>
+    public readonly Writer F32ConvertI64U() { body.Instruction(OpCode.F32ConvertI64U); return this; }
+
     /// <summary>Converts signed i32 to f64.</summary>
     public readonly Writer F64ConvertI32S()
     {

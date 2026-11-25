@@ -27,8 +27,8 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Constructor result storage is not implemented for System.Runtime.InteropServices.NFloat in System.Runtime.InteropServices.NFloat.op_Implicit.
-Method: System.Runtime.InteropServices.NFloat.op_Implicit
+Code flow jumps unsupported at IL_0047: overlapping regions.
+Method: Xui.DevKit.UI.Layer.PressFeedbackLayer<Xui.DevKit.UI.Widgets.Button>.End
 ```
 
 ## Dependency path
@@ -38,8 +38,14 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
  → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel..ctor }
- → Method { Identity = Xui.Core.Canvas.Color..ctor }
- → Method { Identity = System.Runtime.InteropServices.NFloat.op_Implicit }
+ → Method { Identity = Xui.DevKit.UI.Widgets.Card.set_Content }
+ → Method { Identity = Xui.Core.UI.View.SetProtectedChild<Xui.Core.UI.View> }
+ → Method { Identity = Xui.Core.UI.View.RemoveProtectedChild }
+ → Method { Identity = Xui.Core.UI.View.DeactivateSubtree }
+ → VirtualCall { Identity = Xui.Core.UI.View.OnDeactivate }
+ → Method { Identity = Xui.DevKit.UI.Widgets.Button.OnDeactivate }
+ → Method { Identity = Xui.DevKit.UI.Widgets.Button.EndPress }
+ → Method { Identity = Xui.DevKit.UI.Layer.PressFeedbackLayer<Xui.DevKit.UI.Widgets.Button>.End }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.
