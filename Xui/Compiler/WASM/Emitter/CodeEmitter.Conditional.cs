@@ -12,6 +12,9 @@ public readonly ref partial struct CodeEmitter
         {
             switch (child)
             {
+                case ForwardRegion forward:
+                    EmitForwardRegion(forward);
+                    break;
                 case ExceptionBlock exception:
                     EmitExceptionBlock(exception);
                     break;

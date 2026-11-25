@@ -4,7 +4,8 @@ namespace Xui.Compiler.XuiNet.CodeFlow;
 public readonly record struct InstructionSpecialization(
     SpecializationKind Kind,
     int End,
-    int Value = 0);
+    int Value = 0,
+    string? Intrinsic = null);
 
 /// <summary>Stack effects used by the closed-type specialization pass.</summary>
 public enum SpecializationKind

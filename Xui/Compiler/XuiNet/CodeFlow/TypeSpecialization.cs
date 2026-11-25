@@ -9,7 +9,7 @@ using MethodBody = Xui.Compiler.XuiNet.DotNet.MethodBody;
 
 namespace Xui.Compiler.XuiNet.CodeFlow;
 
-/// <summary>Folds adjacent typeof(T).IsValueType queries and proven boolean branches for closed methods.</summary>
+/// <summary>Folds closed type/reference-content queries and proven boolean branches.</summary>
 /// <remarks>Unknown values remain unknown. No calls or stores are removed based on guessed runtime values.</remarks>
 public static class TypeSpecialization
 {
@@ -24,6 +24,20 @@ public static class TypeSpecialization
         {
             var reader = body.Instructions; reader.Seek(nodes[i].Offset);
             return MetadataTokens.EntityHandle(reader.Read().ReadToken(ref reader).Value);
+        }
+        var layouts = new Layout.LayoutResolver(module, Layout.TargetLayout.Wasm32);
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i].Code != OpCode.Call || ReferenceContent.Read(module, Token(i), method.DeclaringType.Arguments, method.Arguments) is not { } type) continue;
+            if (type.ContainsGenericParameters) throw new NotSupportedException("Reference-content queries require a closed type.");
+            bool value = type.IsReferenceType || type.Code is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray or SignatureTypeCode.Array;
+            if (!value && type.Identity is { } identity && !NativeFloat.Is(identity))
+            {
+                if (identity.Handle.Kind != HandleKind.TypeDefinition) throw new NotSupportedException($"Reference-content classification requires a supplied value type: {identity}.");
+                value = layouts.Classify(identity) == Layout.StorageKind.ContainsManagedReferences;
+            }
+            graph.Specialized[nodes[i].Offset] = new(SpecializationKind.Int32, nodes[i].End, value ? 1 : 0, "RuntimeHelpers.IsReferenceOrContainsReferences");
+            FoldBranch(i, value ? 1 : 0);
         }
         for (int i = 0; i + 2 < nodes.Count; i++)
         {

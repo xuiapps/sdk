@@ -35027,8 +35027,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         i32.and
         i32.const 24
         i32.shr_u
-        f64.convert_i32_u
-        f32.demote_f64
+        f32.convert_i32_u
         f64.promote_f32
         i32.const 255
         f32.convert_i32_s
@@ -35087,8 +35086,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         i32.and
         i32.const 16
         i32.shr_u
-        f64.convert_i32_u
-        f32.demote_f64
+        f32.convert_i32_u
         f64.promote_f32
         i32.const 255
         f32.convert_i32_s
@@ -35147,8 +35145,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         i32.and
         i32.const 8
         i32.shr_u
-        f64.convert_i32_u
-        f32.demote_f64
+        f32.convert_i32_u
         f64.promote_f32
         i32.const 255
         f32.convert_i32_s
@@ -35205,8 +35202,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 1
         i32.const 255
         i32.and
-        f64.convert_i32_u
-        f32.demote_f64
+        f32.convert_i32_u
         f64.promote_f32
         i32.const 255
         f32.convert_i32_s

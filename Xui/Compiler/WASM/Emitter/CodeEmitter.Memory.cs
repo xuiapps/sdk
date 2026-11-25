@@ -40,6 +40,9 @@ public readonly ref partial struct CodeEmitter
             initializedLocals[i] = true;
         }
         EnterReferenceFrame();
+        // Reference slots are null on first use and cleared on every frame exit.
+        // Like addressed scalar slots, they provide defined storage with SkipLocalsInit.
+        foreach (int index in frame.ReferenceLocals.Keys) initializedLocals[index] = true;
         foreach (var (index, displacement) in frame.ReferenceArguments)
         {
             FrameAddress(displacement);

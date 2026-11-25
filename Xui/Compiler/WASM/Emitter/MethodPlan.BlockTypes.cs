@@ -37,6 +37,10 @@ internal sealed partial class MethodPlan
                     BlockTypes.Add(loop, types.FunctionType(loop.Parameters.SelectMany(Types).ToArray(), loop.Results.SelectMany(Types).ToArray()));
                     DefineBlockTypes(loop.Body, ref types);
                     break;
+                case ForwardRegion forward:
+                    foreach (var segment in forward.Segments.Skip(1))
+                        BlockTypes.Add(segment, types.FunctionType([], segment.Results.SelectMany(Types).ToArray()));
+                    break;
                 case InstructionBlock or LoopTransfer:
                     break;
                 default:

@@ -1,10 +1,10 @@
-# Browser TestApp catalogue: compiler readiness
+# Browser TestApp catalogue: construction
 
-Status: **WASM not emitted.** This is an expected-unsupported regression, not an execution test.
+Status: **Real mobile shell constructs in WASM and returns successfully in Node.**
 
 ## Inputs
 
-The complete repository sources are compiled into separate PEs. TestApp uses its production shader generator; desktop startup and Platform.cs are excluded so the fixture can select the mobile shell directly. Core/emulator use the documented Canvas compiler profile.
+Complete repository sources are compiled into separate PEs. TestApp uses its production shader generator; desktop startup and Platform.cs are excluded. Core/emulator use the documented Canvas compiler profile.
 
 - `Xui.Core`
 - `Xui.Core.DI`
@@ -24,32 +24,20 @@ var shell = new MobileTestAppShell(metrics, new BrowserMenu());
 return shell.Count;
 ```
 
-## Compiler failure
+## Output
+
+No console output.
+
+## Exit Code
 
 ```text
-Code flow jumps unsupported at IL_0047: overlapping regions.
-Method: Xui.DevKit.UI.Layer.PressFeedbackLayer<Xui.DevKit.UI.Widgets.Button>.End
+1
 ```
 
-## Dependency path
+The shell reports one navigation child. This executes the real home/header, rating controls, Canvas-only catalogue, and navigation constructors, including static initializers and BCL collection code. Optional async/GPU/resource showcases remain in the separate full-menu probe.
 
-```text
-Root { Value = Method { Identity = Program.Main } }
- → Method { Identity = Program.Main }
- → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel..ctor }
- → Method { Identity = Xui.DevKit.UI.Widgets.Card.set_Content }
- → Method { Identity = Xui.Core.UI.View.SetProtectedChild<Xui.Core.UI.View> }
- → Method { Identity = Xui.Core.UI.View.RemoveProtectedChild }
- → Method { Identity = Xui.Core.UI.View.DeactivateSubtree }
- → VirtualCall { Identity = Xui.Core.UI.View.OnDeactivate }
- → Method { Identity = Xui.DevKit.UI.Widgets.Button.OnDeactivate }
- → Method { Identity = Xui.DevKit.UI.Widgets.Button.EndPress }
- → Method { Identity = Xui.DevKit.UI.Layer.PressFeedbackLayer<Xui.DevKit.UI.Widgets.Button>.End }
-```
+This is a construction gate, not yet a rendered or interactive full-shell browser test. The next gate must supply Canvas measurement/drawing, arrange and render the shell, then attach the real window/event-routing lifecycle.
 
-This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.
+## WASM
 
-## WAT
-
-Not emitted.
+Emitted, validated and executed by Node with the shared JavaScript runtime. Full application-sized WAT is omitted here; focused instruction/feature snapshots retain their WAT.

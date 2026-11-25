@@ -59,7 +59,7 @@ public sealed partial class Analyzer
             if (graph.Specializations.TryGetValue(offset, out var specialized))
             {
                 if (specialized.Kind == SpecializationKind.Int32)
-                    Add(new Dependency.Intrinsic("Type.IsValueType"), node, DependencyReason.Call, offset);
+                    Add(new Dependency.Intrinsic(specialized.Intrinsic ?? "Type.IsValueType"), node, DependencyReason.Call, offset);
                 continue;
             }
             reader.Seek(offset);

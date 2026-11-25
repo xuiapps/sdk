@@ -949,3 +949,11 @@ NFloat conversions accept all integral scalar inputs, including byte/short color
 components, native integers, and signed/unsigned 64-bit integers. They convert
 directly to f32 before promoting to the MSIL floating stack representation, avoiding
 double rounding through f64. WASM32 native integers retain their 32-bit width.
+
+Shared acyclic control flow can lower to nested typed forward blocks, with each
+instruction run emitted once and direct branches to its continuation. This fallback
+supports nonempty stack results, managed byrefs and switches; cyclic graphs still
+need supported natural-loop structure. RuntimeHelpers.IsReferenceOrContainsReferences<T>
+is a compile-time query over closed type/field classification, not a call into its
+recursive CLR intrinsic stub. Address-taken reference locals have initialized null
+frame slots even for SkipLocalsInit methods, matching the existing scalar-frame policy.

@@ -137,10 +137,19 @@ profile still omits diagnostic instrumentation. Default equality, primitive boxi
 composite String.Format, and the Dictionary duplicate-key message path now compile.
 Separate CLR/Node regressions execute integer-key Dictionary operations, resizing,
 and struct values with string references. The browser catalogue completes reachability
-and now has static storage and guarded type/module initialization. A focused
-CLR/Node test executes the actual `FontWeight.SemiBold` initializer and reads its
-struct value. DateTime now uses compiler-owned automatic layout, with real BCL tick
-constructor/accessor execution tested. The next browser catalogue blocker is an
-shared conditional region in PressFeedbackLayer.End. Color byte-channel NFloat
-conversions now lower directly to the target scalar operations. The complete
-shell is not yet emitted; see the readiness snapshot for its dependency path.
+and now executes the real mobile-shell constructor in WASM. Node validates the
+435 KB module and observes `shell.Count == 1`. This includes the home/header,
+rating controls, Canvas catalogue and navigation construction, static initializers,
+and actual BCL List code. The separate full-menu probe still includes optional
+async/GPU/resource showcases.
+
+Shared short-circuit branches now support nested tails; larger acyclic regions use
+typed forward blocks with one copy of each instruction run. RuntimeHelpers reference
+content queries specialize from actual field classification, avoiding recursive CLR
+intrinsic stub bodies. DateTime uses compiler-owned automatic storage, and byte-channel
+NFloat conversions in Color use direct target-width conversion.
+
+This is a construction milestone. The existing phone HTML still displays the
+interactive FillRect fixture. Rendering the complete shell needs a Canvas host with
+text measurement and the remaining drawing operations, followed by the real
+window/RootView/EventRouter connection.

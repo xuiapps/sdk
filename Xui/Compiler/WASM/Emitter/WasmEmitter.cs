@@ -269,7 +269,13 @@ public sealed partial class WasmEmitter
                 using var bodyWriter = code.FunctionBody(method.LocalTypes);
                 rewriter.UseSource(method.Identity.DeclaringType.Module);
                 var emitter = new CodeEmitter(method.Identity.DeclaringType.Module, bodyWriter, literalIndices, runtime, rewriter, method, methods);
-                emitter.Emit(method.Body.Instructions);
+                try { emitter.Emit(method.Body.Instructions); }
+                catch (Exception error) when (error is NotSupportedException or InvalidProgramException)
+                {
+                    error.Data["Xui.Method"] ??= method.Identity;
+                    error.Data["Xui.DependencyPath"] ??= string.Join("\n → ", dependencies.PathTo(new Dependency.Method(method.Identity)));
+                    throw;
+                }
             }
             for (int i = 0; i < storage.ReferenceAccessorFunctions.Count; i++)
             {

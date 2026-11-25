@@ -18,6 +18,8 @@ public class CodeFlowTests(ITestOutputHelper output)
     [InlineData("IfElse")]
     [InlineData("ElseIf")]
     [InlineData("NestedConditionals")]
+    [InlineData("SharedConditionalTail")]
+    [InlineData("SharedElseIfChain")]
     [InlineData("EarlyReturn")]
     [InlineData("ConditionalValue")]
     [InlineData("StackPrefix")]
@@ -31,7 +33,7 @@ public class CodeFlowTests(ITestOutputHelper output)
     [InlineData("Switch")]
     public async Task FixtureExecutesInNode(string fixture)
     {
-        int[] inputs = [-3, 0, 1, 2, 5, 10];
+        int[] inputs = fixture == "SharedElseIfChain" ? [-3, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [-3, 0, 1, 2, 5, 10];
         string source = File.ReadAllText(Path.Combine(SourceDirectory(), "..", "..", "Fixtures", "CodeFlow", fixture + ".cs"));
         string calls = string.Join("\n", inputs.Select(value => $"        System.Console.WriteLine({fixture}.Run({value}));"));
         source += $$"""
@@ -61,6 +63,11 @@ public class CodeFlowTests(ITestOutputHelper output)
             if (optimization == OptimizationLevel.Release)
             {
                 string wat = (await WasmTools.ToWatAsync(wasm)).ReplaceLineEndings("\n").TrimEnd();
+                if (fixture == "SharedElseIfChain")
+                {
+                    Assert.Contains("br_if", wat);
+                    Assert.Contains("br_table", wat);
+                }
                 snapshot = $"# {fixture} WASM\n\nSource: [{fixture}.cs](Fixtures/CodeFlow/{fixture}.cs)\n\n" +
                     $"## Source\n\n```csharp\n{source.TrimEnd()}\n```\n\n" +
                     $"## Output\n\n```text\n{result.Output.TrimEnd()}\n```\n\n## Exit Code\n\n```text\n{result.ExitCode}\n```\n\n" +

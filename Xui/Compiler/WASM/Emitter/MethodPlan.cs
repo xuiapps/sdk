@@ -128,8 +128,8 @@ internal sealed partial class MethodPlan
             try { Flow = StructuredBlocks.Build(Graph); }
             catch (NotSupportedException error)
             {
-                AddFlowDiagnostic(error);
-                throw;
+                if (ForwardRegions.TryBuild(Graph) is { } forward) Flow = new SequenceBlock([forward]);
+                else { AddFlowDiagnostic(error); throw; }
             }
         }
         CollectReferenceVariables();
