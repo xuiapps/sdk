@@ -27,6 +27,12 @@ internal sealed partial class MethodPlan
                     DefineBlockTypes(block.Taken, ref types);
                     DefineBlockTypes(block.NotTaken, ref types);
                     break;
+                case SwitchBlock selection:
+                    var parameters = selection.Parameters.SelectMany(Types).ToArray();
+                    BlockTypes.Add(selection, types.FunctionType(parameters, selection.Results.SelectMany(Types).ToArray()));
+                    SwitchArmTypes.Add(selection, types.FunctionType(parameters, parameters));
+                    foreach (var arm in selection.Arms) DefineBlockTypes(arm.Body, ref types);
+                    break;
                 case LoopBlock loop:
                     BlockTypes.Add(loop, types.FunctionType(loop.Parameters.SelectMany(Types).ToArray(), loop.Results.SelectMany(Types).ToArray()));
                     DefineBlockTypes(loop.Body, ref types);
@@ -51,7 +57,7 @@ internal sealed partial class MethodPlan
             StackType.Int64 => ValueTypeCode.I64,
             StackType.Float => ValueTypeCode.F64,
             StackType.String => ValueTypeCode.ExternRef,
-            StackType.ObjectReference or StackType.ArrayReference or StackType.RuntimeTypeHandle => ValueTypeCode.EqRef,
+            StackType.ObjectReference or StackType.ArrayReference or StackType.RuntimeTypeHandle or StackType.Null => ValueTypeCode.EqRef,
             StackType.ValueType => Storage.IsGc(type.DeclaredType!.Value.Identity!.Value) ? ValueTypeCode.EqRef : ValueTypeCode.I32,
             _ => throw new NotSupportedException($"Unsupported block type {type}.")
         };

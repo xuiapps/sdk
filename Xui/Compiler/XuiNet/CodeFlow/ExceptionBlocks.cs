@@ -60,6 +60,7 @@ public static class ExceptionBlocks
             {
                 InstructionBlock instruction when replacements.TryGetValue(instruction.Instruction.Offset, out var block) => block,
                 ConditionalBlock conditional => new ConditionalBlock(conditional.Condition, Replace(conditional.Taken), Replace(conditional.NotTaken), conditional.Join, conditional.Preserved),
+                SwitchBlock selection => new SwitchBlock(selection.Selector, selection.Arms.Select(arm => arm with { Body = Replace(arm.Body) }).ToArray(), selection.Join, selection.Preserved),
                 LoopBlock loop => ReplaceLoop(loop),
                 _ => node
             }).ToArray());

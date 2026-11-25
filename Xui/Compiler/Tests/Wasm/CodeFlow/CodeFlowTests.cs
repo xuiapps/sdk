@@ -28,6 +28,7 @@ public class CodeFlowTests(ITestOutputHelper output)
     [InlineData("NestedLoops")]
     [InlineData("WhileWithBreak")]
     [InlineData("WhileWithContinue")]
+    [InlineData("Switch")]
     public async Task FixtureExecutesInNode(string fixture)
     {
         int[] inputs = [-3, 0, 1, 2, 5, 10];

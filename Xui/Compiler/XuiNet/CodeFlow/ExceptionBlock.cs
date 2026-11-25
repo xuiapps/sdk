@@ -19,6 +19,7 @@ public sealed class ExceptionBlock : FlowNode
     {
         InstructionBlock instruction => instruction.Instruction.Code == DotNet.Op.OpCode.Endfinally,
         ConditionalBlock conditional => CompletesCleanup(conditional.Taken) || CompletesCleanup(conditional.NotTaken),
+        SwitchBlock selection => selection.Arms.Any(arm => CompletesCleanup(arm.Body)),
         LoopBlock loop => CompletesCleanup(loop.Body),
         _ => false
     });

@@ -411,6 +411,9 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Leave_s:
                 case OpCode.Endfinally:
                     break;
+                case OpCode.Switch:
+                    method.UsesSwitch = true;
+                    break;
                 case OpCode.Ldind_i1:
                 case OpCode.Ldind_u1:
                 case OpCode.Ldind_i2:

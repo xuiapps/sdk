@@ -1,7 +1,7 @@
 namespace Xui.Compiler.XuiNet.CodeFlow;
 
 /// <summary>Reconstructs nested conditionals and single-entry loops from an analyzed instruction graph.</summary>
-/// <remarks>Switches, multiple-entry cycles, and overlapping regions are rejected without a dispatcher.</remarks>
+/// <remarks>Multiple-entry cycles and overlapping nonterminal regions are rejected without a dispatcher.</remarks>
 public sealed class StructuredBlocks
 {
     private readonly Dictionary<InstructionNode, LoopRegion> loops;
@@ -48,7 +48,18 @@ public sealed class StructuredBlocks
             // Roslyn shares terminal tails between short-circuit branches. Each arm may
             // emit a straight-line tail ending at its join or returning/throwing.
             if (!emitted.Add(node) && !IsStraightTail(node, stop)) throw Unsupported(node, "overlapping regions");
-            if (node.Successors.Length == 2)
+            if (node.Code == DotNet.Op.OpCode.Switch)
+            {
+                var join = continuations.Join(node, stop);
+                var arms = node.Successors.Distinct().Select(entry => new SwitchArm(entry,
+                    Sequence(entry, join, region, continuations), ReachesJoin(entry, join, region))).ToArray();
+                int depth = arms.Min(arm => Lowest(arm.Body, node.After!.Depth));
+                var preserved = node.After!;
+                while (preserved.Depth > depth) preserved = preserved.Pop();
+                children.Add(new SwitchBlock(node, arms, join, preserved));
+                node = join;
+            }
+            else if (node.Successors.Length == 2)
             {
                 var join = continuations.Join(node, stop);
                 var taken = Sequence(node.Successors[1], join, region, continuations);
@@ -82,6 +93,21 @@ public sealed class StructuredBlocks
         return false;
     }
 
+    private static bool ReachesJoin(InstructionNode entry, InstructionNode? join, LoopRegion? region)
+    {
+        if (join is null) return false;
+        var seen = new HashSet<InstructionNode>();
+        var pending = new Stack<InstructionNode>();
+        pending.Push(entry);
+        while (pending.TryPop(out var node))
+        {
+            if (node == join) return true;
+            if (!seen.Add(node) || region is not null && (node == region.Block.Header || node == region.Block.Exit)) continue;
+            foreach (var next in node.Successors) pending.Push(next);
+        }
+        return false;
+    }
+
     private static int Lowest(SequenceBlock block, int depth)
     {
         foreach (var child in block.Children)
@@ -90,6 +116,7 @@ public sealed class StructuredBlocks
             {
                 InstructionBlock instruction => instruction.Instruction.Lowest!.Depth,
                 ConditionalBlock conditional => Math.Min(conditional.Condition.Lowest!.Depth, conditional.Preserved.Depth),
+                SwitchBlock selection => Math.Min(selection.Selector.Lowest!.Depth, selection.Preserved.Depth),
                 LoopBlock loop => loop.Preserved.Depth,
                 // WASM branches read their label arguments even though MSIL br preserves its stack.
                 LoopTransfer transfer => transfer.Target.Preserved.Depth,

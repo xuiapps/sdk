@@ -127,7 +127,7 @@ stay distinct when `T` is `int`. [The DerivedBoxes demo](../Tests/Wasm/Generics/
 shows specialized fields, tables, base calls, and nominal `is`/`as` tests across a
 three-level hierarchy. Reference `default(T)` via `initobj` is supported; primitive generic object operations remain unsupported. Expanding instantiations stop at a nesting depth of 32.
 
-Generic virtual methods, open generic structs, arbitrary external calls, switches, arbitrary
+Generic virtual methods, open generic structs, arbitrary external calls, arbitrary
 jump graphs, multidimensional arrays, unmanaged pointers,
 value-type boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage currently holds emitted class/interface references and null, not strings,
@@ -462,7 +462,7 @@ supported operations that require no emitted bytes.
 | `bgt.un` | `integer gt_u / f64.le; i32.eqz; if` | Unsigned integers; inverted ordered floating-point comparison includes NaN as true. |
 | `ble.un` | `integer gt_u / f64.gt; i32.eqz; if` | Unsigned integers; inverted ordered floating-point comparison includes NaN as true. |
 | `blt.un` | `integer lt_u / f64.ge; i32.eqz; if` | Unsigned integers; inverted ordered floating-point comparison includes NaN as true. |
-| `switch` |  |  |
+| `switch` | `block`, `br_table`, `br` | Typed case arms share a continuation; overlapping regions remain unsupported. |
 | `ldind.i1` | `i32.load8_s` | Reads typed addresses; reference slots remain GC-visible. |
 | `ldind.u1` | `i32.load8_u` | Reads typed addresses; reference slots remain GC-visible. |
 | `ldind.i2` | `i32.load16_s` | Reads typed addresses; reference slots remain GC-visible. |

@@ -22,6 +22,8 @@ public enum OpCode : byte
 
     /// <summary>Branches to a label when the i32 condition is nonzero.</summary>
     BrIf = 0x0d,
+    /// <summary>Branches to an indexed label, with an out-of-range default.</summary>
+    BrTable = 0x0e,
     /// <summary>Begins a conditional block.</summary>
     If = 0x04,
     /// <summary>Begins the alternative arm of a conditional.</summary>

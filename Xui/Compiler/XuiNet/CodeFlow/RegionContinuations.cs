@@ -26,11 +26,11 @@ internal sealed class RegionContinuations
         if (enclosingStop is not null) return enclosingStop;
         // Early returns can all converge at a Debug return epilogue. Prefer an
         // earlier shared continuation, but retain ordinary value-producing joins.
-        var left = Reachable(node.Successors[0]);
-        var right = Reachable(node.Successors[1]);
+        var common = Reachable(node.Successors[0]);
+        foreach (var successor in node.Successors.Skip(1)) common.IntersectWith(Reachable(successor));
         InstructionNode? shared = null;
-        foreach (var candidate in left)
-            if (right.Contains(candidate) && (shared is null || ranks[candidate] > ranks[shared])) shared = candidate;
+        foreach (var candidate in common)
+            if (shared is null || ranks[candidate] > ranks[shared]) shared = candidate;
         return shared;
     }
 
@@ -67,7 +67,6 @@ internal sealed class RegionContinuations
     {
         if (continuations.ContainsKey(node)) return;
         if (!visiting.Add(node)) throw Unsupported(node, "unstructured cycle");
-        if (node.Code == OpCode.Switch) throw Unsupported(node, "switch is not implemented");
         var successors = loops.TryGetValue(node, out var nested) && nested != region
             ? new[] { nested.Block.Exit } : node.Successors.ToArray();
         InstructionNode? join = null;

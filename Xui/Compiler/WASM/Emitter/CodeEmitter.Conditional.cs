@@ -35,6 +35,9 @@ public readonly ref partial struct CodeEmitter
                 case ConditionalBlock conditional:
                     EmitConditional(conditional);
                     break;
+                case SwitchBlock selection:
+                    EmitSwitch(selection);
+                    break;
                 default:
                     throw new NotSupportedException($"Unsupported structured node {child.GetType().Name}.");
             }

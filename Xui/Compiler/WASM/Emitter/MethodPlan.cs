@@ -41,6 +41,9 @@ internal sealed partial class MethodPlan
     public InstructionGraph Graph { get; }
     public SequenceBlock? Flow { get; }
     public Dictionary<FlowNode, TypeIndex> BlockTypes { get; } = new();
+    public Dictionary<SwitchBlock, TypeIndex> SwitchArmTypes { get; } = new();
+    public bool UsesSwitch { get; set; }
+    public LocalIndex SwitchSelector { get; private set; }
     public bool UsesNativeFloatClamp { get; set; }
     public LocalIndex NativeFloatMin { get; private set; }
     public LocalIndex NativeFloatMax { get; private set; }
@@ -109,7 +112,7 @@ internal sealed partial class MethodPlan
             try { Flow = ExceptionBlocks.Build(source, Body, Graph); }
             catch (NotSupportedException error) { AddFlowDiagnostic(error); throw; }
         }
-        else if (Graph.Instructions.Any(node => node.Code is OpCode.Throw or OpCode.Rethrow || node.Successors.Length > 1 ||
+        else if (Graph.Instructions.Any(node => node.Code is OpCode.Switch or OpCode.Throw or OpCode.Rethrow || node.Successors.Length > 1 ||
             node.Code is OpCode.Br or OpCode.Br_s))
         {
             Graph = Analyzer.Analyze(source, identity);
@@ -153,6 +156,7 @@ internal sealed partial class MethodPlan
     {
         var types = Locals.Select(local => local.WasmType).ToList();
         uint parameterCount = (uint)Signature.WasmParameterCount;
+        if (UsesSwitch) { SwitchSelector = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32); }
         if (UsesEqualitySearch)
         {
             EqualitySearchEnd = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
