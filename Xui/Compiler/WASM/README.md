@@ -279,9 +279,16 @@ rounding boundaries, infinities, and exception messages. Composite overloads,
 formatting, parsing, and clock reads are not supplied by these intrinsics. Duration
 conversion has no JavaScript host dependency.
 
-`EqualityComparer<int/uint>.Default.GetHashCode` preserves the 32-bit value's bits,
-including enums with those underlying types. Null comparer receivers throw managed
-NullReferenceException. Other hash representations remain unsupported.
+Primitive `GetHashCode` and typed `Equals` calls specialize without virtual dispatch,
+including constrained generic receivers. Default comparers share the same operations
+for bool, char, signed/unsigned integer widths, native integers, float/double,
+NFloat, enums, and strings. Scalar hashes follow CoreLib rules: char repeats its
+16 bits, 64-bit values fold both halves, and floating hashes normalize signed zero
+and every NaN payload. Native integers/NFloat follow WASM32 storage. String hashing
+uses a host UTF-16 FNV-1a implementation, consistent with ordinal equality; hash
+numbers intentionally differ from CoreLib's randomized string hashes. Default
+string comparers hash null as zero, while null instance/comparer receivers throw
+managed NullReferenceException. Custom comparer implementations retain normal dispatch.
 
 `String.Concat` with two, three, or four string arguments calls `wasm:js-string.concat`.
 The emitter preserves evaluation order and normalizes null arguments to empty strings;
@@ -610,7 +617,7 @@ supported operations that require no emitted bytes.
 | `volatile.` |  |  |
 | `tail.` |  |  |
 | `initobj` | `memory.fill` or `struct.set` | Clears struct storage, including null references in GC fields. |
-| `constrained.` | specialized call | Only interpolation handler ToString; general constrained dispatch remains unsupported. |
+| `constrained.` | specialized call | Primitive hashing/equality and interpolation ToString; other constrained dispatch unsupported. |
 | `cpblk` |  |  |
 | `initblk` |  |  |
 | `no.` |  |  |
@@ -781,7 +788,7 @@ singletons even when their GC shapes are structurally identical. Single-precisio
 arguments are promoted after ABI narrowing before equality comparisons. Null
 receivers throw managed NullReferenceException. Default comparer GetType through
 this interface and adapters for class/struct elements are not implemented.
-Custom comparer subclasses, hashing outside Int32/UInt32 storage, IEquatable class contracts,
+Custom comparer subclasses, arbitrary struct/class hashing, IEquatable class contracts,
 object-typed/boxed equality, and fallback ValueType.Equals remain explicitly unsupported.
 
 String equality operators, static Equals(string, string), and instance Equals(string)

@@ -15,6 +15,11 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (method.PrimitiveCalls.TryGetValue(offset, out var primitive))
+        {
+            EmitPrimitiveCall(primitive, instruction.Code, offset);
+            return;
+        }
         if (TryManagedReference(instruction, offset)) return;
         if (TryResourceString(instruction)) return;
         if (TryStringConcatenation(instruction, offset)) return;

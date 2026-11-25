@@ -348,6 +348,20 @@ public ref partial struct Writer
     /// <summary>Divides two floating evaluation-stack values.</summary>
     public readonly Writer F64Div() { body.Instruction(OpCode.F64Div); return this; }
 
+    /// <summary>Reinterprets f32 bits as i32 without numeric conversion.</summary>
+    public readonly Writer I32ReinterpretF32()
+    {
+        body.Instruction(OpCode.I32ReinterpretF32);
+        return this;
+    }
+
+    /// <summary>Reinterprets f64 bits as i64 without numeric conversion.</summary>
+    public readonly Writer I64ReinterpretF64()
+    {
+        body.Instruction(OpCode.I64ReinterpretF64);
+        return this;
+    }
+
     /// <summary>Keeps the low 32 bits of an i64 value.</summary>
     public readonly Writer I32WrapI64()
     {

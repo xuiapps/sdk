@@ -40,6 +40,7 @@ public sealed partial class Analyzer
 
         var graph = InstructionGraph.Read(body.Instructions);
         var interpolationCalls = InterpolationCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
+        var primitiveCalls = PrimitiveCalls.Discover(module, body, graph, identity);
         var invariantFormatting = InvariantFormattingCalls.Read(module, body, graph);
         var reachable = new HashSet<InstructionNode>();
         var pending = new Stack<InstructionNode>();
@@ -69,6 +70,12 @@ public sealed partial class Analyzer
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (primitiveCalls.TryGetValue(offset, out var primitive))
+                    {
+                        Add(new Dependency.Intrinsic(EnumInfo.Storage(primitive.Element).Code + "." + primitive.Operation), node, DependencyReason.Call, offset);
+                        Signature(node, primitive.Element, DependencyReason.Signature, offset);
+                        break;
+                    }
                     if (instruction.Code is OpCode.Call or OpCode.Callvirt && DotNet.Intrinsics.ManagedType.Read(module, token) is { } managedType)
                     {
                         Add(new Dependency.Intrinsic("Type." + managedType.Operation), node, DependencyReason.Call, offset);

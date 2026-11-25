@@ -110,7 +110,7 @@ public readonly ref partial struct CodeEmitter
         {
             case OpCode.Constrained:
                 _ = instruction.ReadToken(ref reader);
-                if (!method.InterpolationCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString.");
+                if (!method.InterpolationCalls.ContainsKey(reader.Offset) && !method.PrimitiveCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString and primitive hashing/equality.");
                 break;
             case OpCode.Ldind_i4: EmitLdind_i4(offset); break;
             case OpCode.Stind_i4: EmitStind_i4(offset); break;
@@ -381,7 +381,7 @@ public readonly ref partial struct CodeEmitter
                     break;
                 case OpCode.Constrained:
                     _ = instruction.ReadToken(ref reader);
-                    if (!method.InterpolationCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString.");
+                    if (!method.InterpolationCalls.ContainsKey(reader.Offset) && !method.PrimitiveCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString and primitive hashing/equality.");
                     break;
                 case OpCode.Ldtoken:
                     var tokenType = IR.Intrinsics.ManagedType.Token(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
@@ -562,6 +562,12 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
+                    if (method.PrimitiveCalls.TryGetValue(offset, out var primitive))
+                    {
+                        if (primitive.AddressReceiver) method.Storage.RequireAddress(method.Storage.Bind(primitive.Element.ByReference()));
+                        RequirePrimitiveOperation(method, primitive.Element, primitive.Operation);
+                        break;
+                    }
                     if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.ManagedType.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } managedType)
                     {
@@ -656,7 +662,7 @@ public readonly ref partial struct CodeEmitter
                     {
                         if (IR.Intrinsics.DefaultEquality.Is(equality.Owner)) method.RequireGc(equality.Owner);
                         else method.RequireGcTemporaries();
-                        if (equality.Operation == "GetHashCode") method.Storage.ExceptionsEnabled = true;
+                        if (equality.Operation == "GetHashCode") RequirePrimitiveOperation(method, equality.Element, equality.Operation);
                         if (equality.Operation is "Equals" or "IndexOf")
                         {
                             method.Storage.ExceptionsEnabled = true;
@@ -753,6 +759,7 @@ public readonly ref partial struct CodeEmitter
                         method.Storage.ComparerInterfacesEnabled = true;
                         method.RequireGc(interfaceComparer.Owner);
                         var elementStorage = method.Storage.Bind(interfaceComparer.Element);
+                        if (interfaceComparer.Operation == "GetHashCode") RequirePrimitiveOperation(method, interfaceComparer.Element, interfaceComparer.Operation);
                         if (interfaceComparer.Operation == "Equals")
                         {
                             method.EqualityTemporaries.TryAdd(elementStorage, default);

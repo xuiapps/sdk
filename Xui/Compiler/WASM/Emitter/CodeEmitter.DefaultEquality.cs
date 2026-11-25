@@ -23,19 +23,20 @@ public readonly ref partial struct CodeEmitter
         if (access.Operation == "GetHashCode")
         {
             PopAssignable(method.Storage.Bind(access.Element), instruction.Code, offset);
-            writer.LocalSet(method.GcI32);
+            var hashLocal = method.EqualityTemporaries[method.Storage.Bind(access.Element)].Left;
+            StorePrimitive(method.Storage.Bind(access.Element), hashLocal);
             var comparer = Pop(instruction.Code, offset);
             if (comparer.IsByReference || comparer.Identity is not null && comparer.Identity != access.Owner)
                 throw new InvalidProgramException("Default hashing requires its declared comparer receiver.");
             writer.RefIsNull().If(); ThrowException(ExceptionKind.NullReferenceException); writer.End();
-            writer.LocalGet(method.GcI32);
+            EmitPrimitiveHash(method.Storage.Bind(access.Element), hashLocal);
             stack.Push(new(SignatureTypeCode.Int32));
             return true;
         }
         var storage = method.Storage.Bind(access.Element);
         var (left, right) = method.EqualityTemporaries[storage];
-        PopAssignable(storage, instruction.Code, offset); writer.LocalSet(right);
-        PopAssignable(storage, instruction.Code, offset); writer.LocalSet(left);
+        PopAssignable(storage, instruction.Code, offset); StorePrimitive(storage, right);
+        PopAssignable(storage, instruction.Code, offset); StorePrimitive(storage, left);
         var receiver = Pop(instruction.Code, offset);
         if (receiver.IsByReference || receiver.Identity is not null && receiver.Identity != access.Owner)
             throw new InvalidProgramException("Default equality requires its declared comparer receiver.");
@@ -48,7 +49,6 @@ public readonly ref partial struct CodeEmitter
     private void CompareEquality(DefaultEquality access, LocalIndex left, LocalIndex right)
     {
         var storage = method.Storage.Bind(access.Element);
-        var category = storage.StackType == SignatureTypeCode.IntPtr ? SignatureTypeCode.Int32 : storage.StackType;
         if (access.Implementation is { } equals)
         {
             if (equals.DeclaringType.IsValueType)
@@ -62,7 +62,13 @@ public readonly ref partial struct CodeEmitter
             writer.Call(methods[equals].Function);
         }
         else if (access.UsesObjectEquality) CompareObjects(access.Element.Identity!.Value, left, right);
-        else if (category == SignatureTypeCode.String) CompareStrings(left, right);
+        else ComparePrimitive(storage, left, right);
+    }
+
+    private void ComparePrimitive(LocalVariable storage, LocalIndex left, LocalIndex right)
+    {
+        var category = storage.StackType == SignatureTypeCode.IntPtr ? SignatureTypeCode.Int32 : storage.StackType;
+        if (category == SignatureTypeCode.String) CompareStrings(left, right);
         else
         {
             writer.LocalGet(left).LocalGet(right);

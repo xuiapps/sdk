@@ -12,6 +12,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     private readonly SignatureType[] locals = SignatureReader.Locals(module, body.LocalSignature, context.Arguments, methodArguments).ToArray();
     private readonly Dictionary<int, Signature> calls = new();
     private readonly IReadOnlyDictionary<int, Model.Intrinsics.InterpolatedStringHandler> interpolationCalls = InterpolationCalls.Read(module, body, graph, context, methodArguments);
+    private readonly IReadOnlyDictionary<int, PrimitiveCall> primitiveCalls = PrimitiveCalls.Read(module, body, graph, context, methodArguments);
     private readonly IReadOnlyDictionary<int, InvariantFormattingCall> invariantFormatting = InvariantFormattingCalls.Read(module, body, graph);
 
     public void Apply(InstructionNode node)
@@ -56,7 +57,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Constrained:
                 _ = instruction.ReadToken(ref reader);
-                if (!interpolationCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString.");
+                if (!interpolationCalls.ContainsKey(reader.Offset) && !primitiveCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString and primitive hashing/equality.");
                 break;
             case OpCode.Nop: break;
             case OpCode.Ldind_i1:
@@ -262,6 +263,17 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     if (stack.Pop().Type is not (StackType.ObjectReference or StackType.String or StackType.ArrayReference or StackType.Null))
                         throw stack.Error("ThrowIfNull requires a reference value");
                     break;
+                }
+                if (node.Code == OpCode.Callvirt && stack.State.Type is StackType.String or StackType.Null &&
+                    PrimitiveCalls.IsObjectHash(module, MetadataTokens.EntityHandle(callToken)))
+                {
+                    stack.Store(StackType.String); stack.Push(StackType.Int32); break;
+                }
+                if (primitiveCalls.TryGetValue(node.Offset, out var primitive))
+                {
+                    if (primitive.Operation == "Equals") stack.Store(StackEntry.From(primitive.Element));
+                    stack.Store(StackEntry.From(primitive.AddressReceiver ? primitive.Element.ByReference() : primitive.Element));
+                    stack.Push(StackType.Int32); break;
                 }
                 var called = interpolationCalls.TryGetValue(node.Offset, out var handlerCall)
                     ? new Signature([new SignatureType(SignatureTypeCode.TypeHandle, handlerCall.Owner, IsByReference: true)], StackEntry.From(handlerCall.Signature.Result))

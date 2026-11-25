@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-No virtual slot for System.Object.GetHashCode.
+Unsupported Newobj at IL_0021 in System.Span<Xui.Core.UI.Input.PointerGestureCandidate>.Slice: Unsupported signature type: Pointer.
 ```
 
 ## Dependency path
@@ -45,10 +45,11 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Xui.Core.UI.ScrollView.OnDeactivate }
  → Method { Identity = Xui.Core.UI.View.ReleasePointer }
  → Method { Identity = Xui.Core.UI.Input.EventRouter.ReleasePointer }
- → VirtualCall { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.set_Item }
- → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.set_Item }
- → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryInsert }
- → VirtualCall { Identity = System.Object.GetHashCode }
+ → Method { Identity = Xui.Core.UI.Input.EventRouter.DispatchToView }
+ → VirtualCall { Identity = Xui.Core.UI.View.OnPointerEvent }
+ → Method { Identity = Xui.Core.UI.ScrollView.OnPointerEvent }
+ → Method { Identity = Xui.Core.UI.Input.PointerEventRef.PushPotentialGesture }
+ → Method { Identity = System.Span<Xui.Core.UI.Input.PointerGestureCandidate>.Slice }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

@@ -197,6 +197,10 @@ public enum OpCode : byte
     F64ConvertI64U = 0xba,
     /// <summary>Promotes an f32 value to f64.</summary>
     F64PromoteF32 = 0xbb,
+    /// <summary>Reinterprets the IEEE 754 bits of f32 as i32.</summary>
+    I32ReinterpretF32 = 0xbc,
+    /// <summary>Reinterprets the IEEE 754 bits of f64 as i64.</summary>
+    I64ReinterpretF64 = 0xbd,
     /// <summary>Sign-extends the low eight bits to i32.</summary>
     I32Extend8S = 0xc0,
     /// <summary>Sign-extends the low sixteen bits to i32.</summary>

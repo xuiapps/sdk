@@ -51,9 +51,9 @@ The next sequence is:
    existing runtime descriptors, and example IDs now concatenate native JS strings.
    Typeof-based service lookup now executes with interface dispatch. The browser
    resource boundary now reads neutral message strings from supplied BCL resources
-   and emits only requested literals. Int32/UInt32 default hashing now executes;
+   and emits only requested literals. Primitive and enum hashing/typed equality now specialize, including default comparers;
    scalar/string IEqualityComparer dispatch now executes for default and application comparers.
-   Managed byrefs now cover GC scalar/struct fields, array-entry field ranges, and null locations. Struct-array copies preserve aliases. Dependency discovery next reaches constrained Object.GetHashCode in EventRouter’s Dictionary.TryInsert; structured switches now emit `br_table`, including the actual CoreLib argument-name and resource-message selectors.
+   Managed byrefs now cover GC scalar/struct fields, array-entry field ranges, and null locations. Struct-array copies preserve aliases. Dependency discovery passes constrained dictionary hashing and next reaches Span<PointerGestureCandidate>.Slice in event routing; structured switches now emit `br_table`, including the actual CoreLib argument-name and resource-message selectors.
    Continue through the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.

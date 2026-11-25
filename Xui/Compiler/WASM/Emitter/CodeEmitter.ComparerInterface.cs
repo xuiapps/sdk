@@ -8,9 +8,19 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitDefaultInterfaceResult(DefaultEquality comparer, LocalIndex[] arguments)
     {
-        if (comparer.Operation == "GetHashCode") { writer.LocalGet(arguments[1]); return; }
         var storage = method.Storage.Bind(comparer.Element);
-        var left = arguments[1]; var right = arguments[2];
+        var left = arguments[1];
+        if (comparer.Operation == "GetHashCode")
+        {
+            if (storage.TypeCode == SignatureTypeCode.Single)
+            {
+                left = method.EqualityTemporaries[storage].Left;
+                writer.LocalGet(arguments[1]).F64PromoteF32().LocalSet(left);
+            }
+            EmitPrimitiveHash(storage, left);
+            return;
+        }
+        var right = arguments[2];
         if (storage.TypeCode == SignatureTypeCode.Single)
         {
             (left, right) = method.EqualityTemporaries[storage];
