@@ -67,7 +67,9 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     {
         if (type.Identity is { } native && XuiNet.DotNet.Intrinsics.NativeFloat.Is(native))
         {
-            return new(SignatureTypeCode.Single, IsByReference: type.IsByReference);
+            var scalar = new LocalVariable(SignatureTypeCode.Single, IsByReference: type.IsByReference);
+            if (type.IsByReference) RequireAddress(scalar);
+            return scalar;
         }
         type = EnumInfo.Storage(type);
         if (type.Identity is { } handleType && FrameworkTypes.Is(handleType, "System", "RuntimeTypeHandle"))
@@ -77,7 +79,9 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
         if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && !XuiNet.DotNet.Intrinsics.ManagedType.Is(external) && !DelegateInfo.IsRuntimeBase(external) && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)
             throw new NotSupportedException($"External class storage is not implemented: {type}.");
         if (type.Array is { } array) _ = ArrayShape(array);
-        return new(type.Code, type.Identity, type.IsByReference, type.Code is SignatureTypeCode.Object or SignatureTypeCode.SZArray || type.Identity is { } identity && IsGc(identity), type.Array);
+        var bound = new LocalVariable(type.Code, type.Identity, type.IsByReference, type.Code is SignatureTypeCode.Object or SignatureTypeCode.SZArray || type.Identity is { } identity && IsGc(identity), type.Array);
+        if (type.IsByReference) RequireAddress(bound);
+        return bound;
     }
 
     public GcShape Shape(TypeIdentity identity)

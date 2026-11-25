@@ -60,15 +60,21 @@ public class CopyTests
         """, "sourceArray\ndestinationArray\nsourceArray\nlength\nsourceIndex\ndestinationIndex\ndestination range\nsource range\noverflow range\n42\n0\n", 42);
 
     [Fact]
-    public void StructCopyCannotAccidentallyAliasElementStorage()
-    {
-        using var app = CanvasTests.Read(Frontend.Roslyn.Compile("""
-            using System;
-            public struct Point { public int X; }
-            public static class Program { public static int Main() { var a=new Point[1]; var b=new Point[1]; Array.Copy(a,b,1); return 0; } }
-            """));
-        using var framework = new Frontend.Framework();
-        _ = new Xui.Compiler.XuiNet.Compilation([app, .. framework.Assemblies]);
-        Assert.Contains("value-preserving field copies", Assert.Throws<NotSupportedException>(() => new WasmEmitter().Emit(app)).Message);
-    }
+    public Task StructCopiesPreserveElementStorageAndOverlapOrder() => InlineArrayTests.AssertLinked("""
+        using System;
+        public class Item { public int Value; }
+        public struct Point { public int X; public string Text; public Item Item; }
+        public static class Program {
+            static void Print(Point[] values) { for(int i=0;i<values.Length;i++) Console.WriteLine(values[i].X); }
+            public static int Main() {
+                var a = new Point[4]; for(int i=0;i<4;i++) a[i] = new Point { X=i+1, Text="source", Item=new Item { Value=i } };
+                var b = new Point[4]; ref Point saved = ref b[1]; Array.Copy(a,b,4);
+                saved.X = 12; saved.Text = "changed"; saved.Item.Value = 42;
+                Console.WriteLine(a[1].X); Console.WriteLine(a[1].Text); Console.WriteLine(a[1].Item.Value);
+                Array.Copy(b,0,b,1,3); Print(b); Console.WriteLine(saved.X);
+                Array.Copy(b,1,b,0,3); Print(b); Array.Copy(b,4,b,4,0);
+                return 42;
+            }
+        }
+        """, "2\nsource\n42\n1\n1\n12\n3\n1\n1\n12\n3\n3\n", 42);
 }

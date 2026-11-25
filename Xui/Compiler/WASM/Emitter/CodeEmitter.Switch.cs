@@ -37,9 +37,6 @@ public readonly ref partial struct CodeEmitter
                 if (result is null) { result = values; resultLocals = (bool[])initializedLocals.Clone(); }
                 else
                 {
-                    for (int i = 0; i < values.Length; i++)
-                        if (values[i].Location != result[i].Location)
-                            throw new NotSupportedException("Switch results cannot merge different inline GC field address locations.");
                     for (int i = 0; i < initializedLocals.Length; i++) resultLocals![i] &= initializedLocals[i];
                 }
             }

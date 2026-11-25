@@ -8,10 +8,6 @@ public readonly ref partial struct CodeEmitter
     {
         if (TryScalarObject(instruction, offset)) return;
         if (TryReferenceObject(instruction, offset)) return;
-        if (TryGcObject(instruction, offset)) return;
-        var identity = ObjectType(instruction.Value);
-        PopAssignable(new(System.Reflection.Metadata.SignatureTypeCode.TypeHandle, identity), instruction.Code, offset);
-        PopOwner(identity, true, instruction.Code, offset);
-        CopyStruct(identity);
+        EmitManagedStructObject(instruction, offset);
     }
 }

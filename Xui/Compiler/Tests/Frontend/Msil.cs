@@ -8,7 +8,7 @@ namespace Xui.Compiler.Tests.Frontend;
 /// <summary>Builds an exact-IL static int Main for stack and emission tests.</summary>
 internal static class Msil
 {
-    public static byte[] Compile(Action<InstructionEncoder> emit, SignatureTypeCode[]? locals = null, bool initLocals = true, Action<MetadataBuilder>? configureMetadata = null)
+    public static byte[] Compile(Action<InstructionEncoder> emit, SignatureTypeCode[]? locals = null, bool initLocals = true, Action<MetadataBuilder>? configureMetadata = null, byte[]? rawLocalSignature = null)
     {
         var metadata = new MetadataBuilder();
         metadata.AddModule(0, metadata.GetOrAddString("Graph.exe"), metadata.GetOrAddGuid(Guid.NewGuid()), default, default);
@@ -35,6 +35,7 @@ internal static class Msil
             foreach (var type in locals) signatureBytes.WriteByte((byte)type);
             localSignature = metadata.AddStandaloneSignature(metadata.GetOrAddBlob(signatureBytes));
         }
+        if (rawLocalSignature is not null) localSignature = metadata.AddStandaloneSignature(metadata.GetOrAddBlob(rawLocalSignature));
         var bodies = new BlobBuilder();
         int body = new MethodBodyStreamEncoder(bodies).AddMethodBody(il, 8, localSignature,
             initLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None);

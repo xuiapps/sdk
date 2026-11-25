@@ -80,8 +80,8 @@ public readonly ref partial struct CodeEmitter
         if (local.Identity is null || method.Storage.IsClass(local.Identity.Value)) throw new NotSupportedException("Only struct local addresses are implemented.");
         if (!initLocals) throw new NotSupportedException("Addressable struct locals currently require initlocals.");
         writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index));
-        stack.Push(new MsilStackEntry(local.TypeCode, local.Identity, isByReference: true)
-        { Location = local.UsesGc ? new(method.Storage.Shape(local.Identity!.Value), 0) : null });
+        ValueAddress(local);
+        stack.Push(new MsilStackEntry(local.TypeCode, local.Identity, isByReference: true));
     }
 
     private (LocalVariable Type, TypeIdentity Owner, int Offset) Field(int token)

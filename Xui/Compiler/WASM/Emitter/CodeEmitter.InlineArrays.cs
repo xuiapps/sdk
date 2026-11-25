@@ -41,8 +41,7 @@ public readonly ref partial struct CodeEmitter
         var address = Pop(instruction.Code, offset);
         if (address.Identity != access.Buffer || !address.IsByReference)
             throw new InvalidProgramException("Inline-array helper requires the declared buffer address.");
-        if (address.Location is not null)
-            throw new NotSupportedException("Inline-array access through a GC field address is not implemented.");
+        LinearAddressValue();
         if (span)
         {
             writer.LocalSet(Frame.AddressScratch);
@@ -57,6 +56,7 @@ public readonly ref partial struct CodeEmitter
             var element = EnumInfo.Storage(access.Layout.Element);
             if (StorageModel.IsReference(method.Storage.Bind(element)))
                 LinearReferenceAddress();
+            else LinearValueAddress();
             stack.Push(new(element.Code, element.Identity, true, element.Array));
         }
         return true;
@@ -72,8 +72,9 @@ public readonly ref partial struct CodeEmitter
             writer.LocalSet(Frame.I32Scratch);
         }
         var receiver = Pop(instruction.Code, offset);
-        if (receiver.Identity != access.Owner || !receiver.IsByReference || receiver.Location is not null)
+        if (receiver.Identity != access.Owner || !receiver.IsByReference)
             throw new NotSupportedException("Span operations require a linear-memory span address.");
+        LinearAddressValue();
         if (access.Operation == "get_Length")
         {
             writer.I32Const(4).I32Add().I32Load();
@@ -89,6 +90,7 @@ public readonly ref partial struct CodeEmitter
             var element = EnumInfo.Storage(access.Owner.Arguments.Values[0]);
             if (StorageModel.IsReference(method.Storage.Bind(element)))
                 LinearReferenceAddress();
+            else LinearValueAddress();
             stack.Push(new(element.Code, element.Identity, true, element.Array));
         }
         return true;

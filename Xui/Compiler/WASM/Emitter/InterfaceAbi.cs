@@ -21,7 +21,7 @@ internal static class InterfaceAbi
     {
         if (expected.TypeCode == SignatureTypeCode.Void || actual.TypeCode == SignatureTypeCode.Void)
             return expected.TypeCode == actual.TypeCode;
-        if (expected.WasmType != actual.WasmType || expected.IsByReference != actual.IsByReference || expected.IsReferenceAddress != actual.IsReferenceAddress) return false;
+        if (expected.WasmType != actual.WasmType || expected.IsByReference != actual.IsByReference || expected.IsByReference != actual.IsByReference) return false;
         // Arrays have no nominal object header or covariant store checks yet, even though
         // both arrays and class references lower to eqref at the function boundary.
         if (expected.Array is not null || actual.Array is not null) return expected.Array == actual.Array;

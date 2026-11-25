@@ -48,8 +48,8 @@ deep-copied with the enclosing struct.
 
 ## A managed address is a location
 
-The next step is to generalize the owner-and-selector representation already used
-for byrefs to reference-valued fields. Conceptually, `ref T` carries a GC-visible
+The owner-and-selector representation now covers scalar and struct byrefs as well
+as reference-valued fields. Conceptually, `ref T` carries a GC-visible
 owner plus a location. A linear location identifies an address; a GC location
 selects fields in its owner through generated, typed accessors. A defined null
 representation supports `Unsafe.NullRef<T>` and `Unsafe.IsNullRef<T>` without
@@ -69,9 +69,10 @@ storage; a managed address is not a promise of native layout.
 
 ## Where effort goes next
 
-We are extending this in tested increments: return existing managed locations
-across calls, generalize access to primitive and embedded struct fields, then
-exercise null references and the actual dictionary implementation. Tests need to
+Managed locations now survive calls and returns, including primitive and embedded
+struct fields. Null-reference checks and struct-array copies execute. The next
+step is continuing through the actual dictionary implementation and its constrained
+hashing calls. Tests need to
 check aliasing, nested fields, value-copy independence, GC ownership, and cleanup
 through exceptions, as well as the final values. Linear math storage remains a
 first-class path; GC-backed storage is not a reason to turn every point or matrix

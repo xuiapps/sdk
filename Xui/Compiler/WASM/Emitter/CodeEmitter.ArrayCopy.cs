@@ -28,18 +28,38 @@ public readonly ref partial struct CodeEmitter
         if (sourceArray.Array is { } sourceType && sourceType != signature || destination.Array is { } destinationType && destinationType != signature)
             throw new NotSupportedException("Array.Copy requires the same exact vector element type.");
         var shape = method.Storage.ArrayShape(signature);
-        if (shape.StructElements) throw new NotSupportedException("Array.Copy for struct elements requires value-preserving field copies.");
 
         CheckCopyNegative(method.CopyLength, "length");
         CheckCopyNegative(method.CopySourceIndex, "sourceIndex");
         CheckCopyNegative(method.CopyDestinationIndex, "destinationIndex");
         CheckCopyRange(method.GcSource, method.CopySourceIndex, shape);
         CheckCopyRange(method.GcOwner, method.CopyDestinationIndex, shape);
+        if (shape.StructElements) { CopyStructElements(shape); return true; }
         // array.copy has memmove semantics even when source and destination overlap.
         writer.LocalGet(method.GcOwner).RefCast(shape.Type).LocalGet(method.CopyDestinationIndex)
             .LocalGet(method.GcSource).RefCast(shape.Type).LocalGet(method.CopySourceIndex)
             .LocalGet(method.CopyLength).ArrayCopy(shape.Type, shape.Type);
         return true;
+    }
+
+    private void CopyStructElements(ArrayShape array)
+    {
+        var element = method.Storage.Shape(array.Element.Identity!.Value);
+        writer.LocalGet(method.GcSource).LocalGet(method.GcOwner).RefEq()
+            .LocalGet(method.CopyDestinationIndex).LocalGet(method.CopySourceIndex).I32GtU().I32And().If();
+        writer.I32Const(-1).LocalSet(method.GcI32);
+        writer.LocalGet(method.CopySourceIndex).LocalGet(method.CopyLength).I32Add().I32Const(1).I32Sub().LocalSet(method.CopySourceIndex);
+        writer.LocalGet(method.CopyDestinationIndex).LocalGet(method.CopyLength).I32Add().I32Const(1).I32Sub().LocalSet(method.CopyDestinationIndex);
+        writer.Else().I32Const(1).LocalSet(method.GcI32).End();
+        writer.Block(method.Storage.EmptyBlock).Loop().LocalGet(method.CopyLength).I32Eqz().BrIf(new(1));
+        // Copy fields into the existing element holder: outstanding ldelema refs keep aliasing it.
+        for (int i = 0; i < element.Leaves.Count; i++)
+            writer.LocalGet(method.GcOwner).RefCast(array.Type).LocalGet(method.CopyDestinationIndex).ArrayGet(array.Type).RefCast(element.Type)
+                .LocalGet(method.GcSource).RefCast(array.Type).LocalGet(method.CopySourceIndex).ArrayGet(array.Type).RefCast(element.Type)
+                .StructGet(element.Type, new((uint)i)).StructSet(element.Type, new((uint)i));
+        writer.LocalGet(method.CopySourceIndex).LocalGet(method.GcI32).I32Add().LocalSet(method.CopySourceIndex);
+        writer.LocalGet(method.CopyDestinationIndex).LocalGet(method.GcI32).I32Add().LocalSet(method.CopyDestinationIndex);
+        writer.LocalGet(method.CopyLength).I32Const(1).I32Sub().LocalSet(method.CopyLength).Br(new(0)).End().End();
     }
 
     private void CheckCopyNull(LocalIndex array, string name)

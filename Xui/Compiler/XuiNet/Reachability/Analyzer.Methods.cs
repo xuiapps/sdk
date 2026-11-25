@@ -161,6 +161,12 @@ public sealed partial class Analyzer
                         Signature(node, duration.Signature.Result, DependencyReason.Signature, offset);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ManagedReference.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } address)
+                    {
+                        Add(new Dependency.Intrinsic("Unsafe." + address.Operation), node, DependencyReason.Call, offset);
+                        Signature(node, address.Element, DependencyReason.Signature, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ReferenceCompareExchange.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } exchange)
                     {
                         Add(new Dependency.Intrinsic("Interlocked.CompareExchange.Reference"), node, DependencyReason.Call, offset);

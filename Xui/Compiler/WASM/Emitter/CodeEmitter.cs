@@ -68,6 +68,8 @@ public readonly ref partial struct CodeEmitter
         Array.Fill(initializedLocals, initLocals);
         EnterFrame();
         InitializeGcLocals();
+        if (initLocals)
+            foreach (var selector in method.ReferenceLocals.Values) writer.I32Const(-1).LocalSet(selector);
         if (method.Frame is not null && method.Storage.ExceptionsEnabled)
         {
             OpenExceptionLabel(method.Storage.ExceptionReferenceBlock);
@@ -351,12 +353,9 @@ public readonly ref partial struct CodeEmitter
         var reader = method.Body.Instructions;
         var literals = new List<string>();
         var seenLiterals = new HashSet<string>(StringComparer.Ordinal);
-        if (method.Graph.Instructions.Any(n => n.After?.Entry is { DeclaredType: { IsByReference: true } type } &&
-            (type.IsReferenceType || type.Code is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray)))
-        {
-            method.Storage.ReferenceAddressesEnabled = true;
-            method.RequireGcTemporaries();
-        }
+        foreach (var address in method.Graph.Instructions.Select(n => n.After?.Entry).OfType<XuiNet.CodeFlow.StackEntry>())
+            if (address.DeclaredType is { IsByReference: true } declared)
+            { method.Storage.RequireAddress(method.Storage.Bind(declared)); method.RequireGcTemporaries(); }
         foreach (var node in method.Graph.Instructions)
         {
             if (method.Flow is not null && !node.IsReachable) continue;
@@ -513,6 +512,8 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Stfld:
                     var fieldHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
                     var resolvedField = IR.MemberResolver.Field(source, fieldHandle, method.Identity.DeclaringType, method.Identity.Arguments);
+                    if (instruction.Code == OpCode.Ldflda || resolvedField.DeclaringType.IsValueType)
+                        method.Storage.RequireAddress(method.Storage.Bind(IR.Signatures.SignatureReader.Field(resolvedField.DeclaringType.Module, resolvedField.DeclaringType.Module.GetField(resolvedField.Handle).Signature, resolvedField.DeclaringType.Arguments)));
                     if (instruction.Code == OpCode.Ldflda && StorageModel.IsReference(method.Storage.Bind(IR.Signatures.SignatureReader.Field(
                         resolvedField.DeclaringType.Module, resolvedField.DeclaringType.Module.GetField(resolvedField.Handle).Signature, resolvedField.DeclaringType.Arguments))))
                     { method.Storage.ReferenceAddressesEnabled = true; method.RequireGcTemporaries(); }
@@ -691,6 +692,12 @@ public readonly ref partial struct CodeEmitter
                         method.RequireGcTemporaries();
                         if (floating && seenLiterals.Add(IR.Intrinsics.TimeSpanFactory.NaNMessage)) literals.Add(IR.Intrinsics.TimeSpanFactory.NaNMessage);
                         if (seenLiterals.Add(IR.Intrinsics.TimeSpanFactory.OverflowMessage)) literals.Add(IR.Intrinsics.TimeSpanFactory.OverflowMessage);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ManagedReference.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } address)
+                    {
+                        method.Storage.RequireAddress(method.Storage.Bind(address.Element.ByReference()));
+                        method.RequireGcTemporaries();
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.ReferenceCompareExchange.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } exchange)

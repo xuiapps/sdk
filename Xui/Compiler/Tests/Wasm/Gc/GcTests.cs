@@ -263,18 +263,13 @@ public class GcTests
         """, "new\n", 11);
 
     [Fact]
-    public void ManagedAddressLocalsForGcFieldsFailInsteadOfLosingTheirFieldPath()
-    {
-        const string source = """
-            public struct Label { public string Text; }
-            public static class Program {
-                public static int Main() { var box = new Box(); ref Label alias = ref box.Value; alias.Text = "x"; return 0; }
-                public class Box { public Label Value; }
-            }
-            """;
-        var pe = Frontend.Roslyn.Compile(source, optimizationLevel: OptimizationLevel.Debug);
-        Assert.Contains("Managed-address locals", Assert.Throws<NotSupportedException>(() => Emit(pe)).Message);
-    }
+    public Task ManagedAddressLocalsForGcFieldsKeepTheirFieldPath() => AssertExecution("""
+        public struct Label { public string Text; }
+        public class Box { public Label Value; }
+        public static class Program {
+            public static int Main() { var box = new Box(); ref Label alias = ref box.Value; alias.Text = "x"; System.Console.WriteLine(box.Value.Text); return 0; }
+        }
+        """, "x\n", 0);
 
     internal static async Task AssertExecution(string source, string output, int exitCode)
     {

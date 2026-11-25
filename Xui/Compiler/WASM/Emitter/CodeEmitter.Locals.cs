@@ -22,7 +22,7 @@ public readonly ref partial struct CodeEmitter
         { FrameAddress(scalarAddress); LoadField(local, offset); return; }
         if (method.Frame?.ReferenceLocals.TryGetValue((int)index.Value, out int address) == true) { FrameAddress(address); LoadReference(local); }
         else writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value));
-        if (local.IsReferenceAddress) writer.LocalGet(method.ReferenceLocals[(int)index.Value]);
+        if (local.IsByReference) writer.LocalGet(method.ReferenceLocals[(int)index.Value]);
         if (!local.IsByReference && local.Identity is { } identity && !method.Storage.IsClass(identity))
         {
             if (local.UsesGc) CloneGc(identity);
@@ -35,10 +35,8 @@ public readonly ref partial struct CodeEmitter
     private void StoreLocal(LocalIndex index, OpCode code, int offset)
     {
         var local = GetLocal(index, code, offset);
-        if (local.IsByReference && stack.Peek().Location is not null)
-            throw new NotSupportedException("Managed-address locals cannot capture a GC field location.");
         PopAssignable(local, code, offset);
-        if (local.IsReferenceAddress) writer.LocalSet(method.ReferenceLocals[(int)index.Value]);
+        if (local.IsByReference) writer.LocalSet(method.ReferenceLocals[(int)index.Value]);
         if (method.Frame?.ScalarLocals.TryGetValue((int)index.Value, out int scalarAddress) == true) StoreScalarVariable(scalarAddress, local);
         else if (method.Frame?.ReferenceLocals.TryGetValue((int)index.Value, out int address) == true) StoreReferenceVariable(address, local);
         else if (local.IsByReference) writer.LocalSet(new LocalIndex((uint)method.Signature.WasmParameterCount + index.Value));

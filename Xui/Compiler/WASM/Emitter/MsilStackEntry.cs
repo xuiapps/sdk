@@ -28,12 +28,10 @@ public readonly struct MsilStackEntry
     /// <summary>The exact managed array element signature, when present.</summary>
     public ArraySignature? Array { get; }
 
-    internal bool IsReferenceAddress => IsByReference && (TypeCode is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray || Identity is { IsValueType: false });
 
     internal MethodIdentity? Method { get; init; }
     internal TypeIdentity? TypeToken { get; init; }
     internal bool IsNull { get; init; }
-    internal GcLocation? Location { get; init; }
 
     /// <summary>The module-qualified identity of a named value type, when present.</summary>
     public TypeIdentity? Identity { get; }

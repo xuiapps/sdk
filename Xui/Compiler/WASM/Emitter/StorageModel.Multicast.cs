@@ -143,7 +143,7 @@ internal sealed partial class StorageModel
     }
 
     public ValueTypeCode[] DelegateInvokeLocals(MethodPlan method) => method.Signature.ReturnType == SignatureTypeCode.Void
-        ? [EqRef, I32, I32] : method.Signature.Result.IsReferenceAddress
+        ? [EqRef, I32, I32] : method.Signature.Result.IsByReference
         ? [EqRef, I32, I32, EqRef, I32] : [EqRef, I32, I32, method.Signature.Result.WasmType];
 
     public void EmitDelegateInvoke(Writer w, MethodPlan method)
@@ -167,10 +167,10 @@ internal sealed partial class StorageModel
             else w.LocalGet(new((uint)i));
         }
         DelegateField(w, current.Value, Callable).CallIndirect(method.Type);
-        if (signature.Result.IsReferenceAddress) w.LocalSet(new(first + 4));
+        if (signature.Result.IsByReference) w.LocalSet(new(first + 4));
         if (signature.ReturnType != SignatureTypeCode.Void) w.LocalSet(result);
         w.LocalGet(index).I32Const(1).I32Add().LocalTee(index).LocalGet(count).I32LtU().BrIf(new(0)).End();
         if (signature.ReturnType != SignatureTypeCode.Void) w.LocalGet(result);
-        if (signature.Result.IsReferenceAddress) w.LocalGet(new(first + 4));
+        if (signature.Result.IsByReference) w.LocalGet(new(first + 4));
     }
 }

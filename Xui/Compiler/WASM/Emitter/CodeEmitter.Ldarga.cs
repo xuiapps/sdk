@@ -13,6 +13,7 @@ public readonly ref partial struct CodeEmitter
         if (argument.Identity is not { IsValueType: true } identity || argument.IsByReference)
             throw new NotSupportedException("Only by-value struct argument addresses are implemented.");
         writer.LocalGet(new LocalIndex(instruction.Index));
-        stack.Push(new MsilStackEntry(argument.TypeCode, identity, true) { Location = argument.UsesGc ? new(method.Storage.Shape(identity), 0) : null });
+        ValueAddress(argument);
+        stack.Push(new MsilStackEntry(argument.TypeCode, identity, true));
     }
 }

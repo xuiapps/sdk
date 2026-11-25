@@ -22,6 +22,7 @@ internal sealed partial class MethodPlan
                 ? instruction.ReadShortVariable(ref reader).Index : instruction.ReadVariable(ref reader).Index;
             bool argument = node.Code is OpCode.Ldarga or OpCode.Ldarga_s;
             var variable = argument ? Signature.Parameters[index] : Locals[index];
+            Storage.RequireAddress(variable); RequireGcTemporaries();
             if (!variable.IsByReference && variable.IsScalar)
                 (argument ? addressedScalarArguments : addressedScalarLocals).Add(index);
             if (variable.IsByReference || !StorageModel.IsReference(variable)) continue;

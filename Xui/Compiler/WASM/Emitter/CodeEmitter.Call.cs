@@ -15,6 +15,7 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryManagedReference(instruction, offset)) return;
         if (TryResourceString(instruction)) return;
         if (TryStringConcatenation(instruction, offset)) return;
         if (TryManagedType(instruction, offset)) return;
@@ -50,13 +51,10 @@ public readonly ref partial struct CodeEmitter
         method.CallTemporaries.TryGetValue(target, out var temporaries);
         for (int i = arguments.Length - 1; i >= 0; i--)
         {
-            if (arguments[i].IsByReference && stack.Peek().Location is { } location &&
-                (!arguments[i].UsesGc || location.First != 0 || location.Owner.Identity != arguments[i].Identity))
-                throw new NotSupportedException("Calls through inline value field addresses are not implemented.");
             PopAssignable(arguments[i], instruction.Code, offset);
             if (temporaries is not null)
             {
-                if (arguments[i].IsReferenceAddress) writer.LocalSet(method.CallReferenceTemporaries[target][i]);
+                if (arguments[i].IsByReference) writer.LocalSet(method.CallReferenceTemporaries[target][i]);
                 Narrow(arguments[i]);
                 writer.LocalSet(temporaries[i]);
             }
@@ -82,7 +80,7 @@ public readonly ref partial struct CodeEmitter
                 }
             }
         for (int i = 0; i < arguments.Length; i++)
-            if (arguments[i].IsReferenceAddress) writer.LocalGet(method.CallReferenceTemporaries[target][i]);
+            if (arguments[i].IsByReference) writer.LocalGet(method.CallReferenceTemporaries[target][i]);
         if (callee.Signature.HasResultAddress) FrameAddress(Frame.Values[offset]);
         if (delegateInvoke)
         {

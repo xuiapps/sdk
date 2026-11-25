@@ -178,7 +178,7 @@ public sealed partial class WasmEmitter
                 stringReferences = table.References(ExternRef, StorageModel.ReferenceCapacity);
             }
         }
-        if (hasFrames)
+        if (hasFrames || storage.HasScalarAddressAccessors || storage.HasAddressProjection)
         {
             using var memory = writer.MemorySection();
             memory.Memory(MemoryFrame.PageCount, MemoryFrame.PageCount);
@@ -259,7 +259,7 @@ public sealed partial class WasmEmitter
             for (int i = 0; i < storage.ReferenceAccessorFunctions.Count; i++)
             {
                 using var body = code.FunctionBody();
-                storage.EmitReferenceAccessor(body, i, runtime);
+                storage.EmitReferenceAccessor(body, i, runtime, literalIndices);
             }
             if (storage.Classes.Types.Count != 0)
             {

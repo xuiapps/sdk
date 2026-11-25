@@ -27,6 +27,10 @@ internal sealed partial class MethodPlan
     public bool UsesReferenceCompareExchange { get; set; }
     public LocalIndex CompareExchangeReplacement { get; private set; }
     public LocalIndex CompareExchangeOriginal { get; private set; }
+    public LocalIndex AddressOwner { get; private set; }
+    public LocalIndex AddressSelector { get; private set; }
+    public LocalIndex SourceOwner { get; private set; }
+    public LocalIndex SourceSelector { get; private set; }
     public LocalIndex GcSource { get; private set; }
     public LocalIndex GcOwner { get; private set; }
     public LocalIndex GcI32 { get; private set; }
@@ -100,7 +104,7 @@ internal sealed partial class MethodPlan
         Locals = LocalVariable.Read(source, Body.LocalSignature, storage, identity.DeclaringType.Arguments, identity.Arguments);
         foreach (var local in Locals.Concat(Signature.Parameters).Append(Signature.Result))
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
-        if (Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(p => p.IsReferenceAddress)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
+        if (Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(p => p.IsByReference)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
         InvariantFormatting = InvariantFormattingCalls.Read(source, Body, Graph);
         InterpolationCalls = XuiNet.CodeFlow.InterpolationCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
@@ -157,6 +161,17 @@ internal sealed partial class MethodPlan
     {
         var types = Locals.Select(local => local.WasmType).ToList();
         uint parameterCount = (uint)Signature.WasmParameterCount;
+        if (Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(v => v.IsByReference) ||
+            Calls.Any(call => methods[call].Signature.Parameters.Any(p => p.IsByReference)) ||
+            Graph is not null && Graph.Instructions.Any(n => n.Code is OpCode.Ldloca or OpCode.Ldloca_s or OpCode.Ldarga or OpCode.Ldarga_s or OpCode.Ldflda or OpCode.Ldelema or OpCode.Ldobj or OpCode.Stobj or OpCode.Cpobj or OpCode.Initobj ||
+                n.After?.Entry?.DeclaredType is { IsByReference: true }))
+        {
+            UsesGc = true;
+            AddressOwner = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
+            AddressSelector = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            SourceOwner = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
+            SourceSelector = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+        }
         if (UsesSwitch) { SwitchSelector = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32); }
         if (UsesEqualitySearch)
         {
@@ -170,7 +185,7 @@ internal sealed partial class MethodPlan
             CopyDestinationIndex = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
         }
         for (int i = 0; i < Locals.Length; i++)
-            if (Locals[i].IsReferenceAddress)
+            if (Locals[i].IsByReference)
             {
                 ReferenceLocals.Add(i, new(parameterCount + (uint)types.Count));
                 types.Add(ValueTypeCode.I32);
@@ -191,7 +206,7 @@ internal sealed partial class MethodPlan
         {
             var parameters = methods[target].Signature.Parameters;
             if (methods[target].Signature.Result.UsesGc || parameters.Any(parameter => parameter.UsesGc)) UsesGc = true;
-            if (!methods[target].Signature.HasThis && !parameters.Any(parameter => parameter.NeedsNarrowing || parameter.IsReferenceAddress || parameter.TypeCode == SignatureTypeCode.String)) continue;
+            if (!methods[target].Signature.HasThis && !parameters.Any(parameter => parameter.NeedsNarrowing || parameter.IsByReference || parameter.TypeCode == SignatureTypeCode.String)) continue;
             var slots = new LocalIndex[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
             {
@@ -199,11 +214,11 @@ internal sealed partial class MethodPlan
                 types.Add(parameters[i].WasmType);
             }
             CallTemporaries.Add(target, slots);
-            if (parameters.Any(p => p.IsReferenceAddress))
+            if (parameters.Any(p => p.IsByReference))
             {
                 var selectors = new LocalIndex[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
-                    if (parameters[i].IsReferenceAddress) { selectors[i] = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32); }
+                    if (parameters[i].IsByReference) { selectors[i] = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32); }
                 CallReferenceTemporaries.Add(target, selectors);
             }
         }

@@ -18,10 +18,10 @@ internal sealed class MethodSignature
     public LocalIndex ResultAddress => new((uint)(Parameters.Length + ReferenceParameterCount));
     // Primary slots preserve MSIL argument indices. Byref selectors follow all primary
     // parameters, then the optional result address. The evaluation stack uses adjacent pairs.
-    public int ReferenceParameterCount => Parameters.Count(p => p.IsReferenceAddress);
-    public LocalIndex ReferenceParameter(int index) => new((uint)(Parameters.Length + Parameters.Take(index).Count(p => p.IsReferenceAddress)));
+    public int ReferenceParameterCount => Parameters.Count(p => p.IsByReference);
+    public LocalIndex ReferenceParameter(int index) => new((uint)(Parameters.Length + Parameters.Take(index).Count(p => p.IsByReference)));
     public Wasm.Section.TypeDefinitions.ValueType[] WasmResults => ReturnType == SignatureTypeCode.Void
-        ? [] : Result.IsReferenceAddress
+        ? [] : Result.IsByReference
         ? [Result.WasmType, Wasm.Section.TypeDefinitions.ValueTypeCode.I32] : [Result.WasmType];
     public bool HasThis { get; init; }
     public bool IsConstructor { get; init; }
@@ -36,9 +36,7 @@ internal sealed class MethodSignature
         if (entryPoint && (result.IsByReference || result.Code is not (SignatureTypeCode.Void or SignatureTypeCode.Int32)))
             throw new NotSupportedException($"Unsupported entry point result: {result}.");
         var resultStorage = storage.Bind(result);
-        if (result.IsByReference && resultStorage.UsesGc && !resultStorage.IsReferenceAddress)
-            throw new NotSupportedException("GC struct managed-address return values are not implemented.");
-        if (resultStorage.IsReferenceAddress) storage.ReferenceAddressesEnabled = true;
+        if (resultStorage.IsByReference) storage.ReferenceAddressesEnabled = true;
         if (result.Code != SignatureTypeCode.Void) _ = resultStorage.WasmType;
         if (entryPoint && signature.Parameters.Length == 1 && signature.Parameters[0].Array?.Element.Code == SignatureTypeCode.String && !signature.Parameters[0].IsByReference)
             return new() { Parameters = [], DeclaredReturnType = result, Result = resultStorage, HasEntryPointArguments = true };
@@ -55,10 +53,7 @@ internal sealed class MethodSignature
         {
             var type = signature.Parameters[i - first];
             parameters[i] = storage.Bind(type);
-            if (type.IsByReference && !parameters[i].IsReferenceAddress && !parameters[i].IsScalar && (type.Identity is not { IsValueType: true } || parameters[i].UsesGc))
-                throw new NotSupportedException("This managed-address parameter representation is not implemented.");
-            if (parameters[i].IsReferenceAddress) storage.ReferenceAddressesEnabled = true;
-            else if (type.IsByReference && !parameters[i].IsScalar) _ = storage.StackLayout(type.Identity!.Value);
+            if (type.IsByReference) storage.ReferenceAddressesEnabled = true;
             _ = parameters[i].WasmType;
         }
         return new() { Parameters = parameters, DeclaredReturnType = result, Result = resultStorage, HasThis = signature.HasThis, IsConstructor = method.Name == ".ctor" };

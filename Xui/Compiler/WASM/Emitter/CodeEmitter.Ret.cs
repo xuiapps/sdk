@@ -10,8 +10,6 @@ public readonly ref partial struct CodeEmitter
         if (returnType != SignatureTypeCode.Void)
         {
             var result = method.Signature.Result;
-            if (result.IsByReference && stack.Peek().Location is not null)
-                throw new NotSupportedException("Returning inline GC value field addresses is not implemented.");
             PopAssignable(result, OpCode.Ret, offset);
             Narrow(result);
             if (result.IsLinearValue)

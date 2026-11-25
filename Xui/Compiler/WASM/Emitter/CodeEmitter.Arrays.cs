@@ -46,7 +46,8 @@ public readonly ref partial struct CodeEmitter
             var elementShape = method.Storage.Shape(identity);
             if (address)
             {
-                stack.Push(new(SignatureTypeCode.TypeHandle, identity, true) { Location = new(elementShape, 0) });
+                writer.I32Const(method.Storage.ReferenceField(new(elementShape, 0), shape.Element));
+                stack.Push(new(SignatureTypeCode.TypeHandle, identity, true));
                 return;
             }
             ReadInlineValue(identity, new(elementShape, 0), offset);

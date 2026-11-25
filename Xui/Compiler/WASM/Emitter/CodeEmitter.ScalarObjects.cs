@@ -49,17 +49,14 @@ public readonly ref partial struct CodeEmitter
     private void ReadScalarAddress(MsilStackEntry address, LocalVariable type)
     {
         CheckScalarAddress(address, type);
-        if (address.Location is { } location) writer.RefCast(location.Owner.Type).StructGet(location.Owner.Type, new((uint)location.First));
-        else LoadRaw(type);
+        writer.Call(method.Storage.ReferenceAccessor(type, false));
         if (type.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
     }
 
     private void WriteScalarAddress(MsilStackEntry address, LocalVariable type)
     {
         CheckScalarAddress(address, type);
-        if (address.Location is { } location) writer.RefCast(location.Owner.Type);
         writer.LocalGet(GcScratch(type)); Narrow(type);
-        if (address.Location is { } field) writer.StructSet(field.Owner.Type, new((uint)field.First));
-        else StoreRaw(type);
+        writer.Call(method.Storage.ReferenceAccessor(type, true));
     }
 }

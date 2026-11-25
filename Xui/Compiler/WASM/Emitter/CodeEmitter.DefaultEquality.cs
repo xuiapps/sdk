@@ -50,7 +50,17 @@ public readonly ref partial struct CodeEmitter
         var storage = method.Storage.Bind(access.Element);
         var category = storage.StackType == SignatureTypeCode.IntPtr ? SignatureTypeCode.Int32 : storage.StackType;
         if (access.Implementation is { } equals)
-            writer.LocalGet(left).LocalGet(right).Call(methods[equals].Function);
+        {
+            if (equals.DeclaringType.IsValueType)
+            {
+                if (storage.UsesGc) writer.LocalGet(left); else writer.RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef);
+                writer.LocalGet(right);
+                if (storage.UsesGc) writer.I32Const(method.Storage.ReferenceField(new(method.Storage.Shape(equals.DeclaringType), 0), storage));
+                else writer.LocalGet(left);
+            }
+            else writer.LocalGet(left).LocalGet(right);
+            writer.Call(methods[equals].Function);
+        }
         else if (access.UsesObjectEquality) CompareObjects(access.Element.Identity!.Value, left, right);
         else if (category == SignatureTypeCode.String) CompareStrings(left, right);
         else

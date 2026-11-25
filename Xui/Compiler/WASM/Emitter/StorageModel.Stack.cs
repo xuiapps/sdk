@@ -47,6 +47,8 @@ internal sealed partial class StorageModel
             var owner = identity.DeclaringType;
             var method = owner.Module.GetMethod(identity.Handle);
             var signature = SignatureReader.Method(owner.Module, method.Signature, owner.Arguments, identity.Arguments);
+            if (signature.HasThis && owner.IsValueType) Select(owner);
+            if (signature.Result.IsByReference && signature.Result.Identity is { IsValueType: true } returned) Select(returned);
             foreach (var parameter in signature.Parameters)
                 if (parameter.IsByReference && parameter.Identity is { IsValueType: true } type) Select(type);
             if (dependencies.Contains(new Dependency.Method(identity)) && method.Body is { } body)

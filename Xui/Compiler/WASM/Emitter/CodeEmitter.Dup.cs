@@ -6,7 +6,7 @@ public readonly ref partial struct CodeEmitter
     {
         if (!stack.TryPeek(out var value))
             throw new InvalidProgramException($"Evaluation stack underflow for Dup at IL_{offset:x4}.");
-        if (value.IsReferenceAddress)
+        if (value.IsByReference)
         {
             writer.LocalSet(method.GcI32).LocalSet(method.GcOwner)
                 .LocalGet(method.GcOwner).LocalGet(method.GcI32).LocalGet(method.GcOwner).LocalGet(method.GcI32);

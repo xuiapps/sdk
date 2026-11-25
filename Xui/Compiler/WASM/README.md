@@ -141,7 +141,7 @@ Each cache key includes both the declaring type and method argument list. Open
 method templates are expanded only by closed calls. Generic virtual dispatch remains
 unsupported; `box T` is a no-op only when T specializes to a supported reference type.
 
-Reference `ref`/`in`/`out` arguments and local aliases carry an `eqref` owner plus an
+Managed `ref`/`in`/`out` arguments and local aliases carry an `eqref` owner plus an
 `i32` accessor selector. Generated getters/setters use constant WASM field indices.
 No descriptor object is allocated per byref. Class fields (including reference leaves
 inside flattened structs) keep their owner alive; saved refs keep pointing to the
@@ -150,12 +150,16 @@ arguments use caller-owned GC-visible table slots, cleared on return and unwindi
 Strings use the same convention with externref getters/setters. Calls, constructors,
 virtual/interface dispatch, ref locals, and conditional/loop stacks preserve the pair.
 Managed reference returns preserve this pair, including virtual/interface and multicast
-delegate calls. Primitive byrefs use linear addresses; arbitrary array-element byrefs
-and returning addresses of inline GC value fields remain unsupported.
+delegate calls. Scalar and struct locations use the same pair: a null owner identifies
+linear storage, while a GC owner identifies a flattened field range. Generated typed
+accessors preserve storage widths and reference visibility. Null managed references
+use `(null, -1)`, including initialized byref locals; Unsafe.NullRef/IsNullRef use that
+representation and dereferencing it throws NullReferenceException.
 
-Struct `ref`/`in`/`out` parameters and local aliases work for linear stack locations. Addresses
-of inline struct fields can be used within expressions and conditional arms, but
-cannot be passed as instance receivers or carried across loops. Class-reference
+Struct `ref`/`in`/`out` parameters and local aliases work for linear stack locations,
+inline GC fields, and struct-array elements. Nested field locations, constructors,
+returns, conditional joins, and loops retain their owner and selector; taking a ref
+allocates no wrapper. Pure numeric struct values keep their linear representation. Class-reference
 joins widen to a common linked base class, including null/class joins.
 Class references can also join an existing assignable interface or `object` stack type.
 Other stack types still require exact matches; synthesizing a common interface for unrelated
@@ -240,7 +244,7 @@ The tables are allocated once per module instance, currently with 65,536 entries
 each. Calls and copies allocate no GC holders for these stack structs. Existing
 object creation and first-use string materialization still allocate. Capacity
 exhaustion traps, as for the byte stack; traps require discarding the instance.
-General spans, byref fields, arbitrary GC interior byref returns, linear struct values carried across
+General spans, byref fields, linear struct values carried across
 control-flow blocks, and arbitrary GC interior references remain unsupported.
 See the [stack event demo](../Tests/Wasm/ReferenceSlots/Snapshots/Events.md).
 
@@ -684,11 +688,11 @@ Core/framework PEs provide Point/Color/GradientStop and tuple constructors; the
 unsigned NFloat conversion used by Color is a scalar intrinsic.
 
 Still unsupported: multidimensional arrays, array covariance/type tests/object
-conversions, primitive/reference array-element byrefs, general escaping GC-element
-byrefs, bulk static-data initializers (`RuntimeHelpers.InitializeArray/CreateSpan`),
+conversions, primitive/reference array-element byrefs, bulk static-data initializers (`RuntimeHelpers.InitializeArray/CreateSpan`),
 and arbitrary Array/BCL collection methods. Span construction from managed arrays,
 slicing, enumeration helpers, stackalloc, and inline-array access through GC-field
-addresses are not implemented. Unsupported paths throw during compilation.
+addresses remain unsupported. Private span/interpolation helpers require linear backing;
+a GC owner at that boundary traps rather than being treated as a byte pointer.
 
 ## Generic interface variance
 
@@ -736,9 +740,8 @@ their exact byte sizes, offsets, and packing. Enums do not allocate struct wrapp
 Flags bit operations, unsigned comparisons, explicit casts, and unnamed values work.
 See [enum widths](../Tests/Wasm/Enums/Snapshots/Widths.md).
 
-Enum byref parameters/locals and address-taking of scalar enum locals remain unsupported,
-as do boxing, enum-name formatting, reflection, and arbitrary System.Enum helpers.
-This milestone does not add general primitive-address or generic initobj support.
+Enum byrefs preserve their underlying storage widths in linear locals and GC fields.
+Boxing, enum-name formatting, reflection, and arbitrary System.Enum helpers remain unsupported.
 
 
 The [persistent mobile preview](../Tests/Wasm/TestApp/Snapshots/MobilePhone.html)
@@ -791,7 +794,8 @@ Array.Copy's int-indexed three- and five-argument overloads emit GC array.copy
 for identical, statically known vector types containing scalars or references.
 Copies preserve object identity and overlap order; null, negative-index/length,
 and capacity failures throw managed argument exceptions before mutation. Struct
-elements are explicitly rejected until copying preserves element storage aliases.
+elements use an overlap-aware field-copy loop into existing holders, preserving
+outstanding element/field references and independent value storage.
 System.Array-typed operands, covariance, element conversions, multidimensional
 arrays, and 64-bit index overloads are not supported.
 
@@ -815,7 +819,6 @@ Scalar locals/arguments whose addresses are taken use aligned frame slots, with
 loads and stores routed through that one location. Primitive, enum, and NFloat
 ref/in/out calls retain storage widths, float rounding, and aliasing. Frames unwind
 on managed exceptions. Generic scalar ldobj/stobj/cpobj/initobj use typed loads and
-stores. Scalar references into inline GC fields cannot yet cross a call boundary;
-managed-address returns preserve existing caller-owned linear locations or reference-field
+stores. Scalar and struct GC-field addresses now cross calls and returns using
 owner/selector pairs. These returns do not copy the value or allocate a byref wrapper.
-Inline GC value-field addresses still cannot escape through returns.
+Raw pointers into WASM GC storage remain unsupported.

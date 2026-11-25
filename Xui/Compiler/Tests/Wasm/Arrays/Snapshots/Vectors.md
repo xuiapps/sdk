@@ -74,10 +74,17 @@ two independent points
   (type (;15;) (array (mut eqref)))
   (type (;16;) (array (mut externref)))
   (type (;17;) (func (result i32)))
-  (type (;18;) (func (param eqref)))
-  (type (;19;) (func (param eqref) (result i32)))
-  (type (;20;) (func))
-  (type (;21;) (func))
+  (type (;18;) (func (param eqref i32) (result eqref)))
+  (type (;19;) (func (param eqref i32 eqref)))
+  (type (;20;) (func (param eqref i32) (result externref)))
+  (type (;21;) (func (param eqref i32 externref)))
+  (type (;22;) (func (param eqref i32) (result i32)))
+  (type (;23;) (func (param eqref i32 i32)))
+  (type (;24;) (func (result i32)))
+  (type (;25;) (func (param eqref)))
+  (type (;26;) (func (param eqref) (result i32)))
+  (type (;27;) (func))
+  (type (;28;) (func))
   (import "xui" "console-log" (func (;0;) (type 2) (param externref)))
   (import "xui" "console-log" (func (;1;) (type 3) (param i32)))
   (import "wasm:js-string" "fromCharCodeArray" (func (;2;) (type 1) (param (ref null 0) i32 i32) (result (ref extern))))
@@ -95,34 +102,34 @@ two independent points
   (global (;9;) (mut i32) i32.const 16)
   (global (;10;) eqref i32.const 1 ref.null eq i32.const 0 i32.const 83 i32.const 99 i32.const 101 i32.const 110 i32.const 101 array.new_fixed 0 5 i32.const 0 i32.const 3 struct.new 10)
   (export "main" (func 3))
-  (func (;3;) (type 17) (result i32)
-    (local eqref i32 i64 f64 externref eqref exnref i32 i32 i32 i64 f64 eqref i32 eqref eqref i32 i64 f64 externref)
+  (func (;3;) (type 24) (result i32)
+    (local eqref eqref i32 eqref i32 i32 i64 f64 externref eqref exnref i32 i32 i32 i64 f64 eqref i32 eqref eqref i32 i64 f64 externref)
     global.get 9
-    local.tee 7
+    local.tee 11
     i32.const 1048560
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 7
+    local.get 11
     i32.const 16
     i32.add
     global.set 9
     block (type 8) (result exnref) ;; label = @1
       try_table (catch_all_ref 0 (;@1;)) ;; label = @2
         struct.new_default 13
-        local.set 5
-        local.get 5
+        local.set 9
+        local.get 9
         ref.cast (ref 13)
         global.get 10
         struct.set 13 0
-        local.get 5
+        local.get 9
         call 4
-        local.get 5
-        local.tee 14
-        local.get 14
+        local.get 9
+        local.tee 18
+        local.get 18
         i32.const 2
-        local.tee 13
+        local.tee 17
         i32.const 0
         i32.lt_s
         if ;; label = @3
@@ -142,15 +149,15 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 13
+        local.get 17
         array.new_default 15
-        local.set 12
+        local.set 16
         i32.const 0
-        local.set 13
+        local.set 17
         block (type 9) ;; label = @3
           loop (type 9) ;; label = @4
-            local.get 13
-            local.get 12
+            local.get 17
+            local.get 16
             ref.cast (ref 15)
             array.len
             i32.lt_u
@@ -158,21 +165,21 @@ two independent points
             if ;; label = @5
               br 2 (;@3;)
             end
-            local.get 12
+            local.get 16
             ref.cast (ref 15)
-            local.get 13
+            local.get 17
             struct.new_default 14
             array.set 15
-            local.get 13
+            local.get 17
             i32.const 1
             i32.add
-            local.set 13
+            local.set 17
             br 0 (;@4;)
           end
         end
-        local.get 12
-        local.set 14
-        local.tee 15
+        local.get 16
+        local.set 18
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -191,17 +198,17 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
-        local.set 15
-        local.get 15
+        local.set 19
+        local.get 19
         ref.cast (ref 13)
-        local.get 14
+        local.get 18
         struct.set 13 1
-        local.tee 14
-        local.get 14
+        local.tee 18
+        local.get 18
         i32.const 2
-        local.tee 13
+        local.tee 17
         i32.const 0
         i32.lt_s
         if ;; label = @3
@@ -221,10 +228,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 13
+        local.get 17
         array.new_default 16
-        local.set 14
-        local.tee 15
+        local.set 18
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -243,16 +250,16 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
-        local.set 15
-        local.get 15
+        local.set 19
+        local.get 19
         ref.cast (ref 13)
-        local.get 14
+        local.get 18
         struct.set 13 2
         local.set 0
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -271,14 +278,14 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         i32.const 0
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -297,10 +304,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 15)
         array.len
         i32.lt_u
@@ -322,20 +329,54 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
+        local.get 16
         ref.cast (ref 15)
-        local.get 13
+        local.get 17
         array.get 15
+        i32.const 0
         i32.const 10
-        local.set 16
-        ref.cast (ref 14)
-        local.set 15
-        local.get 15
-        ref.cast (ref 14)
-        local.get 16
-        struct.set 14 0
+        local.set 20
+        local.set 2
+        local.set 1
+        local.get 1
+        ref.is_null
+        local.get 2
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 4
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 4
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 4
+          end
+          global.get 4
+          struct.new 4
+          throw 0
+        end
+        local.get 1
+        local.get 1
+        ref.is_null
+        if (type 17) (result i32) ;; label = @3
+          local.get 2
+          i32.const 0
+          i32.add
+        else
+          local.get 2
+          i32.const 0
+          i32.add
+        end
+        local.get 20
+        call 11
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -354,14 +395,14 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         i32.const 0
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -380,10 +421,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 15)
         array.len
         i32.lt_u
@@ -405,20 +446,54 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
-        ref.cast (ref 15)
-        local.get 13
-        array.get 15
-        i32.const 20
-        local.set 16
-        ref.cast (ref 14)
-        local.set 15
-        local.get 15
-        ref.cast (ref 14)
         local.get 16
-        struct.set 14 1
+        ref.cast (ref 15)
+        local.get 17
+        array.get 15
+        i32.const 0
+        i32.const 20
+        local.set 20
+        local.set 2
+        local.set 1
+        local.get 1
+        ref.is_null
+        local.get 2
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 4
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 4
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 4
+          end
+          global.get 4
+          struct.new 4
+          throw 0
+        end
+        local.get 1
+        local.get 1
+        ref.is_null
+        if (type 17) (result i32) ;; label = @3
+          local.get 2
+          i32.const 4
+          i32.add
+        else
+          local.get 2
+          i32.const 1
+          i32.add
+        end
+        local.get 20
+        call 11
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -437,12 +512,12 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         i32.const 1
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -461,14 +536,14 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         i32.const 0
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -487,10 +562,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 15)
         array.len
         i32.lt_u
@@ -512,34 +587,34 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
+        local.get 16
         ref.cast (ref 15)
-        local.get 13
+        local.get 17
         array.get 15
         ref.cast (ref 14)
-        local.set 15
-        local.get 7
+        local.set 19
+        local.get 11
         i32.const 0
         i32.add
-        local.get 15
+        local.get 19
         ref.cast (ref 14)
         struct.get 14 0
         i32.store align=1
-        local.get 7
+        local.get 11
         i32.const 4
         i32.add
-        local.get 15
+        local.get 19
         ref.cast (ref 14)
         struct.get 14 1
         i32.store align=1
-        local.get 7
+        local.get 11
         i32.const 0
         i32.add
+        local.set 20
+        local.set 17
         local.set 16
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -558,10 +633,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 15)
         array.len
         i32.lt_u
@@ -583,27 +658,27 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
-        ref.cast (ref 15)
-        local.get 13
-        array.get 15
-        local.set 15
-        local.get 15
-        ref.cast (ref 14)
         local.get 16
+        ref.cast (ref 15)
+        local.get 17
+        array.get 15
+        local.set 19
+        local.get 19
+        ref.cast (ref 14)
+        local.get 20
         i32.const 0
         i32.add
         i32.load align=1
         struct.set 14 0
-        local.get 15
+        local.get 19
         ref.cast (ref 14)
-        local.get 16
+        local.get 20
         i32.const 4
         i32.add
         i32.load align=1
         struct.set 14 1
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -622,14 +697,14 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         i32.const 1
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -648,10 +723,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 15)
         array.len
         i32.lt_u
@@ -673,20 +748,54 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
+        local.get 16
         ref.cast (ref 15)
-        local.get 13
+        local.get 17
         array.get 15
+        i32.const 0
         i32.const 5
-        local.set 16
-        ref.cast (ref 14)
-        local.set 15
-        local.get 15
-        ref.cast (ref 14)
-        local.get 16
-        struct.set 14 0
+        local.set 20
+        local.set 2
+        local.set 1
+        local.get 1
+        ref.is_null
+        local.get 2
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 4
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 4
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 4
+          end
+          global.get 4
+          struct.new 4
+          throw 0
+        end
+        local.get 1
+        local.get 1
+        ref.is_null
+        if (type 17) (result i32) ;; label = @3
+          local.get 2
+          i32.const 0
+          i32.add
+        else
+          local.get 2
+          i32.const 0
+          i32.add
+        end
+        local.get 20
+        call 11
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -705,14 +814,14 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         i32.const 1
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -731,10 +840,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 15)
         array.len
         i32.lt_u
@@ -756,20 +865,54 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
-        ref.cast (ref 15)
-        local.get 13
-        array.get 15
-        i32.const 7
-        local.set 16
-        ref.cast (ref 14)
-        local.set 15
-        local.get 15
-        ref.cast (ref 14)
         local.get 16
-        struct.set 14 1
+        ref.cast (ref 15)
+        local.get 17
+        array.get 15
+        i32.const 0
+        i32.const 7
+        local.set 20
+        local.set 2
+        local.set 1
+        local.get 1
+        ref.is_null
+        local.get 2
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 4
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 4
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 4
+          end
+          global.get 4
+          struct.new 4
+          throw 0
+        end
+        local.get 1
+        local.get 1
+        ref.is_null
+        if (type 17) (result i32) ;; label = @3
+          local.get 2
+          i32.const 4
+          i32.add
+        else
+          local.get 2
+          i32.const 1
+          i32.add
+        end
+        local.get 20
+        call 11
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -788,7 +931,7 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 2
         i32.const 0
@@ -804,11 +947,11 @@ two independent points
           global.set 0
         end
         global.get 0
-        local.set 19
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 23
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -827,10 +970,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 16)
         array.len
         i32.lt_u
@@ -852,13 +995,13 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
+        local.get 16
         ref.cast (ref 16)
-        local.get 13
-        local.get 19
+        local.get 17
+        local.get 23
         array.set 16
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -877,14 +1020,14 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 2
         i32.const 0
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -903,10 +1046,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 16)
         array.len
         i32.lt_u
@@ -928,13 +1071,13 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
+        local.get 16
         ref.cast (ref 16)
-        local.get 13
+        local.get 17
         array.get 16
         call 0
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -953,10 +1096,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -975,12 +1118,12 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 15)
         array.len
         call 1
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -999,14 +1142,14 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         i32.const 0
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -1025,10 +1168,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 15)
         array.len
         i32.lt_u
@@ -1050,15 +1193,52 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
+        local.get 16
         ref.cast (ref 15)
-        local.get 13
+        local.get 17
         array.get 15
-        ref.cast (ref 14)
-        struct.get 14 0
+        i32.const 0
+        local.set 2
+        local.set 1
+        local.get 1
+        ref.is_null
+        local.get 2
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 4
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 4
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 4
+          end
+          global.get 4
+          struct.new 4
+          throw 0
+        end
+        local.get 1
+        local.get 1
+        ref.is_null
+        if (type 17) (result i32) ;; label = @3
+          local.get 2
+          i32.const 0
+          i32.add
+        else
+          local.get 2
+          i32.const 0
+          i32.add
+        end
+        call 10
         call 1
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -1077,14 +1257,14 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         i32.const 1
-        local.set 13
-        local.set 12
-        local.get 12
-        local.tee 15
+        local.set 17
+        local.set 16
+        local.get 16
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -1103,10 +1283,10 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         drop
-        local.get 13
-        local.get 12
+        local.get 17
+        local.get 16
         ref.cast (ref 15)
         array.len
         i32.lt_u
@@ -1128,15 +1308,52 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 12
+        local.get 16
         ref.cast (ref 15)
-        local.get 13
+        local.get 17
         array.get 15
-        ref.cast (ref 14)
-        struct.get 14 0
+        i32.const 0
+        local.set 2
+        local.set 1
+        local.get 1
+        ref.is_null
+        local.get 2
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 4
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 4
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 4
+          end
+          global.get 4
+          struct.new 4
+          throw 0
+        end
+        local.get 1
+        local.get 1
+        ref.is_null
+        if (type 17) (result i32) ;; label = @3
+          local.get 2
+          i32.const 0
+          i32.add
+        else
+          local.get 2
+          i32.const 0
+          i32.add
+        end
+        call 10
         call 1
         local.get 0
-        local.tee 15
+        local.tee 19
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -1155,40 +1372,40 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         ref.cast (ref 13)
         struct.get 13 1
         call 5
-        local.get 7
+        local.get 11
         global.set 9
         return
         unreachable
       end
       unreachable
     end
-    local.set 6
-    local.get 7
+    local.set 10
+    local.get 11
     global.set 9
-    local.get 6
+    local.get 10
     throw_ref
   )
-  (func (;4;) (type 18) (param eqref)
+  (func (;4;) (type 25) (param eqref)
     (local eqref eqref i32 i64 f64 externref)
     local.get 0
     drop
     return
   )
-  (func (;5;) (type 19) (param eqref) (result i32)
-    (local i32 i32 eqref i32 eqref eqref i32 i64 f64 externref)
+  (func (;5;) (type 26) (param eqref) (result i32)
+    (local i32 i32 eqref i32 eqref i32 eqref i32 eqref eqref i32 i64 f64 externref)
     i32.const 0
     local.set 1
     i32.const 0
     local.set 2
-    block (type 20) ;; label = @1
-      loop (type 20) ;; label = @2
+    block (type 27) ;; label = @1
+      loop (type 27) ;; label = @2
         local.get 2
         local.get 0
-        local.tee 6
+        local.tee 10
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -1207,18 +1424,18 @@ two independent points
           struct.new 4
           throw 0
         end
-        local.get 6
+        local.get 10
         ref.cast (ref 15)
         array.len
         i32.lt_s
-        if (type 21) ;; label = @3
+        if (type 28) ;; label = @3
           local.get 1
           local.get 0
           local.get 2
-          local.set 4
-          local.set 3
-          local.get 3
-          local.tee 6
+          local.set 8
+          local.set 7
+          local.get 7
+          local.tee 10
           ref.is_null
           if ;; label = @4
             i32.const 4
@@ -1237,10 +1454,10 @@ two independent points
             struct.new 4
             throw 0
           end
-          local.get 6
+          local.get 10
           drop
-          local.get 4
-          local.get 3
+          local.get 8
+          local.get 7
           ref.cast (ref 15)
           array.len
           i32.lt_u
@@ -1262,18 +1479,55 @@ two independent points
             struct.new 4
             throw 0
           end
-          local.get 3
+          local.get 7
           ref.cast (ref 15)
-          local.get 4
+          local.get 8
           array.get 15
-          ref.cast (ref 14)
-          struct.get 14 0
+          i32.const 0
+          local.set 4
+          local.set 3
+          local.get 3
+          ref.is_null
+          local.get 4
+          i32.const -1
+          i32.eq
+          i32.and
+          if ;; label = @4
+            i32.const 4
+            global.get 4
+            ref.is_null
+            if ;; label = @5
+              i32.const 0
+              i32.const 53
+              array.new_data 0 4
+              i32.const 0
+              i32.const 53
+              call 2
+              global.set 4
+            end
+            global.get 4
+            struct.new 4
+            throw 0
+          end
+          local.get 3
+          local.get 3
+          ref.is_null
+          if (type 17) (result i32) ;; label = @4
+            local.get 4
+            i32.const 0
+            i32.add
+          else
+            local.get 4
+            i32.const 0
+            i32.add
+          end
+          call 10
           local.get 0
           local.get 2
-          local.set 4
-          local.set 3
-          local.get 3
-          local.tee 6
+          local.set 8
+          local.set 7
+          local.get 7
+          local.tee 10
           ref.is_null
           if ;; label = @4
             i32.const 4
@@ -1292,10 +1546,10 @@ two independent points
             struct.new 4
             throw 0
           end
-          local.get 6
+          local.get 10
           drop
-          local.get 4
-          local.get 3
+          local.get 8
+          local.get 7
           ref.cast (ref 15)
           array.len
           i32.lt_u
@@ -1317,12 +1571,49 @@ two independent points
             struct.new 4
             throw 0
           end
-          local.get 3
+          local.get 7
           ref.cast (ref 15)
-          local.get 4
+          local.get 8
           array.get 15
-          ref.cast (ref 14)
-          struct.get 14 1
+          i32.const 0
+          local.set 4
+          local.set 3
+          local.get 3
+          ref.is_null
+          local.get 4
+          i32.const -1
+          i32.eq
+          i32.and
+          if ;; label = @4
+            i32.const 4
+            global.get 4
+            ref.is_null
+            if ;; label = @5
+              i32.const 0
+              i32.const 53
+              array.new_data 0 4
+              i32.const 0
+              i32.const 53
+              call 2
+              global.set 4
+            end
+            global.get 4
+            struct.new 4
+            throw 0
+          end
+          local.get 3
+          local.get 3
+          ref.is_null
+          if (type 17) (result i32) ;; label = @4
+            local.get 4
+            i32.const 4
+            i32.add
+          else
+            local.get 4
+            i32.const 1
+            i32.add
+          end
+          call 10
           i32.add
           i32.add
           local.set 1
@@ -1340,7 +1631,216 @@ two independent points
     local.get 1
     return
   )
-  (func (;6;) (type 12) (param eqref eqref) (result eqref)
+  (func (;6;) (type 18) (param eqref i32) (result eqref)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 4
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 4
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 4
+      end
+      i32.const 4
+      global.get 4
+      struct.new 4
+      throw 0
+    end
+    unreachable
+  )
+  (func (;7;) (type 19) (param eqref i32 eqref)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 4
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 4
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 4
+      end
+      i32.const 4
+      global.get 4
+      struct.new 4
+      throw 0
+    end
+    unreachable
+  )
+  (func (;8;) (type 20) (param eqref i32) (result externref)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 4
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 4
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 4
+      end
+      i32.const 4
+      global.get 4
+      struct.new 4
+      throw 0
+    end
+    unreachable
+  )
+  (func (;9;) (type 21) (param eqref i32 externref)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 4
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 4
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 4
+      end
+      i32.const 4
+      global.get 4
+      struct.new 4
+      throw 0
+    end
+    unreachable
+  )
+  (func (;10;) (type 22) (param eqref i32) (result i32)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 4
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 4
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 4
+      end
+      i32.const 4
+      global.get 4
+      struct.new 4
+      throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      i32.load align=1
+      return
+    end
+    local.get 1
+    i32.const 0
+    i32.eq
+    if ;; label = @1
+      local.get 0
+      ref.cast (ref 14)
+      struct.get 14 0
+      return
+    end
+    local.get 1
+    i32.const 1
+    i32.eq
+    if ;; label = @1
+      local.get 0
+      ref.cast (ref 14)
+      struct.get 14 1
+      return
+    end
+    unreachable
+  )
+  (func (;11;) (type 23) (param eqref i32 i32)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 4
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 4
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 4
+      end
+      i32.const 4
+      global.get 4
+      struct.new 4
+      throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      local.get 2
+      i32.store align=1
+      return
+    end
+    local.get 1
+    i32.const 0
+    i32.eq
+    if ;; label = @1
+      local.get 0
+      ref.cast (ref 14)
+      local.get 2
+      struct.set 14 0
+      return
+    end
+    local.get 1
+    i32.const 1
+    i32.eq
+    if ;; label = @1
+      local.get 0
+      ref.cast (ref 14)
+      local.get 2
+      struct.set 14 1
+      return
+    end
+    unreachable
+  )
+  (func (;12;) (type 12) (param eqref eqref) (result eqref)
     (local eqref)
     local.get 0
     ref.is_null

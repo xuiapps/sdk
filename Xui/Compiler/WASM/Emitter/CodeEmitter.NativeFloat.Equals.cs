@@ -14,9 +14,7 @@ public readonly ref partial struct CodeEmitter
         if (!address.IsByReference || address.TypeCode != SignatureTypeCode.Single &&
             (address.Identity is not { } type || !NativeFloat.Is(type)))
             throw new InvalidProgramException("NFloat.Equals requires an NFloat managed address.");
-        if (address.Location is { } field)
-            writer.RefCast(field.Owner.Type).StructGet(field.Owner.Type, new((uint)field.First));
-        else writer.F32Load();
+        writer.Call(method.Storage.ReferenceAccessor(new(SignatureTypeCode.Single), false));
         writer.F64PromoteF32().LocalSet(method.GcF64);
         writer.LocalGet(method.GcF64).LocalGet(method.NativeFloatTemporary).F64PromoteF32().F64Eq()
             .LocalGet(method.GcF64).LocalGet(method.GcF64).F64Eq().I32Eqz()

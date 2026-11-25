@@ -20,19 +20,8 @@ public readonly ref partial struct CodeEmitter
             writer.LocalSet(GcScratch(type));
         }
         _ = Pop(code, offset);
-        if (address.IsReferenceAddress)
-        {
-            if (store) writer.LocalGet(GcScratch(type));
-            writer.Call(method.Storage.ReferenceAccessor(type, store));
-        }
-        else if (address.Location is { } location)
-        {
-            writer.RefCast(location.Owner.Type);
-            if (store) { writer.LocalGet(GcScratch(type)); Narrow(type); writer.StructSet(location.Owner.Type, new((uint)location.First)); }
-            else writer.StructGet(location.Owner.Type, new((uint)location.First));
-        }
-        else if (store) { writer.LocalGet(GcScratch(type)); Narrow(type); StoreRaw(type); }
-        else LoadRaw(type);
+        if (store) { writer.LocalGet(GcScratch(type)); Narrow(type); }
+        writer.Call(method.Storage.ReferenceAccessor(type, store));
         if (!store)
         {
             if (type.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();

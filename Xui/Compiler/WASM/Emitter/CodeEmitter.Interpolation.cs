@@ -36,8 +36,9 @@ public readonly ref partial struct CodeEmitter
         else
         {
             var receiver = Pop(instruction.Code, offset);
-            if (receiver.Identity != call.Owner || !receiver.IsByReference || receiver.Location is not null)
+            if (receiver.Identity != call.Owner || !receiver.IsByReference)
                 throw new NotSupportedException("Interpolation requires a stack-backed handler address.");
+            LinearAddressValue();
         }
         writer.LocalSet(Frame.AddressScratch);
         if (construct)

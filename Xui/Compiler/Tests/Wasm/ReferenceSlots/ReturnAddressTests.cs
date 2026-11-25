@@ -86,15 +86,11 @@ public class ReturnAddressTests
         """, "initial\nchanged\n", 17);
 
     [Fact]
-    public void InlineGcValueFieldReturnsRemainExplicitlyUnsupported()
-    {
-        byte[] image = Frontend.Roslyn.Compile("""
-            public struct Point { public int X; }
-            public class Holder { public Point Point; public ref Point Get() => ref Point; }
-            public static class Program { public static int Main() { var holder = new Holder(); holder.Get().X = 1; return holder.Point.X; } }
-            """);
-        Assert.Contains("Returning inline GC value field addresses", Assert.Throws<NotSupportedException>(() => GcTests.Emit(image)).Message);
-    }
+    public Task InlineGcValueFieldReturnsPreserveTheirOwner() => GcTests.AssertExecution("""
+        public struct Point { public int X; }
+        public class Holder { public Point Point; public ref Point Get() => ref Point; }
+        public static class Program { public static int Main() { var holder = new Holder(); holder.Get().X = 7; return holder.Point.X; } }
+        """, "", 7);
 
     [Fact]
     public Task InterfaceAndVirtualReturnsKeepTheSelectedLocation() => GcTests.AssertExecution("""

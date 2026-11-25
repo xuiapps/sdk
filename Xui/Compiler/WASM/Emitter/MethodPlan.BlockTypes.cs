@@ -46,7 +46,7 @@ internal sealed partial class MethodPlan
 
         IEnumerable<WasmType> Types(StackEntry type)
         {
-            if (type.Type == StackType.ManagedPointer && type.DeclaredType is { } declared && Storage.Bind(declared).IsReferenceAddress)
+            if (type.Type == StackType.ManagedPointer && type.DeclaredType is { } declared && Storage.Bind(declared).IsByReference)
                 return [(WasmType)ValueTypeCode.EqRef, (WasmType)ValueTypeCode.I32];
             return [Type(type)];
         }

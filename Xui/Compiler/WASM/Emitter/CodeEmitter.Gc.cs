@@ -9,15 +9,15 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    private bool IsGc(MsilStackEntry value) => value.TypeCode is SignatureTypeCode.Object or SignatureTypeCode.SZArray || value.Location is not null ||
+    private bool IsGc(MsilStackEntry value) => value.TypeCode is SignatureTypeCode.Object or SignatureTypeCode.SZArray ||
         (value.Identity is { } identity && method.Storage.IsGc(identity));
 
-    private GcLocation Location(MsilStackEntry value) => value.Location ?? new(method.Storage.Shape(value.Identity!.Value), 0);
+    private GcLocation Location(MsilStackEntry value) => new(method.Storage.Shape(value.Identity!.Value), 0);
 
     private void InitializeGcLocals()
     {
         for (int i = 0; i < locals.Length; i++)
-            if (locals[i].UsesGc && locals[i].Identity is { } identity && !method.Storage.IsClass(identity))
+            if (!locals[i].IsByReference && locals[i].UsesGc && locals[i].Identity is { } identity && !method.Storage.IsClass(identity))
                 writer.StructNewDefault(method.Storage.Shape(locals[i].Identity!.Value).Type)
                     .LocalSet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i)));
     }
@@ -62,6 +62,7 @@ public readonly ref partial struct CodeEmitter
     {
         bool store = instruction.Code == OpCode.Stfld;
         var receiver = store ? stack.ElementAt(1) : stack.Peek();
+        if (receiver.IsByReference) return false;
         var handle = MetadataTokens.EntityHandle(instruction.Value);
         var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType, method.Identity.Arguments);
         var field = resolvedField.DeclaringType.Module.GetField(resolvedField.Handle);
@@ -79,12 +80,8 @@ public readonly ref partial struct CodeEmitter
         if (instruction.Code == OpCode.Ldflda)
         {
             writer.RefCast(location.Owner.Type); // The checked receiver must have the expected owner type.
-            if (StorageModel.IsReference(range.Storage))
-            {
-                writer.I32Const(method.Storage.ReferenceField(location, range.Storage));
-                stack.Push(new(range.Storage.TypeCode, range.Storage.Identity, true, range.Storage.Array));
-            }
-            else stack.Push(new(range.Storage.TypeCode, range.Storage.Identity, true) { Location = location });
+            writer.I32Const(method.Storage.ReferenceField(location, range.Storage));
+            stack.Push(new(range.Storage.TypeCode, range.Storage.Identity, true, range.Storage.Array));
             return true;
         }
         if (store)
@@ -161,58 +158,4 @@ public readonly ref partial struct CodeEmitter
         }
     }
 
-    private bool TryGcObject(Instruction.Token instruction, int offset)
-    {
-        bool copying = instruction.Code is OpCode.Stobj or OpCode.Cpobj;
-        var sourceValue = stack.Peek();
-        var destination = copying ? stack.ElementAt(1) : sourceValue;
-        if (!IsGc(destination) && (!copying || !IsGc(sourceValue))) return false;
-        var identity = Xui.Compiler.XuiNet.DotNet.Signatures.SignatureReader.Resolve(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments).Identity
-            ?? throw new NotSupportedException("Primitive generic object-copy instructions are not implemented.");
-        var shape = method.Storage.Shape(identity);
-        if (!identity.IsValueType) throw new NotSupportedException("Object copy instructions require value types.");
-        if (copying)
-        {
-            _ = Pop(instruction.Code, offset);
-            _ = Pop(instruction.Code, offset);
-            if (sourceValue.Identity != identity || destination.Identity != identity || !destination.IsByReference ||
-                (instruction.Code == OpCode.Cpobj && !sourceValue.IsByReference))
-                throw new InvalidProgramException("Mismatched managed struct copy.");
-            bool sourceGc = IsGc(sourceValue), destinationGc = IsGc(destination);
-            writer.LocalSet(sourceGc ? method.GcSource : method.GcI32)
-                .LocalSet(destinationGc ? method.GcOwner : Frame.AddressScratch);
-            var srcLocation = sourceGc ? Location(sourceValue) : default;
-            var dstLocation = destinationGc ? Location(destination) : default;
-            for (int i = 0; i < shape.Leaves.Count; i++)
-            {
-                var leaf = shape.Leaves[i];
-                if (destinationGc) writer.LocalGet(method.GcOwner).RefCast(dstLocation.Owner.Type);
-                else writer.LocalGet(Frame.AddressScratch).I32Const(leaf.MemoryOffset).I32Add();
-                if (sourceGc) writer.LocalGet(method.GcSource).RefCast(srcLocation.Owner.Type).StructGet(srcLocation.Owner.Type, new((uint)(srcLocation.First + i)));
-                else { writer.LocalGet(method.GcI32).I32Const(leaf.MemoryOffset).I32Add(); LoadRaw(leaf.Storage); }
-                if (destinationGc) writer.StructSet(dstLocation.Owner.Type, new((uint)(dstLocation.First + i)));
-                else StoreRaw(leaf.Storage);
-            }
-            return true;
-        }
-        _ = Pop(instruction.Code, offset);
-        if (!destination.IsByReference || destination.Identity != identity) throw new InvalidProgramException("Expected matching GC struct address.");
-        var location = Location(destination);
-        if (instruction.Code == OpCode.Ldobj)
-        {
-            ReadInlineValue(identity, location, offset);
-            stack.Push(new(SignatureTypeCode.TypeHandle, identity));
-        }
-        else
-        {
-            writer.RefCast(location.Owner.Type).LocalSet(method.GcOwner);
-            for (int i = 0; i < shape.Leaves.Count; i++)
-            {
-                writer.LocalGet(method.GcOwner).RefCast(location.Owner.Type);
-                DefaultValue(shape.Leaves[i].Storage);
-                writer.StructSet(location.Owner.Type, new((uint)(location.First + i)));
-            }
-        }
-        return true;
-    }
 }

@@ -53,7 +53,7 @@ The next sequence is:
    resource boundary now reads neutral message strings from supplied BCL resources
    and emits only requested literals. Int32/UInt32 default hashing now executes;
    scalar/string IEqualityComparer dispatch now executes for default and application comparers.
-   Dependency discovery next reaches Unsafe.IsNullRef in EventRouter’s Dictionary; structured switches now emit `br_table`, including the actual CoreLib argument-name and resource-message selectors.
+   Managed byrefs now cover GC scalar/struct fields, array-entry field ranges, and null locations. Struct-array copies preserve aliases. Dependency discovery next reaches constrained Object.GetHashCode in EventRouter’s Dictionary.TryInsert; structured switches now emit `br_table`, including the actual CoreLib argument-name and resource-message selectors.
    Continue through the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.

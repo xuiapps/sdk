@@ -87,18 +87,29 @@ True
   (type (;10;) (struct (field i32) (field eqref) (field i32) (field (ref null 0)) (field i32) (field i32)))
   (type (;11;) (sub (struct (field (mut eqref)))))
   (type (;12;) (func (param eqref eqref) (result eqref)))
-  (type (;13;) (sub 11 (struct (field (mut eqref)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i64)) (field (mut i32)))))
-  (type (;14;) (struct (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i64)) (field (mut i32))))
+  (type (;13;) (struct (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i64)) (field (mut i32))))
+  (type (;14;) (struct (field (mut i32))))
   (type (;15;) (struct (field (mut i32))))
-  (type (;16;) (struct (field (mut i32))))
-  (type (;17;) (struct (field (mut i64))))
+  (type (;16;) (struct (field (mut i64))))
+  (type (;17;) (sub 11 (struct (field (mut eqref)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i64)) (field (mut i32)))))
   (type (;18;) (array (mut i32)))
   (type (;19;) (func (result i32)))
-  (type (;20;) (func))
-  (type (;21;) (func (param i32) (result i32)))
-  (type (;22;) (func))
-  (type (;23;) (func (param eqref)))
-  (type (;24;) (func (param i32 i32) (result i32)))
+  (type (;20;) (func (param eqref i32) (result eqref)))
+  (type (;21;) (func (param eqref i32 eqref)))
+  (type (;22;) (func (param eqref i32) (result externref)))
+  (type (;23;) (func (param eqref i32 externref)))
+  (type (;24;) (func (param eqref i32) (result i32)))
+  (type (;25;) (func (param eqref i32 i32)))
+  (type (;26;) (func (param eqref i32) (result i32)))
+  (type (;27;) (func (param eqref i32 i32)))
+  (type (;28;) (func (param eqref i32) (result i64)))
+  (type (;29;) (func (param eqref i32 i64)))
+  (type (;30;) (func (result i32)))
+  (type (;31;) (func))
+  (type (;32;) (func (param i32) (result i32)))
+  (type (;33;) (func))
+  (type (;34;) (func (param eqref)))
+  (type (;35;) (func (param i32 i32) (result i32)))
   (import "xui" "console-log" (func (;0;) (type 2) (param i32)))
   (import "xui" "console-log-boolean" (func (;1;) (type 3) (param i32)))
   (import "wasm:js-string" "fromCharCodeArray" (func (;2;) (type 1) (param (ref null 0) i32 i32) (result (ref extern))))
@@ -115,20 +126,20 @@ True
   (global (;8;) (mut i32) i32.const 16)
   (global (;9;) eqref i32.const 1 ref.null eq i32.const 0 i32.const 66 i32.const 111 i32.const 120 array.new_fixed 0 3 i32.const 0 i32.const 6 struct.new 10)
   (export "main" (func 3))
-  (func (;3;) (type 19) (result i32)
-    (local i32 i32 i32 i64 f64 externref i32 eqref exnref i32 i32 i32 i64 f64 eqref i32 eqref eqref i32 i64 f64 externref)
+  (func (;3;) (type 30) (result i32)
+    (local i32 i32 eqref i32 eqref i32 i32 i64 f64 externref i32 eqref exnref i32 i32 i32 i64 f64 eqref i32 eqref eqref i32 i64 f64 externref)
     global.get 8
-    local.tee 9
+    local.tee 13
     i32.const 1048432
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 9
+    local.get 13
     i32.const 144
     i32.add
     global.set 8
-    local.get 9
+    local.get 13
     i32.const 0
     i32.add
     local.set 0
@@ -136,7 +147,7 @@ True
     i32.const 0
     i32.const 12
     memory.fill
-    local.get 9
+    local.get 13
     i32.const 12
     i32.add
     local.set 1
@@ -147,77 +158,484 @@ True
     block (type 8) (result exnref) ;; label = @1
       try_table (catch_all_ref 0 (;@1;)) ;; label = @2
         local.get 0
+        local.set 3
+        ref.null eq
+        local.get 3
+        local.set 3
+        local.set 2
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 0
+          i32.add
+        else
+          local.get 3
+          i32.const 0
+          i32.add
+        end
         i32.const 0
-        i32.const 12
-        memory.fill
+        call 12
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 1
+          i32.add
+        else
+          local.get 3
+          i32.const 1
+          i32.add
+        end
+        i32.const 0
+        call 12
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 2
+          i32.add
+        else
+          local.get 3
+          i32.const 2
+          i32.add
+        end
+        i32.const 0
+        call 14
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 3
+          i32.add
+        else
+          local.get 3
+          i32.const 3
+          i32.add
+        end
+        i64.const 0
+        call 16
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 11
+          i32.add
+        else
+          local.get 3
+          i32.const 4
+          i32.add
+        end
+        i32.const 0
+        call 12
         local.get 0
+        local.set 3
+        ref.null eq
+        local.get 3
         i32.const 17
-        local.set 11
-        i32.const 0
-        i32.add
-        local.get 11
-        i32.store8
+        local.set 22
+        local.set 3
+        local.set 2
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 0
+          i32.add
+        else
+          local.get 3
+          i32.const 0
+          i32.add
+        end
+        local.get 22
+        i32.const 255
+        i32.and
+        call 12
         local.get 0
+        local.set 3
+        ref.null eq
+        local.get 3
         i32.const 1
         i32.const 255
         i32.and
-        local.set 6
-        local.get 6
-        call 4
-        local.set 11
-        i32.const 1
-        i32.add
-        local.get 11
-        i32.store8
-        local.get 0
-        i32.const -7
-        local.set 11
-        i32.const 2
-        i32.add
-        local.get 11
-        i32.store8
-        local.get 0
-        i64.const -9223372036854775807
-        local.set 12
-        i32.const 3
-        i32.add
-        local.get 12
-        i64.store align=1
-        local.get 0
-        i32.const 29
-        local.set 11
-        i32.const 11
-        i32.add
-        local.get 11
-        i32.store8
-        struct.new_default 13
-        local.set 7
-        local.get 7
-        ref.cast (ref 13)
-        global.get 9
-        struct.set 13 0
-        local.get 7
-        call 5
-        local.get 7
-        local.tee 16
-        local.get 16
-        local.get 0
         local.set 10
-        local.get 9
+        local.get 10
+        call 4
+        local.set 22
+        local.set 3
+        local.set 2
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 1
+          i32.add
+        else
+          local.get 3
+          i32.const 1
+          i32.add
+        end
+        local.get 22
+        i32.const 255
+        i32.and
+        call 12
+        local.get 0
+        local.set 3
+        ref.null eq
+        local.get 3
+        i32.const -7
+        local.set 22
+        local.set 3
+        local.set 2
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 2
+          i32.add
+        else
+          local.get 3
+          i32.const 2
+          i32.add
+        end
+        local.get 22
+        i32.extend8_s
+        call 14
+        local.get 0
+        local.set 3
+        ref.null eq
+        local.get 3
+        i64.const -9223372036854775807
+        local.set 23
+        local.set 3
+        local.set 2
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 3
+          i32.add
+        else
+          local.get 3
+          i32.const 3
+          i32.add
+        end
+        local.get 23
+        call 16
+        local.get 0
+        local.set 3
+        ref.null eq
+        local.get 3
+        i32.const 29
+        local.set 22
+        local.set 3
+        local.set 2
+        local.get 2
+        ref.is_null
+        local.get 3
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 2
+            global.set 3
+          end
+          global.get 3
+          struct.new 4
+          throw 0
+        end
+        local.get 2
+        local.get 2
+        ref.is_null
+        if (type 19) (result i32) ;; label = @3
+          local.get 3
+          i32.const 11
+          i32.add
+        else
+          local.get 3
+          i32.const 4
+          i32.add
+        end
+        local.get 22
+        i32.const 255
+        i32.and
+        call 12
+        struct.new_default 17
+        local.set 11
+        local.get 11
+        ref.cast (ref 17)
+        global.get 9
+        struct.set 17 0
+        local.get 11
+        call 5
+        local.get 11
+        local.tee 20
+        local.get 20
+        local.get 0
+        local.set 14
+        local.get 13
         i32.const 24
         i32.add
-        local.get 10
+        local.get 14
         i32.const 12
         memory.copy
-        local.get 9
+        local.get 13
         i32.const 24
         i32.add
-        local.get 9
+        local.get 13
         i32.const 36
         i32.add
         call 6
-        local.set 18
-        local.tee 17
+        local.set 22
+        local.tee 21
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -236,45 +654,45 @@ True
           struct.new 4
           throw 0
         end
-        local.get 17
-        ref.cast (ref 13)
-        local.set 17
-        local.get 17
-        ref.cast (ref 13)
-        local.get 18
+        local.get 21
+        ref.cast (ref 17)
+        local.set 21
+        local.get 21
+        ref.cast (ref 17)
+        local.get 22
         i32.const 0
         i32.add
         i32.load8_u
-        struct.set 13 1
-        local.get 17
-        ref.cast (ref 13)
-        local.get 18
+        struct.set 17 1
+        local.get 21
+        ref.cast (ref 17)
+        local.get 22
         i32.const 1
         i32.add
         i32.load8_u
-        struct.set 13 2
-        local.get 17
-        ref.cast (ref 13)
-        local.get 18
+        struct.set 17 2
+        local.get 21
+        ref.cast (ref 17)
+        local.get 22
         i32.const 2
         i32.add
         i32.load8_s
-        struct.set 13 3
-        local.get 17
-        ref.cast (ref 13)
-        local.get 18
+        struct.set 17 3
+        local.get 21
+        ref.cast (ref 17)
+        local.get 22
         i32.const 3
         i32.add
         i64.load align=1
-        struct.set 13 4
-        local.get 17
-        ref.cast (ref 13)
-        local.get 18
+        struct.set 17 4
+        local.get 21
+        ref.cast (ref 17)
+        local.get 22
         i32.const 11
         i32.add
         i32.load8_u
-        struct.set 13 5
-        local.tee 17
+        struct.set 17 5
+        local.tee 21
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -293,54 +711,54 @@ True
           struct.new 4
           throw 0
         end
-        local.get 17
-        ref.cast (ref 13)
-        local.set 17
-        local.get 9
+        local.get 21
+        ref.cast (ref 17)
+        local.set 21
+        local.get 13
         i32.const 48
         i32.add
-        local.get 17
-        ref.cast (ref 13)
-        struct.get 13 1
+        local.get 21
+        ref.cast (ref 17)
+        struct.get 17 1
         i32.store8
-        local.get 9
+        local.get 13
         i32.const 49
         i32.add
-        local.get 17
-        ref.cast (ref 13)
-        struct.get 13 2
+        local.get 21
+        ref.cast (ref 17)
+        struct.get 17 2
         i32.store8
-        local.get 9
+        local.get 13
         i32.const 50
         i32.add
-        local.get 17
-        ref.cast (ref 13)
-        struct.get 13 3
+        local.get 21
+        ref.cast (ref 17)
+        struct.get 17 3
         i32.store8
-        local.get 9
+        local.get 13
         i32.const 51
         i32.add
-        local.get 17
-        ref.cast (ref 13)
-        struct.get 13 4
+        local.get 21
+        ref.cast (ref 17)
+        struct.get 17 4
         i64.store align=1
-        local.get 9
+        local.get 13
         i32.const 59
         i32.add
-        local.get 17
-        ref.cast (ref 13)
-        struct.get 13 5
+        local.get 21
+        ref.cast (ref 17)
+        struct.get 17 5
         i32.store8
-        local.get 9
+        local.get 13
         i32.const 48
         i32.add
-        local.set 10
+        local.set 14
         local.get 1
-        local.get 10
+        local.get 14
         i32.const 12
         memory.copy
         i32.const 2
-        local.tee 15
+        local.tee 19
         i32.const 0
         i32.lt_s
         if ;; label = @3
@@ -360,30 +778,30 @@ True
           struct.new 4
           throw 0
         end
-        local.get 15
+        local.get 19
         array.new_default 18
-        local.tee 16
-        local.get 16
+        local.tee 20
+        local.get 20
         i32.const 1
         local.get 1
-        local.set 10
-        local.get 9
+        local.set 14
+        local.get 13
         i32.const 60
         i32.add
-        local.get 10
+        local.get 14
         i32.const 12
         memory.copy
-        local.get 9
+        local.get 13
         i32.const 60
         i32.add
         i32.const 1
         i32.add
         i32.load8_u
+        local.set 22
+        local.set 19
         local.set 18
-        local.set 15
-        local.set 14
-        local.get 14
-        local.tee 17
+        local.get 18
+        local.tee 21
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -402,10 +820,10 @@ True
           struct.new 4
           throw 0
         end
-        local.get 17
+        local.get 21
         drop
-        local.get 15
-        local.get 14
+        local.get 19
+        local.get 18
         ref.cast (ref 18)
         array.len
         i32.lt_u
@@ -427,35 +845,35 @@ True
           struct.new 4
           throw 0
         end
-        local.get 14
-        ref.cast (ref 18)
-        local.get 15
         local.get 18
+        ref.cast (ref 18)
+        local.get 19
+        local.get 22
         i32.const 255
         i32.and
         array.set 18
         local.get 1
-        local.set 10
-        local.get 9
+        local.set 14
+        local.get 13
         i32.const 72
         i32.add
-        local.get 10
+        local.get 14
         i32.const 12
         memory.copy
-        local.get 9
+        local.get 13
         i32.const 72
         i32.add
         i32.const 0
         i32.add
         i32.load8_u
         call 0
-        local.tee 16
-        local.get 16
+        local.tee 20
+        local.get 20
         i32.const 1
-        local.set 15
-        local.set 14
-        local.get 14
-        local.tee 17
+        local.set 19
+        local.set 18
+        local.get 18
+        local.tee 21
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -474,10 +892,10 @@ True
           struct.new 4
           throw 0
         end
-        local.get 17
+        local.get 21
         drop
-        local.get 15
-        local.get 14
+        local.get 19
+        local.get 18
         ref.cast (ref 18)
         array.len
         i32.lt_u
@@ -499,22 +917,22 @@ True
           struct.new 4
           throw 0
         end
-        local.get 14
+        local.get 18
         ref.cast (ref 18)
-        local.get 15
+        local.get 19
         array.get 18
         i32.const 255
         i32.and
         call 0
         local.get 1
-        local.set 10
-        local.get 9
+        local.set 14
+        local.get 13
         i32.const 84
         i32.add
-        local.get 10
+        local.get 14
         i32.const 12
         memory.copy
-        local.get 9
+        local.get 13
         i32.const 84
         i32.add
         i32.const 2
@@ -522,14 +940,14 @@ True
         i32.load8_s
         call 0
         local.get 1
-        local.set 10
-        local.get 9
+        local.set 14
+        local.get 13
         i32.const 96
         i32.add
-        local.get 10
+        local.get 14
         i32.const 12
         memory.copy
-        local.get 9
+        local.get 13
         i32.const 96
         i32.add
         i32.const 3
@@ -539,14 +957,14 @@ True
         i64.eq
         call 1
         local.get 1
-        local.set 10
-        local.get 9
+        local.set 14
+        local.get 13
         i32.const 108
         i32.add
-        local.get 10
+        local.get 14
         i32.const 12
         memory.copy
-        local.get 9
+        local.get 13
         i32.const 108
         i32.add
         i32.const 3
@@ -556,14 +974,14 @@ True
         i64.gt_u
         call 1
         local.get 1
-        local.set 10
-        local.get 9
+        local.set 14
+        local.get 13
         i32.const 120
         i32.add
-        local.get 10
+        local.get 14
         i32.const 12
         memory.copy
-        local.get 9
+        local.get 13
         i32.const 120
         i32.add
         i32.const 11
@@ -571,10 +989,10 @@ True
         i32.load8_u
         call 0
         i32.const 1
-        local.set 15
-        local.set 14
-        local.get 14
-        local.tee 17
+        local.set 19
+        local.set 18
+        local.get 18
+        local.tee 21
         ref.is_null
         if ;; label = @3
           i32.const 4
@@ -593,10 +1011,10 @@ True
           struct.new 4
           throw 0
         end
-        local.get 17
+        local.get 21
         drop
-        local.get 15
-        local.get 14
+        local.get 19
+        local.get 18
         ref.cast (ref 18)
         array.len
         i32.lt_u
@@ -618,22 +1036,22 @@ True
           struct.new 4
           throw 0
         end
-        local.get 14
+        local.get 18
         ref.cast (ref 18)
-        local.get 15
+        local.get 19
         array.get 18
         i32.const 255
         i32.and
         i32.const 128
         i32.and
-        if (type 20) ;; label = @3
+        if (type 31) ;; label = @3
           i32.const 42
-          local.get 9
+          local.get 13
           global.set 8
           return
         else
           i32.const 1
-          local.get 9
+          local.get 13
           global.set 8
           return
         end
@@ -642,15 +1060,15 @@ True
       end
       unreachable
     end
-    local.set 8
-    local.get 9
+    local.set 12
+    local.get 13
     global.set 8
-    local.get 8
+    local.get 12
     throw_ref
   )
-  (func (;4;) (type 21) (param i32) (result i32)
+  (func (;4;) (type 32) (param i32) (result i32)
     local.get 0
-    if (type 22) ;; label = @1
+    if (type 33) ;; label = @1
       i32.const 129
       i32.const 255
       i32.and
@@ -663,13 +1081,13 @@ True
     end
     unreachable
   )
-  (func (;5;) (type 23) (param eqref)
+  (func (;5;) (type 34) (param eqref)
     (local eqref eqref i32 i64 f64 externref)
     local.get 0
     drop
     return
   )
-  (func (;6;) (type 24) (param i32 i32) (result i32)
+  (func (;6;) (type 35) (param i32 i32) (result i32)
     (local exnref i32 i32 i32 i64 f64)
     global.get 8
     local.tee 3
@@ -724,7 +1142,312 @@ True
     local.get 2
     throw_ref
   )
-  (func (;7;) (type 12) (param eqref eqref) (result eqref)
+  (func (;7;) (type 20) (param eqref i32) (result eqref)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    unreachable
+  )
+  (func (;8;) (type 21) (param eqref i32 eqref)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    unreachable
+  )
+  (func (;9;) (type 22) (param eqref i32) (result externref)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    unreachable
+  )
+  (func (;10;) (type 23) (param eqref i32 externref)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    unreachable
+  )
+  (func (;11;) (type 24) (param eqref i32) (result i32)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      i32.load8_u
+      return
+    end
+    unreachable
+  )
+  (func (;12;) (type 25) (param eqref i32 i32)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      local.get 2
+      i32.store8
+      return
+    end
+    unreachable
+  )
+  (func (;13;) (type 26) (param eqref i32) (result i32)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      i32.load8_s
+      return
+    end
+    unreachable
+  )
+  (func (;14;) (type 27) (param eqref i32 i32)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      local.get 2
+      i32.store8
+      return
+    end
+    unreachable
+  )
+  (func (;15;) (type 28) (param eqref i32) (result i64)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      i64.load align=1
+      return
+    end
+    unreachable
+  )
+  (func (;16;) (type 29) (param eqref i32 i64)
+    local.get 0
+    ref.is_null
+    local.get 1
+    i32.const -1
+    i32.eq
+    i32.and
+    if ;; label = @1
+      global.get 3
+      ref.is_null
+      if ;; label = @2
+        i32.const 0
+        i32.const 53
+        array.new_data 0 3
+        i32.const 0
+        i32.const 53
+        call 2
+        global.set 3
+      end
+      i32.const 4
+      global.get 3
+      struct.new 4
+      throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      local.get 2
+      i64.store align=1
+      return
+    end
+    unreachable
+  )
+  (func (;17;) (type 12) (param eqref eqref) (result eqref)
     (local eqref)
     local.get 0
     ref.is_null

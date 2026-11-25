@@ -115,18 +115,14 @@ public class EnumTests
         """, "", 40255);
 
     [Fact]
-    public void EnumGcFieldByrefsStillFailExplicitly()
-    {
-        byte[] pe = Frontend.Roslyn.Compile("""
-            public enum Value : byte { Item }
-            public class Box { public Value Item; }
-            public static class Program {
-                static void Change(ref Value value) { value = Value.Item; }
-                public static int Main() { var box = new Box(); Change(ref box.Item); return 0; }
-            }
-            """);
-        Assert.Contains("inline value field addresses", Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
-    }
+    public Task EnumGcFieldByrefsPreserveTheirStorageWidth() => GcTests.AssertExecution("""
+        public enum Value : byte { Item = 255 }
+        public class Box { public Value Item; public int Other = 17; }
+        public static class Program {
+            static void Change(ref Value value) { value = Value.Item; }
+            public static int Main() { var box = new Box(); Change(ref box.Item); return (int)box.Item + box.Other; }
+        }
+        """, "", 272);
 
     private static string SourceDirectory([CallerFilePath] string file = "") => Path.GetDirectoryName(file)!;
 }
