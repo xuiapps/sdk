@@ -52,24 +52,37 @@ public static class ExceptionTypes
     public static bool TryMember(Module module, EntityHandle token, out ExceptionKind kind, out ExceptionMember operation)
     {
         kind = default; operation = default;
-        if (token.Kind != HandleKind.MemberReference) return false;
-        var member = module.GetMemberReference((MemberReferenceHandle)token);
-        if (member.Parent.Kind != HandleKind.TypeReference || Kind(new(module, member.Parent)) is not { } resolved) return false;
+        TypeIdentity owner;
+        string name;
+        BlobReader blob;
+        if (token.Kind == HandleKind.MemberReference)
+        {
+            var member = module.GetMemberReference((MemberReferenceHandle)token);
+            if (member.Kind != MemberReferenceKind.Method || member.Parent.Kind is not (HandleKind.TypeReference or HandleKind.TypeDefinition)) return false;
+            owner = new(module, member.Parent); name = member.Name; blob = member.Signature;
+        }
+        else if (token.Kind == HandleKind.MethodDefinition)
+        {
+            var method = module.GetMethod((MethodDefinitionHandle)token);
+            owner = new(module, method.DeclaringType); name = method.Name; blob = method.Signature;
+        }
+        else return false;
+        if (Kind(owner) is not { } resolved) return false;
         kind = resolved;
-        var signature = SignatureReader.Method(module, member.Signature);
-        if (!signature.HasThis) return false;
-        if (member.Name == "get_InnerException" && signature.Parameters.Length == 0 &&
+        var signature = SignatureReader.Method(module, blob);
+        if (!signature.HasThis || signature.GenericParameterCount != 0) return false;
+        if (name == "get_InnerException" && signature.Parameters.Length == 0 &&
             signature.Result.Identity is { } inner && Kind(inner) == ExceptionKind.Exception)
         { operation = ExceptionMember.InnerException; return true; }
         // TargetInvocationException has no default or message-only public constructors.
-        if (kind == ExceptionKind.TargetInvocationException && member.Name == ".ctor") return false;
+        if (kind == ExceptionKind.TargetInvocationException && name == ".ctor") return false;
         if (signature.Parameters.Length == 0 && signature.Result.Code == SignatureTypeCode.String)
         {
-            if (member.Name == "get_Message") { operation = ExceptionMember.Message; return true; }
-            if (member.Name == "get_ParamName" && kind is ExceptionKind.ArgumentException or ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException)
+            if (name == "get_Message") { operation = ExceptionMember.Message; return true; }
+            if (name == "get_ParamName" && kind is ExceptionKind.ArgumentException or ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException)
             { operation = ExceptionMember.ParamName; return true; }
         }
-        if (member.Name != ".ctor" || signature.Result.Code != SignatureTypeCode.Void) return false;
+        if (name != ".ctor" || signature.Result.Code != SignatureTypeCode.Void) return false;
         if (signature.Parameters.Length == 0) return true;
         if (signature.Parameters.Any(p => p.Code != SignatureTypeCode.String || p.IsByReference)) return false;
         if (signature.Parameters.Length == 1)

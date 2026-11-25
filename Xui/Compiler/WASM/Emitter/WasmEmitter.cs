@@ -114,6 +114,7 @@ public sealed partial class WasmEmitter
             storage.MathImports.DefineTypes(ref types);
             storage.Formatting.DefineTypes(ref types);
             storage.Primitives.DefineTypes(ref types);
+            storage.Clock.DefineTypes(ref types);
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
             storage.DefineReferenceAddressTypes(ref types);
@@ -150,6 +151,7 @@ public sealed partial class WasmEmitter
             storage.MathImports.Import(ref imports);
             storage.Formatting.Import(ref imports);
             storage.Primitives.Import(ref imports);
+            storage.Clock.Import(ref imports);
             importedFunctionCount = imports.FunctionCount;
         }
         finally

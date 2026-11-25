@@ -504,8 +504,10 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Stloc_s:
                     _ = instruction.ReadShortVariable(ref reader); break;
                 case OpCode.Ldsfld:
-                    if (IR.Intrinsics.TimeSpanZero.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType) is null)
-                        throw new NotSupportedException("Static field storage is not implemented except TimeSpan.Zero.");
+                    var staticField = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (IR.Intrinsics.StopwatchConstant.Read(source, staticField) is not null) break;
+                    if (IR.Intrinsics.TimeSpanZero.Read(source, staticField, method.Identity.DeclaringType) is null)
+                        throw new NotSupportedException("Static field storage is not implemented except TimeSpan.Zero and Stopwatch constants.");
                     break;
                 case OpCode.Ldfld:
                 case OpCode.Ldflda:
@@ -616,6 +618,13 @@ public readonly ref partial struct CodeEmitter
                         method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
                         foreach (var name in new[] { "sourceArray", "destinationArray", "sourceIndex", "destinationIndex", "length" })
                             if (seenLiterals.Add(name)) literals.Add(name);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.MonotonicClock.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } clock)
+                    {
+                        if (clock.Operation == "get_TickCount64") method.Storage.Clock.UsesTickCount64 = true;
+                        else method.Storage.Clock.UsesTimestamp = true;
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.MathMethod.Read(source,

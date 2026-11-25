@@ -154,8 +154,9 @@ public readonly ref partial struct CodeEmitter
                 if (message) Pop(SignatureTypeCode.String, instruction.Code, offset);
                 NewException(kind, message);
             }
-            var reference = source.GetMemberReference((MemberReferenceHandle)token);
-            stack.Push(new(SignatureTypeCode.TypeHandle, new(source, reference.Parent)));
+            var parent = token.Kind == HandleKind.MemberReference ? source.GetMemberReference((MemberReferenceHandle)token).Parent
+                : source.GetMethod((MethodDefinitionHandle)token).DeclaringType;
+            stack.Push(new(SignatureTypeCode.TypeHandle, new(source, parent)));
         }
         else
         {
@@ -163,7 +164,8 @@ public readonly ref partial struct CodeEmitter
             CheckExceptionNull();
             uint field = member == ExceptionMember.InnerException ? method.Storage.InnerExceptionField : member == ExceptionMember.ParamName ? 2u : 1u;
             writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(field));
-            var signature = XuiNet.DotNet.Signatures.SignatureReader.Method(source, source.GetMemberReference((MemberReferenceHandle)token).Signature);
+            var signature = XuiNet.DotNet.Signatures.SignatureReader.Method(source, token.Kind == HandleKind.MemberReference ? source.GetMemberReference((MemberReferenceHandle)token).Signature
+                : source.GetMethod((MethodDefinitionHandle)token).Signature);
             stack.Push(new(signature.Result.Code, signature.Result.Identity));
         }
         return true;

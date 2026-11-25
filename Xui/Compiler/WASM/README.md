@@ -290,6 +290,21 @@ numbers intentionally differ from CoreLib's randomized string hashes. Default
 string comparers hash null as zero, while null instance/comparer receivers throw
 managed NullReferenceException. Custom comparer implementations retain normal dispatch.
 
+`Environment.TickCount64` and `Stopwatch.GetTimestamp` import the host's monotonic
+`performance.now()` clock. Environment uses whole milliseconds; Stopwatch uses
+nanosecond units with `Frequency = 1_000_000_000`. Precision still depends on the
+browser, and the origin is the host time origin, not machine boot or wall time.
+Only used clock imports are retained. The supplied CoreLib Stopwatch/TimeProvider
+elapsed-time methods execute with matching frequency constants; custom TimeProvider
+overrides retain ordinary virtual dispatch. See [clock tests](../Tests/Wasm/Time/ClockTests.cs).
+
+Floating `conv.i8` uses WASM's non-trapping saturating conversion: finite in-range
+values truncate toward zero, out-of-range values clamp, and NaN becomes zero.
+This is the target's defined behavior for unchecked non-finite/overflow inputs;
+other CLR targets can differ. Other floating-to-integer conversions remain unsupported.
+Supported exception constructors/properties now also accept MethodDef references
+inside the supplied CoreLib, preserving its validation branches and resource messages.
+
 `String.Concat` with two, three, or four string arguments calls `wasm:js-string.concat`.
 The emitter preserves evaluation order and normalizes null arguments to empty strings;
 UTF-16 contents remain native JS strings. Object, array, and enumerable Concat
@@ -511,7 +526,7 @@ supported operations that require no emitted bytes.
 | `conv.i1` | Optional `i32.wrap_i64`; `i32.extend8_s` | Integer inputs only; narrow results occupy an int32 stack slot. |
 | `conv.i2` | Optional `i32.wrap_i64`; `i32.extend16_s` | Integer inputs only; narrow results occupy an int32 stack slot. |
 | `conv.i4` | No instruction (i32) / `i32.wrap_i64` (i64) | Keeps low 32 bits; floating-point inputs are currently rejected. |
-| `conv.i8` | `i64.extend_i32_s` (i32) / no instruction (i64) | Sign-extends int32 inputs; already-wide integers retain their original bits. |
+| `conv.i8` | `i64.extend_i32_s` / `i64.trunc_sat_f64_s` / identity | Floating values truncate; overflow saturates, NaN maps to zero. |
 | `conv.r4` | `f32.convert_i32_s; f64.promote_f32` / `f32.convert_i64_s; f64.promote_f32` / `f32.demote_f64; f64.promote_f32` | Rounds directly to binary32, then restores the f64 stack representation. |
 | `conv.r8` | `f64.convert_i32_s` / `f64.convert_i64_s` / no instruction (f64) | Signed integer conversion; floating-point stack values already use f64. |
 | `conv.u4` | No instruction (i32) / `i32.wrap_i64` (i64) | Keeps low 32 bits; floating-point inputs are currently rejected. |
@@ -529,7 +544,7 @@ supported operations that require no emitted bytes.
 | `ldfld` | Numeric load / `memory.copy` / `struct.get` / `struct.new` | Reads linear or flattened GC fields; struct values are copied. |
 | `ldflda` | `i32.add`; owner + accessor selector | Reference fields preserve owner identity through calls and local aliases. |
 | `stfld` | Numeric store / `memory.copy` / `struct.set` | Writes linear or flattened fields; struct assignment copies leaf values. |
-| `ldsfld` | `memory.fill`, frame address | Only framework TimeSpan.Zero value loads; other static fields unsupported. |
+| `ldsfld` | `memory.fill`, frame address / numeric constants | TimeSpan.Zero and target Stopwatch constants; general static fields unsupported. |
 | `ldsflda` |  |  |
 | `stsfld` |  |  |
 | `stobj` | `memory.copy` or leaf loads/stores | Copies struct values into linear or flattened GC storage. |

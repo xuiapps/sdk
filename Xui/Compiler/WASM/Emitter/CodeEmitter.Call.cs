@@ -20,6 +20,7 @@ public readonly ref partial struct CodeEmitter
             EmitPrimitiveCall(primitive, instruction.Code, offset);
             return;
         }
+        if (TryMonotonicClock(instruction)) return;
         if (TryManagedReference(instruction, offset)) return;
         if (TryResourceString(instruction)) return;
         if (TryStringConcatenation(instruction, offset)) return;

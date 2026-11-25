@@ -28,8 +28,13 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 stack.Push(new(StackType.RuntimeTypeHandle, TypeToken: tokenType));
                 break;
             case OpCode.Ldsfld:
-                var zeroType = Model.Intrinsics.TimeSpanZero.Read(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context)
-                    ?? throw new NotSupportedException("Static field stack analysis is not implemented except TimeSpan.Zero.");
+                var staticField = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                if (Model.Intrinsics.StopwatchConstant.Read(module, staticField) is { } clockConstant)
+                {
+                    stack.Push(StackEntry.From(new SignatureType(clockConstant.Code))); break;
+                }
+                var zeroType = Model.Intrinsics.TimeSpanZero.Read(module, staticField, context)
+                    ?? throw new NotSupportedException("Static field stack analysis is not implemented except TimeSpan.Zero and Stopwatch constants.");
                 stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, zeroType)));
                 break;
             case OpCode.Newarr:
@@ -398,6 +403,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             signature = new(concat.Signature.Parameters.ToArray(), StackType.String);
         else if (Model.Intrinsics.ResourceString.Read(module, handle) is not null)
             signature = new([], StackType.String);
+        else if (Model.Intrinsics.MonotonicClock.Read(module, handle) is not null)
+            signature = new([], StackType.Int64);
         else if (Model.Intrinsics.Int32Formatting.Is(module, handle))
             signature = new([new(SignatureTypeCode.Int32, IsByReference: true)], StackType.String);
         else if (Model.Intrinsics.ConstructorFactory.Read(module, handle, context.Arguments, methodArguments) is { } constructor)
@@ -430,8 +437,16 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             signature = new(exchange.Parameters.ToArray(), StackEntry.From(exchange.Result));
         else if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _))
         {
-            var reference = module.GetMemberReference((MemberReferenceHandle)handle);
-            signature = Signature.Read(module, reference.Signature, new Model.TypeIdentity(module, reference.Parent));
+            if (handle.Kind == HandleKind.MemberReference)
+            {
+                var reference = module.GetMemberReference((MemberReferenceHandle)handle);
+                signature = Signature.Read(module, reference.Signature, new Model.TypeIdentity(module, reference.Parent));
+            }
+            else
+            {
+                var definition = module.GetMethod((MethodDefinitionHandle)handle);
+                signature = Signature.Read(module, definition.Signature, new Model.TypeIdentity(module, definition.DeclaringType));
+            }
         }
         else if (handle.Kind == HandleKind.MemberReference &&
             module.GetMemberReference((MemberReferenceHandle)handle).Parent.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeSpecification) &&

@@ -9,8 +9,18 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitLdsfld(Instruction.Token instruction, int offset)
     {
+        if (StopwatchConstant.Read(source, MetadataTokens.EntityHandle(instruction.Value)) is { } clock)
+        {
+            switch (clock.Code)
+            {
+                case SignatureTypeCode.Int64: writer.I64Const(StopwatchConstant.Frequency); stack.Push(new(SignatureTypeCode.Int64)); break;
+                case SignatureTypeCode.Double: writer.F64Const(10_000_000d / StopwatchConstant.Frequency); stack.Push(new(SignatureTypeCode.Double)); break;
+                default: writer.I32Const(1); stack.Push(new(SignatureTypeCode.Int32)); break;
+            }
+            return;
+        }
         var identity = TimeSpanZero.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType)
-            ?? throw new NotSupportedException("Static field storage is not implemented except TimeSpan.Zero.");
+            ?? throw new NotSupportedException("Static field storage is not implemented except TimeSpan.Zero and Stopwatch constants.");
         FrameAddress(Frame.Values[offset]);
         writer.I32Const(0).I32Const(Frame.ValueSize(identity)).MemoryFill();
         FrameAddress(Frame.Values[offset]);

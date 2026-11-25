@@ -115,6 +115,11 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("Array.Copy"), node, DependencyReason.Call, offset);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.MonotonicClock.Read(module, token) is { } clock)
+                    {
+                        Add(new Dependency.Intrinsic("Clock." + clock.Operation), node, DependencyReason.Call, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.MathMethod.Read(module, token) is { } math)
                     {
                         Add(new Dependency.Intrinsic("Math." + math.Operation), node, DependencyReason.Call, offset);
@@ -238,6 +243,11 @@ public sealed partial class Analyzer
                 case OpCode.Stsfld:
                 case OpCode.Ldsflda:
                     var fieldToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (instruction.Code == OpCode.Ldsfld && DotNet.Intrinsics.StopwatchConstant.Read(module, fieldToken) is { } clockConstant)
+                    {
+                        Add(new Dependency.Intrinsic("Stopwatch." + clockConstant.Name), node, DependencyReason.FieldRead, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Ldsfld && DotNet.Intrinsics.TimeSpanZero.Read(module, fieldToken, identity.DeclaringType) is { } zeroType)
                     {
                         Add(new Dependency.Intrinsic("TimeSpan.Zero"), node, DependencyReason.FieldRead, offset);

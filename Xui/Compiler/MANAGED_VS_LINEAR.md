@@ -71,8 +71,8 @@ storage; a managed address is not a promise of native layout.
 
 Managed locations now survive calls and returns, including primitive and embedded
 struct fields. Null-reference checks and struct-array copies execute. The next
-step is supplying the navigation clock and continuing through the remaining
-framework dependencies. Primitive hashing/equality specialize, and borrowed span
+step is loading PE-backed static span data for dictionary capacity tables.
+Navigation clocks now use the host, while elapsed-time arithmetic runs from CoreLib. Primitive hashing/equality specialize, and borrowed span
 copies preserve destination-owned reference slots even under overlap. Tests need to
 check aliasing, nested fields, value-copy independence, GC ownership, and cleanup
 through exceptions, as well as the final values. Linear math storage remains a

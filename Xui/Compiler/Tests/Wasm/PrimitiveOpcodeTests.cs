@@ -158,6 +158,21 @@ public class PrimitiveOpcodeTests
         }, 1);
 
     [Theory]
+    [InlineData(1.9, 1L)]
+    [InlineData(-1.9, -1L)]
+    [InlineData(-0.0, 0L)]
+    [InlineData(9223372036854774784.0, 9223372036854774784L)]
+    [InlineData(-9223372036854775808.0, long.MinValue)]
+    [InlineData(double.NaN, 0L)]
+    [InlineData(double.PositiveInfinity, long.MaxValue)]
+    [InlineData(double.NegativeInfinity, long.MinValue)]
+    public Task FloatingToInt64UsesWasmNonTrappingConversion(double value, long expected) =>
+        AssertExecutes(il => {
+            il.LoadConstantR8(value); il.OpCode(ILOpCode.Conv_i8);
+            il.LoadConstantI8(expected); il.OpCode(ILOpCode.Ceq);
+        }, 1);
+
+    [Theory]
     [InlineData(42)]
     [InlineData(long.MaxValue)]
     [InlineData(1.25)]

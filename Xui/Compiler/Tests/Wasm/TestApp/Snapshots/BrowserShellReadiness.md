@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-The method has no managed body: Sys.GetLowResolutionTimestamp.
+Unsupported Newobj at IL_001d in System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<Int32>: Unsupported signature type: Pointer.
 ```
 
 ## Dependency path
@@ -45,11 +45,13 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Xui.Core.UI.ScrollView.OnDeactivate }
  → Method { Identity = Xui.Core.UI.View.ReleasePointer }
  → Method { Identity = Xui.Core.UI.Input.EventRouter.ReleasePointer }
- → Method { Identity = Xui.Core.UI.Input.EventRouter.DispatchToView }
- → VirtualCall { Identity = Xui.Core.UI.View.OnPointerEvent }
- → Method { Identity = Xui.DevKit.UI.Mobile.Navigation.NavigationView.OnPointerEvent }
- → Method { Identity = System.Environment.get_TickCount64 }
- → Method { Identity = Sys.GetLowResolutionTimestamp }
+ → VirtualCall { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.set_Item }
+ → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.set_Item }
+ → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryInsert }
+ → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.Initialize }
+ → Method { Identity = System.Collections.HashHelpers.GetPrime }
+ → Method { Identity = System.Collections.HashHelpers.get_Primes }
+ → Method { Identity = System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<Int32> }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.
