@@ -8,7 +8,8 @@ public readonly record struct StackEntry(
     StackType Type,
     SignatureType? DeclaredType = null,
     DotNet.MethodIdentity? Method = null,
-    DotNet.TypeIdentity? TypeToken = null)
+    DotNet.TypeIdentity? TypeToken = null,
+    DotNet.FieldIdentity? FieldToken = null)
 {
     /// <summary>Creates a primitive stack category.</summary>
     public static implicit operator StackEntry(StackType type) => new(type);
@@ -37,5 +38,5 @@ public readonly record struct StackEntry(
     }
 
     /// <summary>Includes concrete type names for value types and addresses in diagnostic snapshots.</summary>
-    public override string ToString() => TypeToken is { } token ? $"RuntimeTypeHandle({token})" : Method is { } method ? $"MethodPointer({method})" : DeclaredType?.ToString() ?? Type.ToString();
+    public override string ToString() => FieldToken is { } field ? $"RuntimeFieldHandle({field})" : TypeToken is { } token ? $"RuntimeTypeHandle({token})" : Method is { } method ? $"MethodPointer({method})" : DeclaredType?.ToString() ?? Type.ToString();
 }

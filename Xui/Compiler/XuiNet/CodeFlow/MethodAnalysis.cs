@@ -12,6 +12,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     private readonly SignatureType[] locals = SignatureReader.Locals(module, body.LocalSignature, context.Arguments, methodArguments).ToArray();
     private readonly Dictionary<int, Signature> calls = new();
     private readonly IReadOnlyDictionary<int, Model.Intrinsics.InterpolatedStringHandler> interpolationCalls = InterpolationCalls.Read(module, body, graph, context, methodArguments);
+    private readonly IReadOnlyDictionary<int, StaticSpanCall> staticSpans = StaticSpanCalls.Read(module, body, graph, context, methodArguments);
     private readonly IReadOnlyDictionary<int, PrimitiveCall> primitiveCalls = PrimitiveCalls.Read(module, body, graph, context, methodArguments);
     private readonly IReadOnlyDictionary<int, InvariantFormattingCall> invariantFormatting = InvariantFormattingCalls.Read(module, body, graph);
 
@@ -23,7 +24,13 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         var stack = new StackCursor(node);
         switch (instruction.Code)
         {
+            case OpCode.Ldsflda:
             case OpCode.Ldtoken:
+                if (staticSpans.TryGetValue(node.Offset, out var spanToken))
+                {
+                    _ = instruction.ReadToken(ref reader);
+                    stack.Push(new(StackType.RuntimeFieldHandle, FieldToken: spanToken.Field)); break;
+                }
                 var tokenType = Model.Intrinsics.ManagedType.Token(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments);
                 stack.Push(new(StackType.RuntimeTypeHandle, TypeToken: tokenType));
                 break;
@@ -180,6 +187,12 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Newobj:
                 var constructorToken = instruction.ReadToken(ref reader).Value;
+                if (staticSpans.TryGetValue(node.Offset, out var staticConstructor))
+                {
+                    stack.Store(StackType.Int32);
+                    stack.Pop(new(StackType.RuntimeFieldHandle, FieldToken: staticConstructor.Field));
+                    stack.Push(StackEntry.From(staticConstructor.Result)); break;
+                }
                 var constructor = CallSignature(constructorToken);
                 if (Model.DelegateInfo.Member(module, MetadataTokens.EntityHandle(constructorToken), new(context, default, methodArguments)) is { } delegateConstructor)
                 {
@@ -268,6 +281,11 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     if (stack.Pop().Type is not (StackType.ObjectReference or StackType.String or StackType.ArrayReference or StackType.Null))
                         throw stack.Error("ThrowIfNull requires a reference value");
                     break;
+                }
+                if (staticSpans.TryGetValue(node.Offset, out var staticSpan))
+                {
+                    stack.Pop(new(StackType.RuntimeFieldHandle, FieldToken: staticSpan.Field));
+                    stack.Push(StackEntry.From(staticSpan.Result)); break;
                 }
                 if (node.Code == OpCode.Callvirt && stack.State.Type is StackType.String or StackType.Null &&
                     PrimitiveCalls.IsObjectHash(module, MetadataTokens.EntityHandle(callToken)))

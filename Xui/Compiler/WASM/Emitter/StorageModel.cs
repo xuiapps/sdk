@@ -42,6 +42,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
 
     public InterpolationRuntime Interpolation { get; } = new();
     public MathRuntime MathImports { get; } = new();
+    public StaticData StaticData { get; } = new();
     public ClockRuntime Clock { get; } = new();
     public PrimitiveRuntime Primitives { get; } = new();
     public FormattingRuntime Formatting { get; } = new();

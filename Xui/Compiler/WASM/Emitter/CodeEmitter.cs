@@ -136,7 +136,8 @@ public readonly ref partial struct CodeEmitter
             case OpCode.Stind_r4: EmitStind_r4(offset); break;
             case OpCode.Stind_r8: EmitStind_r8(offset); break;
             case OpCode.Stind_ref: EmitStind_ref(offset); break;
-            case OpCode.Ldtoken: EmitLdtoken(instruction.ReadToken(ref reader)); break;
+            case OpCode.Ldsflda:
+            case OpCode.Ldtoken: EmitLdtoken(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Ldloca:
                 EmitLdloca(instruction.ReadVariable(ref reader), offset); break;
             case OpCode.Ldloca_s:
@@ -383,7 +384,14 @@ public readonly ref partial struct CodeEmitter
                     _ = instruction.ReadToken(ref reader);
                     if (!method.InterpolationCalls.ContainsKey(reader.Offset) && !method.PrimitiveCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString and primitive hashing/equality.");
                     break;
+                case OpCode.Ldsflda:
                 case OpCode.Ldtoken:
+                    if (method.StaticSpans.TryGetValue(offset, out var dataToken))
+                    {
+                        _ = instruction.ReadToken(ref reader);
+                        method.Storage.StaticData.Add(dataToken);
+                        break;
+                    }
                     var tokenType = IR.Intrinsics.ManagedType.Token(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
                     method.Storage.ManagedTypesEnabled = true;
                     method.RequireGc(tokenType);
@@ -564,6 +572,11 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
+                    if (method.StaticSpans.TryGetValue(offset, out var staticSpan))
+                    {
+                        method.Storage.StaticData.Add(staticSpan);
+                        break;
+                    }
                     if (method.PrimitiveCalls.TryGetValue(offset, out var primitive))
                     {
                         if (primitive.AddressReceiver) method.Storage.RequireAddress(method.Storage.Bind(primitive.Element.ByReference()));

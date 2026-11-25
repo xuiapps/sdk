@@ -13,6 +13,8 @@ public enum StackType
     MethodPointer,
     /// <summary>A transient closed type token consumed by Type.GetTypeFromHandle.</summary>
     RuntimeTypeHandle,
+    /// <summary>A transient field token consumed by RuntimeHelpers.CreateSpan.</summary>
+    RuntimeFieldHandle,
     Float,
     String,
     /// <summary>A managed vector with its exact element signature.</summary>

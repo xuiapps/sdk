@@ -545,7 +545,7 @@ supported operations that require no emitted bytes.
 | `ldflda` | `i32.add`; owner + accessor selector | Reference fields preserve owner identity through calls and local aliases. |
 | `stfld` | Numeric store / `memory.copy` / `struct.set` | Writes linear or flattened fields; struct assignment copies leaf values. |
 | `ldsfld` | `memory.fill`, frame address / numeric constants | TimeSpan.Zero and target Stopwatch constants; general static fields unsupported. |
-| `ldsflda` |  |  |
+| `ldsflda` | `i32.const` | Only RVA data immediately consumed by static ReadOnlySpan construction. |
 | `stsfld` |  |  |
 | `stobj` | `memory.copy` or leaf loads/stores | Copies struct values into linear or flattened GC storage. |
 | `conv.ovf.i1.un` |  |  |
@@ -595,7 +595,7 @@ supported operations that require no emitted bytes.
 | `refanyval` |  |  |
 | `ckfinite` |  |  |
 | `mkrefany` |  |  |
-| `ldtoken` | `global.get` | Class/interface type tokens; immutable descriptors consumed by GetTypeFromHandle. |
+| `ldtoken` | `global.get` / `i32.const` | Type descriptors or static RVA fields consumed by CreateSpan. |
 | `conv.u2` | Optional `i32.wrap_i64`; `i32.const 65535; i32.and` | Integer inputs only; narrow results occupy an int32 stack slot. |
 | `conv.u1` | Optional `i32.wrap_i64`; `i32.const 255; i32.and` | Integer inputs only; narrow results occupy an int32 stack slot. |
 | `conv.i` | No instruction (i32/native) / `i32.wrap_i64` (i64) | Native integers use 32 bits; floating-point inputs remain unsupported. |
@@ -708,6 +708,14 @@ reference-bearing copies transfer values into destination-owned handles, preserv
 live aliases and independent slots. TryCopyTo leaves a short destination unchanged.
 [Span tests](../Tests/Wasm/InlineArrays/SpanTests.cs) compare these paths with CLR execution.
 
+Constant `ReadOnlySpan<T>` data can be read from RVA-backed fields in supplied PEs.
+`RuntimeHelpers.CreateSpan<T>` and Roslyn's bounded field-address/length/span-constructor
+pattern retain fixed-width primitive or enum data once, in active WASM data segments
+after the bounded frame stack. Returned spans borrow that stable backing. Native-width
+values, reference-containing elements, arbitrary pointer constructors, and field handles
+escaping these recognized sequences remain unsupported. Unused blobs are omitted;
+field identities include their source module. See [static span tests](../Tests/Wasm/InlineArrays/StaticSpanTests.cs).
+
 [The gradient demo](../Tests/Wasm/InlineArrays/Snapshots/Gradients.md) compiles the real
 Xui `ReadOnlySpan<GradientStop> stops = [(0, 0xff0000ffu), (1, 0x0000ffffu)]`,
 constructs `LinearGradient`, and reads its stops in a separate method. The supplied
@@ -715,7 +723,7 @@ Core/framework PEs provide Point/Color/GradientStop and tuple constructors; the
 unsigned NFloat conversion used by Color is a scalar intrinsic.
 
 Still unsupported: multidimensional arrays, array covariance/type tests/object
-conversions, primitive/reference array-element byrefs, bulk static-data initializers (`RuntimeHelpers.InitializeArray/CreateSpan`),
+conversions, primitive/reference array-element byrefs, managed-array static-data initialization (`RuntimeHelpers.InitializeArray`),
 and arbitrary Array/BCL collection methods. Span construction from managed arrays,
 enumeration helpers, stackalloc, and inline-array access through GC-field
 addresses remain unsupported. Private span/interpolation helpers require linear backing;

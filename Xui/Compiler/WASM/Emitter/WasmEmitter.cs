@@ -182,10 +182,10 @@ public sealed partial class WasmEmitter
                 stringReferences = table.References(ExternRef, StorageModel.ReferenceCapacity);
             }
         }
-        if (hasFrames || storage.HasScalarAddressAccessors || storage.HasAddressProjection)
+        if (hasFrames || storage.HasScalarAddressAccessors || storage.HasAddressProjection || storage.StaticData.Count != 0)
         {
             using var memory = writer.MemorySection();
-            memory.Memory(MemoryFrame.PageCount, MemoryFrame.PageCount);
+            memory.Memory(storage.StaticData.MemoryPages, storage.StaticData.MemoryPages);
         }
         if (storage.ExceptionsEnabled)
         {
@@ -243,7 +243,7 @@ public sealed partial class WasmEmitter
                     }
             }
         }
-        writer.DataCount((uint)literals.Count);
+        writer.DataCount(checked((uint)literals.Count + storage.StaticData.Count));
         var code = writer.CodeSection();
         try
         {
@@ -283,11 +283,14 @@ public sealed partial class WasmEmitter
             storage.Interpolation.Emit(ref code, runtime);
         }
         finally { code.Dispose(); }
-        using (var data = writer.DataSection())
+        var data = writer.DataSection();
+        try
         {
             foreach (string literal in literals)
                 data.PassiveUtf16(literal);
+            storage.StaticData.Write(ref data);
         }
+        finally { data.Dispose(); }
         Types = Array.AsReadOnly(storage.Classes.Types.ToArray());
         Dependencies = dependencies;
         return module.ToArray();

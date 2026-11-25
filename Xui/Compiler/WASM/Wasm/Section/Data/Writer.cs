@@ -1,8 +1,9 @@
 using Xui.Compiler.WASM.Wasm.Indices;
+using Xui.Compiler.WASM.Wasm.Instructions;
 
 namespace Xui.Compiler.WASM.Wasm.Section.Data;
 
-/// <summary>Writes passive UTF-16 data segments and counts the entries automatically.</summary>
+/// <summary>Writes active byte data and passive UTF-16 data segments, counting entries automatically.</summary>
 public ref struct Writer
 {
     private Section.Writer section;
@@ -24,6 +25,14 @@ public ref struct Writer
         section.U32((uint)DataSegmentKind.Passive).U32((uint)value.Length * 2);
         foreach (char codeUnit in value)
             section.Byte((byte)codeUnit).Byte((byte)(codeUnit >> 8));
+        return new DataIndex(count++);
+    }
+
+    /// <summary>Initializes bytes in memory zero at a constant offset during module instantiation.</summary>
+    public DataIndex Active(int offset, ReadOnlySpan<byte> bytes)
+    {
+        section.U32((uint)DataSegmentKind.Active).Instruction(OpCode.I32Const).Signed(offset).Instruction(OpCode.End).U32((uint)bytes.Length);
+        foreach (byte value in bytes) section.Byte(value);
         return new DataIndex(count++);
     }
 

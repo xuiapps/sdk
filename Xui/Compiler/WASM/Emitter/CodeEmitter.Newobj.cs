@@ -6,6 +6,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitNewobj(Instruction.Token instruction, int offset)
     {
+        if (TryStaticSpan(instruction, offset)) return;
         if (TryInterpolation(instruction, offset)) return;
         if (TryDelegateConstructor(instruction, offset)) return;
         if (TryExceptionMember(instruction, offset)) return;

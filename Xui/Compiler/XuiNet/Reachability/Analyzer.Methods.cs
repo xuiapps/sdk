@@ -40,6 +40,7 @@ public sealed partial class Analyzer
 
         var graph = InstructionGraph.Read(body.Instructions);
         var interpolationCalls = InterpolationCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
+        var staticSpans = StaticSpanCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
         var primitiveCalls = PrimitiveCalls.Discover(module, body, graph, identity);
         var invariantFormatting = InvariantFormattingCalls.Read(module, body, graph);
         var reachable = new HashSet<InstructionNode>();
@@ -70,6 +71,13 @@ public sealed partial class Analyzer
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (staticSpans.TryGetValue(offset, out var staticSpan))
+                    {
+                        Add(new Dependency.Intrinsic(staticSpan.PointerConstructor ? "ReadOnlySpan.StaticData" : "RuntimeHelpers.CreateSpan"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Field(staticSpan.Field), node, DependencyReason.FieldRead, offset);
+                        Signature(node, staticSpan.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
                     if (primitiveCalls.TryGetValue(offset, out var primitive))
                     {
                         Add(new Dependency.Intrinsic(EnumInfo.Storage(primitive.Element).Code + "." + primitive.Operation), node, DependencyReason.Call, offset);
@@ -243,6 +251,10 @@ public sealed partial class Analyzer
                 case OpCode.Stsfld:
                 case OpCode.Ldsflda:
                     var fieldToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (staticSpans.TryGetValue(offset, out var staticAddress))
+                    {
+                        Add(new Dependency.Field(staticAddress.Field), node, DependencyReason.FieldRead, offset); break;
+                    }
                     if (instruction.Code == OpCode.Ldsfld && DotNet.Intrinsics.StopwatchConstant.Read(module, fieldToken) is { } clockConstant)
                     {
                         Add(new Dependency.Intrinsic("Stopwatch." + clockConstant.Name), node, DependencyReason.FieldRead, offset);

@@ -31,6 +31,7 @@ public readonly struct MsilStackEntry
 
     internal MethodIdentity? Method { get; init; }
     internal TypeIdentity? TypeToken { get; init; }
+    internal FieldIdentity? FieldToken { get; init; }
     internal bool IsNull { get; init; }
 
     /// <summary>The module-qualified identity of a named value type, when present.</summary>

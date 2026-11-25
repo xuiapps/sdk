@@ -15,6 +15,7 @@ public readonly ref partial struct CodeEmitter
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryStaticSpan(instruction, offset)) return;
         if (method.PrimitiveCalls.TryGetValue(offset, out var primitive))
         {
             EmitPrimitiveCall(primitive, instruction.Code, offset);
