@@ -17,7 +17,18 @@ public readonly ref partial struct CodeEmitter
         if (!IsObjectReference(value))
             throw new NotSupportedException("Class type tests currently accept only same-module class references.");
         if (throwing) writer.LocalTee(method.GcSource);
-        if (XuiNet.DotNet.Intrinsics.ManagedType.Is(target))
+        if (XuiNet.DotNet.Intrinsics.DefaultEquality.Is(target) || XuiNet.DotNet.Intrinsics.DefaultEquality.IsInterface(target))
+        {
+            bool contract = XuiNet.DotNet.Intrinsics.DefaultEquality.IsInterface(target);
+            var comparer = contract ? XuiNet.DotNet.Intrinsics.DefaultEquality.InterfaceOwner(target) : target;
+            writer.LocalSet(method.GcOwner).LocalGet(method.GcOwner).GlobalGet(method.Storage.DefaultComparers[comparer]).RefEq()
+                .If(method.Storage.ExceptionPayloadBlock).LocalGet(method.GcOwner).Else();
+            if (contract)
+                writer.LocalGet(method.GcOwner).GlobalGet(method.Storage.Classes.Resolve(target).Descriptor).Call(method.Storage.InstanceTest);
+            else writer.RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef);
+            writer.End();
+        }
+        else if (XuiNet.DotNet.Intrinsics.ManagedType.Is(target))
         {
             writer.LocalSet(method.GcOwner).LocalGet(method.GcOwner).RefTest(method.Storage.DescriptorType)
                 .If(method.Storage.ExceptionPayloadBlock).LocalGet(method.GcOwner).Else()

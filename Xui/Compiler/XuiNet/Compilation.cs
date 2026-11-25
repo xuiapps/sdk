@@ -69,6 +69,9 @@ public sealed class Compilation
         return identity;
     }
 
+    internal Model.TypeIdentity ResolveType(Model.Module module, string ns, string name) =>
+        ResolveNamed(module, default, ns, name, new());
+
     private Model.TypeIdentity ResolveNamed(Model.Module target, TypeDefinitionHandle parent, string ns, string name,
         HashSet<Model.Module> forwarding)
     {

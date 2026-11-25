@@ -397,6 +397,8 @@ public readonly ref partial struct CodeEmitter
                         ?? throw new NotSupportedException("Type tests currently require same-module class types.");
                     if (!method.Storage.IsClass(testedType)) throw new NotSupportedException("Type tests currently require same-module classes.");
                     method.RequireGc(testedType);
+                    if (IR.Intrinsics.DefaultEquality.IsInterface(testedType))
+                        method.RequireGc(IR.Intrinsics.DefaultEquality.InterfaceOwner(testedType));
                     break;
                 case OpCode.Ldnull:
                     method.RequireGcTemporaries(); break;
@@ -736,6 +738,17 @@ public readonly ref partial struct CodeEmitter
                     }
                     if (instruction.Code == OpCode.Callvirt) { method.Storage.ExceptionsEnabled = true; method.RequireGcTemporaries(); }
                     var target = ResolveCall(source, method.Identity, call.Value, offset);
+                    if (IR.Intrinsics.DefaultEquality.ForInterface(target) is { } interfaceComparer)
+                    {
+                        method.Storage.ComparerInterfacesEnabled = true;
+                        method.RequireGc(interfaceComparer.Owner);
+                        var elementStorage = method.Storage.Bind(interfaceComparer.Element);
+                        if (interfaceComparer.Operation == "Equals")
+                        {
+                            method.EqualityTemporaries.TryAdd(elementStorage, default);
+                            method.Storage.StringEqualityEnabled |= elementStorage.TypeCode == SignatureTypeCode.String;
+                        }
+                    }
                     var attributes = target.DeclaringType.Module.GetMethod(target.Handle).Attributes;
                     if (instruction.Code == OpCode.Callvirt && (attributes & System.Reflection.MethodAttributes.Virtual) != 0)
                     {

@@ -47,6 +47,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
     public bool ManagedTypesEnabled { get; set; }
     public bool StringConcatEnabled { get; set; }
     public bool StringEqualityEnabled { get; set; }
+    public bool ComparerInterfacesEnabled { get; set; }
+    public TypeIndex ComparerResultType { get; private set; }
 
     public bool ArgumentExceptionsEnabled { get; set; }
     public bool InnerExceptionsEnabled { get; set; }
@@ -211,6 +213,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
 
     public void DefineTypes(ref TypeWriter writer, TypeIndex utf16ArrayType)
     {
+        if (ComparerInterfacesEnabled) ComparerResultType = writer.FunctionType([], ValueTypeCode.I32);
         if (ExceptionsEnabled)
         {
             List<WasmValue> exceptionFields = [ValueTypeCode.I32, ValueTypeCode.ExternRef];

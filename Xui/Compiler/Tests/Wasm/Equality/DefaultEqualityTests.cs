@@ -153,19 +153,13 @@ public class DefaultEqualityTests
         """, "0\n1\n1\n-1\n0\n2\narray\nstartIndex\nstartIndex\ncount\ncount\n", 42);
 
     [Fact]
-    public void InterfaceDispatchDoesNotTreatTheDefaultSingletonAsAnOrdinaryClass()
-    {
-        using var app = CanvasTests.Read(Frontend.Roslyn.Compile("""
-            using System.Collections.Generic;
-            public static class Program { public static int Main() {
-                IEqualityComparer<string> c = EqualityComparer<string>.Default;
-                return c.Equals("a", "a") ? 42 : 0;
-            } }
-            """));
-        using var framework = new Frontend.Framework();
-        _ = new Xui.Compiler.XuiNet.Compilation([app, .. framework.Assemblies]);
-        Assert.Contains("IEqualityComparer dispatch", Assert.Throws<NotSupportedException>(() => new WasmEmitter().Emit(app)).Message);
-    }
+    public Task InterfaceDispatchRecognizesTheDefaultSingleton() => InlineArrayTests.AssertLinked("""
+        using System.Collections.Generic;
+        public static class Program { public static int Main() {
+            IEqualityComparer<string> c = EqualityComparer<string>.Default;
+            return c.Equals("a", "a") ? 42 : 0;
+        } }
+        """, "", 42);
 
     [Fact]
     public void CustomComparerDoesNotSilentlyUseDefaultSemantics()

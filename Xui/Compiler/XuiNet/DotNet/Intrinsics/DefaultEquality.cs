@@ -30,9 +30,7 @@ public sealed partial record DefaultEquality(
         if (member.Name == "GetHashCode" && signature.HasThis && signature.Result.Code == SignatureTypeCode.Int32 &&
             signature.Parameters.Length == 1 && signature.Parameters[0] == element)
         {
-            if (EnumInfo.Storage(element).Code is not (SignatureTypeCode.Int32 or SignatureTypeCode.UInt32))
-                throw new NotSupportedException($"Default hashing is not implemented for {element}.");
-            return new(member.Name, comparer, element, signature);
+            return Create(member.Name, comparer, element, signature);
         }
         if (member.Name == "get_Default" && !signature.HasThis && signature.Parameters.Length == 0 && signature.Result.Identity == comparer ||
             member.Name == "Equals" && signature.HasThis && signature.Result.Code == SignatureTypeCode.Boolean &&
@@ -47,6 +45,12 @@ public sealed partial record DefaultEquality(
     private static DefaultEquality Create(string operation, TypeIdentity owner, SignatureType element, MethodSignature signature)
     {
         var storage = EnumInfo.Storage(element);
+        if (operation == "GetHashCode")
+        {
+            if (storage.Code is not (SignatureTypeCode.Int32 or SignatureTypeCode.UInt32))
+                throw new NotSupportedException($"Default hashing is not implemented for {element}.");
+            return new(operation, owner, element, signature);
+        }
         bool supported = !element.IsByReference && (storage.Code is SignatureTypeCode.String or SignatureTypeCode.Boolean or SignatureTypeCode.Char or
             SignatureTypeCode.SByte or SignatureTypeCode.Byte or SignatureTypeCode.Int16 or SignatureTypeCode.UInt16 or
             SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 or SignatureTypeCode.Int64 or SignatureTypeCode.UInt64 or

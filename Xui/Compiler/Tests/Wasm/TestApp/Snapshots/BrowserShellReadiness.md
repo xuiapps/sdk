@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Framework IEqualityComparer dispatch is not implemented; default comparers currently require their concrete API.
+Unsupported signature type: Pointer.
 ```
 
 ## Dependency path
@@ -47,8 +47,8 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Xui.Core.UI.Input.EventRouter.ReleasePointer }
  → VirtualCall { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryGetValue }
  → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryGetValue }
- → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.FindValue }
- → VirtualCall { Identity = System.Collections.Generic.IEqualityComparer<Int32>.GetHashCode }
+ → Method { Identity = System.Runtime.CompilerServices.Unsafe.IsNullRef<PointerTracking> }
+ → Method { Identity = System.Runtime.CompilerServices.Unsafe.AsPointer<PointerTracking> }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

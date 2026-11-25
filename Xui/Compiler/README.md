@@ -32,7 +32,7 @@ panel’s UTF-16 interpolation and generic interface dispatch for demo navigatio
 The full catalogue reaches optional Lazy/async floorplan preloading. The smaller
 browser catalogue passes equality, header easing, and navigation array operations;
 Generic page factories and the header’s invariant integer formatting now execute.
-GetType().Name now uses runtime descriptors; example IDs now concatenate native JS strings. Typeof-based interface service lookup now executes too. BCL message getters now read neutral strings from the supplied PE at compile time; only requested strings enter WASM. Default Int32 hashing now executes; the shell next reaches IEqualityComparer dispatch in Dictionary<Int32, PointerTracking>. Optional preloading also needs Lazy/async support. See [PLAN.md](PLAN.md) for the remaining gates.
+GetType().Name now uses runtime descriptors; example IDs now concatenate native JS strings. Typeof-based interface service lookup now executes too. BCL message getters now read neutral strings from the supplied PE at compile time; only requested strings enter WASM. Default Int32 hashing now executes; scalar/string IEqualityComparer dispatch now distinguishes default and application comparers. The shell next reaches Unsafe.IsNullRef in Dictionary<Int32, PointerTracking>. Optional preloading also needs Lazy/async support. See [PLAN.md](PLAN.md) for the remaining gates.
 
 Managed vectors and inline arrays now have distinct storage paths. See [array execution](Tests/Wasm/Arrays/Snapshots/Vectors.md)
 and [real Xui gradient stops](Tests/Wasm/InlineArrays/Snapshots/Gradients.md): the latter

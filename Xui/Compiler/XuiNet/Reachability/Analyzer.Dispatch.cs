@@ -52,8 +52,12 @@ public sealed partial class Analyzer
 
     private void InvokeVirtual(Dependency.VirtualCall node)
     {
-        if (FrameworkTypes.Is(node.Identity.DeclaringType, "System.Collections.Generic", "IEqualityComparer`1"))
-            throw new NotSupportedException("Framework IEqualityComparer dispatch is not implemented; default comparers currently require their concrete API.");
+        if (DotNet.Intrinsics.DefaultEquality.ForInterface(node.Identity) is { } comparer)
+        {
+            Add(new Dependency.Intrinsic("DefaultComparer.Interface." + comparer.Operation), node, DependencyReason.VirtualCall);
+            Add(new Dependency.Layout(comparer.Owner), node, DependencyReason.Layout);
+            Signature(node, comparer.Element, DependencyReason.Signature);
+        }
         bool defaultBody = node.Identity.DeclaringType.IsInterface &&
             (node.Identity.DeclaringType.Module.GetMethod(node.Identity.Handle).Attributes & MethodAttributes.Abstract) == 0;
         Add(defaultBody ? new Dependency.Signature(node.Identity) : new Dependency.Method(node.Identity), node, DependencyReason.VirtualCall);

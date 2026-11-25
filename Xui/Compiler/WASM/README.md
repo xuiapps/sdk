@@ -276,8 +276,7 @@ conversion has no JavaScript host dependency.
 
 `EqualityComparer<int/uint>.Default.GetHashCode` preserves the 32-bit value's bits,
 including enums with those underlying types. Null comparer receivers throw managed
-NullReferenceException. Other hash representations and comparer-interface dispatch
-remain unsupported.
+NullReferenceException. Other hash representations remain unsupported.
 
 `String.Concat` with two, three, or four string arguments calls `wasm:js-string.concat`.
 The emitter preserves evaluation order and normalizes null arguments to empty strings;
@@ -771,8 +770,14 @@ and null-safe; floating equality preserves .NET NaN and signed-zero semantics.
 Structs implementing IEquatable<T> call their concrete typed equality method,
 including explicit implementations and closed generic structs. Arguments retain
 value-copy semantics; NFloat field Equals handles NaN and signed zero.
-Null comparer receivers throw managed NullReferenceException. Custom comparer
-subclasses, IEqualityComparer interface dispatch, hashing outside Int32/UInt32 storage, IEquatable class contracts,
+Scalar/string IEqualityComparer calls compare the receiver with the exact default
+singleton, then use the existing specialized operation or ordinary interface dispatch
+for application implementations. Nominal is/as/casts distinguish closed default
+singletons even when their GC shapes are structurally identical. Single-precision
+arguments are promoted after ABI narrowing before equality comparisons. Null
+receivers throw managed NullReferenceException. Default comparer GetType through
+this interface and adapters for class/struct elements are not implemented.
+Custom comparer subclasses, hashing outside Int32/UInt32 storage, IEquatable class contracts,
 object-typed/boxed equality, and fallback ValueType.Equals remain explicitly unsupported.
 
 String equality operators, static Equals(string, string), and instance Equals(string)

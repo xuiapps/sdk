@@ -61,6 +61,15 @@ public readonly ref partial struct CodeEmitter
                 writer.LocalSet(temporaries[i]);
             }
         }
+        var defaultComparer = instruction.Code == OpCode.Callvirt
+            ? XuiNet.DotNet.Intrinsics.DefaultEquality.ForInterface(target) : null;
+        if (defaultComparer is not null)
+        {
+            writer.LocalGet(temporaries![0]).GlobalGet(method.Storage.DefaultComparers[defaultComparer.Owner])
+                .RefEq().If(method.Storage.ComparerResultType);
+            EmitDefaultInterfaceResult(defaultComparer, temporaries);
+            writer.Else();
+        }
         if (temporaries is not null)
             for (int i = 0; i < temporaries.Length; i++)
             {
@@ -88,6 +97,7 @@ public readonly ref partial struct CodeEmitter
                 .I32Const((int)storage.Classes.Slot(target)).I32Add().CallIndirect(callee.Type);
         }
         else writer.Call(callee.Function);
+        if (defaultComparer is not null) writer.End();
         if (callee.Signature.ReturnType != SignatureTypeCode.Void)
         {
             var result = callee.Signature.Result;

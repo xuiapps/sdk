@@ -52,7 +52,8 @@ The next sequence is:
    Typeof-based service lookup now executes with interface dispatch. The browser
    resource boundary now reads neutral message strings from supplied BCL resources
    and emits only requested literals. Int32/UInt32 default hashing now executes;
-   dependency discovery next reaches IEqualityComparer dispatch in EventRouter’s Dictionary; BCL helper switches still need emission support.
+   scalar/string IEqualityComparer dispatch now executes for default and application comparers.
+   Dependency discovery next reaches Unsafe.IsNullRef in EventRouter’s Dictionary; BCL helper switches still need emission support.
    Continue through the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
