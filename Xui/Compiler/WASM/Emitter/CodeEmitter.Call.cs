@@ -101,8 +101,8 @@ public readonly ref partial struct CodeEmitter
         if (callee.Signature.ReturnType != SignatureTypeCode.Void)
         {
             var result = callee.Signature.Result;
-            if (result.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
-            stack.Push(new MsilStackEntry(result.StackType, result.Identity, array: result.Array));
+            if (result.TypeCode == SignatureTypeCode.Single && !result.IsByReference) writer.F64PromoteF32();
+            stack.Push(new MsilStackEntry(result.IsByReference ? result.TypeCode : result.StackType, result.Identity, result.IsByReference, result.Array));
         }
     }
 }

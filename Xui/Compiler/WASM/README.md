@@ -149,8 +149,9 @@ original object after the source variable changes. Address-taken reference local
 arguments use caller-owned GC-visible table slots, cleared on return and unwinding.
 Strings use the same convention with externref getters/setters. Calls, constructors,
 virtual/interface dispatch, ref locals, and conditional/loop stacks preserve the pair.
-Primitive byref parameters, escaping byref returns, and arbitrary array-element
-byrefs remain unsupported.
+Managed reference returns preserve this pair, including virtual/interface and multicast
+delegate calls. Primitive byrefs use linear addresses; arbitrary array-element byrefs
+and returning addresses of inline GC value fields remain unsupported.
 
 Struct `ref`/`in`/`out` parameters and local aliases work for linear stack locations. Addresses
 of inline struct fields can be used within expressions and conditional arms, but
@@ -239,7 +240,7 @@ The tables are allocated once per module instance, currently with 65,536 entries
 each. Calls and copies allocate no GC holders for these stack structs. Existing
 object creation and first-use string materialization still allocate. Capacity
 exhaustion traps, as for the byte stack; traps require discarding the instance.
-Spans, byref fields, escaping byref returns, linear struct values carried across
+General spans, byref fields, arbitrary GC interior byref returns, linear struct values carried across
 control-flow blocks, and arbitrary GC interior references remain unsupported.
 See the [stack event demo](../Tests/Wasm/ReferenceSlots/Snapshots/Events.md).
 
@@ -815,4 +816,6 @@ loads and stores routed through that one location. Primitive, enum, and NFloat
 ref/in/out calls retain storage widths, float rounding, and aliasing. Frames unwind
 on managed exceptions. Generic scalar ldobj/stobj/cpobj/initobj use typed loads and
 stores. Scalar references into inline GC fields cannot yet cross a call boundary;
-managed-address return values remain unsupported.
+managed-address returns preserve existing caller-owned linear locations or reference-field
+owner/selector pairs. These returns do not copy the value or allocate a byref wrapper.
+Inline GC value-field addresses still cannot escape through returns.

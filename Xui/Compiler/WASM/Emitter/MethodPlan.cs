@@ -100,7 +100,7 @@ internal sealed partial class MethodPlan
         Locals = LocalVariable.Read(source, Body.LocalSignature, storage, identity.DeclaringType.Arguments, identity.Arguments);
         foreach (var local in Locals.Concat(Signature.Parameters).Append(Signature.Result))
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
-        if (Locals.Concat(Signature.Parameters).Any(p => p.IsReferenceAddress)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
+        if (Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(p => p.IsReferenceAddress)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
         InvariantFormatting = InvariantFormattingCalls.Read(source, Body, Graph);
         InterpolationCalls = XuiNet.CodeFlow.InterpolationCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
@@ -125,7 +125,8 @@ internal sealed partial class MethodPlan
         }
         CollectReferenceVariables();
         if (addressedReferenceLocals.Count + addressedReferenceArguments.Count + addressedScalarLocals.Count + addressedScalarArguments.Count != 0 || Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
-            Graph.Instructions.Any(n => n.After?.Entry is { Type: StackType.ValueType, DeclaredType.Identity: { } id } && !storage.IsGc(id)))
+            Graph.Instructions.Any(n => n.After?.Entry is { DeclaredType.Identity: { IsValueType: true } id } entry && !storage.IsGc(id) &&
+                (entry.Type == StackType.ValueType || entry.Type == StackType.ManagedPointer && n.Code is OpCode.Call or OpCode.Callvirt)))
         {
             Frame = new(source, Locals, Signature.Parameters, storage);
             foreach (int index in addressedReferenceLocals) Frame.ReferenceLocals.Add(index, Frame.AllocateReference(Locals[index]));

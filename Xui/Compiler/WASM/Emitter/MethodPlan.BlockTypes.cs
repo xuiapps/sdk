@@ -53,6 +53,7 @@ internal sealed partial class MethodPlan
 
         WasmType Type(StackEntry type) => type.Type switch
         {
+            StackType.ManagedPointer when !Storage.Bind(type.DeclaredType!.Value).UsesGc => ValueTypeCode.I32,
             StackType.Int32 or StackType.NativeInt or StackType.MethodPointer => ValueTypeCode.I32,
             StackType.Int64 => ValueTypeCode.I64,
             StackType.Float => ValueTypeCode.F64,

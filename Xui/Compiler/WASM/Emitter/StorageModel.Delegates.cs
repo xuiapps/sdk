@@ -27,7 +27,7 @@ internal sealed partial class StorageModel
             parameters = [.. parameters, .. Enumerable.Repeat((WasmType)ValueTypeCode.I32, signature.ReferenceParameterCount)];
             if (signature.HasResultAddress) parameters = [.. parameters, (WasmType)ValueTypeCode.I32];
             var target = new DelegateTarget(method) { TableSlot = TableSize++ };
-            target.Type = writer.FunctionType(parameters, signature.ReturnType == SignatureTypeCode.Void ? null : signature.Result.WasmType);
+            target.Type = writer.FunctionType(parameters, signature.WasmResults);
             DelegateTargets.Add(identity, target);
         }
         if (methods.Values.Any(m => m.IsDelegateInvoke) && TableSize == 0) TableSize = 1;

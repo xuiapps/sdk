@@ -20,6 +20,9 @@ internal sealed class MethodSignature
     // parameters, then the optional result address. The evaluation stack uses adjacent pairs.
     public int ReferenceParameterCount => Parameters.Count(p => p.IsReferenceAddress);
     public LocalIndex ReferenceParameter(int index) => new((uint)(Parameters.Length + Parameters.Take(index).Count(p => p.IsReferenceAddress)));
+    public Wasm.Section.TypeDefinitions.ValueType[] WasmResults => ReturnType == SignatureTypeCode.Void
+        ? [] : Result.IsReferenceAddress
+        ? [Result.WasmType, Wasm.Section.TypeDefinitions.ValueTypeCode.I32] : [Result.WasmType];
     public bool HasThis { get; init; }
     public bool IsConstructor { get; init; }
     public required LocalVariable Result { get; init; }
@@ -30,11 +33,12 @@ internal sealed class MethodSignature
         var signature = SignatureReader.Method(module, method.Signature, owner.Arguments, methodArguments);
         if (entryPoint && signature.HasThis) throw new NotSupportedException("Instance entry points are not supported.");
         var result = signature.Result;
-        if (entryPoint && result.Code is not (SignatureTypeCode.Void or SignatureTypeCode.Int32))
+        if (entryPoint && (result.IsByReference || result.Code is not (SignatureTypeCode.Void or SignatureTypeCode.Int32)))
             throw new NotSupportedException($"Unsupported entry point result: {result}.");
         var resultStorage = storage.Bind(result);
-        if (result.IsByReference)
-            throw new NotSupportedException("Managed-address return values are not implemented.");
+        if (result.IsByReference && resultStorage.UsesGc && !resultStorage.IsReferenceAddress)
+            throw new NotSupportedException("GC struct managed-address return values are not implemented.");
+        if (resultStorage.IsReferenceAddress) storage.ReferenceAddressesEnabled = true;
         if (result.Code != SignatureTypeCode.Void) _ = resultStorage.WasmType;
         if (entryPoint && signature.Parameters.Length == 1 && signature.Parameters[0].Array?.Element.Code == SignatureTypeCode.String && !signature.Parameters[0].IsByReference)
             return new() { Parameters = [], DeclaredReturnType = result, Result = resultStorage, HasEntryPointArguments = true };

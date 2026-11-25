@@ -123,9 +123,7 @@ public sealed partial class WasmEmitter
                     parameter => (Wasm.Section.TypeDefinitions.ValueType)parameter.WasmType);
                 parameters = [.. parameters, .. Enumerable.Repeat((Wasm.Section.TypeDefinitions.ValueType)I32, method.Signature.ReferenceParameterCount)];
                 if (method.Signature.HasResultAddress) parameters = [.. parameters, I32];
-                Wasm.Section.TypeDefinitions.ValueType? result = method.Signature.ReturnType == SignatureTypeCode.Void
-                    ? null : method.Signature.Result.WasmType;
-                method.Type = types.FunctionType(parameters, result);
+                method.Type = types.FunctionType(parameters, method.Signature.WasmResults);
                 method.DefineBlockTypes(ref types);
             }
         }

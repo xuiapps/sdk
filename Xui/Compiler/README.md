@@ -45,4 +45,9 @@ Address-taken scalar locals and arguments now use aligned linear-memory slots.
 Primitive, enum, and NFloat ref/in/out calls preserve aliases and exact storage
 widths; ordinary scalar locals still use WASM locals. Generic scalar ldobj/stobj/
 initobj operations share this storage. Passing inline scalar GC fields by reference
-and returning managed addresses remain unsupported.
+remains unsupported. Managed-address returns now preserve caller-owned linear addresses
+and reference-field owner/selector pairs through direct, virtual/interface, and multicast
+delegate calls. Inline GC value-field addresses still cannot cross returns.
+
+[Managed versus linear storage](MANAGED_VS_LINEAR.md) explains these representations,
+the BCL compatibility work they drive, and the next managed-address steps.
