@@ -18,8 +18,11 @@ public readonly ref partial struct CodeEmitter
     {
         for (int i = 0; i < locals.Length; i++)
             if (!locals[i].IsByReference && locals[i].UsesGc && locals[i].Identity is { } identity && !method.Storage.IsClass(identity))
+            {
                 writer.StructNewDefault(method.Storage.Shape(locals[i].Identity!.Value).Type)
                     .LocalSet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i)));
+                initializedLocals[i] = true;
+            }
     }
 
     private void CloneGc(TypeIdentity identity)

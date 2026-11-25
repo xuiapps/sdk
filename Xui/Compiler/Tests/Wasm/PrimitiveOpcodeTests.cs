@@ -200,9 +200,9 @@ public class PrimitiveOpcodeTests
     }
 
     [Theory]
-    [InlineData(ILOpCode.Conv_i4)]
+    [InlineData(ILOpCode.Conv_i)]
     [InlineData(ILOpCode.Conv_u8)]
-    public void FloatingPointToIntegerConversionsRemainUnsupported(ILOpCode op)
+    public void OtherFloatingPointToIntegerConversionsRemainUnsupported(ILOpCode op)
     {
         byte[] image = Program(il => { il.LoadConstantR8(1.25); il.OpCode(op); });
         Assert.Contains("Double", Assert.Throws<NotSupportedException>(() => Emit(image)).Message);

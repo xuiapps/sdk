@@ -70,8 +70,8 @@ classes and supported boxes also expose GetType; arrays, exceptions, and general
 `ldtoken` pushes the existing descriptor as a transient opaque runtime type handle;
 `Type.GetTypeFromHandle` exposes that same reference as `Type`, without allocation.
 This permits exact type comparisons in service lookup and agrees with instance
-GetType identity. Primitive/array/open-generic type tokens, raw RuntimeTypeHandle
-locals/fields/call ABIs, and method/field handles remain unsupported.
+GetType identity. Outside folded closed IsValueType queries, array/open-generic type tokens, raw
+RuntimeTypeHandle locals/fields/call ABIs, and method/field handles remain unsupported.
 
 Delegates use a compiler-owned GC object containing a nominal type descriptor,
 retained target/closure, callable table slot, canonical method identity, and an
@@ -517,10 +517,10 @@ supported operations that require no emitted bytes.
 | `add` | `i32.add` / `i64.add` / `f64.add` | Type stack selects integer width or f64; integer overflow wraps. |
 | `sub` | `i32.sub` / `i64.sub` / `f64.sub` | Type stack selects integer width or f64; integer overflow wraps. |
 | `mul` | `i32.mul` / `i64.mul` / `f64.mul` | Type stack selects integer width or f64; integer overflow wraps. |
-| `div` | `f64.div` | Floating operands only; integer division and its exceptions remain unsupported. |
-| `div.un` |  |  |
-| `rem` |  |  |
-| `rem.un` |  |  |
+| `div` | `i32.div_s`, `i64.div_s`, `f64.div` | Integer zero/overflow throw managed exceptions; floating division follows IEEE. |
+| `div.un` | `i32.div_u`, `i64.div_u` | Zero divisor throws a managed DivideByZeroException. |
+| `rem` | `i32.rem_s`, `i64.rem_s` | Signed minimum modulo minus one throws OverflowException; floats unsupported. |
+| `rem.un` | `i32.rem_u`, `i64.rem_u` | Zero divisor throws a managed DivideByZeroException. |
 | `and` | `i32.and` / `i64.and` | Requires two integers of matching width; floating-point operands are rejected. |
 | `or` | `i32.or` / `i64.or` | Requires two integers of matching width; floating-point operands are rejected. |
 | `xor` | `i32.xor` / `i64.xor` | Requires two integers of matching width; floating-point operands are rejected. |
@@ -531,7 +531,7 @@ supported operations that require no emitted bytes.
 | `not` | `i32.const -1; i32.xor` / `i64.const -1; i64.xor` | XOR with all-one bits implements integer complement at either width. |
 | `conv.i1` | Optional `i32.wrap_i64`; `i32.extend8_s` | Integer inputs only; narrow results occupy an int32 stack slot. |
 | `conv.i2` | Optional `i32.wrap_i64`; `i32.extend16_s` | Integer inputs only; narrow results occupy an int32 stack slot. |
-| `conv.i4` | No instruction (i32) / `i32.wrap_i64` (i64) | Keeps low 32 bits; floating-point inputs are currently rejected. |
+| `conv.i4` | No instruction / `i32.wrap_i64` / `i32.trunc_sat_f64_s` | Floating inputs truncate and saturate; NaN becomes zero. |
 | `conv.i8` | `i64.extend_i32_s` / `i64.trunc_sat_f64_s` / identity | Floating values truncate; overflow saturates, NaN maps to zero. |
 | `conv.r4` | `f32.convert_i32_s; f64.promote_f32` / `f32.convert_i64_s; f64.promote_f32` / `f32.demote_f64; f64.promote_f32` | Rounds directly to binary32, then restores the f64 stack representation. |
 | `conv.r8` | `f64.convert_i32_s` / `f64.convert_i64_s` / no instruction (f64) | Signed integer conversion; floating-point stack values already use f64. |
@@ -567,7 +567,7 @@ supported operations that require no emitted bytes.
 | `box` | `struct.new` with descriptor and scalar payload | Copies primitive/enum/NFloat values; reference specializations preserve identity. |
 | `newarr` | `array.new_default` | Struct elements get independent mutable GC storage; negative lengths throw. |
 | `ldlen` | `array.len` | Returns native-width length; null throws a managed exception. |
-| `ldelema` | `array.get` | Struct element locations only; general array byref ABI remains unsupported. |
+| `ldelema` | Array owner/index or `array.get` for struct holder | Checked managed addresses preserve aliases across calls and element stores. |
 | `ldelem.i1` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
 | `ldelem.u1` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
 | `ldelem.i2` | `array.get` | Checks null/bounds; preserves declared element type and load promotion. |
@@ -881,5 +881,34 @@ This increment requires linked framework definitions for primitive descriptors.
 Arbitrary struct and Nullable<T> boxing, boxed virtual/interface dispatch adapters,
 and general string/array-to-object conversions remain unsupported. A reachable
 virtual dispatch that could target an allocated box is rejected during compilation.
-Composite String.Format and boxed ToString are separate work; boxing adds no
-culture/resource loading or host formatting dependency.
+General boxed ToString remains unsupported. Boxing alone adds no culture/resource
+loading or host formatting dependency.
+
+Composite `String.Format` accepts one to three object arguments or an object array,
+with optional null provider. Supported boxes are converted inside WASM to tagged
+primitive values before crossing into the shared JavaScript string runtime; GC
+objects stay inside WASM. Fixed arguments also accept native JS strings directly.
+Formatting supports repeated indexes, escaped braces, alignment, null, booleans,
+UTF-16 characters, decimal and hexadecimal integers, and default/general/round-trip
+floating-point text. Int64/UInt64 use BigInt without loss of precision. Integer
+hexadecimal preserves the source width, including signed byte/short values.
+Non-null providers, enum names, arbitrary object formatting, and unsupported numeric
+formats throw managed NotSupportedException. Malformed formats throw FormatException;
+null format/argument-array checks preserve ArgumentNullException parameter names.
+The profile uses invariant text and neutral BCL resource messages; it does not load
+cultures or emulate arbitrary ICustomFormatter implementations. Fixed-arity SR.Format
+uses this same path, including Dictionary duplicate-key messages.
+
+Closed `typeof(T).IsValueType` queries fold before reachability and stack analysis.
+Proven boolean branches keep only their selected edge, preserving original IL
+locations and any executed side effects. Unknown values remain runtime branches.
+This removes the string-only randomized comparer path from value-key Dictionary
+specializations. Natural loops may contain finite return/throw arms alongside their
+normal continuation; arbitrary irreducible graphs still reject.
+
+Scalar/reference array element addresses carry the array owner and checked element
+index through the existing managed-byref ABI. They preserve aliasing across calls
+without a per-address allocation. Struct array elements retain their existing holder
+representation. Address-taken scalar locals and struct storage are zeroed even with SkipLocalsInit
+so constructors, initobj, and out calls can initialize them through borrowed addresses. Floating `conv.i4` truncates toward zero and saturates
+at Int32 limits, with NaN mapped to zero.

@@ -22,6 +22,13 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         reader.Bytes.Offset = node.Offset;
         var instruction = reader.Read();
         var stack = new StackCursor(node);
+        if (graph.Specializations.TryGetValue(node.Offset, out var specialized))
+        {
+            if (specialized.Kind == SpecializationKind.Int32) stack.Push(StackType.Int32);
+            else if (specialized.Kind == SpecializationKind.Branch) stack.Pop(StackType.Int32);
+            node.After = stack.State; node.Lowest = stack.Lowest;
+            return;
+        }
         switch (instruction.Code)
         {
             case OpCode.Ldsflda:
@@ -40,8 +47,14 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 {
                     stack.Push(StackEntry.From(new SignatureType(clockConstant.Code))); break;
                 }
-                var zeroType = Model.Intrinsics.TimeSpanZero.Read(module, staticField, context)
-                    ?? throw new NotSupportedException("Static field stack analysis is not implemented except TimeSpan.Zero and Stopwatch constants.");
+                var zeroType = Model.Intrinsics.TimeSpanZero.Read(module, staticField, context);
+                if (zeroType is null)
+                {
+                    string fieldName = staticField.Kind == HandleKind.MemberReference
+                        ? module.GetMemberReference((MemberReferenceHandle)staticField).Name
+                        : module.GetField((FieldDefinitionHandle)staticField).Name;
+                    throw new NotSupportedException($"Static field stack analysis is not implemented except TimeSpan.Zero and Stopwatch constants. Field: {fieldName}.");
+                }
                 stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, zeroType)));
                 break;
             case OpCode.Newarr:
@@ -260,6 +273,18 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     stack.Push(StackEntry.From(typeHandle.Signature.Result));
                     break;
                 }
+                if (Model.Intrinsics.CompositeFormatting.Read(module, MetadataTokens.EntityHandle(callToken)) is { } composite)
+                {
+                    for (int i = composite.Signature.Parameters.Length - 1; i >= 0; i--)
+                    {
+                        // This intrinsic can consume native JS strings directly, without a general string-to-object wrapper.
+                        if (composite.Signature.Parameters[i].Code == SignatureTypeCode.Object && stack.State.Entry?.Type == StackType.String)
+                            stack.Pop();
+                        else stack.Store(StackEntry.From(composite.Signature.Parameters[i]));
+                    }
+                    stack.Push(StackType.String);
+                    break;
+                }
                 if (invariantFormatting.TryGetValue(node.Offset, out var formatting))
                 {
                     if (formatting.IsProvider) stack.Push(StackEntry.From(formatting.Provider));
@@ -364,9 +389,13 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Mul:
                 stack.Push(NumericPair(ref stack)); break;
             case OpCode.Div:
-                if (NumericPair(ref stack) != StackType.Float)
-                    throw new NotSupportedException("Integer division is not implemented.");
-                stack.Push(StackType.Float); break;
+            case OpCode.Div_un:
+            case OpCode.Rem:
+            case OpCode.Rem_un:
+                var quotient = NumericPair(ref stack);
+                if (quotient == StackType.Float && node.Code != OpCode.Div)
+                    throw new NotSupportedException("Floating remainder and unsigned floating division are not implemented.");
+                stack.Push(quotient); break;
             case OpCode.And:
             case OpCode.Or:
             case OpCode.Xor:
@@ -431,6 +460,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         if (Model.Intrinsics.ManagedType.Read(module, handle) is { } managedType)
             signature = new(managedType.Signature.HasThis ? [new(SignatureTypeCode.Object)] : managedType.Signature.Parameters.ToArray(),
                 StackEntry.From(managedType.Signature.Result));
+        else if (Model.Intrinsics.CompositeFormatting.Read(module, handle) is { } format)
+            signature = new(format.Signature.Parameters.ToArray(), StackType.String);
         else if (Model.Intrinsics.StringConcatenation.Read(module, handle) is { } concat)
             signature = new(concat.Signature.Parameters.ToArray(), StackType.String);
         else if (Model.Intrinsics.ResourceString.Read(module, handle) is not null)

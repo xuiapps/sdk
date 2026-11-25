@@ -5,7 +5,7 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    // Integer conversions intentionally reject floating-point inputs until their overflow behavior is defined.
+    // Conv_i4 uses the modern .NET saturating conversion for floating-point inputs.
     private void ConvertToInt32(OpCode code, int offset)
     {
         var value = Pop(code, offset);
@@ -14,6 +14,7 @@ public readonly ref partial struct CodeEmitter
             case SignatureTypeCode.Int32:
             case SignatureTypeCode.IntPtr: break;
             case SignatureTypeCode.Int64: writer.I32WrapI64(); break;
+            case SignatureTypeCode.Double when code == OpCode.Conv_i4: writer.I32TruncSatF64S(); break;
             default:
                 throw new NotSupportedException($"Unsupported {code} operand type {value.TypeCode} at IL_{offset:x4}.");
         }

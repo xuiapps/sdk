@@ -389,7 +389,14 @@ public ref partial struct Writer
         return this;
     }
 
-    /// <summary>Truncates f64 to signed i64; overflow saturates and NaN becomes zero without trapping.</summary>
+    /// <summary>Truncates f64 to signed i32; overflow saturates and NaN becomes zero without trapping.</summary>
+    public readonly Writer I32TruncSatF64S()
+    {
+        body.Instruction(OpCode.Misc).U32((uint)SaturatingConversionOpCode.I32TruncSatF64S);
+        return this;
+    }
+
+    /// <summary>Truncates a floating-point value to a signed 64-bit integer with saturation.</summary>
     public readonly Writer I64TruncSatF64S()
     {
         body.Instruction(OpCode.Misc).U32((uint)SaturatingConversionOpCode.I64TruncSatF64S);

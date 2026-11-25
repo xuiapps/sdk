@@ -101,6 +101,14 @@ public enum OpCode : byte
     I32Sub = 0x6b,
     /// <summary>Multiplies i32 values with wrapping arithmetic.</summary>
     I32Mul = 0x6c,
+    /// <summary>Signed i32 division; zero and overflow trap.</summary>
+    I32DivS = 0x6d,
+    /// <summary>Unsigned i32 division; zero traps.</summary>
+    I32DivU = 0x6e,
+    /// <summary>Signed i32 remainder; zero traps.</summary>
+    I32RemS = 0x6f,
+    /// <summary>Unsigned i32 remainder; zero traps.</summary>
+    I32RemU = 0x70,
     /// <summary>Computes bitwise AND of i32 values.</summary>
     I32And = 0x71,
     /// <summary>Computes bitwise OR of i32 values.</summary>
@@ -119,8 +127,12 @@ public enum OpCode : byte
     I64Sub = 0x7d,
     /// <summary>Multiplies i64 values with wrapping arithmetic.</summary>
     I64Mul = 0x7e,
+    /// <summary>Signed i64 division; zero and overflow trap.</summary>
+    I64DivS = 0x7f,
     /// <summary>Unsigned 64-bit integer division.</summary>
     I64DivU = 0x80,
+    /// <summary>Signed i64 remainder; zero traps.</summary>
+    I64RemS = 0x81,
     /// <summary>Unsigned 64-bit integer remainder.</summary>
     I64RemU = 0x82,
     /// <summary>Computes bitwise AND of i64 values.</summary>

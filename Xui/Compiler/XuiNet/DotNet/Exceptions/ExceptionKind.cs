@@ -14,5 +14,10 @@ public enum ExceptionKind
     ArgumentNullException,
     ArgumentOutOfRangeException,
     ApplicationException,
-    TargetInvocationException
+    TargetInvocationException,
+    FormatException,
+    NotSupportedException,
+    ArithmeticException,
+    DivideByZeroException,
+    KeyNotFoundException
 }

@@ -8,6 +8,20 @@ namespace Xui.Compiler.Tests.Wasm.ReferenceSlots;
 public class ScalarAddressTests
 {
     [Fact]
+    public async Task AddressTakenScalarCanBeInitializedIndirectlyWithoutInitLocals()
+    {
+        byte[] image = Frontend.Msil.Compile(il =>
+        {
+            il.LoadLocalAddress(0); il.LoadConstantI4(42);
+            il.OpCode(System.Reflection.Metadata.ILOpCode.Stind_i4);
+            il.LoadLocal(0); il.OpCode(System.Reflection.Metadata.ILOpCode.Ret);
+        }, [System.Reflection.Metadata.SignatureTypeCode.Int32], initLocals: false);
+        using var assembly = Canvas.CanvasTests.Read(image);
+        byte[] wasm = new Xui.Compiler.WASM.Emitter.WasmEmitter().Emit(assembly);
+        Assert.Equal(42, (await Repl.Node.ExecuteAsync(wasm)).ExitCode);
+    }
+
+    [Fact]
     public Task ScalarLocalsAndArgumentsHaveStableAliasingAddresses() => InlineArrayTests.AssertLinked("""
         using System;
         public static class Program {

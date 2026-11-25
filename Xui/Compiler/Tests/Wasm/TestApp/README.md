@@ -133,5 +133,10 @@ fixture uses the real mobile category card, demo button, navigation, and page wr
 for a FillRectTest page; optional async/GPU showcases are not included in its menu.
 LayoutFrameInstruments.CreateCountersOnly omits unique-view tracking while the
 normal constructors retain their preallocated HashSet. Core's existing compiler
-profile still omits diagnostic instrumentation. Default string/scalar equality now executes. The next browser construction blocker
-is EqualityComparer<Color>.Default used by View.SetViewRenderProperty.
+profile still omits diagnostic instrumentation. Default equality, primitive boxing,
+composite String.Format, and the Dictionary duplicate-key message path now compile.
+Separate CLR/Node regressions execute integer-key Dictionary operations, resizing,
+and struct values with string references. The browser catalogue completes reachability
+and stops during method planning at `FontWeight.SemiBold` in
+`MobileDemoCategoryPanel`'s constructor (`ldsfld`, IL_0037). General static storage
+and type initialization are the next requirement; the complete shell is not yet emitted.

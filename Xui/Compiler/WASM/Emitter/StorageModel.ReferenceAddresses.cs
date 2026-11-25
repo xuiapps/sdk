@@ -106,6 +106,31 @@ internal sealed partial class StorageModel
             else if (store) StoreAddressScalar(writer, value); else LoadAddressScalar(writer, value);
             writer.Return().End();
         }
+        // Arrays use the same owner/selector ABI, with a dynamic element index.
+        // Test the owner first: these selectors are independent of GC field IDs.
+        foreach (var array in addressedArrays)
+        {
+            var type = array.Element;
+            if (array.StructElements || (reference ? !IsReference(type) ||
+                (type.TypeCode == SignatureTypeCode.String) != (value.TypeCode == SignatureTypeCode.String)
+                : type.TypeCode != value.TypeCode)) continue;
+            writer.LocalGet(new(0)).RefTest(array.Type).If();
+            writer.LocalGet(new(0)).RefCast(array.Type).LocalGet(new(1));
+            if (store)
+            {
+                writer.LocalGet(new(2));
+                switch (type.TypeCode)
+                {
+                    case SignatureTypeCode.SByte: writer.I32Extend8S(); break;
+                    case SignatureTypeCode.Boolean: case SignatureTypeCode.Byte: writer.I32Const(255).I32And(); break;
+                    case SignatureTypeCode.Int16: writer.I32Extend16S(); break;
+                    case SignatureTypeCode.Char: case SignatureTypeCode.UInt16: writer.I32Const(65535).I32And(); break;
+                }
+                writer.ArraySet(array.Type);
+            }
+            else writer.ArrayGet(array.Type);
+            writer.Return().End();
+        }
         for (int i = 0; i < referenceFields.Count; i++)
         {
             var (location, type) = referenceFields[i];

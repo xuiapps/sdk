@@ -99,6 +99,15 @@ public readonly ref partial struct CodeEmitter
     private void EmitInstruction(ref ILReader reader)
     {
         int offset = reader.Offset;
+        if (method.Graph.Specializations.TryGetValue(offset, out var specialized))
+        {
+            reader.Seek(specialized.End);
+            if (specialized.Kind == XuiNet.CodeFlow.SpecializationKind.Int32)
+            { writer.I32Const(specialized.Value); stack.Push(new(SignatureTypeCode.Int32)); }
+            else if (specialized.Kind == XuiNet.CodeFlow.SpecializationKind.Branch)
+            { Pop(SignatureTypeCode.Int32, OpCode.Pop, offset); writer.Drop(); }
+            return;
+        }
         var instruction = reader.Read();
         var candidate = reader;
         if (rewriter.TryRewrite(instruction, ref candidate, this, offset))
@@ -241,6 +250,12 @@ public readonly ref partial struct CodeEmitter
                 EmitMul(offset); break;
             case OpCode.Div:
                 EmitDiv(offset); break;
+            case OpCode.Div_un:
+                EmitDiv_un(offset); break;
+            case OpCode.Rem:
+                EmitRem(offset); break;
+            case OpCode.Rem_un:
+                EmitRem_un(offset); break;
             case OpCode.And:
                 EmitAnd(offset); break;
             case OpCode.Or:
@@ -363,7 +378,7 @@ public readonly ref partial struct CodeEmitter
             { method.Storage.RequireAddress(method.Storage.Bind(declared)); method.RequireGcTemporaries(); }
         foreach (var node in method.Graph.Instructions)
         {
-            if (method.Flow is not null && !node.IsReachable) continue;
+            if (method.Flow is not null && !node.IsReachable || method.Graph.Specializations.ContainsKey(node.Offset)) continue;
             reader.Seek(node.Offset);
             int offset = reader.Offset;
             var instruction = reader.Read();
@@ -376,11 +391,12 @@ public readonly ref partial struct CodeEmitter
                     method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.IndexOutOfRangeException, IR.Exceptions.ExceptionKind.OverflowException]);
                     method.Storage.ExceptionsEnabled = true;
                     method.RequireGcTemporaries();
-                    if (instruction.Code == OpCode.Newarr)
+                    if (instruction.Code is OpCode.Newarr or OpCode.Ldelema)
                     {
                         var element = IR.Signatures.SignatureReader.StorageType(source,
                             System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
                         _ = method.Storage.ArrayShape(new(element));
+                        if (instruction.Code == OpCode.Ldelema) method.Storage.RequireArrayAddress(new(element));
                         if (element.Identity is { } elementIdentity) method.RequireGc(elementIdentity);
                     }
                     break;
@@ -404,6 +420,21 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Isinst:
                 case OpCode.Castclass:
                     RequireTypeTest(method, source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value));
+                    break;
+                case OpCode.Div:
+                case OpCode.Div_un:
+                case OpCode.Rem:
+                case OpCode.Rem_un:
+                    if (node.Before?.Entry?.Type != XuiNet.CodeFlow.StackType.Float)
+                    {
+                        var category = node.Before?.Entry?.Type switch {
+                            XuiNet.CodeFlow.StackType.Int64 => SignatureTypeCode.Int64,
+                            XuiNet.CodeFlow.StackType.NativeInt => SignatureTypeCode.IntPtr,
+                            _ => SignatureTypeCode.Int32 };
+                        method.EqualityTemporaries.TryAdd(new(category), default);
+                        method.RequireGcTemporaries(); method.Storage.ExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.DivideByZeroException, IR.Exceptions.ExceptionKind.OverflowException]);
+                    }
                     break;
                 case OpCode.Ldnull:
                     method.RequireGcTemporaries(); break;
@@ -458,7 +489,6 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Add:
                 case OpCode.Pop:
                 case OpCode.Sub:
-                case OpCode.Div:
                 case OpCode.Mul:
                 case OpCode.And:
                 case OpCode.Or:
@@ -617,6 +647,21 @@ public readonly ref partial struct CodeEmitter
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } resourceText)
                     {
                         if (seenLiterals.Add(resourceText)) literals.Add(resourceText);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.CompositeFormatting.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } formatting)
+                    {
+                        method.UsesCompositeFormatting = method.Storage.Formatting.Composite = true;
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.FormatException, IR.Exceptions.ExceptionKind.NotSupportedException, IR.Exceptions.ExceptionKind.ArgumentNullException]);
+                        method.RequireGcTemporaries();
+                        if (formatting.HasArray)
+                        {
+                            method.UsesArrays = true;
+                            _ = method.Storage.ArrayShape(formatting.Signature.Parameters[^1].Array!);
+                        }
+                        foreach (string text in new[] { "format", "args" }) if (seenLiterals.Add(text)) literals.Add(text);
                         break;
                     }
                     if (method.InvariantFormatting.ContainsKey(offset) || instruction.Code == OpCode.Call && IR.Intrinsics.Int32Formatting.Is(source,

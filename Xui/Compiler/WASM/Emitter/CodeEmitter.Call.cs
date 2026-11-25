@@ -26,6 +26,7 @@ public readonly ref partial struct CodeEmitter
         if (TryResourceString(instruction)) return;
         if (TryStringConcatenation(instruction, offset)) return;
         if (TryManagedType(instruction, offset)) return;
+        if (TryCompositeFormatting(instruction, offset)) return;
         if (TryInt32Formatting(instruction, offset)) return;
         if (TryConstructorFactory(instruction, offset)) return;
         if (TryArrayCopy(instruction, offset)) return;

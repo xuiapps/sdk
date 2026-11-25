@@ -6,6 +6,14 @@ namespace Xui.Compiler.WASM.Emitter;
 internal sealed partial class StorageModel
 {
     private readonly Dictionary<ArraySignature, ArrayShape> arrays = new();
+    private readonly HashSet<ArrayShape> addressedArrays = new();
+
+    public void RequireArrayAddress(ArraySignature signature)
+    {
+        var shape = ArrayShape(signature);
+        if (!shape.StructElements) addressedArrays.Add(shape);
+        RequireAddress(shape.Element);
+    }
 
     public ArrayShape ArrayShape(ArraySignature signature)
     {

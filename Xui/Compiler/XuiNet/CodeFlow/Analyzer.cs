@@ -20,6 +20,7 @@ public static class Analyzer
         if (body.ExceptionRegions.Any(region => region.Kind == ExceptionRegionKind.Filter))
             throw new NotSupportedException("Exception filters are not implemented.");
         var graph = GraphReader.Read(body.Instructions);
+        TypeSpecialization.Apply(module, body, method, graph);
         var analysis = new MethodAnalysis(module, body, Signature.Read(module, definition.Signature, method.DeclaringType, method.Arguments), method.DeclaringType, graph, method.Arguments);
         var work = new Queue<InstructionNode>();
         graph.Entry.Before = graph.Stacks.Empty;
@@ -33,7 +34,13 @@ public static class Analyzer
         }
         while (work.TryDequeue(out var instruction))
         {
-            analysis.Apply(instruction);
+            try { analysis.Apply(instruction); }
+            catch (NotSupportedException error)
+            {
+                error.Data["Xui.Method"] = method.ToString();
+                error.Data["Xui.Instruction"] = $"{instruction.Code} at IL_{instruction.Offset:x4}";
+                throw;
+            }
             foreach (var successor in instruction.Successors)
             {
                 if (successor.Before is null)

@@ -10,7 +10,11 @@ public static class ExceptionTypes
     public static ExceptionKind? Kind(TypeIdentity type)
     {
         foreach (var kind in Enum.GetValues<ExceptionKind>())
-            if (FrameworkTypes.Is(type, kind == ExceptionKind.TargetInvocationException ? "System.Reflection" : "System", kind.ToString())) return kind;
+            if (FrameworkTypes.Is(type, kind switch {
+                ExceptionKind.TargetInvocationException => "System.Reflection",
+                ExceptionKind.KeyNotFoundException => "System.Collections.Generic",
+                _ => "System"
+            }, kind.ToString())) return kind;
         return null;
     }
 
@@ -19,6 +23,7 @@ public static class ExceptionTypes
 
     /// <summary>Tests the supported nominal exception hierarchy.</summary>
     public static bool IsAssignable(ExceptionKind actual, ExceptionKind target) => actual == target ||
+        target == ExceptionKind.ArithmeticException && actual is ExceptionKind.DivideByZeroException or ExceptionKind.OverflowException ||
         target == ExceptionKind.ArgumentException && actual is ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException ||
         target == ExceptionKind.ApplicationException && actual == ExceptionKind.TargetInvocationException ||
         target == ExceptionKind.Exception || target == ExceptionKind.SystemException && actual is not (ExceptionKind.Exception or ExceptionKind.ApplicationException or ExceptionKind.TargetInvocationException);
@@ -26,6 +31,11 @@ public static class ExceptionTypes
     /// <summary>The default English message used when no message was supplied.</summary>
     public static string Message(ExceptionKind kind) => kind switch
     {
+        ExceptionKind.KeyNotFoundException => "The given key was not present in the dictionary.",
+        ExceptionKind.ArithmeticException => "Overflow or underflow in the arithmetic operation.",
+        ExceptionKind.DivideByZeroException => "Attempted to divide by zero.",
+        ExceptionKind.FormatException => "Input string was not in a correct format.",
+        ExceptionKind.NotSupportedException => "Specified method is not supported.",
         ExceptionKind.Exception => "Exception of type 'System.Exception' was thrown.",
         ExceptionKind.SystemException => "System error.",
         ExceptionKind.InvalidCastException => "Specified cast is not valid.",

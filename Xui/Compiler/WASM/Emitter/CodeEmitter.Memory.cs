@@ -20,7 +20,12 @@ public readonly ref partial struct CodeEmitter
             .I32GtU().If().Unreachable().End();
         writer.LocalGet(frame.Base).I32Const(frame.Size).I32Add().GlobalSet(pointer);
         foreach (var (index, address) in frame.ScalarLocals)
-            if (initLocals) { FrameAddress(address); writer.I32Const(0).I32Const(MemoryFrame.ScalarSize(locals[index])).MemoryFill(); }
+        {
+            // Address-taken scalars may be initialized through an out parameter even with
+            // SkipLocalsInit. Zero their frame slots, as WASM does for scalar locals.
+            FrameAddress(address); writer.I32Const(0).I32Const(MemoryFrame.ScalarSize(locals[index])).MemoryFill();
+            initializedLocals[index] = true;
+        }
         foreach (var (index, address) in frame.ScalarArguments)
         {
             FrameAddress(address); writer.LocalGet(new((uint)index)); StoreRaw(parameters[index]);
@@ -30,9 +35,9 @@ public readonly ref partial struct CodeEmitter
             if (frame.Locals[i] < 0) continue;
             FrameAddress(frame.Locals[i]);
             writer.LocalSet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i)));
-            if (initLocals)
-                writer.LocalGet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i))).I32Const(0)
-                    .I32Const(frame.ValueSize(locals[i].Identity!.Value)).MemoryFill();
+            writer.LocalGet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i))).I32Const(0)
+                .I32Const(frame.ValueSize(locals[i].Identity!.Value)).MemoryFill();
+            initializedLocals[i] = true;
         }
         EnterReferenceFrame();
         foreach (var (index, displacement) in frame.ReferenceArguments)
@@ -78,7 +83,6 @@ public readonly ref partial struct CodeEmitter
         if (TryVariableScalarAddress(index, false, local)) return;
         if (TryVariableReferenceAddress(index, false, local)) return;
         if (local.Identity is null || method.Storage.IsClass(local.Identity.Value)) throw new NotSupportedException("Only struct local addresses are implemented.");
-        if (!initLocals) throw new NotSupportedException("Addressable struct locals currently require initlocals.");
         writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index));
         ValueAddress(local);
         stack.Push(new MsilStackEntry(local.TypeCode, local.Identity, isByReference: true));

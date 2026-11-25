@@ -170,6 +170,7 @@ public sealed partial class WasmEmitter
             foreach (var target in storage.DelegateTargets.Values) target.Function = functions.Function(target.Type);
             foreach (var helper in storage.DelegateFunctions.Values) helper.Function = functions.Function(helper.Type);
             storage.Interpolation.Declare(ref functions);
+            storage.Formatting.Declare(ref functions);
         }
         finally { functions.Dispose(); }
         if (storage.TableSize != 0 || storage.ReferenceSlotsEnabled)
@@ -281,6 +282,11 @@ public sealed partial class WasmEmitter
                 storage.EmitDelegateHelper(body, kind);
             }
             storage.Interpolation.Emit(ref code, runtime);
+            if (storage.Formatting.Composite)
+            {
+                using var body = code.FunctionBody();
+                storage.Formatting.EmitBoxValue(body, storage);
+            }
         }
         finally { code.Dispose(); }
         var data = writer.DataSection();

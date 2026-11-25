@@ -27,31 +27,15 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Unsupported Newobj at IL_0004 in System.String.Format: Unsupported signature type: Pointer.
+Static field stack analysis is not implemented except TimeSpan.Zero and Stopwatch constants. Field: SemiBold.
+Method: Xui.Apps.TestApp.MobileDemoCategoryPanel..ctor
+Instruction: Ldsfld at IL_0037
 ```
 
 ## Dependency path
 
 ```text
-Root { Value = Method { Identity = Program.Main } }
- → Method { Identity = Program.Main }
- → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
- → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel..ctor }
- → Method { Identity = Xui.DevKit.UI.Widgets.Card.set_Content }
- → Method { Identity = Xui.Core.UI.View.SetProtectedChild<Xui.Core.UI.View> }
- → Method { Identity = Xui.Core.UI.View.RemoveProtectedChild }
- → Method { Identity = Xui.Core.UI.View.DeactivateSubtree }
- → VirtualCall { Identity = Xui.Core.UI.View.OnDeactivate }
- → Method { Identity = Xui.Core.UI.ScrollView.OnDeactivate }
- → Method { Identity = Xui.Core.UI.View.ReleasePointer }
- → Method { Identity = Xui.Core.UI.Input.EventRouter.ReleasePointer }
- → VirtualCall { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.set_Item }
- → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.set_Item }
- → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryInsert }
- → Method { Identity = System.ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException<Int32> }
- → Method { Identity = System.ThrowHelper.GetAddingDuplicateWithKeyArgumentException }
- → Method { Identity = System.SR.Format }
- → Method { Identity = System.String.Format }
+Reachability completed; failure occurred during method planning/emission.
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

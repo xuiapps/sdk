@@ -61,6 +61,10 @@ internal sealed partial class MethodPlan
     public FunctionIndex Function { get; set; }
     public Dictionary<IR.MethodIdentity, LocalIndex[]> CallTemporaries { get; } = new();
     public Dictionary<LocalVariable, (LocalIndex Left, LocalIndex Right)> EqualityTemporaries { get; } = new();
+    public bool UsesCompositeFormatting { get; set; }
+    public LocalIndex FormatText { get; private set; }
+    public LocalIndex FormatState { get; private set; }
+    public LocalIndex[] FormatArguments { get; private set; } = [];
     public int StringConcatArgumentCount { get; set; }
     public LocalIndex[] StringConcatArguments { get; private set; } = [];
     public bool UsesArrays { get; set; }
@@ -109,19 +113,20 @@ internal sealed partial class MethodPlan
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
         if (Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(p => p.IsByReference)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
         Graph = InstructionGraph.Read(Body.Instructions);
+        TypeSpecialization.Apply(source, Body, identity, Graph);
         StaticSpans = StaticSpanCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
         PrimitiveCalls = XuiNet.CodeFlow.PrimitiveCalls.Discover(source, Body, Graph, identity);
         InvariantFormatting = InvariantFormattingCalls.Read(source, Body, Graph);
         InterpolationCalls = XuiNet.CodeFlow.InterpolationCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
         if (CallsTimeSpanFactory() || Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
-            Graph.Instructions.Any(n => n.Code is OpCode.Ldtoken or OpCode.Newobj or OpCode.Ldsfld or OpCode.Ldftn or OpCode.Ldvirtftn || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
+            Graph.Instructions.Any(n => n.Code is OpCode.Div or OpCode.Div_un or OpCode.Rem or OpCode.Rem_un or OpCode.Ldtoken or OpCode.Newobj or OpCode.Ldsfld or OpCode.Ldftn or OpCode.Ldvirtftn || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
         if (Body.ExceptionRegions.Length != 0)
         {
             Graph = Analyzer.Analyze(source, identity);
             try { Flow = ExceptionBlocks.Build(source, Body, Graph); }
             catch (NotSupportedException error) { AddFlowDiagnostic(error); throw; }
         }
-        else if (Graph.Instructions.Any(node => node.Code is OpCode.Switch or OpCode.Throw or OpCode.Rethrow || node.Successors.Length > 1 ||
+        else if (Graph.Specializations.Values.Any(s => s.Kind == SpecializationKind.Branch) || Graph.Instructions.Any(node => node.Code is OpCode.Switch or OpCode.Throw or OpCode.Rethrow || node.Successors.Length > 1 ||
             node.Code is OpCode.Br or OpCode.Br_s))
         {
             Graph = Analyzer.Analyze(source, identity);
@@ -256,6 +261,14 @@ internal sealed partial class MethodPlan
             frame.I32Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
             frame.I64Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I64);
             frame.F64Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F64);
+        }
+        if (UsesCompositeFormatting)
+        {
+            FormatText = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+            FormatState = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+            FormatArguments = new LocalIndex[3];
+            for (int i = 0; i < FormatArguments.Length; i++)
+            { FormatArguments[i] = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef); }
         }
         if (UsesArrays)
         {

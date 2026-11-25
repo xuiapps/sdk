@@ -39,6 +39,13 @@ public readonly ref partial struct CodeEmitter
     private void EmitArrayLoad(OpCode code, int offset, SignatureType? explicitElement = null, bool address = false)
     {
         var shape = CheckedArray(code, offset, explicitElement);
+        if (address && !shape.StructElements)
+        {
+            // The array owns the storage; the selector is its already-checked index.
+            writer.LocalGet(method.ArrayReference).LocalGet(method.ArrayIndex);
+            stack.Push(new(shape.Element.TypeCode, shape.Element.Identity, true, shape.Element.Array));
+            return;
+        }
         writer.LocalGet(method.ArrayReference).RefCast(shape.Type).LocalGet(method.ArrayIndex).ArrayGet(shape.Type);
         if (shape.StructElements)
         {
@@ -54,7 +61,6 @@ public readonly ref partial struct CodeEmitter
         }
         else
         {
-            if (address) throw new NotSupportedException("Primitive/reference array element byrefs are not implemented.");
             if (shape.Element.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
             if (code == OpCode.Ldelem_i1) writer.I32Extend8S();
             if (code == OpCode.Ldelem_u1) writer.I32Const(255).I32And();

@@ -39,6 +39,7 @@ public sealed partial class Analyzer
             Signature(node, local, DependencyReason.Local);
 
         var graph = InstructionGraph.Read(body.Instructions);
+        TypeSpecialization.Apply(module, body, identity, graph);
         var interpolationCalls = InterpolationCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
         var staticSpans = StaticSpanCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
         var primitiveCalls = PrimitiveCalls.Discover(module, body, graph, identity);
@@ -55,6 +56,12 @@ public sealed partial class Analyzer
         {
             if (!reachable.Contains(instructionNode)) continue;
             int offset = instructionNode.Offset;
+            if (graph.Specializations.TryGetValue(offset, out var specialized))
+            {
+                if (specialized.Kind == SpecializationKind.Int32)
+                    Add(new Dependency.Intrinsic("Type.IsValueType"), node, DependencyReason.Call, offset);
+                continue;
+            }
             reader.Seek(offset);
             var instruction = reader.Read();
             var candidate = reader;
@@ -88,6 +95,11 @@ public sealed partial class Analyzer
                     {
                         Add(new Dependency.Intrinsic("Type." + managedType.Operation), node, DependencyReason.Call, offset);
                         Signature(node, managedType.Signature.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.CompositeFormatting.Read(module, token) is not null)
+                    {
+                        Add(new Dependency.Intrinsic("String.Format.Neutral"), node, DependencyReason.Call, offset);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.StringConcatenation.Read(module, token) is not null)
