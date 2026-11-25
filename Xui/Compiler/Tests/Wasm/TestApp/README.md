@@ -188,7 +188,7 @@ the ignored playground browser-test output directory.
 Open [BrowserInteractive.html](Snapshots/BrowserInteractive.html) and tap **Canvas
 Drawing**, then **Back**. The page embeds the compiled module, Canvas host and
 licensed Inter fonts. No HTTP server, network resources, or framework WASM runtime
-is needed. The compiler emits 1.07 MB of WASM for 1,263 retained managed methods.
+is needed. The compiler emits 1.08 MB of WASM for 1,275 retained managed methods.
 The **Page size** footer reports exact HTML bytes, base64 overhead, individual
 font payloads, JavaScript and markup, plus a section-by-section WASM breakdown.
 There are no image files: Xui draws the logo, icons and phone chrome through Canvas.
@@ -196,7 +196,9 @@ There are no image files: Xui draws the logo, icons and phone chrome through Can
 A persistent fixture session owns the real Abstract.Window, RootView and themed
 MobileTestAppShell. Pointer events become stack-backed TouchEventRef values and
 pass through Window.OnTouch and EventRouter. The browser clock drives
-Window.OnAnimationFrame, press feedback and NavigationView transitions. Rendering
+Window.OnAnimationFrame, press feedback and NavigationView transitions. The FPS
+badge samples requested frames using MobileFrameRate, warms up for two seconds,
+and retains its last measured value while idle; idle time is not a missed frame. Rendering
 explicitly calls RootView.Measure/Arrange/Render. The host reuses middleware phone
 geometry/chrome; it does not instantiate the complete EmulatedWindow composition.
 
@@ -211,7 +213,8 @@ dotnet test Xui/Compiler/Tests/Xui.Compiler.Tests.csproj -c Release --filter Ful
 node Xui/Compiler/Tests/Wasm/TestApp/interactive.browser.mjs
 ```
 
-Node checks both navigation directions and animation completion. Chromium checks
+Node checks 30/60/120 FPS warmup, rendered badge updates, idle exclusion, both
+navigation directions and animation completion. Chromium checks
 offline loading, the phone frame, cancelled presses, mouse and touch navigation,
 RGB pixels from the actual example, DPR resizing, idle scheduling and disposal.
 Screenshots are saved under the ignored playground browser-test output directory.

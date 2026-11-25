@@ -11,9 +11,9 @@ Sources: [Interactive.cs](Fixtures/TestApp/Browser/Interactive.cs), [Platform.cs
 ## Execution
 
 ```text
-Node: persistent window, touch down/up, Canvas Drawing navigation, Back navigation, animation completion and idle passed.
-WASM bytes: 1068680
-Retained managed methods: 1263
+Node: 30/60/120 FPS warmup and label updates, idle exclusion, persistent window, touch down/up, Canvas Drawing navigation, Back navigation and animation completion passed.
+WASM bytes: 1075454
+Retained managed methods: 1275
 ```
 
 ## Exit Code

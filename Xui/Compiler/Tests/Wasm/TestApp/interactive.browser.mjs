@@ -35,6 +35,10 @@ try {
         return [api.ScreenX(s)+x*api.ScreenScale(s),api.ScreenY(s)+y*api.ScreenScale(s)];
     },[x,y]);
     await settle();
+    const fps = await page.evaluate(() => { const d=window.mobileDemo; return d.api.FramesPerSecond(d.session); });
+    assert.ok(fps>0 && fps<=1000,`Expected measured FPS after warmup, got ${fps}`);
+    assert.equal(await page.evaluate(() => { const d=window.mobileDemo; return d.api.IsWarmingUp(d.session); }),0);
+    assert.ok(await page.evaluate(rate=>window.mobileDemo.commands.some(c=>c[0]==='FillText' && c[5]===String(rate)),fps));
     assert.equal(await has('CanvasDrawing'),1);
     assert.equal(await page.evaluate(() => document.fonts.check('600 20px Inter')),true);
     assert.deepEqual(await pixel(10,10),[255,255,255,255]);
@@ -91,5 +95,5 @@ try {
     await page.evaluate(() => window.mobileDemo.dispose());
     assert.equal(await page.evaluate(() => window.mobileDemo.disposed && !window.mobileDemo.pending && window.mobileDemo.session===null),true);
     assert.deepEqual(errors,[]); assert.deepEqual(network,[]);
-    console.log('Interactive TestApp: offline home, middleware phone, cancellation, mouse/touch navigation and Back, RGB pixels, DPR resize, idle and disposal passed.');
+    console.log('Interactive TestApp: offline home, measured FPS warmup, middleware phone, cancellation, mouse/touch navigation and Back, RGB pixels, DPR resize, idle and disposal passed.');
 } finally { await browser.close(); }

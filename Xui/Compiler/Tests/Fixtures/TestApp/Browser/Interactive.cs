@@ -15,16 +15,18 @@ public sealed class BrowserSession
     public readonly CompilerPhoneHost Phone = new();
     public readonly Window Window;
     public readonly BrowserPlatform Platform;
+    public readonly MobilePerformanceMetrics Metrics = new();
     public int Frames, PointerEvents, Animations;
     public int ActivePointer = -1;
     public long PreviousTicks;
     public BrowserSession()
     {
         Platform = new BrowserPlatform(Context);
+        Metrics.FrameRate.BeginWarmup();
         Window = new Window(Platform)
         {
             DisplayArea = (0, 0, 393, 852), SafeArea = (0, 59, 393, 759),
-            Content = BrowserMenu.CreateRoot(new MobilePerformanceMetrics())
+            Content = BrowserMenu.CreateRoot(Metrics)
         };
     }
 }
@@ -40,6 +42,7 @@ public static class Program
         session.Platform.Clock.Ticks = ticks;
         ((BrowserWindow)session.Window.Actual).Dirty = false;
         var frame = new FrameEventRef(new TimeSpan(session.Frames == 0 ? ticks : session.PreviousTicks), new TimeSpan(ticks));
+        session.Metrics.FrameRate.Observe(new TimeSpan(ticks), frame.Delta);
         session.Window.OnAnimationFrame(ref frame);
         session.PreviousTicks = ticks;
         session.Animations++;
@@ -50,7 +53,17 @@ public static class Program
         root.Render(session.Context);
         session.Phone.End(session.Context);
         session.Frames++;
+        if ((root.Flags & (View.ViewFlags.Animated | View.ViewFlags.DescendantAnimated)) != 0)
+            session.Metrics.FrameRate.RequestAnimation(new TimeSpan(ticks));
     }
+    public static void SetTime(BrowserSession session, long ticks) => session.Platform.Clock.Ticks = ticks;
+    public static void RequestFrame(BrowserSession session, long ticks)
+    {
+        SetTime(session, ticks);
+        session.Metrics.FrameRate.Request(new TimeSpan(ticks));
+    }
+    public static int FramesPerSecond(BrowserSession session) => session.Metrics.FrameRate.RoundedFramesPerSecond ?? 0;
+    public static int IsWarmingUp(BrowserSession session) => session.Metrics.FrameRate.IsWarmingUp ? 1 : 0;
     public static int NeedsFrame(BrowserSession session) => ((BrowserWindow)session.Window.Actual).Dirty ||
         (session.Window.RootView.Flags & (View.ViewFlags.Animated | View.ViewFlags.DescendantAnimated)) != 0 ? 1 : 0;
     public static int Pointer(BrowserSession session, int kind, int id, double x, double y, double pressure)

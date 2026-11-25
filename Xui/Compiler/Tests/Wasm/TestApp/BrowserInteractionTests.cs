@@ -27,26 +27,44 @@ public class BrowserInteractionTests(Xunit.Abstractions.ITestOutputHelper output
         {
             _ = new Xui.Compiler.XuiNet.Compilation([app, .. assemblies, .. framework.Assemblies]);
             byte[] wasm = emitter.Emit(app, new CanvasCommandRewriter(), namedExports: ExportTests.Methods(app,
-                "Create", "Frame", "Pointer", "NeedsFrame", "ScreenX", "ScreenY", "ScreenScale", "Frames", "PointerEvents", "Animations", "TargetX", "TargetY", "HasView"));
+                "Create", "Frame", "Pointer", "NeedsFrame", "ScreenX", "ScreenY", "ScreenScale", "Frames", "PointerEvents", "Animations", "TargetX", "TargetY", "HasView", "SetTime", "RequestFrame", "FramesPerSecond", "IsWarmingUp"));
             output.WriteLine($"WASM bytes: {wasm.Length}; methods: {emitter.Dependencies!.Methods.Count}");
             await ExportHost.RunAsync(wasm, BrowserCanvasHost.JavaScript + """
                 const commands=[];
                 const { exports: api } = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas:canvasImports(null,commands) });
-                const session=api.Create(); api.Frame(session,900,950,0n);
-                assert.equal(api.Frames(session),1);
+                function warmup(hz) {
+                    const s=api.Create();
+                    api.RequestFrame(s,0n); api.Frame(s,900,950,0n);
+                    assert.equal(api.IsWarmingUp(s),1);
+                    for(let i=1;i<=hz*2+2;i++) { commands.length=0; api.Frame(s,900,950,BigInt(Math.round(i*10000000/hz))); }
+                    assert.equal(api.IsWarmingUp(s),0);
+                    assert.equal(api.FramesPerSecond(s),hz);
+                    assert.ok(commands.some(c=>c[0]==='FillText' && c[5]===String(hz)), 'FPS badge must render the measured value');
+                    assert.equal(api.NeedsFrame(s),0,'warmup must stop requesting frames');
+                    // Unsolicited ticks and a long idle interval must not become slow-frame samples.
+                    api.Frame(s,900,950,300000000n);
+                    assert.equal(api.FramesPerSecond(s),hz);
+                    return s;
+                }
+                warmup(30); warmup(120);
+                const session=warmup(60);
+                let ticks=300000000n;
+                const frame=()=>{ ticks+=166667n; commands.length=0; api.Frame(session,900,950,ticks); };
+                api.SetTime(session,ticks);
+
                 const x=api.ScreenX(session)+api.TargetX(session,'CanvasDrawing')*api.ScreenScale(session);
                 const y=api.ScreenY(session)+api.TargetY(session,'CanvasDrawing')*api.ScreenScale(session);
                 assert.equal(api.Pointer(session,2,1,x,y,1),1);
-                api.Frame(session,900,950,160000n);
+                api.RequestFrame(session,ticks); frame();
                 assert.equal(api.Pointer(session,4,1,x,y,0),1);
-                for(let i=2;i<100;i++) { commands.length=0; api.Frame(session,900,950,BigInt(i*160000)); }
+                for(let i=2;i<100;i++) frame();
                 assert.equal(api.PointerEvents(session),2);
                 assert.equal(api.HasView(session,'Back'),1,'tap must navigate to the example page');
                 assert.ok(commands.some(c=>c[0]==='FillText' && c[5]==='Back'));
                 const bx=api.ScreenX(session)+api.TargetX(session,'Back')*api.ScreenScale(session);
                 const by=api.ScreenY(session)+api.TargetY(session,'Back')*api.ScreenScale(session);
                 api.Pointer(session,2,2,bx,by,1); api.Pointer(session,4,2,bx,by,0);
-                for(let i=100;i<200;i++) { commands.length=0; api.Frame(session,900,950,BigInt(i*160000)); }
+                for(let i=100;i<200;i++) frame();
                 assert.equal(api.HasView(session,'Back'),0,'back must remove the example page');
                 assert.equal(api.HasView(session,'CanvasDrawing'),1);
                 assert.ok(commands.some(c=>c[0]==='FillText' && c[5]==='Xui SDK Examples'));
@@ -70,7 +88,7 @@ public class BrowserInteractionTests(Xunit.Abstractions.ITestOutputHelper output
                 ## Execution
 
                 ```text
-                Node: persistent window, touch down/up, Canvas Drawing navigation, Back navigation, animation completion and idle passed.
+                Node: 30/60/120 FPS warmup and label updates, idle exclusion, persistent window, touch down/up, Canvas Drawing navigation, Back navigation and animation completion passed.
                 WASM bytes: {wasm.Length}
                 Retained managed methods: {emitter.Dependencies!.Methods.Count}
                 ```

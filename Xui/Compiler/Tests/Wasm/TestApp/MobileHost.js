@@ -17,6 +17,7 @@ async function startMobile(bytes) {
     }
     function invalidate() {
         if (disposed || pending || document.hidden) return;
+        api.RequestFrame?.(session, BigInt(Math.round(performance.now() * 10000)));
         demo.pending = true;
         pending = requestAnimationFrame(frame);
     }
@@ -39,6 +40,7 @@ async function startMobile(bytes) {
         } catch (error) { fail(error); }
     }
     function send(kind, event) {
+        api.SetTime?.(session, BigInt(Math.round(performance.now() * 10000)));
         const bounds = canvas.getBoundingClientRect();
         return api.Pointer(session, kind, event.pointerId, event.clientX - bounds.left, event.clientY - bounds.top, event.pressure || 0);
     }
