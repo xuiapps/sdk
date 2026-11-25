@@ -7,7 +7,7 @@ internal static class BrowserCanvasHost
         function canvasImports(context, commands) {
             const color = (r,g,b,a) => `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`;
             let pathRect = [0,0,0,0], transform = [1,0,0,1], controls = [0,0,0,0], arc = [0,0,0], dash = [];
-            let gradient, gradientColor, ellipse;
+            let gradient, gradientColor, ellipse, arcToControls;
             let cachedText, metrics; const fonts = [];
             let font = { size: 12, weight: 400, stretch: 100, height: 14.4, family: 'Inter' };
             return { Command(name,a,b,c,d,text) {
@@ -49,6 +49,8 @@ internal static class BrowserCanvasHost
                     case 'SetTransformTranslation': context?.setTransform(...transform,a,b); break;
                     case 'EllipseGeometry': ellipse = [a,b,c,d]; break;
                     case 'EllipseAngles': context?.ellipse(...ellipse,a,b,c,d !== 0); break;
+                    case 'ArcToControls': arcToControls = [a,b,c,d]; break;
+                    case 'ArcTo': context?.arcTo(...arcToControls,a); break;
                     case 'ArcOrigin': arc = [a,b,c]; break;
                     case 'ArcAngles': context?.arc(...arc,a,b,c !== 0); break;
                     case 'RoundRectCorners': context?.roundRect(...pathRect, [a,b,c,d]); break;

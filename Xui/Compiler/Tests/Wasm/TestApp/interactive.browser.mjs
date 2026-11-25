@@ -14,6 +14,7 @@ try {
     page.on('request', r => { if (/^https?:/.test(r.url())) network.push(r.url()); });
     const file = new URL(process.argv[2] ?? './Snapshots/BrowserInteractive.html', import.meta.url);
     const html = await readFile(file);
+    const catalogue = JSON.parse(await readFile(new URL('./Catalogue.json',import.meta.url),'utf8'));
     await page.goto(file.href);
     await page.waitForFunction(() => window.mobileDemo?.ready || window.mobileDemo?.error);
     const healthy = async () => assert.equal(await page.evaluate(() => window.mobileDemo.error), null);
@@ -92,8 +93,33 @@ try {
     await page.screenshot({ path:fileURLToPath(new URL('narrow.png',output)) });
     await page.touchscreen.tap(...await target('Back')); await settle();
     assert.equal(await has('Back'),0);
+    // Reach every row by real pointer dragging, then exercise its unchanged drawing.
+    for (const demo of catalogue) {
+        for (let attempt=0;attempt<12;attempt++) {
+            const y=await page.evaluate(id=>{const d=window.mobileDemo;return d.api.TargetY(d.session,id);},demo.id);
+            if(y>=180 && y<=800) break;
+            const start=y>800?700:400, end=y>800?400:700;
+            await page.mouse.move(...await screen(200,start)); await page.mouse.down();
+            for(let step=1;step<=20;step++) {
+                await page.mouse.move(...await screen(200,start+(end-start)*step/20));
+                await page.waitForTimeout(16);
+            }
+            await page.waitForTimeout(200); await page.mouse.up(); await settle();
+        }
+        const logicalY=await page.evaluate(id=>{const d=window.mobileDemo;return d.api.TargetY(d.session,id);},demo.id);
+        assert.ok(logicalY>=180 && logicalY<=800,`Visible menu row: ${demo.id} (${logicalY})`);
+        await page.touchscreen.tap(...await target(demo.id));
+        await page.waitForFunction(example=>{const d=window.mobileDemo;return d.error||d.api.HasView(d.session,'Example.'+example);},demo.example);
+        await settle();
+        assert.equal(await has('Example.'+demo.example),1);
+        assert.ok(await page.evaluate(command=>window.mobileDemo.commands.some(c=>c[0]===command),demo.command),`${demo.id} drawing command`);
+        if(demo.id==='Star') assert.equal(await page.evaluate(()=>window.mobileDemo.commands.filter(c=>c[0]==='ArcTo').length),10);
+        await page.screenshot({path:fileURLToPath(new URL(`catalogue-${demo.id}.png`,output))});
+        await page.touchscreen.tap(...await target('Back')); await settle();
+        assert.equal(await has('Back'),0);
+    }
     await page.evaluate(() => window.mobileDemo.dispose());
     assert.equal(await page.evaluate(() => window.mobileDemo.disposed && !window.mobileDemo.pending && window.mobileDemo.session===null),true);
     assert.deepEqual(errors,[]); assert.deepEqual(network,[]);
-    console.log('Interactive TestApp: offline home, measured FPS warmup, middleware phone, cancellation, mouse/touch navigation and Back, RGB pixels, DPR resize, idle and disposal passed.');
+    console.log('Interactive TestApp: offline home, measured FPS warmup, middleware phone, cancellation, mouse/touch navigation and Back, RGB pixels, all 21 catalogue pages, scrolling, ArcTo, DPR resize, idle and disposal passed.');
 } finally { await browser.close(); }

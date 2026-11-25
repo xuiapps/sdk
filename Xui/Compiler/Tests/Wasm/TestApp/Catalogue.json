@@ -1,0 +1,102 @@
+[
+  {
+    "id": "TextMetrics",
+    "example": "TextMetricsExample",
+    "command": "FillText"
+  },
+  {
+    "id": "QuadraticCurve",
+    "example": "BrowserQuadraticCurveExample",
+    "command": "QuadraticTo"
+  },
+  {
+    "id": "CubicCurve",
+    "example": "BrowserCubicCurveExample",
+    "command": "CubicTo"
+  },
+  {
+    "id": "HeartCurve",
+    "example": "BrowserHeartCurveExample",
+    "command": "CubicTo"
+  },
+  {
+    "id": "Arc",
+    "example": "BrowserArcExample",
+    "command": "ArcAngles"
+  },
+  {
+    "id": "ArcFlower",
+    "example": "BrowserArcFlowerExample",
+    "command": "ArcAngles"
+  },
+  {
+    "id": "Ellipse",
+    "example": "BrowserEllipseExample",
+    "command": "EllipseAngles"
+  },
+  {
+    "id": "ArcTo",
+    "example": "BrowserArcToExample",
+    "command": "ArcTo"
+  },
+  {
+    "id": "ArcToFlower",
+    "example": "BrowserArcToFlowerExample",
+    "command": "ArcTo"
+  },
+  {
+    "id": "Star",
+    "example": "BrowserStarExample",
+    "command": "ArcTo"
+  },
+  {
+    "id": "RoundRect",
+    "example": "BrowserRoundRectExample",
+    "command": "RoundRect"
+  },
+  {
+    "id": "LineCapJoin",
+    "example": "BrowserLineCapJoinExample",
+    "command": "LineCap"
+  },
+  {
+    "id": "DashPattern",
+    "example": "BrowserDashPatternExample",
+    "command": "DashValue"
+  },
+  {
+    "id": "FillRule",
+    "example": "BrowserFillRuleExample",
+    "command": "Fill"
+  },
+  {
+    "id": "PathContinuation",
+    "example": "BrowserPathContinuationExample",
+    "command": "LineTo"
+  },
+  {
+    "id": "Clip",
+    "example": "BrowserClipExample",
+    "command": "Clip"
+  },
+  {
+    "id": "Transform",
+    "example": "BrowserTransformExample",
+    "command": "TransformTranslation"
+  },
+  {
+    "id": "GlobalAlpha",
+    "example": "BrowserGlobalAlphaExample",
+    "command": "GlobalAlpha"
+  },
+  {
+    "id": "Text",
+    "example": "BrowserTextExample",
+    "command": "FillText"
+  },
+  {
+    "id": "RainbowTextFill",
+    "example": "BrowserRainbowTextFillExample",
+    "command": "FillGradient"
+  }
+]

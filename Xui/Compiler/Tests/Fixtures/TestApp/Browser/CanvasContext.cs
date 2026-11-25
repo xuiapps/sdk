@@ -113,7 +113,11 @@ public sealed class CanvasContext : IContext
         NativeCanvas.Command("ArcOrigin", (double)center.X, (double)center.Y, (double)radius);
         NativeCanvas.Command("ArcAngles", (double)startAngle, (double)endAngle, (int)winding);
     }
-    public void ArcTo(Point control1, Point control2, NFloat radius) => throw new InvalidOperationException("Unsupported Canvas operation: ArcTo(Point control1, Point control2, NFloat radius).");
+    public void ArcTo(Point control1, Point control2, NFloat radius)
+    {
+        NativeCanvas.Command("ArcToControls", (double)control1.X, (double)control1.Y, (double)control2.X, (double)control2.Y);
+        NativeCanvas.Command("ArcTo", (double)radius);
+    }
     public void Ellipse(Point center, NFloat radiusX, NFloat radiusY, NFloat rotation, NFloat startAngle, NFloat endAngle, Winding winding = Winding.ClockWise)
     {
         NativeCanvas.Command("EllipseGeometry", (double)center.X, (double)center.Y, (double)radiusX, (double)radiusY);

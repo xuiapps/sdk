@@ -188,7 +188,7 @@ the ignored playground browser-test output directory.
 Open [BrowserInteractive.html](Snapshots/BrowserInteractive.html) and tap **Canvas
 Drawing**, then **Back**. The page embeds the compiled module, Canvas host and
 licensed Inter fonts. No HTTP server, network resources, or framework WASM runtime
-is needed. The compiler emits 1.08 MB of WASM for 1,275 retained managed methods.
+is needed. The compiler emits 1.65 MB of WASM for 1,863 retained managed methods.
 The **Page size** footer reports exact HTML bytes, base64 overhead, individual
 font payloads, JavaScript and markup, plus a section-by-section WASM breakdown.
 There are no image files: Xui draws the logo, icons and phone chrome through Canvas.
@@ -202,7 +202,14 @@ and retains its last measured value while idle; idle time is not a missed frame.
 explicitly calls RootView.Measure/Arrange/Render. The host reuses middleware phone
 geometry/chrome; it does not instantiate the complete EmulatedWindow composition.
 
-The browser catalogue contains the unchanged FillRectTest in a real example page.
+The browser catalogue contains Text Metrics and 20 unchanged Canvas drawings:
+rectangles, quadratic/cubic/heart curves, arcs and arc flowers, ellipses, ArcTo and
+ArcTo flowers, stars, rounded rectangles, line caps/joins, dash patterns, fill rules,
+path continuation, clipping, transforms, transparency, text and gradient text.
+Drag the home menu to reach every page. New drawing pages fit the original artwork
+bounds into the phone viewport; the original Canvas Drawing page keeps its RGB
+rectangles. ArcTo crosses the host boundary as two control points followed by the
+radius and calls CanvasRenderingContext2D.arcTo. No compiler opcode work is needed.
 Optional diagnostics and async/GPU/resource-heavy examples remain excluded. The
 adapter currently accepts one touch contact; keyboard, IME and full multi-touch
 support remain future work. Native canvas text metrics and the documented portable
@@ -214,9 +221,10 @@ node Xui/Compiler/Tests/Wasm/TestApp/interactive.browser.mjs
 ```
 
 Node checks 30/60/120 FPS warmup, rendered badge updates, idle exclusion, both
-navigation directions and animation completion. Chromium checks
+navigation directions, all catalogue entries, scrolling, ArcTo segments and animation completion. Chromium checks
 offline loading, the phone frame, cancelled presses, mouse and touch navigation,
-RGB pixels from the actual example, DPR resizing, idle scheduling and disposal.
+RGB pixels from the actual example, all 21 pages with screenshots, menu dragging,
+DPR resizing, idle scheduling and disposal.
 Screenshots are saved under the ignored playground browser-test output directory.
 Array.Clear preserves element byrefs; logarithm/exponential, scalar rounding and
 NFloat limits support the reached animation/event-routing paths. Math and array

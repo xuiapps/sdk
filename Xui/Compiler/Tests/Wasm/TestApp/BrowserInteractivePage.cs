@@ -28,7 +28,7 @@ internal static class BrowserInteractivePage
           #page-size tfoot { font-weight:600; }
         </style>
         <canvas id="canvas" tabindex="0" aria-label="Interactive Xui TestApp inside the middleware phone frame"></canvas>
-        <p id="status" role="status">TestApp · tap Canvas Drawing, then Back · browser catalogue preview</p>
+        <p id="status" role="status">TestApp · drag to browse</p>
         {{PageSizeBreakdown.Placeholder}}
         <script>
         {{Xui.Compiler.WASM.Runtime.JavaScript.Source}}
