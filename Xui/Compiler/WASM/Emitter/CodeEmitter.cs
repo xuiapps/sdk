@@ -66,6 +66,7 @@ public readonly ref partial struct CodeEmitter
     {
         stack.Clear();
         Array.Fill(initializedLocals, initLocals);
+        InitializeMethodType();
         EnterFrame();
         InitializeGcLocals();
         if (initLocals)
@@ -145,7 +146,8 @@ public readonly ref partial struct CodeEmitter
             case OpCode.Stind_r4: EmitStind_r4(offset); break;
             case OpCode.Stind_r8: EmitStind_r8(offset); break;
             case OpCode.Stind_ref: EmitStind_ref(offset); break;
-            case OpCode.Ldsflda:
+            case OpCode.Ldsflda: EmitLdsflda(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Stsfld: EmitStsfld(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Ldtoken: EmitLdtoken(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Ldloca:
                 EmitLdloca(instruction.ReadVariable(ref reader), offset); break;
@@ -412,6 +414,7 @@ public readonly ref partial struct CodeEmitter
                         method.Storage.StaticData.Add(dataToken);
                         break;
                     }
+                    if (instruction.Code == OpCode.Ldsflda) goto case OpCode.Stsfld;
                     var tokenType = IR.Intrinsics.ManagedType.Token(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
                     method.Storage.ManagedTypesEnabled = true;
                     if (tokenType.IsValueType) _ = method.Storage.Classes.Resolve(tokenType);
@@ -542,8 +545,19 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Ldsfld:
                     var staticField = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
                     if (IR.Intrinsics.StopwatchConstant.Read(source, staticField) is not null) break;
-                    if (IR.Intrinsics.TimeSpanZero.Read(source, staticField, method.Identity.DeclaringType) is null)
-                        throw new NotSupportedException("Static field storage is not implemented except TimeSpan.Zero and Stopwatch constants.");
+                    if (IR.Intrinsics.TimeSpanZero.Read(source, staticField, method.Identity.DeclaringType) is not null) break;
+                    reader.Seek(offset); _ = reader.Read();
+                    goto case OpCode.Stsfld;
+                case OpCode.Stsfld:
+                    var staticToken = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    var staticIdentity = IR.MemberResolver.Field(source, staticToken, method.Identity.DeclaringType, method.Identity.Arguments);
+                    var staticDefinition = staticIdentity.DeclaringType.Module.GetField(staticIdentity.Handle);
+                    if ((staticDefinition.Attributes & (System.Reflection.FieldAttributes.HasFieldRVA | System.Reflection.FieldAttributes.Literal)) != 0)
+                        throw new NotSupportedException($"Direct access to literal/RVA static storage is not implemented: {staticDefinition.Name}.");
+                    var staticStorage = method.Storage.Statics[staticIdentity.DeclaringType].Fields.Fields[staticIdentity].Storage;
+                    method.RequireGcTemporaries();
+                    if (staticStorage.Identity is { } staticValue) method.RequireGc(staticValue);
+                    if (instruction.Code == OpCode.Ldsflda) method.Storage.RequireAddress(staticStorage);
                     break;
                 case OpCode.Ldfld:
                 case OpCode.Ldflda:
@@ -826,7 +840,7 @@ public readonly ref partial struct CodeEmitter
                     {
                         method.Storage.ExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(exceptionKind);
-                        method.Storage.ArgumentExceptionsEnabled |= IR.Exceptions.ExceptionTypes.UsesParameterName(exceptionMember);
+                        method.Storage.ArgumentExceptionsEnabled |= IR.Exceptions.ExceptionTypes.UsesParameterName(exceptionMember) || exceptionMember == IR.Exceptions.ExceptionMember.TypeName;
                         method.Storage.InnerExceptionsEnabled |= exceptionMember == IR.Exceptions.ExceptionMember.InnerException;
                         method.RequireGcTemporaries();
                         break;

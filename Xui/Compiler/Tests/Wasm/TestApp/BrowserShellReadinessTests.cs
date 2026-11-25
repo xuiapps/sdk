@@ -31,6 +31,7 @@ public class BrowserShellReadinessTests(Xunit.Abstractions.ITestOutputHelper out
 
             string path = error.Data["Xui.DependencyPath"]?.ToString() ?? "Reachability completed; failure occurred during method planning/emission.";
             string failure = error.Message;
+            if (error.Data["Xui.StaticField"] is { } field) failure += $"\nStatic field: {field}";
             if (error.Data["Xui.Method"] is { } method) failure += $"\nMethod: {method}";
             if (error.Data["Xui.Instruction"] is { } instruction) failure += $"\nInstruction: {instruction}";
             output.WriteLine(failure + "\n" + path);

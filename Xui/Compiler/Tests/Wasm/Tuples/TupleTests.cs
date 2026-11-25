@@ -112,12 +112,10 @@ public class TupleTests
     {
         using var app = CanvasTests.Read(Frontend.Roslyn.Compile(declaration + " public static class Program { public static int Main() { S s = default; return s.Read(); } }"));
         var emitter = new WasmEmitter();
-        if (requiresInitializer) Assert.Throws<NotSupportedException>(() => emitter.Emit(app, new ConsoleWriteLineRewriter()));
-        else
-        {
-            Assert.Equal(42, (await Node.ExecuteAsync(emitter.Emit(app))).ExitCode);
-            Assert.DoesNotContain(emitter.Dependencies!.Methods, m => m.DeclaringType.Module.GetMethod(m.Handle).Name == ".cctor");
-        }
+        var result = await Node.ExecuteAsync(emitter.Emit(app, new ConsoleWriteLineRewriter()));
+        Assert.Equal(42, result.ExitCode);
+        Assert.Equal(requiresInitializer ? "99\n" : "", result.Output);
+        Assert.Equal(requiresInitializer, emitter.Dependencies!.Methods.Any(m => m.DeclaringType.Module.GetMethod(m.Handle).Name == ".cctor"));
     }
 
     private static string SourceDirectory([CallerFilePath] string file = "") => Path.GetDirectoryName(file)!;

@@ -152,6 +152,7 @@ public sealed partial class Analyzer
     {
         var identity = node.Identity;
         var field = identity.DeclaringType.Module.GetField(identity.Handle);
+        if ((field.Attributes & FieldAttributes.Static) != 0) UseModule(identity.DeclaringType.Module, node);
         Add(new Dependency.Type(identity.DeclaringType), node, DependencyReason.DeclaringType);
         Signature(node, SignatureReader.Field(identity.DeclaringType.Module, field.Signature, identity.DeclaringType.Arguments), DependencyReason.FieldType);
         if ((field.Attributes & FieldAttributes.Static) == 0)

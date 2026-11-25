@@ -29,14 +29,6 @@ public sealed partial class WasmEmitter
         var source = assembly.ManifestModule;
         if (source.EntryPoint.IsNil)
             throw new NotSupportedException("WASM emission currently requires a managed entry point.");
-        foreach (var typeHandle in source.Types)
-        {
-            var type = source.GetType(typeHandle);
-            if (type.Name != "<Module>") continue;
-            foreach (var methodHandle in type.Methods)
-                if (source.GetMethod(methodHandle).Name == ".cctor")
-                    throw new NotSupportedException("Module initialization is not implemented.");
-        }
         rewriter ??= NoOpCodeRewriter.Instance;
         rewriter.BeginModule(source);
         var roots = new List<Root> { Root.EntryPoint(assembly) };
@@ -66,6 +58,7 @@ public sealed partial class WasmEmitter
         var seenLiterals = new HashSet<string>(StringComparer.Ordinal);
         var storage = new StorageModel(dependencies);
         storage.SelectStackTypes(dependencies);
+        storage.CollectStatics(dependencies);
         var mainIdentity = IR.MethodIdentity.FromDefinition(source, source.EntryPoint);
         foreach (var identity in dependencies.Methods.Concat(dependencies.Nodes.OfType<Dependency.Signature>().Select(n => n.Identity)).Distinct())
         {
@@ -90,6 +83,9 @@ public sealed partial class WasmEmitter
             }
         if (storage.ArgumentExceptionsEnabled)
             foreach (string text in new[] { " (Parameter '", "')" })
+                if (seenLiterals.Add(text)) literals.Add(text);
+        foreach (var type in storage.Statics.Values.Where(type => type.Constructor is not null))
+            foreach (string text in new[] { type.Name, type.FailureMessage })
                 if (seenLiterals.Add(text)) literals.Add(text);
         foreach (var method in orderedMethods) method.AllocateTemporaries(methods);
         var literalIndices = new Dictionary<string, (DataIndex Data, GlobalIndex Global)>(StringComparer.Ordinal);
@@ -171,6 +167,8 @@ public sealed partial class WasmEmitter
             foreach (var helper in storage.DelegateFunctions.Values) helper.Function = functions.Function(helper.Type);
             storage.Interpolation.Declare(ref functions);
             storage.Formatting.Declare(ref functions);
+            foreach (var type in storage.Statics.Values.Where(type => type.Constructor is not null))
+                type.Ensure = functions.Function(storage.StaticInitializerType);
         }
         finally { functions.Dispose(); }
         if (storage.TableSize != 0 || storage.ReferenceSlotsEnabled)
@@ -193,7 +191,8 @@ public sealed partial class WasmEmitter
             using var tags = writer.TagSection();
             storage.ExceptionTag = tags.Exception(storage.ExceptionTagType);
         }
-        using (var globals = writer.GlobalSection())
+        var globals = writer.GlobalSection();
+        try
         {
             if (storage.DelegatesEnabled) storage.DelegateMethodIds = globals.I32Array(storage.DelegateMethodsType, storage.DelegateTableMethods(methods));
             for (int i = 0; i < literals.Count; i++)
@@ -217,7 +216,9 @@ public sealed partial class WasmEmitter
                 if (storage.ManagedTypesEnabled)
                     descriptor.Utf16Array(utf16ArrayType, type.Identity.Module.GetType((TypeDefinitionHandle)type.Identity.Handle).Name);
             }
+            storage.DefineStaticGlobals(ref globals);
         }
+        finally { globals.Dispose(); }
         // Frame state follows the string-cache globals in the same index space.
         var runtime = new EmissionRuntime(utf16ArrayType, fromCharCodeArrayFunction, stackPointer, referenceStackPointer, objectReferences, stringReferences, stringConcat, stringLength, stringEquals);
         using (var exports = writer.ExportSection())
@@ -286,6 +287,11 @@ public sealed partial class WasmEmitter
             {
                 using var body = code.FunctionBody();
                 storage.Formatting.EmitBoxValue(body, storage);
+            }
+            foreach (var type in storage.Statics.Values.Where(type => type.Constructor is not null))
+            {
+                using var body = code.FunctionBody([EqRef]);
+                storage.EmitStaticInitializer(body, type, methods[type.Constructor!.Value], runtime, literalIndices);
             }
         }
         finally { code.Dispose(); }

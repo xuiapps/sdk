@@ -335,8 +335,7 @@ public sealed partial class Analyzer
         Add(new Dependency.Type(identity.DeclaringType), node, DependencyReason.DeclaringType);
         // BeforeFieldInit permits deferring initialization until the first static field access.
         // Strict initializers remain required by calls and constructors.
-        if (retainBody && method.Name != ".cctor" &&
-            (module.GetType((TypeDefinitionHandle)identity.DeclaringType.Handle).Attributes & TypeAttributes.BeforeFieldInit) == 0)
+        if (retainBody && TypeInitialization.AtMethodEntry(identity))
             Add(new Dependency.Initialization(identity.DeclaringType), node, DependencyReason.Initialization);
         var signature = SignatureReader.Method(module, method.Signature, identity.DeclaringType.Arguments, identity.Arguments);
         if (signature.HasThis)

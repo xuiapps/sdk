@@ -167,7 +167,7 @@ public readonly ref partial struct CodeEmitter
         {
             _ = Pop(instruction.Code, offset);
             CheckExceptionNull();
-            uint field = member == ExceptionMember.InnerException ? method.Storage.InnerExceptionField : member == ExceptionMember.ParamName ? 2u : 1u;
+            uint field = member == ExceptionMember.InnerException ? method.Storage.InnerExceptionField : member is ExceptionMember.ParamName or ExceptionMember.TypeName ? 2u : 1u;
             writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(field));
             var signature = XuiNet.DotNet.Signatures.SignatureReader.Method(source, token.Kind == HandleKind.MemberReference ? source.GetMemberReference((MemberReferenceHandle)token).Signature
                 : source.GetMethod((MethodDefinitionHandle)token).Signature);

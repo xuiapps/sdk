@@ -19,5 +19,6 @@ public enum ExceptionKind
     NotSupportedException,
     ArithmeticException,
     DivideByZeroException,
-    KeyNotFoundException
+    KeyNotFoundException,
+    TypeInitializationException
 }

@@ -10,5 +10,6 @@ public enum ExceptionMember
     MessageParameterConstructor,
     Message,
     ParamName,
-    InnerException
+    InnerException,
+    TypeName
 }

@@ -38,6 +38,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     _ = instruction.ReadToken(ref reader);
                     stack.Push(new(StackType.RuntimeFieldHandle, FieldToken: spanToken.Field)); break;
                 }
+                if (node.Code == OpCode.Ldsflda) goto case OpCode.Stsfld;
                 var tokenType = Model.Intrinsics.ManagedType.Token(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments);
                 stack.Push(new(StackType.RuntimeTypeHandle, TypeToken: tokenType));
                 break;
@@ -48,14 +49,18 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     stack.Push(StackEntry.From(new SignatureType(clockConstant.Code))); break;
                 }
                 var zeroType = Model.Intrinsics.TimeSpanZero.Read(module, staticField, context);
-                if (zeroType is null)
-                {
-                    string fieldName = staticField.Kind == HandleKind.MemberReference
-                        ? module.GetMemberReference((MemberReferenceHandle)staticField).Name
-                        : module.GetField((FieldDefinitionHandle)staticField).Name;
-                    throw new NotSupportedException($"Static field stack analysis is not implemented except TimeSpan.Zero and Stopwatch constants. Field: {fieldName}.");
-                }
-                stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, zeroType)));
+                if (zeroType is not null)
+                { stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, zeroType))); break; }
+                reader.Seek(node.Offset); _ = reader.Read();
+                goto case OpCode.Stsfld;
+            case OpCode.Stsfld:
+                var staticIdentity = Model.MemberResolver.Field(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context, methodArguments);
+                var staticDeclaration = staticIdentity.DeclaringType.Module.GetField(staticIdentity.Handle);
+                if ((staticDeclaration.Attributes & System.Reflection.FieldAttributes.Static) == 0)
+                    throw stack.Error("Static field instruction targets an instance field");
+                var staticType = SignatureReader.Field(staticIdentity.DeclaringType.Module, staticDeclaration.Signature, staticIdentity.DeclaringType.Arguments);
+                if (node.Code == OpCode.Stsfld) stack.Store(StackEntry.From(staticType));
+                else stack.Push(StackEntry.From(node.Code == OpCode.Ldsflda ? staticType.ByReference() : staticType));
                 break;
             case OpCode.Newarr:
                 ArrayIndex(ref stack);

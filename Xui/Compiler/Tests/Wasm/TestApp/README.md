@@ -137,6 +137,8 @@ profile still omits diagnostic instrumentation. Default equality, primitive boxi
 composite String.Format, and the Dictionary duplicate-key message path now compile.
 Separate CLR/Node regressions execute integer-key Dictionary operations, resizing,
 and struct values with string references. The browser catalogue completes reachability
-and stops during method planning at `FontWeight.SemiBold` in
-`MobileDemoCategoryPanel`'s constructor (`ldsfld`, IL_0037). General static storage
-and type initialization are the next requirement; the complete shell is not yet emitted.
+and now has static storage and guarded type/module initialization. A focused
+CLR/Node test executes the actual `FontWeight.SemiBold` initializer and reads its
+struct value. The next browser catalogue blocker is `System.DateTime.MinValue`:
+its auto-layout value type is not supported by the layout resolver. The complete
+shell is not yet emitted; see the readiness snapshot for its dependency path.

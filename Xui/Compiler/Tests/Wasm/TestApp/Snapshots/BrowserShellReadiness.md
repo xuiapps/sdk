@@ -27,15 +27,22 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Static field stack analysis is not implemented except TimeSpan.Zero and Stopwatch constants. Field: SemiBold.
-Method: Xui.Apps.TestApp.MobileDemoCategoryPanel..ctor
-Instruction: Ldsfld at IL_0037
+Auto layout is not supported: DateTime.
+Static field: System.DateTime.MinValue
 ```
 
 ## Dependency path
 
 ```text
-Reachability completed; failure occurred during method planning/emission.
+Root { Value = Method { Identity = Program.Main } }
+ → Method { Identity = Program.Main }
+ → Method { Identity = Xui.Apps.TestApp.MobileTestAppShell..ctor }
+ → Method { Identity = Xui.Apps.TestApp.MobileHomePage..ctor }
+ → Method { Identity = Xui.Core.UI.ScrollView..ctor }
+ → Method { Identity = System.TimeProvider.get_System }
+ → Initialization { Identity = System.TimeProvider }
+ → Method { Identity = System.TimeProvider..cctor }
+ → Field { Identity = FieldIdentity { DeclaringType = System.DateTime, Handle = System.Reflection.Metadata.FieldDefinitionHandle } }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

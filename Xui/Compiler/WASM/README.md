@@ -262,8 +262,7 @@ for these intrinsics. Supplied framework facades resolve type forwarders into th
 supplied implementation PE while retaining the target's f32 NFloat representation.
 
 The framework's immutable `TimeSpan.Zero` value load creates an independent zeroed
-linear struct. Taking its static address (`ldsflda`) and general static storage/type
-initialization remain unsupported. `IsExternalInit` required modifiers on void init
+linear struct. Other static fields and addresses use the persistent static-storage path below. `IsExternalInit` required modifiers on void init
 setter returns preserve the ordinary setter ABI; other unknown required modifiers reject.
 
 Single-value `TimeSpan.FromDays/Hours/Minutes/Seconds/Milliseconds/Microseconds`
@@ -354,8 +353,7 @@ locals, plus `void` results. Calls check argument types, preserve order, and nar
 small integers and `float` at storage boundaries. Function indices are assigned
 before bodies are emitted, supporting forward and recursive references; unused
 method bodies remain unread. Calls resolve MethodDef and MemberRef tokens across supplied assemblies.
-Required type/module initializers, synchronized methods, and entry-point `string[] args`
-access are rejected. `BeforeFieldInit` types defer initialization until a static field is
+Synchronized methods and entry-point `string[] args` access are rejected. `BeforeFieldInit` types defer initialization until a static field is
 accessed, so unused static constants do not block ordinary geometry operations. `dup` uses reusable typed temporary locals.
 
 Exception regions lower to native WASM `try_table`, a module-local exception tag,
@@ -550,9 +548,9 @@ supported operations that require no emitted bytes.
 | `ldfld` | Numeric load / `memory.copy` / `struct.get` / `struct.new` | Reads linear or flattened GC fields; struct values are copied. |
 | `ldflda` | `i32.add`; owner + accessor selector | Reference fields preserve owner identity through calls and local aliases. |
 | `stfld` | Numeric store / `memory.copy` / `struct.set` | Writes linear or flattened fields; struct assignment copies leaf values. |
-| `ldsfld` | `memory.fill`, frame address / numeric constants | TimeSpan.Zero and target Stopwatch constants; general static fields unsupported. |
-| `ldsflda` | `i32.const` | Only RVA data immediately consumed by static ReadOnlySpan construction. |
-| `stsfld` |  |  |
+| `ldsfld` | Initialization guard, `global.get`, `struct.get` | Loads copy struct values; persistent storage belongs to module instance. |
+| `ldsflda` | Initialization guard, holder/field selector | Stable managed static address; RVA span intrinsics remain specialized. |
+| `stsfld` | Initialization guard, `struct.set` | Copies flattened values into persistent storage; existing aliases remain valid. |
 | `stobj` | `memory.copy` or leaf loads/stores | Copies struct values into linear or flattened GC storage. |
 | `conv.ovf.i1.un` |  |  |
 | `conv.ovf.i2.un` |  |  |
@@ -912,3 +910,31 @@ without a per-address allocation. Struct array elements retain their existing ho
 representation. Address-taken scalar locals and struct storage are zeroed even with SkipLocalsInit
 so constructors, initobj, and out calls can initialize them through borrowed addresses. Floating `conv.i4` truncates toward zero and saturates
 at Int32 limits, with NaN mapped to zero.
+
+
+Static fields have persistent, zero-initialized GC holders, separate from instance
+fields and from temporary frame storage. Nested value types flatten into the holder,
+including numeric structs; loads copy values and stores update the existing fields.
+Class/string/array fields keep their references. Managed static-field addresses use
+the same owner/selector ABI as instance fields, without per-address allocation.
+Only retained fields receive storage. Each closed generic type and each WASM instance
+has independent storage and initialization state.
+
+A generated guard executes each retained `.cctor` once. BeforeFieldInit types use
+field-access guards. Strict types also guard static methods, instance constructors,
+and value-type instance methods. Same-agent recursive initialization sees existing
+zero/partially initialized fields. Managed failures become TypeInitializationException
+with the type name, English message, and original InnerException; later accesses
+rethrow the saved failure. Foreign host exceptions are saved and rethrown unchanged.
+WASM traps remain fatal traps rather than managed initialization failures. This is
+a single-agent protocol, with no cross-thread initialization locks.
+
+Module initializers run before methods or static-field access in their owning
+module, including linked assemblies accessed only through a field. Default storage
+uses WASM global constant expressions; no explicit JavaScript init call is required.
+The [initialization REPL](../Tests/Wasm/Statics/Snapshots/Initialization.md) shows
+source, execution order, copied struct values, exit code, and WAT. Static storage
+currently shares the existing supported field layouts: explicit-layout flattening,
+auto-layout value types such as DateTime, and arbitrary direct RVA/literal storage
+access remain unsupported. Existing static-span and framework-constant intrinsics
+keep their specialized paths.

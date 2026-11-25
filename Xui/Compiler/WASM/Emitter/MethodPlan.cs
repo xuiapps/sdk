@@ -91,11 +91,6 @@ internal sealed partial class MethodPlan
         Signature = MethodSignature.Read(source, method, identity.DeclaringType, entryPoint, storage, identity.Arguments);
         if (!declarationOnly && (method.ImplementationAttributes & MethodImplAttributes.Synchronized) != 0)
             throw new NotSupportedException($"Synchronized methods are not implemented: {method.Name}.");
-        var declaringType = source.GetType(method.DeclaringType);
-        foreach (var sibling in declaringType.Methods)
-            if (!declarationOnly && source.GetMethod(sibling).Name == ".cctor" &&
-                (method.Name == ".cctor" || (declaringType.Attributes & TypeAttributes.BeforeFieldInit) == 0))
-                throw new NotSupportedException($"Type initialization is not implemented: {declaringType.Name}.");
         IsDeclaration = declarationOnly || (method.Attributes & MethodAttributes.Abstract) != 0;
         if (IsDeclaration)
         {
@@ -119,7 +114,7 @@ internal sealed partial class MethodPlan
         InvariantFormatting = InvariantFormattingCalls.Read(source, Body, Graph);
         InterpolationCalls = XuiNet.CodeFlow.InterpolationCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
         if (CallsTimeSpanFactory() || Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
-            Graph.Instructions.Any(n => n.Code is OpCode.Div or OpCode.Div_un or OpCode.Rem or OpCode.Rem_un or OpCode.Ldtoken or OpCode.Newobj or OpCode.Ldsfld or OpCode.Ldftn or OpCode.Ldvirtftn || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
+            Graph.Instructions.Any(n => n.Code is OpCode.Div or OpCode.Div_un or OpCode.Rem or OpCode.Rem_un or OpCode.Ldtoken or OpCode.Newobj or OpCode.Ldsfld or OpCode.Stsfld or OpCode.Ldsflda or OpCode.Ldftn or OpCode.Ldvirtftn || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
         if (Body.ExceptionRegions.Length != 0)
         {
             Graph = Analyzer.Analyze(source, identity);

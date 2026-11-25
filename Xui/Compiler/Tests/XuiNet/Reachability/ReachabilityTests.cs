@@ -147,7 +147,7 @@ public class ReachabilityTests
     }
 
     [Fact]
-    public void StaticFieldsRetainInitializersAndTheirSideEffects()
+    public async Task StaticFieldsRetainInitializersAndTheirSideEffects()
     {
         using var assembly = Compile("""
             public static class State { public static int Value = Initialize(); static int Initialize() => Helper.Read(); }
@@ -160,7 +160,7 @@ public class ReachabilityTests
         Assert.Contains(graph.Methods, method => method.ToString() == "Helper.Read");
         Assert.Contains(graph.Edges, edge => edge.Reason == DependencyReason.FieldRead);
         Assert.DoesNotContain(graph.Nodes.OfType<Dependency.Type>(), type => type.Identity.ToString() == "Unused");
-        Assert.Throws<NotSupportedException>(() => new WasmEmitter().Emit(assembly));
+        Assert.Equal(42, (await Node.ExecuteAsync(new WasmEmitter().Emit(assembly))).ExitCode);
     }
 
     [Fact]

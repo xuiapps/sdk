@@ -46,6 +46,14 @@ public ref struct Writer
         return new(section, type, new GlobalIndex(importedGlobalCount + count++));
     }
 
+    /// <summary>Defines an immutable reference to a zero-initialized GC struct with mutable fields.</summary>
+    public GlobalIndex DefaultStruct(TypeIndex type)
+    {
+        section.Byte((byte)ValueTypeCode.EqRef).Byte((byte)Mutability.Immutable)
+            .Instruction(GcOpCode.StructNewDefault).U32(type.Value).Instruction(OpCode.End);
+        return new(importedGlobalCount + count++);
+    }
+
     /// <summary>Defines an immutable eqref global containing an i32 GC array.</summary>
     public GlobalIndex I32Array(TypeIndex arrayType, scoped ReadOnlySpan<int> values)
     {

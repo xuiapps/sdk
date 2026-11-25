@@ -304,6 +304,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             }
             else shape.Type = writer.StructType(fields);
         }
+        DefineStaticTypes(ref writer);
         DefineBoxTypes(ref writer);
         DefineArrayTypes(ref writer);
         if (Classes.InterfaceMethods.Count != 0 && TableSize == 0) TableSize = (uint)Classes.InterfaceMethods.Count;

@@ -30,6 +30,22 @@ public sealed class DependencyGraph
     public IReadOnlyList<MethodIdentity> Methods { get; }
     /// <summary>Whether a requirement was reached.</summary>
     public bool Contains(Dependency dependency) => membership.Contains(dependency);
+
+    /// <summary>Returns a retained requirement's first-discovery chain, starting at its root.</summary>
+    public IReadOnlyList<Dependency> PathTo(Dependency dependency)
+    {
+        var parents = Edges.ToLookup(edge => edge.Target, edge => edge.Source);
+        var path = new List<Dependency>();
+        var seen = new HashSet<Dependency>();
+        Dependency? current = dependency;
+        while (current is not null && seen.Add(current))
+        {
+            path.Add(current);
+            current = parents[current].FirstOrDefault();
+        }
+        path.Reverse();
+        return path.AsReadOnly();
+    }
     /// <summary>Whether host collection replaced this instruction.</summary>
     public bool IsRewritten(MethodIdentity method, int offset) => Contains(new Dependency.Rewrite(method, offset));
     /// <summary>The reachable interface target for a concrete receiver, or null when this pair was not reached.</summary>

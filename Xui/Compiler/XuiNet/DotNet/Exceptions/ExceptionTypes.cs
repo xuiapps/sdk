@@ -31,6 +31,7 @@ public static class ExceptionTypes
     /// <summary>The default English message used when no message was supplied.</summary>
     public static string Message(ExceptionKind kind) => kind switch
     {
+        ExceptionKind.TypeInitializationException => "The type initializer threw an exception.",
         ExceptionKind.KeyNotFoundException => "The given key was not present in the dictionary.",
         ExceptionKind.ArithmeticException => "Overflow or underflow in the arithmetic operation.",
         ExceptionKind.DivideByZeroException => "Attempted to divide by zero.",
@@ -52,7 +53,7 @@ public static class ExceptionTypes
     };
 
     /// <summary>Whether a supported member constructs an exception.</summary>
-    public static bool IsConstructor(ExceptionMember member) => member is not (ExceptionMember.Message or ExceptionMember.ParamName or ExceptionMember.InnerException);
+    public static bool IsConstructor(ExceptionMember member) => member is not (ExceptionMember.Message or ExceptionMember.ParamName or ExceptionMember.InnerException or ExceptionMember.TypeName);
 
     /// <summary>Whether a member needs the parameter-name payload and message formatting.</summary>
     public static bool UsesParameterName(ExceptionMember member) => member is ExceptionMember.ParameterConstructor or
@@ -85,10 +86,12 @@ public static class ExceptionTypes
             signature.Result.Identity is { } inner && Kind(inner) == ExceptionKind.Exception)
         { operation = ExceptionMember.InnerException; return true; }
         // TargetInvocationException has no default or message-only public constructors.
-        if (kind == ExceptionKind.TargetInvocationException && name == ".ctor") return false;
+        if (kind is ExceptionKind.TargetInvocationException or ExceptionKind.TypeInitializationException && name == ".ctor") return false;
         if (signature.Parameters.Length == 0 && signature.Result.Code == SignatureTypeCode.String)
         {
             if (name == "get_Message") { operation = ExceptionMember.Message; return true; }
+            if (name == "get_TypeName" && kind == ExceptionKind.TypeInitializationException)
+            { operation = ExceptionMember.TypeName; return true; }
             if (name == "get_ParamName" && kind is ExceptionKind.ArgumentException or ExceptionKind.ArgumentNullException or ExceptionKind.ArgumentOutOfRangeException)
             { operation = ExceptionMember.ParamName; return true; }
         }

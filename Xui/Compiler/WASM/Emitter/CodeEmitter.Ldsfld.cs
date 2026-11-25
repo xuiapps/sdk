@@ -19,10 +19,10 @@ public readonly ref partial struct CodeEmitter
             }
             return;
         }
-        var identity = TimeSpanZero.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType)
-            ?? throw new NotSupportedException("Static field storage is not implemented except TimeSpan.Zero and Stopwatch constants.");
+        var identity = TimeSpanZero.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType);
+        if (identity is null) { EmitStaticField(instruction, offset); return; }
         FrameAddress(Frame.Values[offset]);
-        writer.I32Const(0).I32Const(Frame.ValueSize(identity)).MemoryFill();
+        writer.I32Const(0).I32Const(Frame.ValueSize(identity.Value)).MemoryFill();
         FrameAddress(Frame.Values[offset]);
         stack.Push(new(SignatureTypeCode.TypeHandle, identity));
     }
