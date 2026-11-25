@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-The method has no managed body: System.Math.Sqrt.
+Unsupported Newobj at IL_0004 in System.String.Format: Unsupported signature type: Pointer.
 ```
 
 ## Dependency path
@@ -48,10 +48,10 @@ Root { Value = Method { Identity = Program.Main } }
  → VirtualCall { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.set_Item }
  → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.set_Item }
  → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryInsert }
- → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.Initialize }
- → Method { Identity = System.Collections.HashHelpers.GetPrime }
- → Method { Identity = System.Collections.HashHelpers.IsPrime }
- → Method { Identity = System.Math.Sqrt }
+ → Method { Identity = System.ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException<Int32> }
+ → Method { Identity = System.ThrowHelper.GetAddingDuplicateWithKeyArgumentException }
+ → Method { Identity = System.SR.Format }
+ → Method { Identity = System.String.Format }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

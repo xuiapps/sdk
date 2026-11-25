@@ -165,6 +165,10 @@ public enum OpCode : byte
     F32Le = 0x5f,
     /// <summary>Ordered f32 greater-than-or-equal comparison.</summary>
     F32Ge = 0x60,
+    /// <summary>Computes the IEEE 754 square root of f32.</summary>
+    F32Sqrt = 0x91,
+    /// <summary>Computes the IEEE 754 square root of f64.</summary>
+    F64Sqrt = 0x9f,
     /// <summary>Adds two f64 values.</summary>
     F64Add = 0xa0,
     /// <summary>Subtracts f64 values.</summary>

@@ -53,7 +53,7 @@ The next sequence is:
    resource boundary now reads neutral message strings from supplied BCL resources
    and emits only requested literals. Primitive and enum hashing/typed equality now specialize, including default comparers;
    scalar/string IEqualityComparer dispatch now executes for default and application comparers.
-   Managed byrefs now cover GC scalar/struct fields, array-entry field ranges, and null locations. Struct-array copies preserve aliases. Dependency discovery passes dictionary hashing and gesture-routing span slices/copies; navigation/feedback clocks now use the monotonic host runtime. HashHelpers’ PE-backed prime table now becomes shared static span data; the next dependency is Math.Sqrt in its primality check; structured switches now emit `br_table`, including the actual CoreLib argument-name and resource-message selectors.
+   Managed byrefs now cover GC scalar/struct fields, array-entry field ranges, and null locations. Struct-array copies preserve aliases. Dependency discovery passes dictionary hashing and gesture-routing span slices/copies; navigation/feedback clocks now use the monotonic host runtime. HashHelpers’ PE-backed prime table now becomes shared static span data; its square-root operation now emits WASM directly. The next dependency is duplicate-key exception formatting through String.Format; structured switches now emit `br_table`, including the actual CoreLib argument-name and resource-message selectors.
    Continue through the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.

@@ -643,8 +643,11 @@ public readonly ref partial struct CodeEmitter
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.MathMethod.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } math)
                     {
-                        method.Storage.MathImports.UsesPow = true;
-                        method.UsesNativeFloat |= math.IsSingle;
+                        if (math.Operation == "Pow")
+                        {
+                            method.Storage.MathImports.UsesPow = true;
+                            method.UsesNativeFloat |= math.IsSingle;
+                        }
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.SpanAccess.Read(source,

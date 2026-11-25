@@ -290,6 +290,12 @@ numbers intentionally differ from CoreLib's randomized string hashes. Default
 string comparers hash null as zero, while null instance/comparer receivers throw
 managed NullReferenceException. Custom comparer implementations retain normal dispatch.
 
+`Math.Sqrt`, `MathF.Sqrt`, and the corresponding Single/Double/NFloat static methods
+emit `f32.sqrt` or `f64.sqrt` directly, without a host import. Native floating-point
+uses WASM32 single precision; signed zero, infinities, and NaNs preserve IEEE behavior.
+[Square-root tests](../Tests/Wasm/Mathematics/SquareRootTests.cs) compare CLR results,
+including subnormals and float rounding boundaries.
+
 `Environment.TickCount64` and `Stopwatch.GetTimestamp` import the host's monotonic
 `performance.now()` clock. Environment uses whole milliseconds; Stopwatch uses
 nanosecond units with `Frequency = 1_000_000_000`. Precision still depends on the

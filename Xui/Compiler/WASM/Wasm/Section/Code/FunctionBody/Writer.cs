@@ -55,6 +55,12 @@ public ref partial struct Writer
         return this;
     }
 
+    /// <summary>Computes the square root at f32 precision, preserving signed zero.</summary>
+    public readonly Writer F32Sqrt() { body.Instruction(OpCode.F32Sqrt); return this; }
+
+    /// <summary>Computes the square root at f64 precision, preserving signed zero.</summary>
+    public readonly Writer F64Sqrt() { body.Instruction(OpCode.F64Sqrt); return this; }
+
     /// <summary>Adds two f64 values.</summary>
     public readonly Writer F64Add()
     {

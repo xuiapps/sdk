@@ -12,6 +12,13 @@ public readonly ref partial struct CodeEmitter
         var operation = MathMethod.Read(source, MetadataTokens.EntityHandle(instruction.Value));
         if (operation is null) return false;
         Pop(SignatureTypeCode.Double, instruction.Code, offset);
+        if (operation.Operation == "Sqrt")
+        {
+            if (operation.IsSingle) writer.F32DemoteF64().F32Sqrt().F64PromoteF32();
+            else writer.F64Sqrt();
+            stack.Push(new(SignatureTypeCode.Double));
+            return true;
+        }
         Pop(SignatureTypeCode.Double, instruction.Code, offset);
         if (operation.IsSingle)
             writer.F32DemoteF64().LocalSet(method.NativeFloatTemporary).F32DemoteF64().F64PromoteF32()
