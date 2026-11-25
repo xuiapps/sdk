@@ -189,6 +189,9 @@ Open [BrowserInteractive.html](Snapshots/BrowserInteractive.html) and tap **Canv
 Drawing**, then **Back**. The page embeds the compiled module, Canvas host and
 licensed Inter fonts. No HTTP server, network resources, or framework WASM runtime
 is needed. The compiler emits 1.07 MB of WASM for 1,263 retained managed methods.
+The **Page size** footer reports exact HTML bytes, base64 overhead, individual
+font payloads, JavaScript and markup, plus a section-by-section WASM breakdown.
+There are no image files: Xui draws the logo, icons and phone chrome through Canvas.
 
 A persistent fixture session owns the real Abstract.Window, RootView and themed
 MobileTestAppShell. Pointer events become stack-backed TouchEventRef values and

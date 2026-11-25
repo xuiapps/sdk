@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 const { chromium } = createRequire(import.meta.url)('../../../Playground/browser-tests/node_modules/playwright');
 const output = new URL('../../../Playground/browser-tests/test-output/interactive/', import.meta.url);
@@ -12,7 +12,9 @@ try {
     const errors = [], network = [];
     page.on('pageerror', e => errors.push(String(e)));
     page.on('request', r => { if (/^https?:/.test(r.url())) network.push(r.url()); });
-    await page.goto(new URL(process.argv[2] ?? './Snapshots/BrowserInteractive.html', import.meta.url).href);
+    const file = new URL(process.argv[2] ?? './Snapshots/BrowserInteractive.html', import.meta.url);
+    const html = await readFile(file);
+    await page.goto(file.href);
     await page.waitForFunction(() => window.mobileDemo?.ready || window.mobileDemo?.error);
     const healthy = async () => assert.equal(await page.evaluate(() => window.mobileDemo.error), null);
     const settle = async () => {
@@ -38,6 +40,18 @@ try {
     assert.deepEqual(await pixel(10,10),[255,255,255,255]);
     assert.deepEqual(await pixel(...await screen(200,29)),[17,17,17,255]);
     await page.screenshot({ path:fileURLToPath(new URL('home.png',output)) });
+    await page.locator('#page-size summary').click();
+    const sizes = await page.evaluate(() => ({
+        total: Number(document.querySelector('[data-total]').dataset.total),
+        rows: [...document.querySelectorAll('#html-size tbody tr')].map(r=>Number(r.dataset.bytes)),
+        wasm: [...document.querySelectorAll('#wasm-size tbody tr')].reduce((n,r)=>n+Number(r.dataset.bytes),0)
+    }));
+    assert.equal(sizes.total,html.length,'size report must count the actual UTF-8 file, including itself');
+    assert.equal(sizes.rows.reduce((a,b)=>a+b,0),html.length);
+    assert.equal(sizes.wasm,Buffer.from(html.toString().match(/atob\('([^']+)'/)[1],'base64').length);
+    assert.equal(await page.getByText('Inter license',{exact:true}).count(),0);
+    await page.screenshot({ path:fileURLToPath(new URL('size-breakdown.png',output)) });
+    await page.locator('#page-size summary').click();
 
     // Cancelled presses must not navigate or leave capture/animations stuck.
     await page.mouse.move(...await target('CanvasDrawing')); await page.mouse.down();
@@ -62,6 +76,10 @@ try {
     await page.setViewportSize({ width:390, height:740 });
     await page.waitForFunction(() => document.getElementById('canvas').width === 780);
     await settle();
+    await page.locator('#page-size summary').click();
+    assert.equal(await page.locator('#page-size').evaluate(e=>e.scrollWidth<=e.clientWidth),true,'size table must fit a narrow viewport');
+    await page.screenshot({ path:fileURLToPath(new URL('size-breakdown-narrow.png',output)) });
+    await page.locator('#page-size summary').click();
     await page.touchscreen.tap(...await target('CanvasDrawing'));
     await page.waitForFunction(() => { const d=window.mobileDemo; return d.error || d.api.HasView(d.session,'Back'); });
     await settle();
