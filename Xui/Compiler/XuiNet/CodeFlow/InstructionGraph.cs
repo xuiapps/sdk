@@ -3,6 +3,10 @@ namespace Xui.Compiler.XuiNet.CodeFlow;
 /// <summary>A method's instruction graph and its canonical tree of stack states.</summary>
 public sealed class InstructionGraph
 {
+    internal Dictionary<int, InstructionSpecialization> Specialized { get; } = new();
+    /// <summary>Proven closed-type replacements indexed by original IL offset.</summary>
+    public IReadOnlyDictionary<int, InstructionSpecialization> Specializations => Specialized;
+
     /// <summary>Indexes IL instructions and edges without assigning stack states.</summary>
     public static InstructionGraph Read(ILReader reader) => GraphReader.Read(reader);
 

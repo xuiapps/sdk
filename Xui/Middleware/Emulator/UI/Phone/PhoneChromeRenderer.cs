@@ -8,8 +8,13 @@ namespace Xui.Middleware.Emulator.UI.Phone;
 /// <summary>Draws the static hardware surrounding an emulated phone display.</summary>
 internal sealed class PhoneChromeRenderer
 {
+#if XUI_COMPILER_CANVAS
+    private static Color AluminumColor => new(0xB8B8BEFF);
+    private static Color ScreenBezelColor => new(0x111111FF);
+#else
     private static readonly Color AluminumColor = new(0xB8B8BEFF);
     private static readonly Color ScreenBezelColor = new(0x111111FF);
+#endif
 
     public void RenderFrame(IContext context, DeviceProfile device, PhoneFrameSpecification specification, in PhoneFrameGeometry geometry)
     {

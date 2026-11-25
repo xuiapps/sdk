@@ -25,6 +25,9 @@ public readonly ref struct TypeDefinition
     /// <summary>The metadata handle within this module.</summary>
     public TypeDefinitionHandle Handle { get; }
 
+    /// <summary>The enclosing type for a nested declaration, or a nil handle for a top-level type.</summary>
+    public TypeDefinitionHandle DeclaringType => Definition.GetDeclaringType();
+
     private System.Reflection.Metadata.TypeDefinition Definition => module.Metadata.GetTypeDefinition(Handle);
 
     /// <summary>The namespace, decoded on access.</summary>

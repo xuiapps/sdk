@@ -19,20 +19,52 @@ public readonly ref partial struct CodeEmitter
         writer.GlobalGet(pointer).LocalTee(frame.Base).I32Const(MemoryFrame.Capacity - frame.Size)
             .I32GtU().If().Unreachable().End();
         writer.LocalGet(frame.Base).I32Const(frame.Size).I32Add().GlobalSet(pointer);
+        foreach (var (index, address) in frame.ScalarLocals)
+        {
+            // Address-taken scalars may be initialized through an out parameter even with
+            // SkipLocalsInit. Zero their frame slots, as WASM does for scalar locals.
+            FrameAddress(address); writer.I32Const(0).I32Const(MemoryFrame.ScalarSize(locals[index])).MemoryFill();
+            initializedLocals[index] = true;
+        }
+        foreach (var (index, address) in frame.ScalarArguments)
+        {
+            FrameAddress(address); writer.LocalGet(new((uint)index)); StoreRaw(parameters[index]);
+        }
         for (int i = 0; i < frame.Locals.Length; i++)
         {
             if (frame.Locals[i] < 0) continue;
             FrameAddress(frame.Locals[i]);
-            writer.LocalSet(new LocalIndex((uint)(parameters.Length + i)));
-            if (initLocals)
-                writer.LocalGet(new LocalIndex((uint)(parameters.Length + i))).I32Const(0)
-                    .I32Const(frame.ValueSize(locals[i].Identity!.Value)).MemoryFill();
+            writer.LocalSet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i)));
+            writer.LocalGet(new LocalIndex((uint)(method.Signature.WasmParameterCount + i))).I32Const(0)
+                .I32Const(frame.ValueSize(locals[i].Identity!.Value)).MemoryFill();
+            initializedLocals[i] = true;
+        }
+        EnterReferenceFrame();
+        // Reference slots are null on first use and cleared on every frame exit.
+        // Like addressed scalar slots, they provide defined storage with SkipLocalsInit.
+        foreach (int index in frame.ReferenceLocals.Keys) initializedLocals[index] = true;
+        foreach (var (index, displacement) in frame.ReferenceArguments)
+        {
+            FrameAddress(displacement);
+            writer.LocalGet(new((uint)index));
+            StoreReference(parameters[index]);
+        }
+        // The incoming address names an evaluation-stack snapshot. Copy it again so
+        // aliases into the parameter remain stable when starg replaces its value.
+        for (int i = 0; i < frame.Arguments.Length; i++)
+        {
+            if (frame.Arguments[i] < 0) continue;
+            FrameAddress(frame.Arguments[i]);
+            writer.LocalGet(new((uint)i));
+            CopyStruct(parameters[i].Identity!.Value);
+            FrameAddress(frame.Arguments[i]);
+            writer.LocalSet(new((uint)i));
         }
     }
 
     private void LeaveFrame()
     {
-        if (method.Frame is { } frame) writer.LocalGet(frame.Base).GlobalSet(Runtime.StackPointer!.Value);
+        if (method.Frame is { } frame) { LeaveReferenceFrame(); writer.LocalGet(frame.Base).GlobalSet(Runtime.StackPointer!.Value); }
     }
 
     private void FrameAddress(int displacement) => writer.LocalGet(Frame.Base).I32Const(displacement).I32Add();
@@ -43,30 +75,32 @@ public readonly ref partial struct CodeEmitter
         var frame = Frame;
         writer.LocalSet(frame.AddressScratch);
         FrameAddress(frame.Values[offset]);
-        writer.LocalGet(frame.AddressScratch).I32Const(frame.ValueSize(identity)).MemoryCopy();
+        writer.LocalGet(frame.AddressScratch);
+        CopyStruct(identity);
         FrameAddress(frame.Values[offset]);
     }
 
     private void LoadLocalAddress(ushort index, OpCode code, int offset)
     {
         var local = GetLocal(new LocalIndex(index), code, offset);
+        if (TryVariableScalarAddress(index, false, local)) return;
+        if (TryVariableReferenceAddress(index, false, local)) return;
         if (local.Identity is null || method.Storage.IsClass(local.Identity.Value)) throw new NotSupportedException("Only struct local addresses are implemented.");
-        if (!initLocals) throw new NotSupportedException("Addressable struct locals currently require initlocals.");
-        writer.LocalGet(new LocalIndex((uint)parameters.Length + index));
-        stack.Push(new MsilStackEntry(local.TypeCode, local.Identity, isByReference: true)
-        { Location = local.UsesGc ? new(method.Storage.Shape(local.Identity!.Value), 0) : null });
+        writer.LocalGet(new LocalIndex((uint)method.Signature.WasmParameterCount + index));
+        ValueAddress(local);
+        stack.Push(new MsilStackEntry(local.TypeCode, local.Identity, isByReference: true));
     }
 
     private (LocalVariable Type, TypeIdentity Owner, int Offset) Field(int token)
     {
         var handle = MetadataTokens.EntityHandle(token);
-        var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType);
-        var field = source.GetField(resolvedField.Handle);
+        var resolvedField = MemberResolver.Field(source, handle, method.Identity.DeclaringType, method.Identity.Arguments);
+        var field = resolvedField.DeclaringType.Module.GetField(resolvedField.Handle);
         if ((field.Attributes & FieldAttributes.Static) != 0) throw new NotSupportedException("Static field storage is not implemented.");
         var owner = resolvedField.DeclaringType;
         var layout = Frame.Layout(owner);
-        var type = SignatureReader.Field(source, field.Signature, owner.Arguments);
-        return (new(type.Code, type.Identity, type.IsByReference), owner, layout.Fields[resolvedField.Handle].Offset);
+        var type = SignatureReader.Field(owner.Module, field.Signature, owner.Arguments);
+        return (method.Storage.Bind(type), owner, layout.Fields[resolvedField.Handle].Offset);
     }
 
     private void PopOwner(TypeIdentity owner, bool requireAddress, OpCode code, int offset)
@@ -78,7 +112,7 @@ public readonly ref partial struct CodeEmitter
 
     private TypeIdentity ObjectType(int token)
     {
-        var identity = SignatureReader.Resolve(source, MetadataTokens.EntityHandle(token), method.Identity.DeclaringType.Arguments).Identity
+        var identity = SignatureReader.Resolve(source, MetadataTokens.EntityHandle(token), method.Identity.DeclaringType.Arguments, method.Identity.Arguments).Identity
             ?? throw new NotSupportedException("Primitive generic object-copy instructions are not implemented.");
         _ = Frame.Layout(identity);
         return identity;
@@ -86,7 +120,8 @@ public readonly ref partial struct CodeEmitter
 
     private void LoadField(LocalVariable type, int offset)
     {
-        if (type.Identity is { } identity) CopyValue(identity, offset);
+        if (StorageModel.IsReference(type)) LoadReference(type);
+        else if (type.Identity is { } identity) CopyValue(identity, offset);
         else switch (type.TypeCode)
         {
             case SignatureTypeCode.SByte: writer.I32Load8S(); break;
@@ -105,10 +140,10 @@ public readonly ref partial struct CodeEmitter
             case SignatureTypeCode.Double: writer.F64Load(); break;
             default: throw new NotSupportedException($"Field load for {type} is not implemented.");
         }
-        stack.Push(new(type.StackType, type.Identity));
+        stack.Push(new(type.StackType, type.Identity, array: type.Array));
     }
 
-    private LocalIndex FieldScratch(LocalVariable type) => type.StackType switch
+    private LocalIndex FieldScratch(LocalVariable type) => StorageModel.IsReference(type) ? GcScratch(type) : type.StackType switch
     {
         SignatureTypeCode.Int64 => Frame.I64Scratch,
         SignatureTypeCode.Double => Frame.F64Scratch,
@@ -118,7 +153,8 @@ public readonly ref partial struct CodeEmitter
     private void StoreField(LocalVariable type)
     {
         writer.LocalGet(FieldScratch(type));
-        if (type.Identity is { } identity) writer.I32Const(Frame.ValueSize(identity)).MemoryCopy();
+        if (StorageModel.IsReference(type)) StoreReference(type);
+        else if (type.Identity is { } identity) CopyStruct(identity);
         else switch (type.TypeCode)
         {
             case SignatureTypeCode.SByte:

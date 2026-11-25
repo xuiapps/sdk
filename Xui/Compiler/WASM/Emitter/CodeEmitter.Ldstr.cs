@@ -9,7 +9,12 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitLdstr(Instruction.Token instruction)
     {
-        string literal = GetString(source, instruction.Value);
+        EmitString(GetString(source, instruction.Value));
+        stack.Push(new MsilStackEntry(SignatureTypeCode.String));
+    }
+
+    private void EmitString(string literal)
+    {
         var (data, global) = literals[literal];
         writer.GlobalGet(global)
             .RefIsNull()
@@ -23,7 +28,6 @@ public readonly ref partial struct CodeEmitter
             .GlobalSet(global)
             .End();
         writer.GlobalGet(global);
-        stack.Push(new MsilStackEntry(SignatureTypeCode.String));
     }
 
     private static string GetString(IR.Module module, int token) =>

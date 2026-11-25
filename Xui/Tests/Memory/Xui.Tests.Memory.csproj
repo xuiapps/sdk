@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Host/**/*.cs" />
+    <ProjectReference Include="Host/Xui.Tests.Memory.Host.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../Middleware/DevTools/Xui.Middleware.DevTools.csproj" />
+    <ProjectReference Include="../../Middleware/DevTools.Client/Xui.Middleware.DevTools.Client.csproj" />
+    <ProjectReference Include="../../Runtime/Test/Xui.Runtime.Test.csproj" />
+    <ProjectReference Include="../../Apps/TestApp/TestApp.Desktop.csproj" />
+    <ProjectReference Include="../../Core/Fonts/Xui.Core.Fonts.csproj" />
+    <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
+    <ProjectReference Include="../../Runtime/Software/Xui.Runtime.Software.csproj" />
+    <ProjectReference Include="../../Runtime/IOS/IOS.csproj" />
+    <ProjectReference Include="../../Runtime/MacOS/MacOS.csproj" />
+    <ProjectReference Include="../../Runtime/Android/Android.csproj" />
+    <ProjectReference Include="../../DevKit/UI/Xui.DevKit.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Core/Core.Tests/Canvas/TextMetricsCacheTests.Fixture.cs" Link="Fixtures/TextMetricsCacheTests.Fixture.cs" />
+    <Compile Include="../../Core/Core.Tests/UI/PointerGestureNegotiationTests.Fixture.cs" Link="Fixtures/PointerGestureNegotiationTests.Fixture.cs" />
+    <Compile Include="../Component/Android/AndroidCompositionTest.Fixture.cs" Link="Fixtures/AndroidCompositionTest.Fixture.cs" />
+    <Compile Include="../Component/CanvasSymbolTest.Fixture.cs" Link="Fixtures/CanvasSymbolTest.Fixture.cs" />
+    <Compile Include="../Component/IOS/IOSDrawingContextTest.Fixture.cs" Link="Fixtures/IOSDrawingContextTest.Fixture.cs" />
+    <Compile Include="../Integration/DesignSystem/DesignSystemMenuTest.Fixture.cs" Link="Fixtures/DesignSystemMenuTest.Fixture.cs" />
+    <Compile Include="../Integration/DesignSystem/DesignSystemUpdateTest.Fixture.cs" Link="Fixtures/DesignSystemUpdateTest.Fixture.cs" />
+    <Compile Include="../Integration/TestApp/FloorplanPerformanceTest.Fixture.cs" Link="Fixtures/FloorplanPerformanceTest.Fixture.cs" />
+    <Compile Include="../Integration/TestApp/MobileFrameRateTest.Fixture.cs" Link="Fixtures/MobileFrameRateTest.Fixture.cs" />
+    <Compile Include="../Integration/TestApp/IntegrationRuntimeVariants.cs" Link="Fixtures/IntegrationRuntimeVariants.cs" />
+  </ItemGroup>
+</Project>

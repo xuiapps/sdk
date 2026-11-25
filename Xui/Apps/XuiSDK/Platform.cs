@@ -10,25 +10,32 @@ public static class Platform
         @this.ConfigureServices(config =>
         {
             config.AddSingleton<Xui.Core.Canvas.IFontSource>(Xui.Core.Fonts.Inter.Source);
+            IRuntime runtime;
 #if MACOS && EMULATOR
-            config.AddSingleton<IRuntime>(new Xui.Middleware.EmulatorLegacy.Actual.EmulatorPlatform(
-                new Xui.Runtime.MacOS.Actual.MacOSPlatform()));
+            runtime = new Xui.Middleware.EmulatorLegacy.Actual.EmulatorPlatform(
+                new Xui.Runtime.MacOS.Actual.MacOSPlatform());
 #elif WINDOWS && EMULATOR
-            config.AddSingleton<IRuntime>(new Xui.Middleware.EmulatorLegacy.Actual.EmulatorPlatform(
-                new Xui.Runtime.Windows.Actual.Win32Platform()));
+            runtime = new Xui.Middleware.EmulatorLegacy.Actual.EmulatorPlatform(
+                new Xui.Runtime.Windows.Actual.Win32Platform());
 #elif BROWSER && EMULATOR
-            config.AddSingleton<IRuntime>(new Xui.Middleware.EmulatorLegacy.Actual.EmulatorPlatform(
-                new Xui.Runtime.Browser.Actual.BrowserPlatform()));
+            runtime = new Xui.Middleware.EmulatorLegacy.Actual.EmulatorPlatform(
+                new Xui.Runtime.Browser.Actual.BrowserPlatform());
 #elif IOS
-            config.AddSingleton<IRuntime>(new Xui.Runtime.IOS.Actual.IOSPlatform());
+            runtime = new Xui.Runtime.IOS.Actual.IOSPlatform();
 #elif ANDROID
-            config.AddSingleton<IRuntime>(new Xui.Runtime.Android.Actual.AndroidPlatform());
+            runtime = new Xui.Runtime.Android.Actual.AndroidPlatform();
 #elif MACOS
-            config.AddSingleton<IRuntime>(new Xui.Runtime.MacOS.Actual.MacOSPlatform());
+            runtime = new Xui.Runtime.MacOS.Actual.MacOSPlatform();
 #elif WINDOWS
-            config.AddSingleton<IRuntime>(new Xui.Runtime.Windows.Actual.Win32Platform());
+            runtime = new Xui.Runtime.Windows.Actual.Win32Platform();
 #elif BROWSER
-            config.AddSingleton<IRuntime>(new Xui.Runtime.Browser.Actual.BrowserPlatform());
+            runtime = new Xui.Runtime.Browser.Actual.BrowserPlatform();
+#else
+            throw new PlatformNotSupportedException();
 #endif
+#if DEVTOOLS
+            runtime = new Xui.Middleware.DevTools.DevToolsPlatform(runtime);
+#endif
+            config.AddSingleton<IRuntime>(runtime);
         });
 }

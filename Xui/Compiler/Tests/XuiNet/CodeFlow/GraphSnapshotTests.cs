@@ -12,6 +12,8 @@ public class GraphSnapshotTests(ITestOutputHelper output)
 {
     [Theory]
     [InlineData("NestedConditionals")]
+    [InlineData("SharedConditionalTail")]
+    [InlineData("SharedElseIfChain")]
     [InlineData("For")]
     [InlineData("WhileWithBreak")]
     [InlineData("WhileWithContinue")]

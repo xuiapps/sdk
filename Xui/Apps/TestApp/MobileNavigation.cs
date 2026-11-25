@@ -8,24 +8,24 @@ namespace Xui.Apps.TestApp;
 /// <summary>TestApp's mobile navigation adapter over the reusable DevKit navigation widget.</summary>
 internal sealed class MobileNavigation : NavigationView, IExampleNavigation
 {
-    private readonly MobilePerformanceOverlay performanceOverlay;
+    private readonly MobilePerformanceOverlay? performanceOverlay;
     private readonly MobilePerformanceMetrics performanceMetrics;
 
-    public MobileNavigation(View homePage, MobilePerformanceMetrics performanceMetrics) : base(homePage)
+    public MobileNavigation(View homePage, MobilePerformanceMetrics performanceMetrics, View? diagnosticsOverlay) : base(homePage)
     {
         this.performanceMetrics = performanceMetrics;
-        performanceOverlay = new MobilePerformanceOverlay(performanceMetrics);
-        OverlayContent = performanceOverlay;
+        performanceOverlay = diagnosticsOverlay as MobilePerformanceOverlay;
+        OverlayContent = diagnosticsOverlay;
     }
 
-    public bool IsPerformanceOverlayEnabled => performanceOverlay.IsEnabled;
+    public bool IsPerformanceOverlayEnabled => performanceOverlay?.IsEnabled ?? false;
 
     internal MobileFrameRate FrameRate => performanceMetrics.FrameRate;
 
     public void SetPerformanceOverlayEnabled(bool enabled)
     {
         performanceMetrics.IsEnabled = enabled;
-        performanceOverlay.IsEnabled = enabled;
+        if (performanceOverlay is not null) performanceOverlay.IsEnabled = enabled;
     }
 
     public void PushExamplePage<TPage>() where TPage : Example, new() =>

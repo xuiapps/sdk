@@ -12,6 +12,12 @@ public readonly ref partial struct CodeEmitter
         {
             switch (child)
             {
+                case ForwardRegion forward:
+                    EmitForwardRegion(forward);
+                    break;
+                case ExceptionBlock exception:
+                    EmitExceptionBlock(exception);
+                    break;
                 case InstructionBlock block:
                     var node = block.Instruction;
                     CheckStack(node.Before!, node.Offset);
@@ -31,6 +37,9 @@ public readonly ref partial struct CodeEmitter
                     break;
                 case ConditionalBlock conditional:
                     EmitConditional(conditional);
+                    break;
+                case SwitchBlock selection:
+                    EmitSwitch(selection);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported structured node {child.GetType().Name}.");
@@ -112,8 +121,10 @@ public readonly ref partial struct CodeEmitter
             var wanted = SourceEntry(entry);
             if (!SameSourceType(actual, wanted))
             {
-                if (entry.Type != StackType.ObjectReference || wanted.Identity is not { } target ||
-                    (!actual.IsNull && (actual.IsByReference || actual.Identity is not { } from || !from.IsAssignableTo(target))))
+                if (!(entry.Type == StackType.ArrayReference && actual.IsNull) && (entry.Type != StackType.ObjectReference ||
+                    !(wanted.TypeCode == SignatureTypeCode.Object && IsObjectReference(actual)) &&
+                    (wanted.Identity is not { } target || (!actual.IsNull &&
+                    (actual.IsByReference || actual.Identity is not { } from || !from.IsAssignableTo(target))))))
                     throw new InvalidProgramException($"Emission stack differs from analysis at IL_{offset:x4}.");
                 widen = true;
             }
@@ -133,12 +144,19 @@ public readonly ref partial struct CodeEmitter
     }
 
     private static bool SameSourceType(MsilStackEntry left, MsilStackEntry right) =>
-        left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull;
+        left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull && left.Array == right.Array && left.Method == right.Method && left.TypeToken == right.TypeToken;
 
-    private static MsilStackEntry SourceEntry(StackEntry entry) => entry.Type == StackType.Null
-        ? new(SignatureTypeCode.Object) { IsNull = true } : entry.DeclaredType is { } declared
-        ? new(declared.Code, declared.Identity, declared.IsByReference)
-        : new(SourceType(entry.Type));
+    private static MsilStackEntry SourceEntry(StackEntry entry)
+    {
+        if (entry.Type == StackType.RuntimeTypeHandle) return new(SignatureTypeCode.Object) { TypeToken = entry.TypeToken };
+        if (entry.Type == StackType.MethodPointer) return new(SignatureTypeCode.IntPtr) { Method = entry.Method };
+        if (entry.Type == StackType.Null) return new(SignatureTypeCode.Object) { IsNull = true };
+        if (entry.DeclaredType is not { } declared) return new(SourceType(entry.Type));
+        if (declared.Identity is { } identity && XuiNet.DotNet.Intrinsics.NativeFloat.Is(identity))
+            return new(declared.IsByReference ? SignatureTypeCode.Single : SignatureTypeCode.Double, isByReference: declared.IsByReference);
+        declared = XuiNet.DotNet.EnumInfo.Storage(declared);
+        return new(declared.Code, declared.Identity, declared.IsByReference, declared.Array);
+    }
 
     private static SignatureTypeCode SourceType(StackType type) => type switch
     {

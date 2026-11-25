@@ -5,7 +5,7 @@ using NFloat = System.Runtime.InteropServices.NFloat;
 
 namespace Xui.Tests.Integration.DesignSystem;
 
-public class DesignSystemUpdateTest
+public partial class DesignSystemUpdateTest
 {
     [Theory]
     [InlineData(DesignSystemChange.Colors)]
@@ -37,37 +37,6 @@ public class DesignSystemUpdateTest
         Assert.Same(theme.Colors.Primary, theme.Colors.Primary); // Shared role object, not a copied value bundle.
         theme.Update(options, device);
         Assert.Single(notifications);
-    }
-
-    [Fact]
-    public void HueUpdatesKeepThePaletteAndRolesAndAllocateNothing()
-    {
-        var device = new Device();
-        var theme = new XuiDesignSystem(new(), device);
-        var palette = theme.Colors;
-        var roles = new[] { palette.Primary, palette.Secondary, palette.Tertiary, palette.Warning,
-            palette.Error, palette.Application, palette.Surface, palette.Neutral };
-        var original = palette.Primary.Background;
-        var changes = 0;
-        theme.Changed += _ => changes++;
-        for (var i = 0; i < 32; i++) theme.Update(new() { PrimaryHue = i }, device);
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 32; i < 96; i++)
-        {
-            theme.Update(new() { PrimaryHue = i }, device);
-            // Lazy interaction colors also live in the retained shared group.
-            _ = palette.Primary.HoverBackground;
-            _ = palette.Primary.PressedBackground;
-        }
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(0, allocated);
-        Assert.Equal(95, changes);
-        Assert.Same(palette, theme.Colors);
-        var updated = new[] { palette.Primary, palette.Secondary, palette.Tertiary, palette.Warning,
-            palette.Error, palette.Application, palette.Surface, palette.Neutral };
-        for (var i = 0; i < roles.Length; i++) Assert.Same(roles[i], updated[i]);
-        Assert.NotEqual(original, palette.Primary.Background);
-        Assert.Equal(palette.Primary.Ramp[NFloat.Clamp(palette.Primary.BackgroundLightness - 0.06f, 0, 1)], palette.Primary.HoverBackground);
     }
 
     [Fact]
@@ -158,15 +127,31 @@ public class DesignSystemUpdateTest
         [DesignSystemChange.Motion] = theme.Motion,
     };
 
-    private sealed class Device : IDeviceInfo
+    [Fact]
+    public void HueUpdatesKeepThePaletteAndRoles()
     {
-        public event Action? Changed { add { } remove { } }
-        public DevicePlatform Platform => DevicePlatform.iOS;
-        public DeviceFormFactor FormFactor => DeviceFormFactor.Mobile;
-        public PointerModel PointerModel => PointerModel.Touch;
-        public NFloat AccessibilityFontScale { get; set; } = 1;
-        public bool PrefersReducedMotion { get; set; }
-        public bool PrefersHighContrast { get; set; }
-        public ColorScheme ColorScheme { get; set; }
+        var device = new Device();
+        var theme = new XuiDesignSystem(new(), device);
+        var palette = theme.Colors;
+        var roles = new[] { palette.Primary, palette.Secondary, palette.Tertiary, palette.Warning,
+            palette.Error, palette.Application, palette.Surface, palette.Neutral };
+        var original = palette.Primary.Background;
+        var changes = 0;
+        theme.Changed += _ => changes++;
+        for (var i = 0; i < 32; i++) theme.Update(new() { PrimaryHue = i }, device);
+        for (var i = 32; i < 96; i++)
+        {
+            theme.Update(new() { PrimaryHue = i }, device);
+            // Lazy interaction colors also live in the retained shared group.
+            _ = palette.Primary.HoverBackground;
+            _ = palette.Primary.PressedBackground;
+        }
+        Assert.Equal(95, changes);
+        Assert.Same(palette, theme.Colors);
+        var updated = new[] { palette.Primary, palette.Secondary, palette.Tertiary, palette.Warning,
+            palette.Error, palette.Application, palette.Surface, palette.Neutral };
+        for (var i = 0; i < roles.Length; i++) Assert.Same(roles[i], updated[i]);
+        Assert.NotEqual(original, palette.Primary.Background);
+        Assert.Equal(palette.Primary.Ramp[NFloat.Clamp(palette.Primary.BackgroundLightness - 0.06f, 0, 1)], palette.Primary.HoverBackground);
     }
 }

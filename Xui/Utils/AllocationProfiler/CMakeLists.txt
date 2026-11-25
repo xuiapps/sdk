@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.20)
+project(XuiAllocationProfiler LANGUAGES CXX)
+add_library(XuiAllocationProfiler SHARED AllocationProfiler.cpp)
+target_compile_features(XuiAllocationProfiler PRIVATE cxx_std_17)
+set_target_properties(XuiAllocationProfiler PROPERTIES CXX_VISIBILITY_PRESET hidden)

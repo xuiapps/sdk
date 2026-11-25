@@ -5,7 +5,7 @@ namespace Xui.Compiler.XuiNet.DotNet;
 
 /// <summary>A view of a module's metadata, with handles for traversing its declarations.</summary>
 /// <remarks>Declaration views and blob readers borrow the PE image owned by the assembly.</remarks>
-public sealed class Module
+public sealed partial class Module
 {
     private readonly Assembly assembly;
     private readonly Dictionary<MethodDefinitionHandle, MethodBody?> bodies = new();
@@ -14,6 +14,12 @@ public sealed class Module
     internal Module(Assembly assembly) => this.assembly = assembly;
 
     internal MetadataReader Metadata => assembly.Metadata;
+
+    /// <summary>The explicit assembly-resolution context, if this module has been bound to one.</summary>
+    public Compilation? Compilation { get; internal set; }
+
+    internal TypeIdentity ResolveType(EntityHandle handle) =>
+        Compilation?.ResolveType(this, handle) ?? new(this, handle);
 
     private ModuleDefinition Definition => Metadata.GetModuleDefinition();
 
@@ -61,7 +67,10 @@ public sealed class Module
         }
     }
 
-    /// <summary>Creates a borrowed type-specification view.</summary>
+    /// <summary>Creates a borrowed method-instantiation view.</summary>
+    public MethodSpecification GetMethodSpecification(MethodSpecificationHandle handle) => new(this, handle);
+
+    /// <summary>Gets a borrowed type specification.</summary>
     public TypeSpecification GetTypeSpecification(TypeSpecificationHandle handle) => new(this, handle);
     /// <summary>Creates a borrowed generic-parameter view.</summary>
     public GenericParameter GetGenericParameter(GenericParameterHandle handle) => new(this, handle);
@@ -102,6 +111,13 @@ public sealed class Module
     /// <summary>Reads the interface type referenced by an interface implementation row.</summary>
     public EntityHandle GetInterfaceType(InterfaceImplementationHandle handle) =>
         Metadata.GetInterfaceImplementation(handle).Interface;
+
+    /// <summary>Reads the declaration and implementation tokens of an explicit method mapping.</summary>
+    public (EntityHandle Declaration, EntityHandle Body) GetMethodImplementation(MethodImplementationHandle handle)
+    {
+        var mapping = Metadata.GetMethodImplementation(handle);
+        return (mapping.MethodDeclaration, mapping.MethodBody);
+    }
 
     internal MethodBody? GetBody(MethodDefinitionHandle handle)
     {

@@ -64,7 +64,13 @@
     <Compile Remove="Platforms/**/*" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' And !($(TargetFramework.Contains('-'))) And !($(UsingMicrosoftNETSdkWebAssembly) == 'true')">
+    <XuiDevTools>true</XuiDevTools>
+    <DefineConstants>$(DefineConstants);DEVTOOLS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
+    <ProjectReference Condition="'$(XuiDevTools)' == 'true'" Include="../../Middleware/DevTools/Xui.Middleware.DevTools.csproj" />
     <!-- Add your PackageReferences here -->
 
     <!-- Core -->

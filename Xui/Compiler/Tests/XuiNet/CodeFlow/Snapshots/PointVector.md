@@ -54,7 +54,7 @@ public static class Program
 | --- | --- |
 | S0 | empty |
 | S1 | Point& |
-| S2 | Point&, System.Runtime.InteropServices.NFloat |
+| S2 | Point&, Float |
 
 ### Point.op_Addition
 
@@ -80,12 +80,12 @@ public static class Program
 | --- | --- |
 | S0 | empty |
 | S1 | Point |
-| S2 | System.Runtime.InteropServices.NFloat |
-| S3 | System.Runtime.InteropServices.NFloat, Vector |
-| S4 | System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat |
-| S5 | System.Runtime.InteropServices.NFloat, Point |
-| S6 | System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, Vector |
-| S7 | System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat |
+| S2 | Float |
+| S3 | Float, Vector |
+| S4 | Float, Float |
+| S5 | Float, Point |
+| S6 | Float, Float, Vector |
+| S7 | Float, Float, Float |
 
 ### Vector..ctor
 
@@ -107,7 +107,7 @@ public static class Program
 | --- | --- |
 | S0 | empty |
 | S1 | Vector& |
-| S2 | Vector&, System.Runtime.InteropServices.NFloat |
+| S2 | Vector&, Float |
 
 ### Program.Main
 
@@ -131,13 +131,13 @@ public static class Program
 | IL_0025 | `call` | S11 | S5 | S0 |
 | IL_002a | `dup` | S5 | S12 | S0 |
 | IL_002b | `ldfld` | S12 | S13 | S5 |
-| IL_0030 | `call` | S13 | S14 | S5 |
-| IL_0035 | `conv.r8` | S14 | S14 | S5 |
-| IL_0036 | `call` | S14 | S5 | S5 |
+| IL_0030 | `call` | S13 | S13 | S5 |
+| IL_0035 | `conv.r8` | S13 | S13 | S5 |
+| IL_0036 | `call` | S13 | S5 | S5 |
 | IL_003b | `ldfld` | S5 | S2 | S0 |
-| IL_0040 | `call` | S2 | S15 | S0 |
-| IL_0045 | `conv.r8` | S15 | S15 | S0 |
-| IL_0046 | `call` | S15 | S0 | S0 |
+| IL_0040 | `call` | S2 | S2 | S0 |
+| IL_0045 | `conv.r8` | S2 | S2 | S0 |
+| IL_0046 | `call` | S2 | S0 | S0 |
 | IL_004b | `ldc.i4.0` | S0 | S1 | S0 |
 | IL_004c | `ret` | S1 | S0 | S0 |
 
@@ -145,20 +145,18 @@ public static class Program
 | --- | --- |
 | S0 | empty |
 | S1 | Int32 |
-| S2 | System.Runtime.InteropServices.NFloat |
-| S3 | System.Runtime.InteropServices.NFloat, Int32 |
-| S4 | System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat |
+| S2 | Float |
+| S3 | Float, Int32 |
+| S4 | Float, Float |
 | S5 | Point |
 | S6 | Point, Vector& |
 | S7 | Point, Vector&, Int32 |
-| S8 | Point, Vector&, System.Runtime.InteropServices.NFloat |
-| S9 | Point, Vector&, System.Runtime.InteropServices.NFloat, Int32 |
-| S10 | Point, Vector&, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat |
+| S8 | Point, Vector&, Float |
+| S9 | Point, Vector&, Float, Int32 |
+| S10 | Point, Vector&, Float, Float |
 | S11 | Point, Vector |
 | S12 | Point, Point |
-| S13 | Point, System.Runtime.InteropServices.NFloat |
-| S14 | Point, Float |
-| S15 | Float |
+| S13 | Point, Float |
 
 ## Debug
 
@@ -183,7 +181,7 @@ public static class Program
 | --- | --- |
 | S0 | empty |
 | S1 | Point& |
-| S2 | Point&, System.Runtime.InteropServices.NFloat |
+| S2 | Point&, Float |
 
 ### Point.op_Addition
 
@@ -209,12 +207,12 @@ public static class Program
 | --- | --- |
 | S0 | empty |
 | S1 | Point |
-| S2 | System.Runtime.InteropServices.NFloat |
-| S3 | System.Runtime.InteropServices.NFloat, Vector |
-| S4 | System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat |
-| S5 | System.Runtime.InteropServices.NFloat, Point |
-| S6 | System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, Vector |
-| S7 | System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat |
+| S2 | Float |
+| S3 | Float, Vector |
+| S4 | Float, Float |
+| S5 | Float, Point |
+| S6 | Float, Float, Vector |
+| S7 | Float, Float, Float |
 
 ### Vector..ctor
 
@@ -237,7 +235,7 @@ public static class Program
 | --- | --- |
 | S0 | empty |
 | S1 | Vector& |
-| S2 | Vector&, System.Runtime.InteropServices.NFloat |
+| S2 | Vector&, Float |
 
 ### Program.Main
 
@@ -265,37 +263,36 @@ public static class Program
 | IL_002e | `stloc.2` | S11 | S0 | S0 |
 | IL_002f | `ldloc.2` | S0 | S11 | S0 |
 | IL_0030 | `ldfld` | S11 | S13 | S0 |
-| IL_0035 | `call` | S13 | S14 | S0 |
-| IL_003a | `conv.r8` | S14 | S14 | S0 |
-| IL_003b | `call` | S14 | S0 | S0 |
+| IL_0035 | `call` | S13 | S13 | S0 |
+| IL_003a | `conv.r8` | S13 | S13 | S0 |
+| IL_003b | `call` | S13 | S0 | S0 |
 | IL_0040 | `nop` | S0 | S0 | S0 |
 | IL_0041 | `ldloc.2` | S0 | S11 | S0 |
 | IL_0042 | `ldfld` | S11 | S13 | S0 |
-| IL_0047 | `call` | S13 | S14 | S0 |
-| IL_004c | `conv.r8` | S14 | S14 | S0 |
-| IL_004d | `call` | S14 | S0 | S0 |
+| IL_0047 | `call` | S13 | S13 | S0 |
+| IL_004c | `conv.r8` | S13 | S13 | S0 |
+| IL_004d | `call` | S13 | S0 | S0 |
 | IL_0052 | `nop` | S0 | S0 | S0 |
-| IL_0053 | `ldc.i4.0` | S0 | S15 | S0 |
-| IL_0054 | `stloc.3` | S15 | S0 | S0 |
+| IL_0053 | `ldc.i4.0` | S0 | S14 | S0 |
+| IL_0054 | `stloc.3` | S14 | S0 | S0 |
 | IL_0055 | `br.s` | S0 | S0 | S0 |
-| IL_0057 | `ldloc.3` | S0 | S15 | S0 |
-| IL_0058 | `ret` | S15 | S0 | S0 |
+| IL_0057 | `ldloc.3` | S0 | S14 | S0 |
+| IL_0058 | `ret` | S14 | S0 | S0 |
 
 | State | Stack (bottom to top) |
 | --- | --- |
 | S0 | empty |
 | S1 | Point& |
 | S2 | Point&, Int32 |
-| S3 | Point&, System.Runtime.InteropServices.NFloat |
-| S4 | Point&, System.Runtime.InteropServices.NFloat, Int32 |
-| S5 | Point&, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat |
+| S3 | Point&, Float |
+| S4 | Point&, Float, Int32 |
+| S5 | Point&, Float, Float |
 | S6 | Vector& |
 | S7 | Vector&, Int32 |
-| S8 | Vector&, System.Runtime.InteropServices.NFloat |
-| S9 | Vector&, System.Runtime.InteropServices.NFloat, Int32 |
-| S10 | Vector&, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat |
+| S8 | Vector&, Float |
+| S9 | Vector&, Float, Int32 |
+| S10 | Vector&, Float, Float |
 | S11 | Point |
 | S12 | Point, Vector |
-| S13 | System.Runtime.InteropServices.NFloat |
-| S14 | Float |
-| S15 | Int32 |
+| S13 | Float |
+| S14 | Int32 |

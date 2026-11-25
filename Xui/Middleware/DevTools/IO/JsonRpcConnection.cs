@@ -4,57 +4,46 @@ using System.Text.Json.Serialization;
 
 namespace Xui.Middleware.DevTools.IO;
 
-/// <summary>
-/// Wraps a bidirectional stream with line-delimited JSON-RPC read/write.
-/// Each message is a single JSON object terminated by a newline character.
-/// </summary>
+/// <summary>Newline-delimited JSON-RPC over a duplex stream or separate stdin/stdout streams.</summary>
 public sealed class JsonRpcConnection : IDisposable
 {
-    private static readonly JsonSerializerOptions opts = new()
+    private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
-
-    private readonly Stream stream;
     private readonly StreamReader reader;
+    private readonly StreamWriter writer;
     private readonly SemaphoreSlim writeLock = new(1, 1);
 
-    public JsonRpcConnection(Stream stream)
+    public JsonRpcConnection(Stream stream) : this(stream, stream) { }
+
+    public JsonRpcConnection(Stream input, Stream output, bool leaveOpen = false)
     {
-        this.stream = stream;
-        this.reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+        reader = new StreamReader(input, Encoding.UTF8, leaveOpen: leaveOpen);
+        writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: leaveOpen);
     }
 
-    /// <summary>Reads the next JSON-RPC request line. Returns null on EOF or parse error.</summary>
+    internal ValueTask<string?> ReadLineAsync(CancellationToken ct) => reader.ReadLineAsync(ct);
+
+    /// <summary>Reads a request; malformed JSON throws instead of being mistaken for EOF.</summary>
     public async Task<RpcRequest?> ReadAsync(CancellationToken ct = default)
     {
-        var line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
-        if (line is null) return null;
-        try { return JsonSerializer.Deserialize<RpcRequest>(line, opts); }
-        catch { return null; }
+        var line = await ReadLineAsync(ct).ConfigureAwait(false);
+        return line is null ? null : JsonSerializer.Deserialize<RpcRequest>(line, Options);
     }
 
-    public async Task SendResponseAsync(RpcResponse response, CancellationToken ct = default)
-    {
-        var json = JsonSerializer.Serialize(response, opts);
-        await WriteLineAsync(json, ct).ConfigureAwait(false);
-    }
+    public Task SendResponseAsync(RpcResponse response, CancellationToken ct = default) => SendAsync(response, ct);
+    public Task SendNotificationAsync(RpcNotification notification, CancellationToken ct = default) => SendAsync(notification, ct);
 
-    public async Task SendNotificationAsync(RpcNotification notification, CancellationToken ct = default)
+    internal async Task SendAsync(object message, CancellationToken ct)
     {
-        var json = JsonSerializer.Serialize(notification, opts);
-        await WriteLineAsync(json, ct).ConfigureAwait(false);
-    }
-
-    private async Task WriteLineAsync(string json, CancellationToken ct)
-    {
+        var json = JsonSerializer.Serialize(message, Options);
         await writeLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            var bytes = Encoding.UTF8.GetBytes(json + "\n");
-            await stream.WriteAsync(bytes, ct).ConfigureAwait(false);
-            await stream.FlushAsync(ct).ConfigureAwait(false);
+            await writer.WriteLineAsync(json.AsMemory(), ct).ConfigureAwait(false);
+            await writer.FlushAsync(ct).ConfigureAwait(false);
         }
         finally { writeLock.Release(); }
     }
@@ -62,6 +51,7 @@ public sealed class JsonRpcConnection : IDisposable
     public void Dispose()
     {
         reader.Dispose();
-        stream.Dispose();
+        writer.Dispose();
+        writeLock.Dispose();
     }
 }

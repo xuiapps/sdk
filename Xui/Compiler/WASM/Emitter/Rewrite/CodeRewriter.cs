@@ -9,6 +9,7 @@ namespace Xui.Compiler.WASM.Emitter.Rewrite;
 /// <summary>Optionally replaces MSIL instructions and supplies their WASM types and imports.</summary>
 /// <remarks>
 /// An emission begins with BeginModule, collects requirements, defines types and imports, then emits code.
+/// UseSource selects the originating PE before Collect or TryRewrite; it must not reset collected imports.
 /// Collect and TryRewrite receive the cursor immediately after the opcode and must consume the same
 /// operands when handling an instruction. Return false to leave it to the normal emitter.
 /// A declined cursor is discarded. A declined rewrite must not write code or change the evaluation stack.
@@ -19,7 +20,10 @@ public abstract class CodeRewriter
     /// <summary>Starts an emission; reset any state from a previous module here.</summary>
     public virtual void BeginModule(Module source) { }
 
-    /// <summary>Inspects an instruction and collects requirements; returns true when it replaces that instruction.</summary>
+    /// <summary>Selects the source module for subsequent instruction callbacks without resetting collected requirements.</summary>
+    public virtual void UseSource(Module source) { }
+
+    /// <summary>Collects requirements once per reachable instruction during source reachability; true replaces its managed dependencies.</summary>
     public virtual bool Collect(Instruction instruction, ref ILReader reader) => false;
 
     /// <summary>Defines any types needed by the collected replacements.</summary>

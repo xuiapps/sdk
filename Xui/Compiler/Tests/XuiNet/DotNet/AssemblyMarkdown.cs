@@ -124,6 +124,8 @@ internal sealed class AssemblyMarkdown
         GenericParameters(type.GenericParameters);
         foreach (var implementation in type.Interfaces)
             Property($"Interface [{Token(implementation)}]", Entity(module.GetInterfaceType(implementation)));
+        if (type.GenericParameterCount == 0 && Model.InlineArrayInfo.Read(new(module, handle)) is { } inline)
+            Property("Inline array length", inline.Length.ToString(CultureInfo.InvariantCulture));
         StructLayout? layout = null;
         if (kind is "Struct" or "Enum")
         {

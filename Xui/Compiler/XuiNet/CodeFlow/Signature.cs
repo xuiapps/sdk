@@ -9,9 +9,9 @@ internal sealed record Signature(
     SignatureType[] Parameters,
     StackEntry? Result)
 {
-    public static Signature Read(Model.Module module, BlobReader reader, Model.TypeIdentity? receiver = null)
+    public static Signature Read(Model.Module module, BlobReader reader, Model.TypeIdentity? receiver = null, GenericArguments? methodArguments = null)
     {
-        var signature = SignatureReader.Method(module, reader, receiver?.Arguments);
+        var signature = SignatureReader.Method(module, reader, receiver?.Arguments, methodArguments);
         var parameters = signature.Parameters.ToList();
         if (signature.HasThis)
         {

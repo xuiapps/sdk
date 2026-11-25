@@ -55,6 +55,40 @@ public ref partial struct Writer
         return this;
     }
 
+    /// <summary>Rounds f32 toward positive infinity.</summary>
+    public readonly Writer F32Ceil() { body.Instruction(OpCode.F32Ceil); return this; }
+    /// <summary>Rounds f32 down.</summary>
+    public readonly Writer F32Floor() { body.Instruction(OpCode.F32Floor); return this; }
+    /// <summary>Rounds f32 toward zero.</summary>
+    public readonly Writer F32Trunc() { body.Instruction(OpCode.F32Trunc); return this; }
+    /// <summary>Rounds f32 to nearest, ties to even.</summary>
+    public readonly Writer F32Nearest() { body.Instruction(OpCode.F32Nearest); return this; }
+    /// <summary>Rounds f64 up.</summary>
+    public readonly Writer F64Ceil() { body.Instruction(OpCode.F64Ceil); return this; }
+    /// <summary>Rounds f64 down.</summary>
+    public readonly Writer F64Floor() { body.Instruction(OpCode.F64Floor); return this; }
+    /// <summary>Rounds f64 toward zero.</summary>
+    public readonly Writer F64Trunc() { body.Instruction(OpCode.F64Trunc); return this; }
+    /// <summary>Rounds f64 to nearest, ties to even.</summary>
+    public readonly Writer F64Nearest() { body.Instruction(OpCode.F64Nearest); return this; }
+    /// <summary>Computes f32 square root.</summary>
+    public readonly Writer F32Sqrt() { body.Instruction(OpCode.F32Sqrt); return this; }
+
+    /// <summary>Computes the square root at f64 precision, preserving signed zero.</summary>
+    public readonly Writer F64Sqrt() { body.Instruction(OpCode.F64Sqrt); return this; }
+
+    /// <summary>Clears the f64 sign bit.</summary>
+    public readonly Writer F64Abs() { body.Instruction(OpCode.F64Abs); return this; }
+    /// <summary>Copies the second f64 sign bit to the first operand.</summary>
+    public readonly Writer F64CopySign() { body.Instruction(OpCode.F64CopySign); return this; }
+
+    /// <summary>Copies the second f32 sign bit to the first operand.</summary>
+    public readonly Writer F32CopySign() { body.Instruction(OpCode.F32CopySign); return this; }
+    /// <summary>Minimum f64, propagating NaN and preferring negative zero.</summary>
+    public readonly Writer F64Min() { body.Instruction(OpCode.F64Min); return this; }
+    /// <summary>Maximum f64, propagating NaN and preferring positive zero.</summary>
+    public readonly Writer F64Max() { body.Instruction(OpCode.F64Max); return this; }
+
     /// <summary>Adds two f64 values.</summary>
     public readonly Writer F64Add()
     {
@@ -75,6 +109,9 @@ public ref partial struct Writer
         body.Instruction(OpCode.F64PromoteF32);
         return this;
     }
+
+    /// <summary>Selects the first numeric value when the condition is nonzero, otherwise the second.</summary>
+    public readonly Writer Select() { body.Instruction(OpCode.Select); return this; }
 
     /// <summary>Discards the top value.</summary>
     public readonly Writer Drop()
@@ -342,6 +379,23 @@ public ref partial struct Writer
         return this;
     }
 
+    /// <summary>Divides two floating evaluation-stack values.</summary>
+    public readonly Writer F64Div() { body.Instruction(OpCode.F64Div); return this; }
+
+    /// <summary>Reinterprets f32 bits as i32 without numeric conversion.</summary>
+    public readonly Writer I32ReinterpretF32()
+    {
+        body.Instruction(OpCode.I32ReinterpretF32);
+        return this;
+    }
+
+    /// <summary>Reinterprets f64 bits as i64 without numeric conversion.</summary>
+    public readonly Writer I64ReinterpretF64()
+    {
+        body.Instruction(OpCode.I64ReinterpretF64);
+        return this;
+    }
+
     /// <summary>Keeps the low 32 bits of an i64 value.</summary>
     public readonly Writer I32WrapI64()
     {
@@ -363,6 +417,23 @@ public ref partial struct Writer
         return this;
     }
 
+    /// <summary>Truncates f64 to signed i32; overflow saturates and NaN becomes zero without trapping.</summary>
+    public readonly Writer I32TruncSatF64S()
+    {
+        body.Instruction(OpCode.Misc).U32((uint)SaturatingConversionOpCode.I32TruncSatF64S);
+        return this;
+    }
+
+    /// <summary>Truncates a floating-point value to a signed 64-bit integer with saturation.</summary>
+    public readonly Writer I64TruncSatF64S()
+    {
+        body.Instruction(OpCode.Misc).U32((uint)SaturatingConversionOpCode.I64TruncSatF64S);
+        return this;
+    }
+
+    /// <summary>Truncates f64 toward zero to signed i64; callers must guard NaN and out-of-range values to avoid traps.</summary>
+    public readonly Writer I64TruncF64S() { body.Instruction(OpCode.I64TruncF64S); return this; }
+
     /// <summary>Converts signed i32 to f32.</summary>
     public readonly Writer F32ConvertI32S()
     {
@@ -376,6 +447,12 @@ public ref partial struct Writer
         body.Instruction(OpCode.F32ConvertI64S);
         return this;
     }
+
+    /// <summary>Converts unsigned i32 directly to f32.</summary>
+    public readonly Writer F32ConvertI32U() { body.Instruction(OpCode.F32ConvertI32U); return this; }
+
+    /// <summary>Converts unsigned i64 directly to f32, with a single rounding.</summary>
+    public readonly Writer F32ConvertI64U() { body.Instruction(OpCode.F32ConvertI64U); return this; }
 
     /// <summary>Converts signed i32 to f64.</summary>
     public readonly Writer F64ConvertI32S()

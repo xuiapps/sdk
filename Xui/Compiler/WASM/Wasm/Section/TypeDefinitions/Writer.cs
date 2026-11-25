@@ -49,6 +49,16 @@ public ref struct Writer
         return index;
     }
 
+    /// <summary>Defines a GC array of scalar or reference elements.</summary>
+    public TypeIndex ArrayType(ValueType elementType, Mutability mutability = Mutability.Mutable)
+    {
+        var index = new TypeIndex(count++);
+        section.Byte((byte)TypeDefinitionCode.Array);
+        elementType.WriteTo(section);
+        section.Byte((byte)mutability);
+        return index;
+    }
+
     /// <summary>Defines a GC struct, optionally as an extensible type or a subtype with an inherited field prefix.</summary>
     /// <param name="fields">The complete field sequence, including all inherited fields.</param>
     /// <param name="mutability">Mutability shared by the supplied fields.</param>

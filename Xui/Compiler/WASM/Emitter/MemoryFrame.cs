@@ -16,38 +16,62 @@ internal sealed class MemoryFrame
     public const int PageCount = 16;
     public const int Capacity = PageCount * 65536;
     public const int Start = 16;
-    private readonly Model.Module module;
-    private readonly LayoutResolver layouts;
     private readonly StorageModel storage;
     public int[] Locals { get; }
+    public int[] Arguments { get; }
+    public Dictionary<int, int> ReferenceLocals { get; } = new();
+    public Dictionary<int, int> ReferenceArguments { get; } = new();
+    public Dictionary<int, int> ScalarLocals { get; } = new();
+    public Dictionary<int, int> ScalarArguments { get; } = new();
+    public static int ScalarSize(LocalVariable type) => type.TypeCode switch
+    {
+        SignatureTypeCode.Boolean or SignatureTypeCode.Byte or SignatureTypeCode.SByte => 1,
+        SignatureTypeCode.Char or SignatureTypeCode.UInt16 or SignatureTypeCode.Int16 => 2,
+        SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 or SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr or SignatureTypeCode.Single => 4,
+        SignatureTypeCode.Int64 or SignatureTypeCode.UInt64 or SignatureTypeCode.Double => 8,
+        _ => throw new NotSupportedException($"Scalar frame storage is not implemented for {type.TypeCode}.")
+    };
+    public int AllocateScalar(LocalVariable type)
+    {
+        int size = ScalarSize(type);
+        int offset = Align(Size, size);
+        Size = checked(offset + size);
+        return offset;
+    }
+    public int AllocateReference(LocalVariable type)
+    {
+        int offset = Align(Size, 4);
+        Size = checked(offset + 4);
+        References.Add((offset, type));
+        return offset;
+    }
     public Dictionary<int, int> Values { get; } = new();
     public int Size { get; private set; }
+    public List<(int Offset, LocalVariable Type)> References { get; } = new();
+    public LocalIndex ReferenceBase { get; set; }
+    public LocalIndex ReferenceValue { get; set; }
+    public LocalIndex CopySource { get; set; }
+    public LocalIndex CopyDestination { get; set; }
     public LocalIndex Base { get; set; }
     public LocalIndex AddressScratch { get; set; }
     public LocalIndex I32Scratch { get; set; }
     public LocalIndex I64Scratch { get; set; }
     public LocalIndex F64Scratch { get; set; }
 
-    public MemoryFrame(Model.Module module, LocalVariable[] locals, StorageModel storage)
+    public MemoryFrame(Model.Module module, LocalVariable[] locals, LocalVariable[] parameters, StorageModel storage)
     {
-        this.module = module;
         this.storage = storage;
-        layouts = new(module, TargetLayout.Wasm32);
+        Arguments = new int[parameters.Length];
+        Array.Fill(Arguments, -1);
+        for (int i = 0; i < parameters.Length; i++)
+            if (parameters[i].IsLinearValue) Arguments[i] = Allocate(parameters[i].Identity!.Value);
         Locals = new int[locals.Length];
         Array.Fill(Locals, -1);
         for (int i = 0; i < locals.Length; i++)
-            if (!locals[i].UsesGc && locals[i].Identity is { } identity) Locals[i] = Allocate(identity);
+            if (!locals[i].UsesGc && !locals[i].IsByReference && locals[i].Identity is { } identity) Locals[i] = Allocate(identity);
     }
 
-    public StructLayout Layout(TypeIdentity identity)
-    {
-        if (identity.Module != module || identity.Handle.Kind != HandleKind.TypeDefinition)
-            throw new NotSupportedException($"External struct storage is not implemented: {identity}.");
-        var handle = (TypeDefinitionHandle)identity.Handle;
-        if (layouts.Classify(handle) != StorageKind.LinearMemory)
-            throw new NotSupportedException($"Linear-memory storage requires a struct without managed references: {identity}.");
-        return layouts.Resolve(handle);
-    }
+    public StackStructLayout Layout(TypeIdentity identity) => storage.StackLayout(identity);
 
     public int ValueSize(TypeIdentity identity)
     {
@@ -56,15 +80,7 @@ internal sealed class MemoryFrame
         return Layout(identity).Size;
     }
 
-    internal static bool IsNativeFloat(TypeIdentity identity)
-    {
-        if (identity.Handle.Kind != HandleKind.TypeReference) return false;
-        var type = identity.Module.GetTypeReference((TypeReferenceHandle)identity.Handle);
-        if (type.Namespace != "System.Runtime.InteropServices" || type.Name != "NFloat" ||
-            type.ResolutionScope.Kind != HandleKind.AssemblyReference) return false;
-        return identity.Module.GetAssemblyReference((AssemblyReferenceHandle)type.ResolutionScope).Name
-            is "System.Private.CoreLib" or "System.Runtime" or "mscorlib";
-    }
+    internal static bool IsNativeFloat(TypeIdentity identity) => XuiNet.DotNet.Intrinsics.NativeFloat.Is(identity);
 
     public void AllocateValues(InstructionGraph graph)
     {
@@ -72,8 +88,13 @@ internal sealed class MemoryFrame
         {
             if (node.After?.Entry is not { Type: StackType.ValueType, DeclaredType: { Identity: { } identity } }) continue;
             if (storage.IsGc(identity)) continue;
+            // A void call can expose a struct already below its arguments. It needs
+            // no result slot; only instructions that actually push a value do.
+            if (node.Lowest is null || node.After.Depth <= node.Lowest.Depth) continue;
             if (node.Code is OpCode.Ldloc or OpCode.Ldloc_s or OpCode.Ldloc_0 or OpCode.Ldloc_1 or
-                OpCode.Ldloc_2 or OpCode.Ldloc_3 or OpCode.Ldfld or OpCode.Ldobj or OpCode.Dup)
+                OpCode.Ldloc_2 or OpCode.Ldloc_3 or OpCode.Ldsfld or OpCode.Ldelem or OpCode.Ldfld or OpCode.Ldobj or OpCode.Dup or OpCode.Newobj or
+                OpCode.Ldarg or OpCode.Ldarg_s or OpCode.Ldarg_0 or OpCode.Ldarg_1 or OpCode.Ldarg_2 or OpCode.Ldarg_3 or
+                OpCode.Call or OpCode.Callvirt)
                 Values.Add(node.Offset, Allocate(identity));
         }
         Size = Align(Size, 16);
@@ -86,6 +107,9 @@ internal sealed class MemoryFrame
         int alignment = IsNativeFloat(identity) ? TargetLayout.Wasm32.NativeFloatSize : Layout(identity).Alignment;
         int offset = Align(Size, alignment);
         Size = checked(offset + size);
+        if (storage.HasStackReferences(identity))
+            foreach (var leaf in storage.Shape(identity).Leaves)
+                if (StorageModel.IsReference(leaf.Storage)) References.Add((offset + leaf.MemoryOffset, leaf.Storage));
         return offset;
     }
 

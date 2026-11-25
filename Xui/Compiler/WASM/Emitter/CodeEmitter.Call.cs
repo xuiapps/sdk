@@ -7,17 +7,42 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    private static MethodIdentity ResolveCall(Xui.Compiler.XuiNet.DotNet.Module source, TypeIdentity context, int token, int offset)
+    private static MethodIdentity ResolveCall(Xui.Compiler.XuiNet.DotNet.Module source, MethodIdentity context, int token, int offset)
     {
         var handle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
-        if (handle.Kind == HandleKind.MemberReference &&
-            source.GetMemberReference((MemberReferenceHandle)handle).Parent.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeSpecification))
-            throw new NotSupportedException($"Unsupported Call at IL_{offset:x4}; only same-module method definitions or explicit rewrites are supported.");
-        return MemberResolver.Method(source, handle, context);
+        return MemberResolver.Method(source, handle, context.DeclaringType, context.Arguments);
     }
 
     private void EmitCall(Instruction.Token instruction, int offset)
     {
+        if (TryStaticSpan(instruction, offset)) return;
+        if (method.PrimitiveCalls.TryGetValue(offset, out var primitive))
+        {
+            EmitPrimitiveCall(primitive, instruction.Code, offset);
+            return;
+        }
+        if (TryMonotonicClock(instruction)) return;
+        if (TryManagedReference(instruction, offset)) return;
+        if (TryResourceString(instruction)) return;
+        if (TryStringConcatenation(instruction, offset)) return;
+        if (TryManagedType(instruction, offset)) return;
+        if (TryCompositeFormatting(instruction, offset)) return;
+        if (TryInt32Formatting(instruction, offset)) return;
+        if (TryConstructorFactory(instruction, offset)) return;
+        if (TryArrayCopy(instruction, offset)) return;
+        if (TryArrayClear(instruction, offset)) return;
+        if (TryMath(instruction, offset)) return;
+        if (TryStringEquality(instruction, offset)) return;
+        if (TryDefaultEquality(instruction, offset)) return;
+        if (TryNullGuard(instruction, offset)) return;
+        if (TryInterpolation(instruction, offset)) return;
+        if (TryTimeSpanFactory(instruction, offset)) return;
+        if (TryReferenceCompareExchange(instruction, offset)) return;
+        if (TryDelegateOperation(instruction, offset)) return;
+        if (TryInlineArrayAccess(instruction, offset)) return;
+        if (TrySpanAccess(instruction, offset)) return;
+        if (TryNativeFloat(instruction, offset)) return;
+        if (TryExceptionMember(instruction, offset)) return;
         if (Xui.Compiler.XuiNet.DotNet.WellKnownMethods.IsObjectConstructor(source,
             System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.Value)))
         {
@@ -26,33 +51,52 @@ public readonly ref partial struct CodeEmitter
             writer.Drop();
             return;
         }
-        var target = ResolveCall(source, method.Identity.DeclaringType, instruction.Value, offset);
+        var target = ResolveCall(source, method.Identity, instruction.Value, offset);
         var callee = methods[target];
         if (callee.Signature.HasEntryPointArguments)
             throw new NotSupportedException("Calls with string[] entry-point arguments are not implemented.");
+        bool delegateInvoke = DelegateInfo.Is(target.DeclaringType);
         var arguments = callee.Signature.Parameters;
         method.CallTemporaries.TryGetValue(target, out var temporaries);
         for (int i = arguments.Length - 1; i >= 0; i--)
         {
-            if (arguments[i].IsByReference && stack.Peek().Location is { } location &&
-                (location.First != 0 || location.Owner.Identity != arguments[i].Identity))
-                throw new NotSupportedException("Instance calls through inline struct addresses are not implemented.");
             PopAssignable(arguments[i], instruction.Code, offset);
             if (temporaries is not null)
             {
+                if (arguments[i].IsByReference) writer.LocalSet(method.CallReferenceTemporaries[target][i]);
                 Narrow(arguments[i]);
                 writer.LocalSet(temporaries[i]);
             }
+        }
+        var defaultComparer = instruction.Code == OpCode.Callvirt
+            ? XuiNet.DotNet.Intrinsics.DefaultEquality.ForInterface(target) : null;
+        if (defaultComparer is not null)
+        {
+            writer.LocalGet(temporaries![0]).GlobalGet(method.Storage.DefaultComparers[defaultComparer.Owner])
+                .RefEq().If(method.Storage.ComparerResultType);
+            EmitDefaultInterfaceResult(defaultComparer, temporaries);
+            writer.Else();
         }
         if (temporaries is not null)
             for (int i = 0; i < temporaries.Length; i++)
             {
                 writer.LocalGet(temporaries[i]);
-                if (i == 0 && instruction.Code == OpCode.Callvirt)
-                    writer.RefCast(method.Storage.Shape(arguments[0].Identity!.Value).Type);
+                if (i == 0 && (delegateInvoke || instruction.Code == OpCode.Callvirt) && arguments[0].UsesGc)
+                {
+                    CheckExceptionNull();
+                    var receiverType = method.Storage.Shape(arguments[0].Identity!.Value).Type;
+                    writer.RefCast(receiverType);
+                }
             }
-        if (instruction.Code == OpCode.Callvirt &&
-            (source.GetMethod(target.Handle).Attributes & System.Reflection.MethodAttributes.Virtual) != 0)
+        for (int i = 0; i < arguments.Length; i++)
+            if (arguments[i].IsByReference) writer.LocalGet(method.CallReferenceTemporaries[target][i]);
+        if (callee.Signature.HasResultAddress) FrameAddress(Frame.Values[offset]);
+        if (delegateInvoke)
+        {
+            writer.Call(callee.Function);
+        }
+        else if (instruction.Code == OpCode.Callvirt &&
+            (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & System.Reflection.MethodAttributes.Virtual) != 0)
         {
             var storage = method.Storage;
             writer.LocalGet(temporaries![0]).RefCast(storage.ClassRoot).StructGet(storage.ClassRoot, new(0))
@@ -60,11 +104,12 @@ public readonly ref partial struct CodeEmitter
                 .I32Const((int)storage.Classes.Slot(target)).I32Add().CallIndirect(callee.Type);
         }
         else writer.Call(callee.Function);
+        if (defaultComparer is not null) writer.End();
         if (callee.Signature.ReturnType != SignatureTypeCode.Void)
         {
             var result = callee.Signature.Result;
-            if (result.TypeCode == SignatureTypeCode.Single) writer.F64PromoteF32();
-            stack.Push(new MsilStackEntry(result.StackType, result.Identity));
+            if (result.TypeCode == SignatureTypeCode.Single && !result.IsByReference) writer.F64PromoteF32();
+            stack.Push(new MsilStackEntry(result.IsByReference ? result.TypeCode : result.StackType, result.Identity, result.IsByReference, result.Array));
         }
     }
 }

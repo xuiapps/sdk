@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xui WASM · Events</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui,sans-serif; background:#081122; color:#edf4ff; }
+  body { max-width:880px; margin:48px auto; padding:0 20px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  h1 { font-size:26px; font-weight:600; margin:0; } p { color:#aabbcf; }
+  button { background:#204b78; color:white; border:1px solid #547da4; border-radius:8px; padding:10px 20px; cursor:pointer; }
+  canvas { display:block; width:100%; height:auto; border:1px solid #2b405c; border-radius:12px; }
+  #status { min-height:24px; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; line-height:1.5; }
+  details { margin-top:24px; } summary { cursor:pointer; color:#aabbcf; }
+</style>
+<header><h1>Xui WASM / Events</h1><button id="run">Run again</button></header>
+<p>A small canvas scene compiled from C# with Xui geometry.</p>
+<canvas id="canvas" width="640" height="360" aria-label="Events canvas demo"></canvas>
+<p id="status" role="status">Starting…</p>
+<details><summary>C# source</summary><pre>using CanvasDemo;
+using Xui.Core.Canvas;
+using Xui.Core.Math2D;
+
+public interface IPainter { void Paint(ref PaintEvent e); }
+public ref struct PaintEvent
+{
+    public Rect Bounds;
+    public Color Color;
+    public string Label;
+    public IPainter Painter;
+}
+public class Painter : IPainter
+{
+    public void Paint(ref PaintEvent e)
+    {
+        Draw.Fill(ref e.Bounds, ref e.Color);
+        e.Bounds.X = 40; e.Bounds.Y = 60;
+        Draw.Text(e.Label, e.Bounds.X, e.Bounds.Y, 26, ref e.Color);
+    }
+}
+public static class Program
+{
+    public static int Main()
+    {
+        NativeCanvas.Clear(0.0625, 0.125, 0.25, 1);
+        PaintEvent e = default;
+        e.Bounds.X = 40; e.Bounds.Y = 100; e.Bounds.Width = 520; e.Bounds.Height = 180;
+        e.Color.Red = 0.5f; e.Color.Green = 1; e.Color.Blue = 0.75f; e.Color.Alpha = 1;
+        e.Label = &quot;Stack event → interface → canvas&quot;;
+        e.Painter = new Painter();
+        e.Painter.Paint(ref e);
+        return 42;
+    }
+}
+
+using System;
+using System.Runtime.InteropServices;
+using Xui.Core.Canvas;
+using Xui.Core.Math2D;
+
+namespace CanvasDemo;
+
+public static class Draw
+{
+    public static void Fill(ref Rect rectangle, ref Color color) =&gt; NativeCanvas.FillRect(
+        (double)rectangle.X, (double)rectangle.Y, (double)rectangle.Width, (double)rectangle.Height,
+        (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+
+    public static void Text(string text, NFloat x, NFloat y, NFloat size, ref Color color) =&gt; NativeCanvas.FillText(
+        text, (double)x, (double)y, (double)size, (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+}
+
+// Explicit host boundary. Tests replace only these exact signatures with drawing imports.
+public static class NativeCanvas
+{
+    public static void Clear(double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+    public static void FillRect(double x, double y, double width, double height, double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+    public static void FillText(string text, double x, double y, double size, double r, double g, double b, double a) =&gt; throw new NotSupportedException();
+}
+</pre></details>
+<script>
+// FormattingValueKind is the scalar ABI; WASM GC references never cross this boundary.
+(() => {
+    const invalidFormat = [null, 1], unsupportedFormat = [null, 2];
+
+    function generalFloat(value, single, lower) {
+        if (Number.isNaN(value)) return 'NaN';
+        if (!Number.isFinite(value)) return value < 0 ? '-Infinity' : 'Infinity';
+        if (Object.is(value, -0)) return '-0';
+        if (value === 0) return '0';
+        let text = value.toString();
+        if (single) {
+            for (let digits = 1; digits <= 9; digits++) {
+                const rounded = value.toPrecision(digits);
+                if (Math.fround(Number(rounded)) === value) { text = Number(rounded).toString(); break; }
+            }
+        }
+        const number = Number(text), exponent = Number(number.toExponential().split('e')[1]);
+        if (exponent < -4 || exponent >= (single ? 9 : 17)) {
+            if (!/[eE]/.test(text)) text = number.toExponential();
+            const [mantissa, power] = text.toLowerCase().split('e');
+            return mantissa + (lower ? 'e' : 'E') + (Number(power) < 0 ? '-' : '+') + Math.abs(Number(power)).toString().padStart(2, '0');
+        }
+        if (/[eE]/.test(text)) text = number.toFixed(Math.max(0, -exponent + text.split('e')[0].replace(/[-.]/g, '').length - 1));
+        return text;
+    }
+
+    function scalarFormat(argument, spec) {
+        if (argument === null) return ['', 0];
+        const { kind, value } = argument;
+        if (kind === 0) return unsupportedFormat;
+        if (kind === 1) return [value ? 'True' : 'False', 0];
+        if (kind === 2) return [String.fromCharCode(value), 0];
+        if (kind === 13) return [value, 0];
+        if (kind === 7 || kind === 8) {
+            if (spec !== '' && !/^[gGrR]$/.test(spec)) return unsupportedFormat;
+            return [generalFloat(value, kind === 7, spec === 'g' || spec === 'r'), 0];
+        }
+        if (spec === '' || /^[gGdD]$/.test(spec)) return [value.toString(), 0];
+        const match = /^([dDxX])([0-9]*)$/.exec(spec);
+        if (!match) return /^[a-zA-Z][0-9]*$/.test(spec) && !/^[cCeEfFgGnNpPbB]/.test(spec) ? invalidFormat : unsupportedFormat;
+        const width = match[2] === '' ? 0 : Number(match[2]);
+        if (width > 999999999) return invalidFormat;
+        if (match[1].toLowerCase() === 'd') {
+            const negative = value < 0;
+            return [(negative ? '-' : '') + (negative ? -value : value).toString().padStart(width, '0'), 0];
+        }
+        // Decimal formatting keeps Int64/UInt64 as BigInt; hexadecimal uses target-width bits.
+        const bits = kind === 5 || kind === 6 ? 64 : kind === 9 || kind === 11 ? 8 : kind === 10 || kind === 12 ? 16 : 32;
+        let text = BigInt.asUintN(bits, BigInt(value)).toString(16).padStart(width, '0');
+        return [match[1] === 'X' ? text.toUpperCase() : text, 0];
+    }
+
+    function compositeFormat(format, args) {
+        let result = '', position = 0;
+        const digit = c => c >= '0' && c <= '9';
+        while (position < format.length) {
+            const c = format[position++];
+            if (c === '}') {
+                if (format[position++] !== '}') return invalidFormat;
+                result += '}'; continue;
+            }
+            if (c !== '{') { result += c; continue; }
+            if (format[position] === '{') { position++; result += '{'; continue; }
+            if (!digit(format[position])) return invalidFormat;
+            let index = 0;
+            do { index = index * 10 + Number(format[position++]); } while (digit(format[position]) && index < 1000000);
+            if (index >= args.length) return invalidFormat;
+            while (format[position] === ' ') position++;
+            let width = 0, left = false;
+            if (format[position] === ',') {
+                position++;
+                while (format[position] === ' ') position++;
+                if (format[position] === '-') { left = true; position++; }
+                if (!digit(format[position])) return invalidFormat;
+                do { width = width * 10 + Number(format[position++]); } while (digit(format[position]) && width < 1000000);
+                while (format[position] === ' ') position++;
+            }
+            let spec = '';
+            if (format[position] === ':') {
+                const start = ++position;
+                while (position < format.length && format[position] !== '}') {
+                    if (format[position] === '{') return invalidFormat;
+                    position++;
+                }
+                spec = format.slice(start, position);
+            }
+            if (format[position++] !== '}') return invalidFormat;
+            const [text, error] = scalarFormat(args[index], spec);
+            if (error) return [null, error];
+            result += left ? text.padEnd(width, ' ') : text.padStart(width, ' ');
+        }
+        return [result, 0];
+    }
+// Host operations absent from core WASM. Keep this source shared by browser and Node hosts.
+globalThis.xuiRuntimeImports = Object.freeze({
+    'xui-string': Object.freeze({
+        'int32-to-string': value => value.toString(),
+        'format-text': value => value === null ? null : ({ kind: 13, value }),
+        'format-start': count => new Array(count),
+        'format-set': (args, index, value) => { args[index] = value; },
+        'format-i32': (kind, value) => ({ kind, value: kind === 4 ? value >>> 0 : value }),
+        'format-i64': (kind, value) => ({ kind, value: kind === 6 ? BigInt.asUintN(64, value) : value }),
+        'format-f64': (kind, value) => ({ kind, value }),
+        'format-finish': compositeFormat,
+        // FNV-1a over UTF-16 code units; consistent with ordinal equality, not CoreLib's randomized hash.
+        'ordinal-hash': value => {
+            if (value === null) return 0;
+            let hash = 0x811c9dc5;
+            for (let i = 0; i < value.length; i++) hash = Math.imul(hash ^ value.charCodeAt(i), 0x01000193);
+            return hash | 0;
+        }
+    }),
+    'xui-clock': Object.freeze({
+        // Milliseconds since this host's time origin, not wall time or machine boot time.
+        'tick-count64': () => BigInt(Math.floor(performance.now())),
+        'timestamp': () => BigInt(Math.floor(performance.now() * 1_000_000))
+    }),
+    'xui-math': Object.freeze({
+        remainder: (x, y) => x % y,
+        sin: Math.sin,
+        log: Math.log,
+        exp: Math.exp,
+        cos: Math.cos,
+        pow(x, y) {
+            // CoreLib follows IEEE/C pow identities; ECMAScript differs for NaN and ±1.
+            if (x === 1 || y === 0 || (x === -1 && (y === Infinity || y === -Infinity))) return 1;
+            return Math.pow(x, y);
+        }
+    })
+});
+
+})();
+
+function canvasImports(context, commands) {
+    const color = (r,g,b,a) => `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`;
+    return {
+        Clear(r,g,b,a) {
+            commands.push(['Clear',r,g,b,a]);
+            if (context) { context.clearRect(0,0,640,360); context.fillStyle = color(r,g,b,a); context.fillRect(0,0,640,360); }
+        },
+        FillRect(x,y,width,height,r,g,b,a) {
+            commands.push(['FillRect',x,y,width,height,r,g,b,a]);
+            if (context) { context.fillStyle = color(r,g,b,a); context.fillRect(x,y,width,height); }
+        },
+        FillText(text,x,y,size,r,g,b,a) {
+            commands.push(['FillText',text,x,y,size,r,g,b,a]);
+            if (context) { context.fillStyle = color(r,g,b,a); context.font = `${size}px sans-serif`; context.fillText(text,x,y); }
+        }
+    };
+}
+const bytes = Uint8Array.from(atob('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EA27EAIgECQHDwALAAshCyAQJAcgCwoLuYCAgAAAIADRIAFBf0ZxBEAjBNEEQEEAQTX7CQAEQQBBNRADJAQLQQQjBPsABQgACyAA0QRAIAElAQ8LAAu7gICAAAAgANEgAUF/RnEEQCME0QRAQQBBNfsJAARBAEE1EAMkBAtBBCME+wAFCAALIADRBEAgASACJgEPCwALuYCAgAAAIADRIAFBf0ZxBEAjBNEEQEEAQTX7CQAEQQBBNRADJAQLQQQjBPsABQgACyAA0QRAIAElAg8LAAu7gICAAAAgANEgAUF/RnEEQCME0QRAQQBBNfsJAARBAEE1EAMkBAtBBCME+wAFCAALIADRBEAgASACJgIPCwALuoCAgAAAIADRIAFBf0ZxBEAjBNEEQEEAQTX7CQAEQQBBNRADJAQLQQQjBPsABQgACyAA0QRAIAEqAAAPCwALvICAgAAAIADRIAFBf0ZxBEAjBNEEQEEAQTX7CQAEQQBBNRADJAQLQQQjBPsABQgACyAA0QRAIAEgAjgAAA8LAAvdgICAAAEBbSAA0QRA0G0PCyAA+xQMRQRA0G0PCyAA+xYM+wIMACECIAEjCdMEQCACIwrTBEAgAA8L0G0PCwNAIAIgAdMEQCAADwsgAvsWC/sCCwEiAtEEQNBtDwsMAAsACwvHhICAAIeAgIAAAUBTAHQAYQBjAGsAIABlAHYAZQBuAHQAIACSISAAaQBuAHQAZQByAGYAYQBjAGUAIACSISAAYwBhAG4AdgBhAHMAAWBFAHgAYwBlAHAAdABpAG8AbgAgAG8AZgAgAHQAeQBwAGUAIAAnAFMAeQBzAHQAZQBtAC4ARQB4AGMAZQBwAHQAaQBvAG4AJwAgAHcAYQBzACAAdABoAHIAbwB3AG4ALgABGlMAeQBzAHQAZQBtACAAZQByAHIAbwByAC4AAThTAHAAZQBjAGkAZgBpAGUAZAAgAGMAYQBzAHQAIABpAHMAIABuAG8AdAAgAHYAYQBsAGkAZAAuAAFqTwBiAGoAZQBjAHQAIAByAGUAZgBlAHIAZQBuAGMAZQAgAG4AbwB0ACAAcwBlAHQAIAB0AG8AIABhAG4AIABpAG4AcwB0AGEAbgBjAGUAIABvAGYAIABhAG4AIABvAGIAagBlAGMAdAAuAAF8TwBwAGUAcgBhAHQAaQBvAG4AIABpAHMAIABuAG8AdAAgAHYAYQBsAGkAZAAgAGQAdQBlACAAdABvACAAdABoAGUAIABjAHUAcgByAGUAbgB0ACAAcwB0AGEAdABlACAAbwBmACAAdABoAGUAIABvAGIAagBlAGMAdAAuAAFcVgBhAGwAdQBlACAAZABvAGUAcwAgAG4AbwB0ACAAZgBhAGwAbAAgAHcAaQB0AGgAaQBuACAAdABoAGUAIABlAHgAcABlAGMAdABlAGQAIAByAGEAbgBnAGUALgA='), c => c.charCodeAt(0));
+async function run() {
+    const button = document.getElementById('run');
+    const status = document.getElementById('status');
+    button.disabled = true; window.demoResult = null;
+    try {
+        const commands = [];
+        const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
+        const context = document.getElementById('canvas').getContext('2d');
+        const instance = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasImports(context, commands) });
+        const exitCode = instance.exports.main();
+        window.demoResult = { commands, exitCode };
+        status.textContent = `Rendered ${commands.length} drawing commands · Exit code ${exitCode}`;
+    } catch (error) {
+        window.demoResult = { error: String(error) };
+        status.textContent = `Unable to run this demo: ${error.message ?? error}. Requires a browser with WASM GC and JS string builtins.`;
+    } finally { button.disabled = false; }
+}
+document.getElementById('run').addEventListener('click', run);
+run();
+</script>
+</html>

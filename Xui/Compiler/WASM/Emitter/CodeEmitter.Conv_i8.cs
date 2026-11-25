@@ -13,6 +13,7 @@ public readonly ref partial struct CodeEmitter
             case SignatureTypeCode.Int32:
             case SignatureTypeCode.IntPtr: writer.I64ExtendI32S(); break;
             case SignatureTypeCode.Int64: break;
+            case SignatureTypeCode.Double: writer.I64TruncSatF64S(); break;
             default:
                 throw new NotSupportedException($"Unsupported Conv_i8 operand type {value.TypeCode} at IL_{offset:x4}.");
         }

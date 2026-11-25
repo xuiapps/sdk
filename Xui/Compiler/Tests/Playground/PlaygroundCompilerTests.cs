@@ -43,6 +43,6 @@ public class PlaygroundCompilerTests
     [Fact]
     public void UnsupportedEmissionIsReportedWithoutExecutingManagedCode()
     {
-        Assert.Throws<NotSupportedException>(() => PlaygroundCompiler.Compile("throw new System.Exception(\"must not execute\");"));
+        Assert.Throws<NotSupportedException>(() => PlaygroundCompiler.Compile("try { throw new System.Exception(); } catch (System.Exception e) when (e.Message != null) { }"));
     }
 }

@@ -21,7 +21,11 @@ internal readonly struct PhoneFrameSpecification(
     public NFloat TotalInset => ButtonReserve + OuterGrayOutlineWidth + ScreenBlackOutlineWidth;
 
     /// <summary>Initial iPhone chrome widths in logical pixels.</summary>
+#if XUI_COMPILER_CANVAS
+    public static PhoneFrameSpecification IPhone => new(
+#else
     public static PhoneFrameSpecification IPhone { get; } = new(
+#endif
         buttonReserve: 4,
         outerGrayOutlineWidth: 4,
         screenBlackOutlineWidth: 8);

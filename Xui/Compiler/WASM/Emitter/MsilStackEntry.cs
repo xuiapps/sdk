@@ -1,5 +1,6 @@
 using System.Reflection.Metadata;
 using Xui.Compiler.XuiNet.DotNet;
+using Xui.Compiler.XuiNet.DotNet.Signatures;
 
 namespace Xui.Compiler.WASM.Emitter;
 
@@ -16,15 +17,22 @@ namespace Xui.Compiler.WASM.Emitter;
 public readonly struct MsilStackEntry
 {
     /// <summary>Creates a stack entry for a supported built-in type.</summary>
-    public MsilStackEntry(SignatureTypeCode typeCode, TypeIdentity? identity = null, bool isByReference = false)
+    public MsilStackEntry(SignatureTypeCode typeCode, TypeIdentity? identity = null, bool isByReference = false, ArraySignature? array = null)
     {
         TypeCode = typeCode;
+        Array = array;
         Identity = identity;
         IsByReference = isByReference;
     }
 
+    /// <summary>The exact managed array element signature, when present.</summary>
+    public ArraySignature? Array { get; }
+
+
+    internal MethodIdentity? Method { get; init; }
+    internal TypeIdentity? TypeToken { get; init; }
+    internal FieldIdentity? FieldToken { get; init; }
     internal bool IsNull { get; init; }
-    internal GcLocation? Location { get; init; }
 
     /// <summary>The module-qualified identity of a named value type, when present.</summary>
     public TypeIdentity? Identity { get; }

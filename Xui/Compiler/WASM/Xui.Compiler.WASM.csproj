@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../XuiNet/Xui.Compiler.XuiNet.csproj" />
+    <EmbeddedResource Include="Runtime/xui-runtime.js" LogicalName="Xui.Runtime.JavaScript" />
   </ItemGroup>
 </Project>

@@ -11,8 +11,10 @@ public readonly record struct LocalVariable(
     SignatureTypeCode TypeCode,
     TypeIdentity? Identity = null,
     bool IsByReference = false,
-    bool UsesGc = false)
+    bool UsesGc = false,
+    ArraySignature? Array = null)
 {
+
     /// <summary>The source MSIL type pushed by a load of this local.</summary>
     public SignatureTypeCode StackType => Identity is not null ? SignatureTypeCode.TypeHandle : TypeCode switch
     {
@@ -23,12 +25,13 @@ public readonly record struct LocalVariable(
         SignatureTypeCode.Single or SignatureTypeCode.Double => SignatureTypeCode.Double,
         SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr => SignatureTypeCode.IntPtr,
         SignatureTypeCode.String => SignatureTypeCode.String,
+        SignatureTypeCode.Object => SignatureTypeCode.Object,
+        SignatureTypeCode.SZArray => SignatureTypeCode.SZArray,
         _ => throw new NotSupportedException($"Unsupported local type: {TypeCode}.")
     };
 
     /// <summary>The local's storage type, before load promotion or after store narrowing.</summary>
-    public ValueTypeCode WasmType => UsesGc ? ValueTypeCode.EqRef : IsByReference
-        ? throw new NotSupportedException($"Managed-address storage for {Identity?.ToString() ?? TypeCode.ToString()} is not implemented.")
+    public ValueTypeCode WasmType => IsByReference || UsesGc ? ValueTypeCode.EqRef
         : Identity is not null
         ? ValueTypeCode.I32
         : TypeCode switch
@@ -44,14 +47,17 @@ public readonly record struct LocalVariable(
         }
     };
 
+    internal bool IsLinearValue => Identity is not null && !UsesGc && !IsByReference;
+    internal bool IsScalar => Identity is null && Array is null && TypeCode is not (SignatureTypeCode.Void or SignatureTypeCode.String or SignatureTypeCode.Object);
+
     internal bool NeedsNarrowing => TypeCode is SignatureTypeCode.Boolean or SignatureTypeCode.Char or
         SignatureTypeCode.SByte or SignatureTypeCode.Byte or SignatureTypeCode.Int16 or
         SignatureTypeCode.UInt16 or SignatureTypeCode.Single;
 
-    internal static LocalVariable[] Read(Xui.Compiler.XuiNet.DotNet.Module module, BlobReader signature, StorageModel storage, GenericArguments? arguments = null)
+    internal static LocalVariable[] Read(Xui.Compiler.XuiNet.DotNet.Module module, BlobReader signature, StorageModel storage, GenericArguments? arguments = null, GenericArguments? methodArguments = null)
     {
         System.Collections.Immutable.ImmutableArray<SignatureType> declared;
-        try { declared = SignatureReader.Locals(module, signature, arguments); }
+        try { declared = SignatureReader.Locals(module, signature, arguments, methodArguments); }
         catch (NotSupportedException error)
         {
             throw new NotSupportedException($"Unsupported local type: {error.Message}", error);
@@ -60,7 +66,6 @@ public readonly record struct LocalVariable(
         for (int i = 0; i < declared.Length; i++)
         {
             var type = declared[i];
-            if (type.IsByReference) throw new NotSupportedException("Managed-address locals are not implemented.");
             locals[i] = storage.Bind(type);
             _ = locals[i].WasmType;
         }

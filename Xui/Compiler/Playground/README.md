@@ -1,6 +1,6 @@
 # WASM playground
 
-The playground is a static site published at **https://xuiapps.com/wasm/** by the existing [Pages workflow](../../../.github/workflows/Web.yml). It has a plain C# editor, Run/Stop controls, console output, compiler/runtime errors, the entry point's exit code, and a WASM download. Examples cover Hello World, a loop, and generic virtual dispatch. Ctrl/Command+Enter runs the editor; Escape stops the current job.
+The playground is a static site published at **https://xuiapps.com/wasm/playground.html** by the existing [Pages workflow](../../../.github/workflows/Web.yml). It has a plain C# editor, Run/Stop controls, console output, compiler/runtime errors, the entry point's exit code, and a WASM download. Examples cover Hello World, a loop, and generic virtual dispatch. Ctrl/Command+Enter runs the editor; Escape stops the current job.
 
 The page itself is HTML/CSS/JavaScript. A persistent module worker hosts Roslyn, XuiNet, and the Xui WASM emitter using the framework's .NET WebAssembly runtime. Roslyn emits a PE image; `AssemblyCompiler` reads it; `WasmEmitter` produces the program's WASM. **The edited program executes as Xui-generated WASM, not as managed code in the framework runtime.** The framework runtime only hosts the compiler. This follows the [.NET Web Worker hosting pattern](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-on-webworkers?view=aspnetcore-10.0).
 
@@ -17,7 +17,7 @@ dotnet publish Xui/Compiler/Playground/Xui.Compiler.Playground.csproj -c Release
 python3 -m http.server 8088 --directory Xui/Compiler/Playground/bin/Release/net10.0/publish/wwwroot
 ```
 
-Open `http://localhost:8088/`. A browser with WASM GC and the `js-string` builtins is required; the published app is smoke-tested in Chromium. Files must be served over HTTP(S), with JavaScript and `.wasm` MIME types. All asset and worker paths are relative, so the same bundle works at `/` or `/wasm/`. There is no shared-memory/thread requirement or server-side compilation service.
+Open `http://localhost:8088/` for the emulator or `http://localhost:8088/playground.html` for the editor. A browser with WASM GC, native exception handling (`try_table`), and the `js-string` builtins is required; the published app is smoke-tested in Chromium. Files must be served over HTTP(S), with JavaScript and `.wasm` MIME types. All asset and worker paths are relative, so the same bundle works at `/` or `/wasm/`. There is no shared-memory/thread requirement or server-side compilation service.
 
 ## Verify
 
@@ -34,3 +34,21 @@ The smoke test serves the published files at `/wasm/`, exercises the real .NET c
 ## Deployment
 
 `Web.yml` publishes and browser-tests this project, copies its `wwwroot` into `_site/wasm`, then uploads the combined documentation and playground artifact to GitHub Pages. The existing `xuiapps.com` CNAME is preserved. Deployment occurs when the changes reach `main` (or when that workflow is manually dispatched with the intended ref). The compiler's source and dependencies are built from that same checkout.
+
+
+## TestApp preview
+
+The default [WASM page](https://xuiapps.com/wasm/) opens the self-contained TestApp
+inside the emulator phone. The editor remains at `/wasm/playground.html`, and the
+previous `/wasm/testapp.html` address redirects to `/wasm/`.
+It runs the real mobile shell, event routing, scrolling, and animated navigation
+with a measured FPS badge. The browser catalogue contains Text Metrics and 20
+Canvas drawings; diagnostics and async/GPU demos remain excluded. The expandable Page size
+panel accounts for HTML, embedded fonts, JavaScript and WASM sections.
+
+Publishing copies `Tests/Wasm/TestApp/Snapshots/BrowserInteractive.html` as
+`wwwroot/index.html`. Regenerate and review that snapshot with
+`BrowserInteractionTests` as compiler support grows. It embeds its own WASM and JS
+runtime and does not load the playground's Roslyn/.NET runtime. The published-site
+smoke test checks the default emulator route, absence of framework downloads on that
+page, legacy redirect, FPS warmup, Canvas Drawing navigation and Back.

@@ -28,6 +28,8 @@ internal class ConsoleWriteLineRewriter : CodeRewriter
         functions.Clear();
     }
 
+    public override void UseSource(IR.Module source) => this.source = source;
+
     public override bool Collect(Instruction instruction, ref ILReader reader)
     {
         if (instruction.Code != OpCode.Call) return false;

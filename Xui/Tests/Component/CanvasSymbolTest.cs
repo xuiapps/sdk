@@ -7,18 +7,8 @@ using Xui.Runtime.Software.Actual;
 
 namespace Xui.Tests.Component;
 
-public class CanvasSymbolTest
+public partial class CanvasSymbolTest
 {
-    private static void Define(IContext context, object key, Color color, bool update = false)
-    {
-        using var symbol = context.Symbol(new SymbolOptions { Key = key, Bounds = (0, 0, 20, 20), HasUpdates = update });
-        if (symbol.NeedsDrawing)
-        {
-            symbol.Context.SetFill(color);
-            symbol.Context.FillRect((2, 2, 16, 16));
-        }
-    }
-
     [Fact]
     public void DefinitionDoesNotDrawAndSvgUsesOneDefinitionForManyPlacements()
     {
@@ -96,27 +86,6 @@ public class CanvasSymbolTest
     }
 
     [Fact]
-    public void CachedDefinitionAndPlacementsAllocateNothingAfterWarmup()
-    {
-        using var measure = new SvgDrawingContext((100, 100), Stream.Null);
-        using var scene = new RetainedCanvasContext(measure);
-        IContext context = scene;
-        object key = new();
-        void Frame()
-        {
-            scene.BeginFrame((0, 0, 100, 100), 1);
-            Define(context, key, Colors.Red);
-            for (int i=0; i<100; i++) context.UseSymbol(key);
-            scene.EndFrame(); scene.AcceptFrame();
-        }
-        for (int i=0; i<20; i++) Frame();
-        long before=GC.GetAllocatedBytesForCurrentThread();
-        for (int i=0; i<100; i++) Frame();
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread()-before);
-        Assert.Equal(103, scene.Root.Commands.Count); // initial font/alignment/baseline + placements
-    }
-
-    [Fact]
     public void FailedDefinitionPreservesOldContentAndNewContextRequestsDrawing()
     {
         using IContext context = new SvgDrawingContext((100, 100), Stream.Null);
@@ -156,5 +125,23 @@ public class CanvasSymbolTest
         Assert.Equal("end",outside.Attribute("text-anchor")?.Value);
         Assert.Single(document.Descendants(ns+"linearGradient"));
         Assert.Contains("data:font/ttf;base64,", document.ToString());
+    }
+    [Fact]
+    public void CachedDefinitionAndPlacementsReuseCommands()
+    {
+        using var measure = new SvgDrawingContext((100, 100), Stream.Null);
+        using var scene = new RetainedCanvasContext(measure);
+        IContext context = scene;
+        object key = new();
+        void Frame()
+        {
+            scene.BeginFrame((0, 0, 100, 100), 1);
+            Define(context, key, Colors.Red);
+            for (int i=0; i<100; i++) context.UseSymbol(key);
+            scene.EndFrame(); scene.AcceptFrame();
+        }
+        for (int i=0; i<20; i++) Frame();
+        for (int i=0; i<100; i++) Frame();
+        Assert.Equal(103, scene.Root.Commands.Count); // initial font/alignment/baseline + placements
     }
 }

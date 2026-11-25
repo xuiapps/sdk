@@ -9,10 +9,16 @@ public enum StackType
     Int32,
     Int64,
     NativeInt,
+    /// <summary>A callable method token used to construct a delegate.</summary>
+    MethodPointer,
+    /// <summary>A transient closed type token consumed by Type.GetTypeFromHandle.</summary>
+    RuntimeTypeHandle,
+    /// <summary>A transient field token consumed by RuntimeHelpers.CreateSpan.</summary>
+    RuntimeFieldHandle,
     Float,
     String,
-    /// <summary>The exact string[] category, retained for entry point signatures.</summary>
-    StringArray,
+    /// <summary>A managed vector with its exact element signature.</summary>
+    ArrayReference,
     /// <summary>A named value type; StackEntry retains its module-qualified identity.</summary>
     ValueType,
     /// <summary>A managed address; StackEntry retains its exact declared element type.</summary>

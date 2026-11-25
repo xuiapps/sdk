@@ -136,6 +136,8 @@ Supporting runtimes:
   device variants. Expected SVGs live beside scenario README files.
 - `Xui/Tests/E2E/Xui.Tests.E2E.csproj` — drives a real TestApp process through
   `Xui.Runtime.E2E` and DevTools.
+- `Xui/Tests/Memory/Xui.Tests.Memory.csproj` — isolated allocation regressions,
+  stdio subprocess checks, and opt-in native frame profiling.
 - `Xui/Tests/Docs/Xui.Tests.Docs.csproj` — generates SVG figures used by the
   documentation.
 
@@ -164,6 +166,8 @@ Debug desktop variants can insert DevTools middleware.
 - `Xui/Utils/Templates/Xui.Templates.csproj` — package containing Xui project
   templates. Projects below `content/` are template payloads, not solution
   projects.
+- `Xui/Utils/AllocationProfiler` — opt-in C++ CLR profiler for exact scoped
+  allocation stacks and portable-PDB memory test snapshots.
 - `Xui/Utils/MCP/Xui.MCP.csproj` — stdio MCP server that starts or connects to
   DevTools-enabled Xui apps and exposes inspection, screenshots, input, and logs.
 - `tools/DocsGenerator` — documentation asset generator.

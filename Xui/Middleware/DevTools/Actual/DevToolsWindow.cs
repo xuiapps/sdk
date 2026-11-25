@@ -15,6 +15,11 @@ namespace Xui.Middleware.DevTools.Actual;
 internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
 {
     private readonly DevToolsPlatform platform;
+    private readonly FrameAllocationProfiler profiler = new();
+    private TaskCompletionSource<FrameResult>? pendingFrame;
+    private TimeSpan controlledTime;
+    private TimeSpan controlledPrevious;
+    private long frameAnimationBytes;
 
     // Screenshot state — written and read exclusively on the UI thread.
     private TaskCompletionSource<string>? pendingScreenshot;
@@ -98,13 +103,13 @@ internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
 
         // Wrap with OverlayContext when there's an interaction point or a client label to show.
         // Store it so Render() can call Dispose() after Abstract.Render to trigger the drawing.
-        if (lastInputOverlay is { } overlay)
+        if (!platform.StdioEnabled && lastInputOverlay is { } overlay)
         {
             pendingOverlayCtx = new OverlayContext(ctx, overlay.pos, overlay.isTouch, overlayLabel);
             return pendingOverlayCtx;
         }
 
-        if (overlayLabel != null)
+        if (!platform.StdioEnabled && overlayLabel != null)
         {
             pendingOverlayCtx = new OverlayContext(ctx, null, false, overlayLabel);
             return pendingOverlayCtx;
@@ -134,10 +139,20 @@ internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
         set => Abstract!.ScreenCornerRadius = value;
     }
 
-    void Xui.Core.Abstract.IWindow.Closed() => Abstract!.Closed();
+    void Xui.Core.Abstract.IWindow.Closed()
+    {
+        pendingFrame?.TrySetException(new IOException("Window closed before rendering."));
+        pendingFrame = null;
+        pendingScreenshot?.TrySetException(new IOException("Window closed before screenshot."));
+        pendingScreenshot = null;
+        Abstract.Closed();
+    }
     bool Xui.Core.Abstract.IWindow.Closing() => Abstract!.Closing();
 
-    void Xui.Core.Abstract.IWindow.OnAnimationFrame(ref FrameEventRef e) => Abstract!.OnAnimationFrame(ref e);
+    void Xui.Core.Abstract.IWindow.OnAnimationFrame(ref FrameEventRef e)
+    {
+        if (!platform.StdioEnabled) Abstract.OnAnimationFrame(ref e);
+    }
     void Xui.Core.Abstract.IWindow.OnMouseDown(ref MouseDownEventRef e) => Abstract!.OnMouseDown(ref e);
     void Xui.Core.Abstract.IWindow.OnMouseMove(ref MouseMoveEventRef e) => Abstract!.OnMouseMove(ref e);
     void Xui.Core.Abstract.IWindow.OnMouseUp(ref MouseUpEventRef e) => Abstract!.OnMouseUp(ref e);
@@ -161,7 +176,32 @@ internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
 
         pendingOverlayCtx = null;
         render.Context = WrapContext(render.Context);
-        Abstract!.Render(ref render);
+        var frame = pendingFrame;
+        if (platform.StdioEnabled)
+            render.Frame = new FrameEventRef(controlledPrevious, controlledTime);
+        if (frame is not null) profiler.Begin(3);
+        var before = frame is null ? 0 : GC.GetAllocatedBytesForCurrentThread();
+        long renderBytes;
+        try { Abstract.Render(ref render); }
+        catch (Exception ex) when (frame is not null)
+        {
+            pendingFrame = null;
+            frame.TrySetException(ex);
+            return;
+        }
+        finally
+        {
+            renderBytes = frame is null ? 0 : GC.GetAllocatedBytesForCurrentThread() - before;
+            if (frame is not null) profiler.End();
+        }
+        if (frame is not null)
+        {
+            pendingFrame = null;
+            profiler.Frames++;
+            profiler.AnimationBytes += frameAnimationBytes;
+            profiler.RenderBytes += renderBytes;
+            frame.TrySetResult(new FrameResult(profiler.Frames, frameAnimationBytes, renderBytes));
+        }
 
         // Draw the overlay on top of the app content (and into the SVG stream if screenshotting).
         // Dispose() triggers the drawing; inner.Dispose() is NOT called by OverlayContext so the
@@ -182,6 +222,7 @@ internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
             var tcs = pendingScreenshot;
             pendingScreenshot = null;
             var svg = System.Text.Encoding.UTF8.GetString(svgStream.ToArray());
+            svgStream.Dispose();
             svgStream = null;
             tcs.SetResult(svg);
         }
@@ -189,7 +230,7 @@ internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
 
     internal Task<InspectResult> HandleInspect()
     {
-        var tcs = new TaskCompletionSource<InspectResult>();
+        var tcs = new TaskCompletionSource<InspectResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         platform.MainDispatcher.Post(() =>
         {
             try
@@ -206,9 +247,14 @@ internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
 
     internal Task<ScreenshotResult> HandleScreenshot()
     {
-        var tcs = new TaskCompletionSource<string>();
+        var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         platform.MainDispatcher.Post(() =>
         {
+            if (pendingScreenshot is not null || pendingFrame is not null)
+            {
+                tcs.SetException(new InvalidOperationException("A render request is already pending."));
+                return;
+            }
             pendingScreenshot = tcs;
             Actual!.Invalidate();
         });
@@ -219,87 +265,186 @@ internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
 
     internal Task HandleClick(ClickParams p)
     {
-        platform.MainDispatcher.Post(() =>
+        return DispatchAsync(() =>
         {
             var pos = new Point(p.X, p.Y);
             lastInputOverlay = (pos, isTouch: false);
             var down = new MouseDownEventRef { Position = pos, Button = MouseButton.Left };
-            Abstract!.OnMouseDown(ref down);
-            var up = new MouseUpEventRef { Position = pos, Button = MouseButton.Left };
-            Abstract!.OnMouseUp(ref up);
+            profiler.Begin(1);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            try
+            {
+                Abstract!.OnMouseDown(ref down);
+                var up = new MouseUpEventRef { Position = pos, Button = MouseButton.Left };
+                Abstract!.OnMouseUp(ref up);
+            }
+            finally
+            {
+                profiler.InputBytes += GC.GetAllocatedBytesForCurrentThread() - before;
+                profiler.End();
+            }
             Actual!.Invalidate();
         });
-        return Task.CompletedTask;
     }
 
     internal Task HandleTap(TapParams p)
     {
-        platform.MainDispatcher.Post(() =>
+        return DispatchAsync(() =>
         {
             var pos = new Point(p.X, p.Y);
             lastInputOverlay = (pos, isTouch: true);
             var touch = new Touch { Index = 0, Phase = TouchPhase.Start, Position = pos, Radius = 0.5f };
-            var te = new TouchEventRef([touch]);
-            Abstract!.OnTouch(ref te);
+            var te = new TouchEventRef([touch]) { TextMeasure = Actual!.TextMeasureContext };
+            profiler.Begin(1);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            try
+            {
+                Abstract!.OnTouch(ref te);
 
-            touch.Phase = TouchPhase.End;
-            te = new TouchEventRef([touch]);
-            Abstract!.OnTouch(ref te);
+                touch.Phase = TouchPhase.End;
+                var endEvent = new TouchEventRef([touch]) { TextMeasure = te.TextMeasure };
+                Abstract!.OnTouch(ref endEvent);
+            }
+            finally
+            {
+                profiler.InputBytes += GC.GetAllocatedBytesForCurrentThread() - before;
+                profiler.End();
+            }
             Actual!.Invalidate();
         });
-        return Task.CompletedTask;
     }
 
     internal Task HandlePointer(PointerParams p)
     {
-        platform.MainDispatcher.Post(() =>
+        return DispatchAsync(() =>
         {
+            if (p.Index < 0) throw new ArgumentOutOfRangeException(nameof(p.Index));
             var phase = p.Phase switch
             {
                 "start" => TouchPhase.Start,
                 "move" => TouchPhase.Move,
                 "end" => TouchPhase.End,
-                _ => TouchPhase.End,
+                "cancel" => TouchPhase.Cancel,
+                _ => throw new ArgumentException("Unknown pointer phase."),
             };
             var pos = new Point(p.X, p.Y);
             lastInputOverlay = (pos, isTouch: true);
             var touch = new Touch { Index = p.Index, Phase = phase, Position = pos, Radius = 0.5f };
-            var te = new TouchEventRef([touch]);
-            Abstract!.OnTouch(ref te);
+            var te = new TouchEventRef([touch]) { TextMeasure = Actual!.TextMeasureContext };
+            profiler.Begin(1);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            try
+            {
+                Abstract!.OnTouch(ref te);
+            }
+            finally
+            {
+                profiler.InputBytes += GC.GetAllocatedBytesForCurrentThread() - before;
+                profiler.End();
+            }
             Actual!.Invalidate();
         });
-        return Task.CompletedTask;
     }
 
     internal Task HandleMouseMove(MouseMoveParams p)
     {
-        platform.MainDispatcher.Post(() =>
+        return DispatchAsync(() =>
         {
             var pos = new Point(p.X, p.Y);
             lastInputOverlay = (pos, isTouch: false);
             var move = new MouseMoveEventRef { Position = pos };
-            Abstract!.OnMouseMove(ref move);
+            profiler.Begin(1);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            try
+            {
+                Abstract!.OnMouseMove(ref move);
+            }
+            finally
+            {
+                profiler.InputBytes += GC.GetAllocatedBytesForCurrentThread() - before;
+                profiler.End();
+            }
             Actual!.Invalidate();
         });
-        return Task.CompletedTask;
     }
 
     internal Task HandleInvalidate()
     {
-        platform.MainDispatcher.Post(() => Actual!.Invalidate());
-        return Task.CompletedTask;
+        return DispatchAsync(() => Actual!.Invalidate());
     }
 
     internal Task HandleIdentify(IdentifyParams p)
     {
-        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        platform.MainDispatcher.Post(() =>
+        return DispatchAsync(() =>
         {
             overlayLabel = string.IsNullOrWhiteSpace(p.Label) ? null : p.Label;
             Actual!.Invalidate();
-            tcs.SetResult();
         });
-        return tcs.Task;
+    }
+
+    private Task DispatchAsync(Action action)
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        platform.MainDispatcher.Post(() =>
+        {
+            try { action(); completion.SetResult(); }
+            catch (Exception ex) { completion.SetException(ex); }
+        });
+        return completion.Task;
+    }
+
+    internal async Task<ProfileResult> HandleProfileReset()
+    {
+        await DispatchAsync(() =>
+        {
+            if (pendingFrame is not null) throw new InvalidOperationException("A frame is in progress.");
+            profiler.Reset();
+        });
+        return new(0, 0, 0, 0);
+    }
+
+    internal async Task<ProfileResult> HandleProfileRead()
+    {
+        ProfileResult? result = null;
+        await DispatchAsync(() => result = profiler.Read());
+        return result!;
+    }
+
+    internal Task<FrameResult> HandleFrame(FrameParams p)
+    {
+        if (!platform.StdioEnabled)
+            throw new InvalidOperationException("Controlled frames require --enable-stdio-jsonrpc.");
+        if (p.ElapsedMilliseconds is < 0 or > 60000)
+            throw new ArgumentOutOfRangeException(nameof(p), "Elapsed milliseconds must be between 0 and 60000.");
+        var completion = new TaskCompletionSource<FrameResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        platform.MainDispatcher.Post(() =>
+        {
+            try
+            {
+                if (pendingFrame is not null || pendingScreenshot is not null)
+                    throw new InvalidOperationException("A render request is already pending.");
+                var next = controlledTime + TimeSpan.FromMilliseconds(p.ElapsedMilliseconds);
+                var frame = new FrameEventRef(controlledTime, next);
+                controlledPrevious = controlledTime;
+                controlledTime = next;
+                profiler.Begin(2);
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                try { Abstract.OnAnimationFrame(ref frame); }
+                finally
+                {
+                    frameAnimationBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+                    profiler.End();
+                }
+                pendingFrame = completion;
+                Actual!.Invalidate();
+            }
+            catch (Exception ex)
+            {
+                if (ReferenceEquals(pendingFrame, completion)) pendingFrame = null;
+                completion.TrySetException(ex);
+            }
+        });
+        return completion.Task;
     }
 
     private static ViewNode WalkView(Xui.Core.UI.View view)
@@ -308,14 +453,15 @@ internal sealed class DevToolsWindow : Xui.Core.Middleware.IWindow
         var children = new ViewNode[view.Count];
         for (int i = 0; i < view.Count; i++)
             children[i] = WalkView(view[i]);
-        
+
         // Calculate center point for clicking
-        var centerX = (float)(f.X + f.Width / 2);
-        var centerY = (float)(f.Y + f.Height / 2);
-        
+        var center = view.Parent?.LocalToGlobal(f.Center) ?? f.Center;
+        var centerX = (float)center.X;
+        var centerY = (float)center.Y;
+
         // Get ClassName as comma-separated string or null
-        var className = view.ClassName.Count > 0 
-            ? string.Join(" ", view.ClassName) 
+        var className = view.ClassName.Count > 0
+            ? string.Join(" ", view.ClassName)
             : null;
 
         // Strip generic arity suffix (e.g. "ViewCollection`1" -> "ViewCollection") so the

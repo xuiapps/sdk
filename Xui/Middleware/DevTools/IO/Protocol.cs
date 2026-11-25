@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Xui.Middleware.DevTools.IO;
 
@@ -11,23 +12,27 @@ public static class Methods
     public const string InputClick = "input.click";
     public const string InputMouseMove = "input.mousemove";
     public const string AppInvalidate = "app.invalidate";
+    public const string AppFrame = "app.frame";
+    public const string ProfileReset = "profile.reset";
+    public const string ProfileRead = "profile.read";
+    public const string AppQuit = "app.quit";
     public const string AppIdentify = "app.identify";
 }
 
 public record RpcRequest(string Method, int Id, JsonElement? Params = null);
 
 // Param payloads — deserialised from RpcRequest.Params
-public record TapParams(float X, float Y);
+public record TapParams([property: JsonRequired] float X, [property: JsonRequired] float Y);
 
-public record ClickParams(float X, float Y);
+public record ClickParams([property: JsonRequired] float X, [property: JsonRequired] float Y);
 
 /// <summary>Phase values: "start" | "move" | "end" | "cancel"</summary>
-public record PointerParams(string Phase, float X, float Y, int Index = 0);
+public record PointerParams([property: JsonRequired] string Phase, [property: JsonRequired] float X, [property: JsonRequired] float Y, int Index = 0);
 
-public record MouseMoveParams(float X, float Y);
+public record MouseMoveParams([property: JsonRequired] float X, [property: JsonRequired] float Y);
 
 /// <summary>Identity label to display next to the AI pointer overlay, e.g. "Claude, VSCode".</summary>
-public record IdentifyParams(string Label);
+public record IdentifyParams([property: JsonRequired] string Label);
 
 public record RpcResponse(int Id, object? Result = null, RpcError? Error = null);
 public record RpcError(int Code, string Message);
@@ -46,3 +51,8 @@ public record ViewNode(
     ViewNode[] Children);
 
 public record ScreenshotResult(string Svg);
+
+/// <summary>Advance the controlled animation clock, then await a real render callback.</summary>
+public record FrameParams(int ElapsedMilliseconds = 16);
+public record FrameResult(long Frame, long AnimationBytes, long RenderBytes);
+public record ProfileResult(long Frames, long AnimationBytes, long RenderBytes, long InputBytes, string? AllocationTrace = null);

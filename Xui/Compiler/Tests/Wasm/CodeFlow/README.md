@@ -4,6 +4,7 @@ These REPL-style tests compile the shared C# fixtures, emit WASM, and execute it
 
 | Snapshot | Demonstrates |
 | --- | --- |
+| [Switch](Snapshots/Switch.md) | Dense cases, shared labels, and default selection |
 | [If](Snapshots/If.md) | Conditional without an else |
 | [IfElse](Snapshots/IfElse.md) | Both arms assigning a result |
 | [ElseIf](Snapshots/ElseIf.md) | Negative, zero, and positive cases |
@@ -20,6 +21,8 @@ These REPL-style tests compile the shared C# fixtures, emit WASM, and execute it
 | [WhileWithBreak](Snapshots/WhileWithBreak.md) | Early exit to the loop continuation |
 | [WhileWithContinue](Snapshots/WhileWithContinue.md) | Skip the rest of an iteration |
 
-`LoopTests` additionally exercises values carried on the evaluation stack across back edges, different loop input/result lengths, and local initialization at exits. Loops currently require one entry and one shared continuation. Multiple-entry cycles, loops without a continuation, switches, and overlapping regions still throw.
+`LoopTests` additionally exercises values carried on the evaluation stack across back edges, different loop input/result lengths, and local initialization at exits. Loops currently require one entry and one shared continuation. Multiple-entry cycles, loops without a continuation, and arbitrary overlapping regions still throw. `SharedTailTests` covers short-circuit result/return tails, early-return guards, and linear struct conditional results, comparing Debug/Release WASM with CLR execution.
 
 The separate [instruction graph snapshots](../../XuiNet/CodeFlow/Snapshots) display MSIL edges and interned stack states for these fixtures. Source links in snapshots are relative to the tests project root.
+
+`SwitchTests` covers typed inputs and multiple results, shared cases, empty switches, nested switches, loop transfers, and finally cleanup. `BclSelectorTests` executes the actual supplied CoreLib argument-name and resource-message switch bodies and compares their output with the CLR.

@@ -16,6 +16,7 @@ internal static class LoopRegions
         var members = new Dictionary<InstructionNode, HashSet<InstructionNode>>();
         Visit(graph.Entry);
         var loops = new Dictionary<InstructionNode, LoopRegion>();
+        var cycles = members.ToDictionary(pair => pair.Key, pair => pair.Value.ToHashSet());
         foreach (var (header, nodes) in members)
         {
             if (header != graph.Entry && nodes.Contains(graph.Entry))
@@ -25,11 +26,24 @@ internal static class LoopRegions
             // Debug IL can put a nop or an unconditional branch between break and the common exit.
             // Absorb only those forwarding instructions, stopping at the first shared continuation.
             var paths = exits.Select(ExitPath).ToArray();
-            var exit = paths[0].FirstOrDefault(candidate => paths.All(path => path.Contains(candidate)))
-                ?? throw Unsupported(header, "loop requires a single continuation");
-            foreach (var path in paths)
+            var exit = paths[0].FirstOrDefault(candidate => paths.All(path => path.Contains(candidate)));
+            var terminal = new HashSet<InstructionNode>();
+            if (exit is null)
+            {
+                // Early returns/throws are terminal arms, not competing loop continuations.
+                // Keep the candidate that absorbs the smallest finite terminal region.
+                foreach (var candidate in paths.SelectMany(path => path).Distinct())
+                {
+                    var tails = new HashSet<InstructionNode>();
+                    if (!exits.All(entry => paths[Array.IndexOf(exits, entry)].Contains(candidate) || Terminal(entry, candidate, nodes, tails, new()))) continue;
+                    if (exit is null || tails.Count < terminal.Count) { exit = candidate; terminal = tails; }
+                }
+            }
+            if (exit is null) throw Unsupported(header, "loop requires a single continuation");
+            foreach (var path in paths.Where(path => path.Contains(exit)))
                 foreach (var forwarded in path.TakeWhile(node => node != exit)) nodes.Add(forwarded);
-            if (nodes.Any(node => node != header && predecessors[node].Any(previous => !nodes.Contains(previous))))
+            nodes.UnionWith(terminal);
+            if (nodes.Any(node => node != header && !terminal.Contains(node) && predecessors[node].Any(previous => !nodes.Contains(previous))))
                 throw Unsupported(header, "multiple-entry loop region");
             int depth = nodes.Min(node => node.Lowest!.Depth);
             var preserved = header.Before!;
@@ -39,10 +53,25 @@ internal static class LoopRegions
         var regions = loops.Values.ToArray();
         for (int i = 0; i < regions.Length; i++)
             for (int j = i + 1; j < regions.Length; j++)
-                if (regions[i].Members.Overlaps(regions[j].Members) &&
-                    !regions[i].Members.IsSubsetOf(regions[j].Members) && !regions[j].Members.IsSubsetOf(regions[i].Members))
+                if (cycles[regions[i].Block.Header].Overlaps(cycles[regions[j].Block.Header]) &&
+                    !cycles[regions[i].Block.Header].IsSubsetOf(cycles[regions[j].Block.Header]) &&
+                    !cycles[regions[j].Block.Header].IsSubsetOf(cycles[regions[i].Block.Header]))
                     throw Unsupported(regions[i].Block.Header, "overlapping loops");
         return loops;
+
+        static bool Terminal(InstructionNode node, InstructionNode continuation, HashSet<InstructionNode> loop,
+            HashSet<InstructionNode> completed, HashSet<InstructionNode> active)
+        {
+            if (node == continuation || loop.Contains(node)) return false;
+            if (completed.Contains(node)) return true;
+            if (!active.Add(node)) return false;
+            bool result = node.Successors.Length == 0
+                ? node.Code is OpCode.Ret or OpCode.Throw or OpCode.Rethrow
+                : node.Successors.All(next => Terminal(next, continuation, loop, completed, active));
+            active.Remove(node);
+            if (result) completed.Add(node);
+            return result;
+        }
 
         static List<InstructionNode> ExitPath(InstructionNode node)
         {

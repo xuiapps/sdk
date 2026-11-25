@@ -1,0 +1,8 @@
+using Xui.Compiler.XuiNet.DotNet.Op;
+
+namespace Xui.Compiler.WASM.Emitter;
+
+public readonly ref partial struct CodeEmitter
+{
+    private void EmitDiv_un(int offset) => EmitDivision(OpCode.Div_un, offset);
+}

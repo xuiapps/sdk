@@ -4,39 +4,51 @@ using System.Reflection.Metadata;
 namespace Xui.Compiler.XuiNet.DotNet;
 
 /// <summary>A named type's definition and optional generic arguments, qualified by its owning module.</summary>
-/// <remarks>Definition and reference handles remain distinct until assembly reference resolution is implemented.</remarks>
+/// <remarks>Signature readers canonicalize references into supplied assemblies; unresolved external references retain their source module.</remarks>
 public readonly record struct TypeIdentity(
     Module Module,
     EntityHandle Handle,
     GenericArguments? Arguments = null)
 {
-    /// <summary>Whether a same-module definition derives directly from System.ValueType or System.Enum.</summary>
+    /// <summary>Whether this resolved declaration is an interface.</summary>
+    public bool IsInterface => Handle.Kind == HandleKind.TypeDefinition && Module.GetType((TypeDefinitionHandle)Handle).IsInterface;
+
+    /// <summary>All implemented/inherited interfaces with generic arguments substituted, without duplicates.</summary>
+    public IReadOnlyList<TypeIdentity> Interfaces()
+    {
+        var result = new List<TypeIdentity>();
+        var visited = new HashSet<TypeIdentity>();
+        void Visit(TypeIdentity type)
+        {
+            if (type.Handle.Kind != HandleKind.TypeDefinition || !visited.Add(type)) return;
+            var definition = type.Module.GetType((TypeDefinitionHandle)type.Handle);
+            foreach (var handle in definition.Interfaces)
+            {
+                var contract = SignatureReader.Resolve(type.Module, type.Module.GetInterfaceType(handle), type.Arguments).Identity!.Value;
+                if (!result.Contains(contract)) result.Add(contract);
+                Visit(contract);
+            }
+            if (type.BaseType is { } parent) Visit(parent);
+        }
+        Visit(this);
+        return result;
+    }
+
+    /// <summary>Whether a definition derives directly from the framework ValueType or Enum marker.</summary>
     public bool IsValueType
     {
         get
         {
-            if (Handle.Kind != HandleKind.TypeDefinition) return false;
+            if (Handle.Kind != HandleKind.TypeDefinition || FrameworkTypes.IsRuntimeBase(this)) return false;
             var type = Module.GetType((TypeDefinitionHandle)Handle);
-            if (type.BaseType.Kind != HandleKind.TypeReference) return false;
-            var parent = Module.GetTypeReference((TypeReferenceHandle)type.BaseType);
-            return parent.Namespace == "System" && parent.Name is "ValueType" or "Enum";
+            if (type.BaseType.IsNil) return false;
+            var parent = new TypeIdentity(Module, type.BaseType);
+            return FrameworkTypes.Is(parent, "System", "ValueType") || FrameworkTypes.Is(parent, "System", "Enum");
         }
     }
 
-    /// <summary>Tests identity or a same-module class base chain; value types remain invariant.</summary>
-    public bool IsAssignableTo(TypeIdentity target)
-    {
-        if (this == target) return true;
-        if (Module != target.Module || IsValueType || target.IsValueType) return false;
-        var current = this;
-        var visited = new HashSet<TypeIdentity>();
-        while (current.BaseType is { } parent && visited.Add(current))
-        {
-            if (parent == target) return true;
-            current = parent;
-        }
-        return false;
-    }
+    /// <summary>Tests identity, class inheritance, and reference conversions through variant interfaces.</summary>
+    public bool IsAssignableTo(TypeIdentity target) => TypeRelations.IsAssignable(this, target);
 
     /// <summary>The open declaration underlying this identity.</summary>
     public TypeIdentity GenericDefinition => new(Module, Handle);

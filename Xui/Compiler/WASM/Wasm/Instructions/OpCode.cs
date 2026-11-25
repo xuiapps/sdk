@@ -3,12 +3,27 @@ namespace Xui.Compiler.WASM.Wasm.Instructions;
 /// <summary>Single-byte instruction codes currently emitted by the compiler.</summary>
 public enum OpCode : byte
 {
+    /// <summary>Reads a reference table entry.</summary>
+    TableGet = 0x25,
+    /// <summary>Writes a reference table entry.</summary>
+    TableSet = 0x26,
+    /// <summary>Begins a structured exception handler table.</summary>
+    TryTable = 0x1f,
+    /// <summary>Throws a tagged exception payload.</summary>
+    Throw = 0x08,
+    /// <summary>Rethrows an exception reference.</summary>
+    ThrowRef = 0x0a,
     /// <summary>Begins a block whose label receives its results.</summary>
     Block = 0x02,
     /// <summary>Begins a loop whose label receives its parameters.</summary>
     Loop = 0x03,
     /// <summary>Branches to an enclosing control label.</summary>
     Br = 0x0c,
+
+    /// <summary>Branches to a label when the i32 condition is nonzero.</summary>
+    BrIf = 0x0d,
+    /// <summary>Branches to an indexed label, with an out-of-range default.</summary>
+    BrTable = 0x0e,
     /// <summary>Begins a conditional block.</summary>
     If = 0x04,
     /// <summary>Begins the alternative arm of a conditional.</summary>
@@ -28,6 +43,8 @@ public enum OpCode : byte
     CallIndirect = 0x11,
     /// <summary>Discards the top value.</summary>
     Drop = 0x1a,
+    /// <summary>Selects one of two numeric values using an i32 condition.</summary>
+    Select = 0x1b,
     /// <summary>Loads a parameter or local by index.</summary>
     LocalGet = 0x20,
     /// <summary>Stores a parameter or local by index.</summary>
@@ -84,6 +101,14 @@ public enum OpCode : byte
     I32Sub = 0x6b,
     /// <summary>Multiplies i32 values with wrapping arithmetic.</summary>
     I32Mul = 0x6c,
+    /// <summary>Signed i32 division; zero and overflow trap.</summary>
+    I32DivS = 0x6d,
+    /// <summary>Unsigned i32 division; zero traps.</summary>
+    I32DivU = 0x6e,
+    /// <summary>Signed i32 remainder; zero traps.</summary>
+    I32RemS = 0x6f,
+    /// <summary>Unsigned i32 remainder; zero traps.</summary>
+    I32RemU = 0x70,
     /// <summary>Computes bitwise AND of i32 values.</summary>
     I32And = 0x71,
     /// <summary>Computes bitwise OR of i32 values.</summary>
@@ -102,6 +127,14 @@ public enum OpCode : byte
     I64Sub = 0x7d,
     /// <summary>Multiplies i64 values with wrapping arithmetic.</summary>
     I64Mul = 0x7e,
+    /// <summary>Signed i64 division; zero and overflow trap.</summary>
+    I64DivS = 0x7f,
+    /// <summary>Unsigned 64-bit integer division.</summary>
+    I64DivU = 0x80,
+    /// <summary>Signed i64 remainder; zero traps.</summary>
+    I64RemS = 0x81,
+    /// <summary>Unsigned 64-bit integer remainder.</summary>
+    I64RemU = 0x82,
     /// <summary>Computes bitwise AND of i64 values.</summary>
     I64And = 0x83,
     /// <summary>Computes bitwise OR of i64 values.</summary>
@@ -116,22 +149,88 @@ public enum OpCode : byte
     I64ShrU = 0x88,
     /// <summary>Negates an f64 value, preserving signed zero.</summary>
     F64Neg = 0x9a,
+    /// <summary>Absolute value of f32.</summary>
+    F32Abs = 0x8b,
+    /// <summary>Negates f32.</summary>
+    F32Neg = 0x8c,
+    /// <summary>IEEE minimum of f32 values.</summary>
+    F32Min = 0x96,
+    /// <summary>IEEE maximum of f32 values.</summary>
+    F32Max = 0x97,
+    /// <summary>Adds f32 values with single-precision rounding.</summary>
+    F32Add = 0x92,
+    /// <summary>Subtracts f32 values with single-precision rounding.</summary>
+    F32Sub = 0x93,
+    /// <summary>Multiplies f32 values with single-precision rounding.</summary>
+    F32Mul = 0x94,
+    /// <summary>Divides f32 values with IEEE 754 rounding, infinities, and NaNs.</summary>
+    F32Div = 0x95,
+    /// <summary>Compares f32 values for equality.</summary>
+    F32Eq = 0x5b,
+    /// <summary>Compares f32 values for inequality.</summary>
+    F32Ne = 0x5c,
+    /// <summary>Ordered f32 less-than comparison.</summary>
+    F32Lt = 0x5d,
+    /// <summary>Ordered f32 greater-than comparison.</summary>
+    F32Gt = 0x5e,
+    /// <summary>Ordered f32 less-than-or-equal comparison.</summary>
+    F32Le = 0x5f,
+    /// <summary>Ordered f32 greater-than-or-equal comparison.</summary>
+    F32Ge = 0x60,
+    /// <summary>Rounds f32 toward positive infinity.</summary>
+    F32Ceil = 0x8d,
+    /// <summary>Rounds f32 toward negative infinity.</summary>
+    F32Floor = 0x8e,
+    /// <summary>Rounds f32 toward zero.</summary>
+    F32Trunc = 0x8f,
+    /// <summary>Rounds f32 to nearest with ties to even.</summary>
+    F32Nearest = 0x90,
+    /// <summary>Rounds f64 toward positive infinity.</summary>
+    F64Ceil = 0x9b,
+    /// <summary>Rounds f64 toward negative infinity.</summary>
+    F64Floor = 0x9c,
+    /// <summary>Rounds f64 toward zero.</summary>
+    F64Trunc = 0x9d,
+    /// <summary>Rounds f64 to nearest with ties to even.</summary>
+    F64Nearest = 0x9e,
+    /// <summary>Computes the IEEE 754 square root of f32.</summary>
+    F32Sqrt = 0x91,
+    /// <summary>Computes the IEEE 754 square root of f64.</summary>
+    F64Sqrt = 0x9f,
+    /// <summary>Clears the f64 sign bit.</summary>
+    F64Abs = 0x99,
+    /// <summary>Copies the second f64 sign bit to the first operand.</summary>
+    F64CopySign = 0xa6,
+    /// <summary>Copies the second f32 sign bit to the first operand.</summary>
+    F32CopySign = 0x98,
+    /// <summary>Minimum f64, propagating NaN and preferring negative zero.</summary>
+    F64Min = 0xa4,
+    /// <summary>Maximum f64, propagating NaN and preferring positive zero.</summary>
+    F64Max = 0xa5,
     /// <summary>Adds two f64 values.</summary>
     F64Add = 0xa0,
     /// <summary>Subtracts f64 values.</summary>
     F64Sub = 0xa1,
     /// <summary>Multiplies f64 values.</summary>
     F64Mul = 0xa2,
+    /// <summary>Divides two IEEE 754 binary64 values.</summary>
+    F64Div = 0xa3,
     /// <summary>Keeps the low 32 bits of an i64 value.</summary>
     I32WrapI64 = 0xa7,
     /// <summary>Sign-extends i32 to i64.</summary>
     I64ExtendI32S = 0xac,
     /// <summary>Zero-extends i32 to i64.</summary>
     I64ExtendI32U = 0xad,
+    /// <summary>Truncates f64 toward zero to signed i64; traps on NaN or overflow.</summary>
+    I64TruncF64S = 0xb0,
     /// <summary>Converts signed i32 to f32.</summary>
     F32ConvertI32S = 0xb2,
+    /// <summary>Converts unsigned i32 directly to f32.</summary>
+    F32ConvertI32U = 0xb3,
     /// <summary>Converts signed i64 directly to f32.</summary>
     F32ConvertI64S = 0xb4,
+    /// <summary>Converts unsigned i64 directly to f32.</summary>
+    F32ConvertI64U = 0xb5,
     /// <summary>Rounds an f64 value to f32.</summary>
     F32DemoteF64 = 0xb6,
     /// <summary>Converts signed i32 to f64.</summary>
@@ -144,6 +243,10 @@ public enum OpCode : byte
     F64ConvertI64U = 0xba,
     /// <summary>Promotes an f32 value to f64.</summary>
     F64PromoteF32 = 0xbb,
+    /// <summary>Reinterprets the IEEE 754 bits of f32 as i32.</summary>
+    I32ReinterpretF32 = 0xbc,
+    /// <summary>Reinterprets the IEEE 754 bits of f64 as i64.</summary>
+    I64ReinterpretF64 = 0xbd,
     /// <summary>Sign-extends the low eight bits to i32.</summary>
     I32Extend8S = 0xc0,
     /// <summary>Sign-extends the low sixteen bits to i32.</summary>

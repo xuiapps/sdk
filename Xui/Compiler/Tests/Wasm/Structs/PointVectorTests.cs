@@ -15,7 +15,7 @@ namespace Xui.Compiler.Tests.Wasm.Structs;
 [Collection(nameof(ManagedConsoleCollection))]
 public class PointVectorTests(ITestOutputHelper output)
 {
-    [SkippableFact]
+    [Fact]
     public async Task PointPlusVectorExecutesInNode()
     {
         string source = File.ReadAllText(Path.Combine(SourceDirectory(), "..", "..", "Fixtures", "Structs", "PointVector.cs"));
@@ -90,8 +90,6 @@ public class PointVectorTests(ITestOutputHelper output)
         string snapshot = markdown.ToString().TrimEnd() + "\n";
         output.WriteLine(snapshot);
         Snapshot.AssertMatches("PointVector", snapshot);
-        // Run and snapshot first. Unsupported emission is inconclusive; other failures remain failures.
-        Skip.If(inconclusive, $"Inconclusive: {failure?.Message} See Structs/Snapshots/PointVector.md.");
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
 
         void Section(string title, string language, string text) =>

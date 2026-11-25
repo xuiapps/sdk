@@ -96,11 +96,8 @@ public class GenericClassTests
         """, "original\n", 12);
 
     [Fact]
-    public void GenericMethodsRemainExplicitlyUnsupported()
-    {
-        var pe = Frontend.Roslyn.Compile("public static class Program { static T Id<T>(T x) => x; public static int Main() => Id(3); }");
-        Assert.Contains("MethodSpecification", Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
-    }
+    public Task GenericMethodsSpecializeFromCalls() => GcTests.AssertExecution(
+        "public static class Program { static T Id<T>(T x) => x; public static int Main() => Id(3); }", "", 3);
 
     [Fact]
     public void ExpandingGenericFieldGraphsStopWithADiagnostic()
@@ -110,17 +107,18 @@ public class GenericClassTests
     }
 
     [Fact]
-    public void PrimitiveGenericDefaultFailsExplicitly()
-    {
-        var pe = Frontend.Roslyn.Compile("public class Box<T> { public T Value; public void Clear() { Value = default; } } public static class Program { public static int Main() { var box = new Box<int>(); box.Clear(); return 0; } }");
-        Assert.Contains("initobj", Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
-    }
+    public Task PrimitiveGenericDefaultClearsTheField() => GcTests.AssertExecution("""
+        public class Box<T> { public T Value; public void Clear() { Value = default; } }
+        public static class Program { public static int Main() {
+            var box = new Box<int>(); box.Value = 42; box.Clear(); return box.Value;
+        } }
+        """, "", 0);
 
     [Fact]
-    public void GenericStructLayoutRemainsExplicitlyUnsupported()
+    public async Task ClosedGenericStructLayoutExecutes()
     {
         var pe = Frontend.Roslyn.Compile("public struct Pair<T> { public T First; } public static class Program { public static int Main() { Pair<int> pair = default; pair.First = 3; return pair.First; } }");
-        Assert.Contains("Generic struct", Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
+        Assert.Equal(3, (await Node.ExecuteAsync(GcTests.Emit(pe))).ExitCode);
     }
 
     private static string SourceDirectory([CallerFilePath] string file = "") => Path.GetDirectoryName(file)!;

@@ -12,6 +12,8 @@
     <PackageReference Include="Xunit.SkippableFact" Version="1.5.85" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <ProjectReference Include="../../Core/Core/Xui.Core.csproj" />
+    <ProjectReference Include="../../CompileTime/Xui.CompileTime.csproj" />
     <ProjectReference Include="../XuiNet/Xui.Compiler.XuiNet.csproj" />
     <ProjectReference Include="../WASM/Xui.Compiler.WASM.csproj" />
   </ItemGroup>

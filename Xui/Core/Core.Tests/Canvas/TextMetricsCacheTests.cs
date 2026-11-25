@@ -4,10 +4,8 @@ using CanvasFont = Xui.Core.Canvas.Font;
 
 namespace Xui.Core.Tests.Canvas;
 
-public class TextMetricsCacheTests
+public partial class TextMetricsCacheTests
 {
-    private static readonly CanvasFont Font = new(16, "Inter");
-    private static TextMetrics Metrics(int width) => new(new(width, 1, width - 1, 12, 3), default);
 
     [Fact]
     public void ReusesStringIdentityRatherThanEqualCharacters()
@@ -55,24 +53,4 @@ public class TextMetricsCacheTests
         Assert.True(cache.TryGet("B", Font, TextAlign.Left, TextBaseline.Alphabetic, out _));
     }
 
-    [Fact]
-    public void HitsAndEvictionsAllocateNoManagedObjectsAfterWarmup()
-    {
-        var cache = new TextMetricsCache(2);
-        string[] labels = ["A", "B", "C"];
-        var metrics = Metrics(12);
-        void Exercise()
-        {
-            for (int i = 0; i < 1000; i++)
-            {
-                string text = labels[i % labels.Length];
-                cache.Set(text, Font, TextAlign.Left, TextBaseline.Alphabetic, metrics);
-                cache.TryGet(text, Font, TextAlign.Left, TextBaseline.Alphabetic, out _);
-            }
-        }
-        Exercise();
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        Exercise();
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
-    }
 }

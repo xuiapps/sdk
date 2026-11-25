@@ -8,5 +8,6 @@ internal enum DescriptorField : uint
     TableStart,
     NameUtf16,
     VirtualSlotCount,
-    FieldCount
+    FieldCount,
+    SimpleNameUtf16
 }

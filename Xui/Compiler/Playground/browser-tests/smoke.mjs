@@ -26,7 +26,7 @@ try {
     page.on('pageerror', error => errors.push(error.message));
     const workers = [];
     page.on('worker', worker => workers.push(worker.url()));
-    await page.goto(`http://127.0.0.1:${server.address().port}/wasm/`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/wasm/playground.html`);
     await page.waitForFunction(() => !document.getElementById('run').disabled, null, { timeout: 120000 });
 
     async function run(source) {
@@ -56,15 +56,23 @@ try {
 
     await run('using System; Console.WriteLine(true); Console.WriteLine(1234567890123L); Console.WriteLine(1.25f);');
     await result('True\n1234567890123\n1.25\n', 0);
+    await run('using System; Console.WriteLine(Math.Pow(2,3)); Console.WriteLine(Math.Pow(1,double.NaN)); Console.WriteLine("abc".Equals("abc"));');
+    await result('8\n1\nTrue\n', 0);
+    await run('using System; int value = int.MinValue; Console.WriteLine(value.ToString()); Console.WriteLine(value.ToString(System.Globalization.CultureInfo.InvariantCulture));');
+    await result('-2147483648\n-2147483648\n', 0);
+    await run('using System; public class Item { } public static class Program { public static void Main() { var a=new Item(); Console.WriteLine(string.Concat(null, \"Example.\", a.GetType().Name)); Console.WriteLine(a.GetType()==typeof(Item)); } }');
+    await result('Example.Item\nTrue\n', 0);
     await run('using System;\nConsole.WriteLine( ;');
     assert.match(await page.locator('#error').innerText(), /Program.cs\(2,/);
-    await run('throw new System.Exception("unsupported");');
+    await run('using System; try { throw new InvalidOperationException("caught"); } catch (Exception error) { Console.WriteLine(error.Message); } finally { Console.WriteLine("cleanup"); }');
+    await result('caught\ncleanup\n', 0);
+    await run('try { throw new System.Exception(); } catch (System.Exception e) when (e.Message != null) { }');
     assert.equal(await page.locator('#status').innerText(), 'Failed');
     assert.notEqual(await page.locator('#error').innerText(), '');
 
-    await run('using System; Console.WriteLine("before trap"); Box box = null; Console.WriteLine(box.Value); class Box { public int Value; }');
+    await run('using System; Console.WriteLine("before exception"); Box box = null; Console.WriteLine(box.Value); class Box { public int Value; }');
     assert.equal(await page.locator('#status').innerText(), 'Failed');
-    assert.equal(await page.locator('#output').textContent(), 'before trap\n');
+    assert.equal(await page.locator('#output').textContent(), 'before exception\n');
 
     await page.locator('#source').fill('Spin(1); static void Spin(int value) { while (value > 0) value = value | 1; }');
     await page.locator('#run').click();
@@ -89,8 +97,41 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: fileURLToPath(new URL('mobile.png', screenshots)), fullPage: true });
+    const previewUrl = await page.getByRole('link', { name:'Open TestApp' }).getAttribute('href');
+    assert.equal(previewUrl,'./');
+    const demoRequests=[];
+    page.on('request',request=>demoRequests.push(new URL(request.url()).pathname));
+    await page.getByRole('link', { name:'Open TestApp' }).click();
+    await page.waitForFunction(() => {
+        const d=window.mobileDemo;
+        return d?.error || (d?.ready && !d.pending && !d.api.NeedsFrame(d.session));
+    });
+    assert.equal(await page.evaluate(() => window.mobileDemo.error),null);
+    assert.equal(new URL(page.url()).pathname,'/wasm/','The emulator must be the default /wasm/ page');
+    assert.deepEqual(demoRequests,['/wasm/'],'The emulator must not load the compiler framework or external assets');
+    const fps = await page.evaluate(() => { const d=window.mobileDemo; return d.api.FramesPerSecond(d.session); });
+    assert.ok(fps>0 && fps<=1000,`Published TestApp FPS must update after warmup, got ${fps}`);
+    const target = id => page.evaluate(id=>{
+        const {api,session:s}=window.mobileDemo;
+        return [api.ScreenX(s)+api.TargetX(s,id)*api.ScreenScale(s),api.ScreenY(s)+api.TargetY(s,id)*api.ScreenScale(s)];
+    },id);
+    const settle = () => page.waitForFunction(()=>{
+        const d=window.mobileDemo;return d.error || (!d.pending && !d.api.NeedsFrame(d.session));
+    });
+    await page.mouse.click(...await target('CanvasDrawing'));
+    await page.waitForFunction(()=>{const d=window.mobileDemo;return d.error || d.api.HasView(d.session,'Back');});
+    await settle();
+    assert.equal(await page.evaluate(() => window.mobileDemo.error),null);
+    await page.mouse.click(...await target('Back')); await settle();
+    assert.equal(await page.evaluate(()=>{const d=window.mobileDemo;return d.api.HasView(d.session,'Back');}),0);
+    await page.screenshot({ path:fileURLToPath(new URL('published-testapp.png',screenshots)) });
+    await page.goto(`http://127.0.0.1:${server.address().port}/wasm/testapp.html`);
+    await page.waitForURL(`http://127.0.0.1:${server.address().port}/wasm/`);
+    await page.waitForFunction(()=>window.mobileDemo?.ready || window.mobileDemo?.error);
+    await settle();
+    assert.equal(await page.evaluate(() => window.mobileDemo.error),null);
     assert.deepEqual(errors, []);
-    console.log('Browser smoke passed: examples, diagnostics, traps, console output, download, stop/re-run, worker reuse, and responsive layout.');
+    console.log('Browser smoke passed: examples, diagnostics, exceptions, console output, download, stop/re-run, worker reuse, responsive layout, default /wasm/ emulator, legacy preview redirect, published TestApp navigation and FPS.');
 } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));

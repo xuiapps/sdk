@@ -20,18 +20,34 @@ public readonly struct InstrumentsAccessor
     }
 
     /// <summary>Begins a render-surface update frame when supported by the current sink.</summary>
+#if XUI_COMPILER_CANVAS
+    // Explicit first-frame compiler profile: omit diagnostics and their argument evaluation.
+    [System.Diagnostics.Conditional("XUI_COMPILER_INSTRUMENTATION")]
+#endif
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void BeginFrame() => (Sink as IRenderSurfaceInstrumentsSink)?.BeginFrame();
 
     /// <summary>Completes a render-surface update frame when supported by the current sink.</summary>
+#if XUI_COMPILER_CANVAS
+    // Explicit first-frame compiler profile: omit diagnostics and their argument evaluation.
+    [System.Diagnostics.Conditional("XUI_COMPILER_INSTRUMENTATION")]
+#endif
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void EndFrame() => (Sink as IRenderSurfaceInstrumentsSink)?.EndFrame();
 
     /// <summary>Reports structured traversal of <paramref name="view"/> without formatting a message.</summary>
+#if XUI_COMPILER_CANVAS
+    // Explicit first-frame compiler profile: omit diagnostics and their argument evaluation.
+    [System.Diagnostics.Conditional("XUI_COMPILER_INSTRUMENTATION")]
+#endif
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void TrackView(Scope scope, View view) => Sink?.TrackView(scope, view);
 
     /// <summary>Reports an underlying text measurement without formatting a message.</summary>
+#if XUI_COMPILER_CANVAS
+    // Explicit first-frame compiler profile: omit diagnostics and their argument evaluation.
+    [System.Diagnostics.Conditional("XUI_COMPILER_INSTRUMENTATION")]
+#endif
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void TrackTextMeasure(long elapsedTicks) => Sink?.TrackTextMeasure(elapsedTicks);
 
@@ -39,6 +55,10 @@ public readonly struct InstrumentsAccessor
     /// <param name="scope">The instrumentation scope.</param>
     /// <param name="lod">The level of detail for filtering.</param>
     /// <param name="message">The interpolated message string. Not evaluated when the sink is disabled.</param>
+#if XUI_COMPILER_CANVAS
+    // Explicit first-frame compiler profile: omit diagnostics and their argument evaluation.
+    [System.Diagnostics.Conditional("XUI_COMPILER_INSTRUMENTATION")]
+#endif
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Log(
         Scope scope,

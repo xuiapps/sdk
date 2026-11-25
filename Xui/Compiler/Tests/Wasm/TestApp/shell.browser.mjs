@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { mkdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+const { chromium } = createRequire(import.meta.url)('../../../Playground/browser-tests/node_modules/playwright');
+const output = new URL('../../../Playground/browser-tests/test-output/shell/', import.meta.url);
+await mkdir(output, { recursive: true });
+const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
+try {
+    const page = await browser.newPage({ viewport: { width: 850, height: 1050 }, deviceScaleFactor: 2 });
+    await page.context().setOffline(true);
+    const errors = [], network = [];
+    page.on('pageerror', error => errors.push(String(error)));
+    page.on('request', request => { if (/^https?:/.test(request.url())) network.push(request.url()); });
+    await page.goto(new URL(process.argv[2] ?? './Snapshots/BrowserShell.html', import.meta.url).href);
+    await page.waitForFunction(() => window.demoResult !== null);
+    const first = await page.evaluate(() => window.demoResult);
+    assert.equal(first.error, undefined);
+    assert.equal(first.exitCode, 0);
+    const labels = first.commands.filter(c => c[0] === 'FillText').map(c => c[5]);
+    for (const label of ['Xui SDK Examples', 'Canvas', 'Canvas Drawing', 'fps']) assert.ok(labels.includes(label), label);
+    assert.equal(first.commands.filter(c => c[0] === 'Save').length, first.commands.filter(c => c[0] === 'Restore').length);
+    assert.equal(await page.evaluate(() => document.fonts.check('600 20px Inter')), true);
+    const ink = await page.evaluate(() => {
+        const c = document.getElementById('canvas');
+        const data = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+        let dark = 0; for(let i=0;i<data.length;i+=4) if(data[i]<150 && data[i+1]<150 && data[i+2]<150) dark++;
+        return dark;
+    });
+    await page.screenshot({ path: fileURLToPath(new URL('home.png',output)) });
+    assert.ok(ink > 1000, `Expected real home-screen text and icons, found ${ink} dark pixels.`);
+    await page.getByRole('button', { name:'Render again' }).click();
+    await page.waitForFunction(() => window.demoResult !== null);
+    assert.deepEqual(await page.evaluate(() => window.demoResult), first);
+    await page.setViewportSize({ width:360, height:900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: fileURLToPath(new URL('narrow.png',output)) });
+    assert.deepEqual(errors, []); assert.deepEqual(network, []);
+    console.log('TestApp home: offline WASM, embedded Inter, labels, pixels, balanced drawing state, rerender and narrow viewport passed.');
+} finally { await browser.close(); }

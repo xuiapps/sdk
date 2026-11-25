@@ -191,7 +191,6 @@ public class LocalTests
     }
 
     [Theory]
-    [InlineData(SignatureTypeCode.Object)]
     [InlineData(SignatureTypeCode.TypedReference)]
     [InlineData(SignatureTypeCode.ByReference)]
     [InlineData(SignatureTypeCode.Pinned)]
@@ -201,6 +200,18 @@ public class LocalTests
     {
         byte[] image = Program([type], il => il.LoadConstantI4(0));
         Assert.Contains("Unsupported local type", Assert.Throws<NotSupportedException>(() => Emit(image)).Message);
+    }
+
+    [Fact]
+    public async Task InitializedObjectLocalIsNull()
+    {
+        byte[] image = Program([SignatureTypeCode.Object], il =>
+        {
+            il.LoadLocal(0);
+            il.OpCode(ILOpCode.Ldnull);
+            il.OpCode(ILOpCode.Ceq);
+        });
+        Assert.Equal(1, (await Repl.Node.ExecuteAsync(Emit(image))).ExitCode);
     }
 
     [Fact]

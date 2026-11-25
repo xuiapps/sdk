@@ -3,12 +3,21 @@ using Xui.Compiler.XuiNet.DotNet.Signatures;
 
 namespace Xui.Compiler.XuiNet.DotNet;
 
-/// <summary>Resolves same-module members while retaining constructed declaring-type identity.</summary>
+/// <summary>Resolves members across the supplied assemblies while retaining constructed declaring-type identity.</summary>
 public static class MemberResolver
 {
-    /// <summary>Resolves a MethodDef or MemberRef using the containing type's generic context.</summary>
-    public static MethodIdentity Method(Module module, EntityHandle handle, TypeIdentity context)
+    /// <summary>Resolves MethodDef, MemberRef, or MethodSpec in the caller's type and method contexts.</summary>
+    public static MethodIdentity Method(Module module, EntityHandle handle, TypeIdentity context, GenericArguments? methodArguments = null)
     {
+        if (handle.Kind == HandleKind.MethodSpecification)
+        {
+            var spec = module.GetMethodSpecification((MethodSpecificationHandle)handle);
+            var template = Method(module, spec.Method, context, methodArguments);
+            var arguments = spec.Read(context.Arguments, methodArguments);
+            if (template.DeclaringType.Module.GetMethod(template.Handle).GenericParameters.Count != arguments.Values.Length)
+                throw new BadImageFormatException("Method argument count differs from its declaration.");
+            return template with { Arguments = arguments };
+        }
         if (handle.Kind == HandleKind.MethodDefinition)
         {
             var definition = module.GetMethod((MethodDefinitionHandle)handle);
@@ -17,18 +26,18 @@ public static class MemberResolver
         if (handle.Kind != HandleKind.MemberReference) throw new NotSupportedException($"Method token {handle.Kind} is not implemented.");
         var reference = module.GetMemberReference((MemberReferenceHandle)handle);
         if (reference.Kind != MemberReferenceKind.Method) throw new BadImageFormatException("Expected a method reference.");
-        var owner = Parent(module, reference.Parent, context);
+        var owner = Parent(module, reference.Parent, context, methodArguments);
         // Match templates before substitution: M(T) and M(int) remain distinct when T is int.
-        foreach (var candidate in module.GetType((TypeDefinitionHandle)owner.Handle).Methods)
+        foreach (var candidate in owner.Module.GetType((TypeDefinitionHandle)owner.Handle).Methods)
         {
-            var method = module.GetMethod(candidate);
-            if (method.Name == reference.Name && Equal(method.Signature, reference.Signature)) return new(owner, candidate);
+            var method = owner.Module.GetMethod(candidate);
+            if (method.Name == reference.Name && Equal(SignatureReader.Method(owner.Module, method.Signature), SignatureReader.Method(module, reference.Signature))) return new(owner, candidate);
         }
         throw new NotSupportedException($"Cannot resolve method reference {owner}.{reference.Name}.");
     }
 
     /// <summary>Resolves a FieldDef or MemberRef using the containing type's generic context.</summary>
-    public static FieldIdentity Field(Module module, EntityHandle handle, TypeIdentity context)
+    public static FieldIdentity Field(Module module, EntityHandle handle, TypeIdentity context, GenericArguments? methodArguments = null)
     {
         if (handle.Kind == HandleKind.FieldDefinition)
         {
@@ -38,30 +47,33 @@ public static class MemberResolver
         if (handle.Kind != HandleKind.MemberReference) throw new NotSupportedException($"Field token {handle.Kind} is not implemented.");
         var reference = module.GetMemberReference((MemberReferenceHandle)handle);
         if (reference.Kind != MemberReferenceKind.Field) throw new BadImageFormatException("Expected a field reference.");
-        var owner = Parent(module, reference.Parent, context);
-        foreach (var candidate in module.GetType((TypeDefinitionHandle)owner.Handle).Fields)
+        var owner = Parent(module, reference.Parent, context, methodArguments);
+        foreach (var candidate in owner.Module.GetType((TypeDefinitionHandle)owner.Handle).Fields)
         {
-            var field = module.GetField(candidate);
-            if (field.Name == reference.Name && Equal(field.Signature, reference.Signature)) return new(owner, candidate);
+            var field = owner.Module.GetField(candidate);
+            if (field.Name == reference.Name && Equal(SignatureReader.Field(owner.Module, field.Signature), SignatureReader.Field(module, reference.Signature))) return new(owner, candidate);
         }
         throw new NotSupportedException($"Cannot resolve field reference {owner}.{reference.Name}.");
     }
 
-    private static TypeIdentity Parent(Module module, EntityHandle parent, TypeIdentity context)
+    private static TypeIdentity Parent(Module module, EntityHandle parent, TypeIdentity context, GenericArguments? methodArguments = null)
     {
-        var type = SignatureReader.Resolve(module, parent, context.Arguments);
+        var type = SignatureReader.Resolve(module, parent, context.Arguments, methodArguments);
         if (type.Identity is not { Handle.Kind: HandleKind.TypeDefinition } identity)
-            throw new NotSupportedException("Only same-module member references can be resolved.");
+            throw new NotSupportedException($"Cannot resolve member owner {type.Identity}; supply its implementation assembly to the compilation.");
         return identity;
     }
 
     private static TypeIdentity Owner(Module module, TypeDefinitionHandle declaringType, TypeIdentity context) =>
         context.Module == module && context.Handle == declaringType ? context : new(module, declaringType);
 
-    private static bool Equal(BlobReader a, BlobReader b)
-    {
-        if (a.Length != b.Length) return false;
-        while (a.RemainingBytes != 0) if (a.ReadByte() != b.ReadByte()) return false;
-        return true;
-    }
+    private static bool Equal(MethodSignature a, MethodSignature b) =>
+        a.GenericParameterCount == b.GenericParameterCount && a.HasThis == b.HasThis && Equal(a.Result, b.Result) && a.Parameters.Length == b.Parameters.Length &&
+        a.Parameters.Zip(b.Parameters).All(pair => Equal(pair.First, pair.Second));
+
+    // The supported framework NFloat facades name the same intrinsic type across otherwise-unresolved assemblies.
+    private static bool Equal(SignatureType a, SignatureType b) => a == b ||
+        a.Code == b.Code && a.IsByReference == b.IsByReference && a.IsReferenceType == b.IsReferenceType &&
+        a.IsReadOnlyByReference == b.IsReadOnlyByReference &&
+        a.Identity is { } left && b.Identity is { } right && Intrinsics.NativeFloat.Is(left) && Intrinsics.NativeFloat.Is(right);
 }

@@ -100,7 +100,6 @@ public class LayoutTests
     [InlineData("public class Sample { public int Value; }", "Only unboxed value-type")]
     [InlineData("[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)] public struct Sample { public int Value; }", "Auto layout")]
     [InlineData("public struct Sample<T> { public T Value; }", "Generic layout")]
-    [InlineData("[System.Runtime.CompilerServices.InlineArray(4)] public struct Sample { private int element; }", "Inline-array layout")]
     [InlineData("public struct Sample { public System.DateTime Value; }", "External value-type")]
     [InlineData("public struct Sample { public object Value; }", "Field storage type Object")]
     public void UnsupportedLayoutsFailWithoutGuessing(string source, string reason)
@@ -113,6 +112,30 @@ public class LayoutTests
         Assert.Contains(reason, Assert.Throws<NotSupportedException>(() => resolver.Resolve(handle)).Message);
         // A failed calculation must not leave an entry marked as recursively resolving.
         Assert.Contains(reason, Assert.Throws<NotSupportedException>(() => resolver.Resolve(handle)).Message);
+    }
+
+    [Fact]
+    public void CompilerOwnedAutoLayoutPolicyPropagatesIntoLinkedNestedValues()
+    {
+        byte[] libraryImage = Frontend.Roslyn.Compile("""
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+            public struct Value { public byte Tag; public long Number; public short Tail; }
+            """, OutputKind.DynamicallyLinkedLibrary, "AutoValues");
+        byte[] image = Frontend.Roslyn.Compile("public struct Container { public byte Tag; public Value Value; }",
+            OutputKind.DynamicallyLinkedLibrary, additionalReferences: [MetadataReference.CreateFromImage(libraryImage)]);
+        using var libraryStream = new MemoryStream(libraryImage);
+        using var library = AssemblyCompiler.Read(libraryStream);
+        using var stream = new MemoryStream(image);
+        using var assembly = AssemblyCompiler.Read(stream);
+        _ = new Xui.Compiler.XuiNet.Compilation([assembly, library]);
+        var module = assembly.ManifestModule;
+        var handle = module.Types.Single(h => module.GetType(h).Name == "Container");
+        Assert.Contains("Auto layout", Assert.Throws<NotSupportedException>(() => new LayoutResolver(module, TargetLayout.Wasm32).Resolve(handle)).Message);
+        var layout = new LayoutResolver(module, TargetLayout.Wasm32, AutoLayoutPolicy.DeclarationOrder).Resolve(handle);
+        Assert.Equal(32, layout.Size);
+        Assert.Equal(8, layout.Alignment);
+        var field = module.GetType(handle).Fields.Single(h => module.GetField(h).Name == "Value");
+        Assert.Equal(new FieldLayout(8, 24), layout.Fields[field]);
     }
 
     private static byte[] CompileFixture(string fixture) => Frontend.Roslyn.Compile(
