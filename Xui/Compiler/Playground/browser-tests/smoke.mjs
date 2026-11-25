@@ -97,8 +97,32 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: fileURLToPath(new URL('mobile.png', screenshots)), fullPage: true });
+    const previewUrl = await page.getByRole('link', { name:'Open TestApp' }).getAttribute('href');
+    assert.equal(previewUrl,'./testapp.html');
+    await page.getByRole('link', { name:'Open TestApp' }).click();
+    await page.waitForFunction(() => {
+        const d=window.mobileDemo;
+        return d?.error || (d?.ready && !d.pending && !d.api.NeedsFrame(d.session));
+    });
+    assert.equal(await page.evaluate(() => window.mobileDemo.error),null);
+    const fps = await page.evaluate(() => { const d=window.mobileDemo; return d.api.FramesPerSecond(d.session); });
+    assert.ok(fps>0 && fps<=1000,`Published TestApp FPS must update after warmup, got ${fps}`);
+    const target = id => page.evaluate(id=>{
+        const {api,session:s}=window.mobileDemo;
+        return [api.ScreenX(s)+api.TargetX(s,id)*api.ScreenScale(s),api.ScreenY(s)+api.TargetY(s,id)*api.ScreenScale(s)];
+    },id);
+    const settle = () => page.waitForFunction(()=>{
+        const d=window.mobileDemo;return d.error || (!d.pending && !d.api.NeedsFrame(d.session));
+    });
+    await page.mouse.click(...await target('CanvasDrawing'));
+    await page.waitForFunction(()=>{const d=window.mobileDemo;return d.error || d.api.HasView(d.session,'Back');});
+    await settle();
+    assert.equal(await page.evaluate(() => window.mobileDemo.error),null);
+    await page.mouse.click(...await target('Back')); await settle();
+    assert.equal(await page.evaluate(()=>{const d=window.mobileDemo;return d.api.HasView(d.session,'Back');}),0);
+    await page.screenshot({ path:fileURLToPath(new URL('published-testapp.png',screenshots)) });
     assert.deepEqual(errors, []);
-    console.log('Browser smoke passed: examples, diagnostics, exceptions, console output, download, stop/re-run, worker reuse, and responsive layout.');
+    console.log('Browser smoke passed: examples, diagnostics, exceptions, console output, download, stop/re-run, worker reuse, responsive layout, published TestApp navigation and FPS.');
 } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));
