@@ -62,37 +62,4 @@ public readonly ref partial struct CodeEmitter
         return true;
     }
 
-    private bool TrySpanAccess(Instruction.Token instruction, int offset)
-    {
-        var access = SpanAccess.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
-        if (access is null) return false;
-        if (access.Operation == "get_Item")
-        {
-            Pop(SignatureTypeCode.Int32, instruction.Code, offset);
-            writer.LocalSet(Frame.I32Scratch);
-        }
-        var receiver = Pop(instruction.Code, offset);
-        if (receiver.Identity != access.Owner || !receiver.IsByReference)
-            throw new NotSupportedException("Span operations require a linear-memory span address.");
-        LinearAddressValue();
-        if (access.Operation == "get_Length")
-        {
-            writer.I32Const(4).I32Add().I32Load();
-            stack.Push(new(SignatureTypeCode.Int32));
-        }
-        else
-        {
-            writer.LocalSet(Frame.AddressScratch).LocalGet(Frame.I32Scratch)
-                .LocalGet(Frame.AddressScratch).I32Const(4).I32Add().I32Load().I32LtU().I32Eqz().If();
-            ThrowException(ExceptionKind.IndexOutOfRangeException);
-            writer.End().LocalGet(Frame.AddressScratch).I32Load().LocalGet(Frame.I32Scratch)
-                .I32Const(ElementSize(access.Owner.Arguments!.Values[0])).I32Mul().I32Add();
-            var element = EnumInfo.Storage(access.Owner.Arguments.Values[0]);
-            if (StorageModel.IsReference(method.Storage.Bind(element)))
-                LinearReferenceAddress();
-            else LinearValueAddress();
-            stack.Push(new(element.Code, element.Identity, true, element.Array));
-        }
-        return true;
-    }
 }

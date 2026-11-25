@@ -16,7 +16,20 @@ public sealed record SpanAccess(string Operation, TypeIdentity Owner, MethodSign
         var owner = SignatureReader.Resolve(module, member.Parent, context, methodArguments).Identity;
         if (owner is not { } span || !Is(span) || span.Arguments?.Values.Length != 1) return null;
         var signature = SignatureReader.Method(module, member.Signature, span.Arguments);
-        if (!signature.HasThis) return null;
+        bool SameElement(SignatureType type, string name) => !type.IsByReference && type.Identity is { } id &&
+            FrameworkTypes.Is(id, "System", name) && id.Arguments?.Values.Length == 1 && id.Arguments.Values[0] == span.Arguments.Values[0];
+        if (!signature.HasThis)
+            return member.Name == "op_Implicit" && FrameworkTypes.Is(span, "System", "Span`1") &&
+                signature.Parameters.Length == 1 && signature.Parameters[0].Identity == span &&
+                SameElement(signature.Result, "ReadOnlySpan`1") ? new(member.Name, span, signature) : null;
+        if (member.Name == "get_IsEmpty" && signature.Parameters.Length == 0 && signature.Result.Code == SignatureTypeCode.Boolean)
+            return new(member.Name, span, signature);
+        if (member.Name == "Slice" && signature.Parameters.Length is 1 or 2 &&
+            signature.Parameters.All(p => p == new SignatureType(SignatureTypeCode.Int32)) && signature.Result.Identity == span && !signature.Result.IsByReference)
+            return new(member.Name, span, signature);
+        if (member.Name is "CopyTo" or "TryCopyTo" && signature.Parameters.Length == 1 && SameElement(signature.Parameters[0], "Span`1") &&
+            signature.Result == new SignatureType(member.Name == "CopyTo" ? SignatureTypeCode.Void : SignatureTypeCode.Boolean))
+            return new(member.Name, span, signature);
         if (member.Name == "get_Length" && signature.Parameters.Length == 0 && signature.Result.Code == SignatureTypeCode.Int32)
             return new(member.Name, span, signature);
         if (member.Name == "get_Item" && signature.Parameters.Length == 1 && signature.Parameters[0].Code == SignatureTypeCode.Int32 &&

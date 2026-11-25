@@ -625,8 +625,20 @@ public readonly ref partial struct CodeEmitter
                         method.UsesNativeFloat |= math.IsSingle;
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && (IR.Intrinsics.InlineArrayAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null ||
-                        IR.Intrinsics.SpanAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null))
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.SpanAccess.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } spanAccess)
+                    {
+                        method.UsesSpanOperations |= spanAccess.Operation is "Slice" or "CopyTo" or "TryCopyTo";
+                        method.Storage.ExceptionsEnabled = true;
+                        if (spanAccess.Operation == "get_Item") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.IndexOutOfRangeException);
+                        if (spanAccess.Operation == "Slice") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
+                        if (spanAccess.Operation == "CopyTo") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentException);
+                        method.RequireGcTemporaries();
+                        if (spanAccess.Operation is "CopyTo" or "TryCopyTo" && spanAccess.Owner.Arguments!.Values[0].Identity is { IsValueType: true } element)
+                            _ = method.Storage.Shape(element);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.InlineArrayAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null)
                     {
                         method.Storage.ExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.IndexOutOfRangeException);

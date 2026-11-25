@@ -683,10 +683,15 @@ remains outside the managed exception surface.
 Inline arrays repeat the element's storage with size `length * elementSize`. Numeric
 buffers use the linear frame; string/object buffers repeat frame-owned reference slots.
 Copies retain independent values/slots, and class fields flatten every repeated leaf.
-Roslyn's inline-array helpers and the length/indexer operations of Span/ReadOnlySpan
-over this linear backing are recognized intrinsically. A span borrows an address
+Roslyn's inline-array helpers and Span/ReadOnlySpan length, empty checks, indexing,
+slicing, CopyTo/TryCopyTo, and Span-to-ReadOnlySpan conversion over this linear
+backing are recognized intrinsically. A span borrows an address
 and length; it does not own or copy its backing elements. This compiler ABI does
 not change XuiNet's classification of CLR spans as containing managed references.
+Slice validates start/count without overflowing their sum. CopyTo supports overlap;
+reference-bearing copies transfer values into destination-owned handles, preserving
+live aliases and independent slots. TryCopyTo leaves a short destination unchanged.
+[Span tests](../Tests/Wasm/InlineArrays/SpanTests.cs) compare these paths with CLR execution.
 
 [The gradient demo](../Tests/Wasm/InlineArrays/Snapshots/Gradients.md) compiles the real
 Xui `ReadOnlySpan<GradientStop> stops = [(0, 0xff0000ffu), (1, 0x0000ffffu)]`,
@@ -697,7 +702,7 @@ unsigned NFloat conversion used by Color is a scalar intrinsic.
 Still unsupported: multidimensional arrays, array covariance/type tests/object
 conversions, primitive/reference array-element byrefs, bulk static-data initializers (`RuntimeHelpers.InitializeArray/CreateSpan`),
 and arbitrary Array/BCL collection methods. Span construction from managed arrays,
-slicing, enumeration helpers, stackalloc, and inline-array access through GC-field
+enumeration helpers, stackalloc, and inline-array access through GC-field
 addresses remain unsupported. Private span/interpolation helpers require linear backing;
 a GC owner at that boundary traps rather than being treated as a byte pointer.
 

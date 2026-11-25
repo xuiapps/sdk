@@ -405,7 +405,9 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         else if (Model.Intrinsics.InlineArrayAccess.Read(module, handle, context.Arguments, methodArguments) is { } inline)
             signature = new(inline.Signature.Parameters.ToArray(), StackEntry.From(inline.Signature.Result));
         else if (Model.Intrinsics.SpanAccess.Read(module, handle, context.Arguments, methodArguments) is { } span)
-            signature = new([new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters], StackEntry.From(span.Signature.Result));
+            signature = new(span.Signature.HasThis
+                ? [new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters]
+                : span.Signature.Parameters.ToArray(), span.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(span.Signature.Result));
         else if (Model.Intrinsics.InterpolatedStringHandler.Read(module, handle, context.Arguments, methodArguments) is { } interpolation)
             signature = new([new SignatureType(SignatureTypeCode.TypeHandle, interpolation.Owner, IsByReference: true), .. interpolation.Signature.Parameters],
                 interpolation.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(interpolation.Signature.Result));

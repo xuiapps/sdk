@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Unsupported Newobj at IL_0021 in System.Span<Xui.Core.UI.Input.PointerGestureCandidate>.Slice: Unsupported signature type: Pointer.
+The method has no managed body: Sys.GetLowResolutionTimestamp.
 ```
 
 ## Dependency path
@@ -47,9 +47,9 @@ Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Xui.Core.UI.Input.EventRouter.ReleasePointer }
  → Method { Identity = Xui.Core.UI.Input.EventRouter.DispatchToView }
  → VirtualCall { Identity = Xui.Core.UI.View.OnPointerEvent }
- → Method { Identity = Xui.Core.UI.ScrollView.OnPointerEvent }
- → Method { Identity = Xui.Core.UI.Input.PointerEventRef.PushPotentialGesture }
- → Method { Identity = System.Span<Xui.Core.UI.Input.PointerGestureCandidate>.Slice }
+ → Method { Identity = Xui.DevKit.UI.Mobile.Navigation.NavigationView.OnPointerEvent }
+ → Method { Identity = System.Environment.get_TickCount64 }
+ → Method { Identity = Sys.GetLowResolutionTimestamp }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

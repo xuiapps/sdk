@@ -71,8 +71,9 @@ storage; a managed address is not a promise of native layout.
 
 Managed locations now survive calls and returns, including primitive and embedded
 struct fields. Null-reference checks and struct-array copies execute. The next
-step is continuing through the actual event-routing span operations. Primitive
-hashing and equality now specialize, including constrained dictionary calls. Tests need to
+step is supplying the navigation clock and continuing through the remaining
+framework dependencies. Primitive hashing/equality specialize, and borrowed span
+copies preserve destination-owned reference slots even under overlap. Tests need to
 check aliasing, nested fields, value-copy independence, GC ownership, and cleanup
 through exceptions, as well as the final values. Linear math storage remains a
 first-class path; GC-backed storage is not a reason to turn every point or matrix
