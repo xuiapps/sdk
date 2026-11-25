@@ -18,7 +18,9 @@ internal static class InstanceTest
         foreach (var contract in types.Where(type => type.IsInterface))
         {
             writer.LocalGet(target).GlobalGet(contract.Descriptor).RefEq().If();
-            foreach (var implementation in types.Where(type => !type.IsInterface && type.Identity.IsAssignableTo(contract.Identity)))
+            foreach (var implementation in types.Where(type => !type.IsInterface && (type.Identity.IsValueType
+                ? type.Identity.Interfaces().Any(implemented => implemented.IsAssignableTo(contract.Identity))
+                : type.Identity.IsAssignableTo(contract.Identity))))
                 writer.LocalGet(current).GlobalGet(implementation.Descriptor).RefEq().If().LocalGet(value).Return().End();
             writer.RefNull(ValueTypeCode.EqRef).Return().End();
         }

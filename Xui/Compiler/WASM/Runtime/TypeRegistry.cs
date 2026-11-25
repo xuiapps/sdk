@@ -18,9 +18,16 @@ internal sealed class TypeRegistry(DependencyGraph dependencies)
     public Type Resolve(TypeIdentity identity)
     {
         if (types.TryGetValue(identity, out var found)) return found;
-        if (identity.Handle.Kind != HandleKind.TypeDefinition || identity.IsValueType)
-            throw new NotSupportedException($"Runtime class metadata requires a linked class or interface definition: {identity}.");
+        if (identity.Handle.Kind != HandleKind.TypeDefinition)
+            throw new NotSupportedException($"Runtime metadata requires a linked type definition: {identity}.");
         var definition = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
+        if (identity.IsValueType || FrameworkTypes.IsRuntimeBase(identity))
+        {
+            var valueParent = identity.BaseType is { } baseValue && !FrameworkTypes.Is(baseValue, "System", "Object") ? Resolve(baseValue) : null;
+            var value = new Type((uint)types.Count + 1, identity, valueParent, (definition.Attributes & TypeAttributes.Abstract) != 0, []);
+            types.Add(identity, value);
+            return value;
+        }
         Type? parent = !DelegateInfo.Is(identity) && identity.BaseType is { Handle.Kind: HandleKind.TypeDefinition } baseIdentity && !FrameworkTypes.Is(baseIdentity, "System", "Object") ? Resolve(baseIdentity) : null;
         var slots = dependencies.VirtualSlots(identity)
             .Select(slot => new VirtualSlot(slot.Index, slot.Declaration, slot.Implementation)).ToArray();

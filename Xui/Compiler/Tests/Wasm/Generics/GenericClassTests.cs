@@ -107,11 +107,12 @@ public class GenericClassTests
     }
 
     [Fact]
-    public void PrimitiveGenericDefaultFailsExplicitly()
-    {
-        var pe = Frontend.Roslyn.Compile("public class Box<T> { public T Value; public void Clear() { Value = default; } } public static class Program { public static int Main() { var box = new Box<int>(); box.Clear(); return 0; } }");
-        Assert.Contains("initobj", Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
-    }
+    public Task PrimitiveGenericDefaultClearsTheField() => GcTests.AssertExecution("""
+        public class Box<T> { public T Value; public void Clear() { Value = default; } }
+        public static class Program { public static int Main() {
+            var box = new Box<int>(); box.Value = 42; box.Clear(); return box.Value;
+        } }
+        """, "", 0);
 
     [Fact]
     public async Task ClosedGenericStructLayoutExecutes()

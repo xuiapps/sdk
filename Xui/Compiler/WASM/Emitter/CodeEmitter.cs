@@ -149,6 +149,10 @@ public readonly ref partial struct CodeEmitter
                 EmitLdflda(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Stfld:
                 EmitStfld(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Unbox:
+                EmitUnbox(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Unbox_any:
+                EmitUnbox_any(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Box:
                 EmitBox(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Initobj:
@@ -394,18 +398,12 @@ public readonly ref partial struct CodeEmitter
                     }
                     var tokenType = IR.Intrinsics.ManagedType.Token(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
                     method.Storage.ManagedTypesEnabled = true;
-                    method.RequireGc(tokenType);
+                    if (tokenType.IsValueType) _ = method.Storage.Classes.Resolve(tokenType);
+                    else method.RequireGc(tokenType);
                     break;
                 case OpCode.Isinst:
                 case OpCode.Castclass:
-                    method.Storage.ExceptionsEnabled = true;
-                    method.RequireGcTemporaries();
-                    var testedType = IR.Signatures.SignatureReader.Resolve(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments).Identity
-                        ?? throw new NotSupportedException("Type tests currently require same-module class types.");
-                    if (!method.Storage.IsClass(testedType)) throw new NotSupportedException("Type tests currently require same-module classes.");
-                    method.RequireGc(testedType);
-                    if (IR.Intrinsics.DefaultEquality.IsInterface(testedType))
-                        method.RequireGc(IR.Intrinsics.DefaultEquality.InterfaceOwner(testedType));
+                    RequireTypeTest(method, source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value));
                     break;
                 case OpCode.Ldnull:
                     method.RequireGcTemporaries(); break;
@@ -534,7 +532,22 @@ public readonly ref partial struct CodeEmitter
                     }
                     break;
                 case OpCode.Box:
-                    _ = instruction.ReadToken(ref reader); break;
+                case OpCode.Unbox:
+                case OpCode.Unbox_any:
+                    var boxToken = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (IR.BoxingType.Read(source, boxToken, method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } box)
+                    {
+                        method.RequireGcTemporaries();
+                        if (instruction.Code == OpCode.Box) method.Storage.RequireBoxAllocation(box);
+                        else if (instruction.Code == OpCode.Unbox) method.Storage.RequireBoxAddress(box);
+                        else _ = method.Storage.Box(box);
+                    }
+                    else if (instruction.Code != OpCode.Box)
+                    {
+                        if (instruction.Code == OpCode.Unbox) throw new NotSupportedException("unbox requires a value type.");
+                        RequireTypeTest(method, source, boxToken);
+                    }
+                    break;
                 case OpCode.Initobj:
                 case OpCode.Ldobj:
                 case OpCode.Stobj:

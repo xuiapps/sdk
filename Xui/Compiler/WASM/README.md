@@ -64,9 +64,9 @@ actual runtime descriptor, and `.Name` returns the metadata simple name (includi
 generic arity, excluding namespace/nesting prefixes). Type equality compares
 immutable descriptor identity; locals, arguments, fields, and casts preserve it.
 GetType/Name on null throw managed NullReferenceException. Descriptor simple-name
-storage is added only when the facade is used. Object-typed/boxed/array/exception
-GetType receivers and general reflection remain unsupported.
-`typeof` supports linked classes/interfaces, including closed generic specializations.
+storage is added only when the facade is used. Object-typed references to descriptor-backed
+classes and supported boxes also expose GetType; arrays, exceptions, and general reflection remain unsupported.
+`typeof` supports linked classes/interfaces and supported boxed value types, including closed generic specializations.
 `ldtoken` pushes the existing descriptor as a transient opaque runtime type handle;
 `Type.GetTypeFromHandle` exposes that same reference as `Type`, without allocation.
 This permits exact type comparisons in service lookup and agrees with instance
@@ -125,13 +125,13 @@ prefix. Overrides reuse inherited slots, while `new virtual` declarations append
 slots. Override matching uses the open declaring context so `F(T)` and `F(int)`
 stay distinct when `T` is `int`. [The DerivedBoxes demo](../Tests/Wasm/Generics/Snapshots/DerivedBoxes.md)
 shows specialized fields, tables, base calls, and nominal `is`/`as` tests across a
-three-level hierarchy. Reference `default(T)` via `initobj` is supported; primitive generic object operations remain unsupported. Expanding instantiations stop at a nesting depth of 32.
+three-level hierarchy. Reference and primitive `default(T)` via `initobj` are supported; scalar `ldobj`/`stobj`/`cpobj` use typed managed-address accessors. Expanding instantiations stop at a nesting depth of 32.
 
 Generic virtual methods, open generic structs, arbitrary external calls, arbitrary
 jump graphs, multidimensional arrays, unmanaged pointers,
-value-type boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
-`object` storage currently holds emitted class/interface references and null, not strings,
-boxed values, arrays, or arbitrary BCL objects. Unresolved external class hierarchies,
+arbitrary struct boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
+`object` storage holds emitted class/interface references, supported scalar boxes, and null.
+Native JS strings and arbitrary BCL objects do not yet have a general object representation. Unresolved external class hierarchies,
 static-abstract interface dispatch, generic interface methods, boxed/constrained struct dispatch,
 and explicit class MethodImpl/covariant return overrides remain unsupported. Explicit-layout structs cannot
 be flattened into GC fields yet; their supported linear-memory layouts are unchanged.
@@ -188,8 +188,8 @@ use a 32-bit WASM target representation. Stores narrow small integers and round
 zero/null defaults; without it, each slot must be stored before it is read.
 Unmanaged structs with a supported XuiNet layout use linear-memory local storage;
 classes and reference-containing structs without stack-address requirements use GC locals. Unresolved external types
-(such as `decimal`), boxed values, pointers, and pinned locals
-remain unsupported. Primitive local addresses are not implemented.
+(such as `decimal`), pointers, and pinned locals remain unsupported. Supported boxes
+use object-reference locals; primitive local addresses use managed owner/selector pairs.
 
 Struct locals classified as `LinearMemory` occupy aligned slots in a per-invocation
 frame in an internal, fixed 1 MiB memory. The mutable stack pointer starts at 16;
@@ -542,10 +542,10 @@ supported operations that require no emitted bytes.
 | `ldobj` | `memory.copy` or `struct.get`; `struct.new` | Loads an independent struct value from its managed address. |
 | `ldstr` | `global.get; ref.is_null; if; i32.const; i32.const; array.new_data; i32.const; i32.const; call; global.set; end; global.get` | Materializes passive UTF-16LE data through js-string; caches the JavaScript string. |
 | `newobj` | Frame address / `struct.new_default`; `struct.new`; `call` | Constructs values/classes or binds a delegate target and callable. |
-| `castclass` | Descriptor helper `call`; `unreachable` on mismatch | Preserves null; checks class ancestry/interface membership; failed casts trap. |
-| `isinst` | Descriptor helper `call`; `ref.eq`; ancestry/membership checks | Returns original reference or null; supports class/interface is/as tests. |
+| `castclass` | Descriptor checks; managed `throw` on mismatch | Preserves null; checks ancestry, interfaces, and nominal boxed types. |
+| `isinst` | Descriptor checks; `ref.eq` | Class/interface/boxed type test; returns original reference or null. |
 | `conv.r.un` | `f64.convert_i32_u` / `f64.convert_i64_u` | Interprets integer bits as unsigned before conversion to floating point. |
-| `unbox` |  |  |
+| `unbox` | Checked descriptor test; owner and selector | Borrows mutable scalar payload; null and mismatches throw managed exceptions. |
 | `throw` | `throw` | Throws managed payload; null becomes a NullReferenceException object. |
 | `ldfld` | Numeric load / `memory.copy` / `struct.get` / `struct.new` | Reads linear or flattened GC fields; struct values are copied. |
 | `ldflda` | `i32.add`; owner + accessor selector | Reference fields preserve owner identity through calls and local aliases. |
@@ -564,7 +564,7 @@ supported operations that require no emitted bytes.
 | `conv.ovf.u8.un` |  |  |
 | `conv.ovf.i.un` |  |  |
 | `conv.ovf.u.un` |  |  |
-| `box` | no instruction for reference specializations | Generic reference identity is preserved; value-type boxing remains unsupported. |
+| `box` | `struct.new` with descriptor and scalar payload | Copies primitive/enum/NFloat values; reference specializations preserve identity. |
 | `newarr` | `array.new_default` | Struct elements get independent mutable GC storage; negative lengths throw. |
 | `ldlen` | `array.len` | Returns native-width length; null throws a managed exception. |
 | `ldelema` | `array.get` | Struct element locations only; general array byref ABI remains unsupported. |
@@ -589,7 +589,7 @@ supported operations that require no emitted bytes.
 | `stelem.ref` | `array.set` | Checks null/bounds; narrows numeric values and preserves reference identity. |
 | `ldelem` | `array.get; struct.get` | Struct loads copy values into independent evaluation-stack storage. |
 | `stelem` | `array.get; struct.set` | Copies struct fields while preserving the destination element identity. |
-| `unbox.any` |  |  |
+| `unbox.any` | Checked `struct.get`; reference cast | Copies scalar payload; enum underlying compatibility preserves CLR behavior. |
 | `conv.ovf.i1` |  |  |
 | `conv.ovf.u1` |  |  |
 | `conv.ovf.i2` |  |  |
@@ -863,3 +863,23 @@ on managed exceptions. Generic scalar ldobj/stobj/cpobj/initobj use typed loads 
 stores. Scalar and struct GC-field addresses now cross calls and returns using
 owner/selector pairs. These returns do not copy the value or allocate a byref wrapper.
 Raw pointers into WASM GC storage remain unsupported.
+
+
+Primitive boxing uses a WASM GC object containing the nominal runtime descriptor
+and one mutable scalar payload. Supported values are Boolean, Char, signed/unsigned
+integers, native integers (WASM32), Single, Double, enums, and NFloat. `box` copies
+the value; aliases share the box. `unbox.any` returns a copy, whereas `unbox` returns
+the existing owner/selector managed address without allocating another holder.
+Loads, stores, and initialization through that address update the original box.
+Null unboxing throws NullReferenceException; incompatible types throw
+InvalidCastException. Enum unboxing permits the exact underlying integer type
+and other enums with that same underlying type, while `is`, GetType, and typeof
+retain nominal identity. ValueType/Enum and retained interface membership tests
+also work. See the [boxing demo](../Tests/Wasm/Boxing/Snapshots/Primitives.md).
+
+This increment requires linked framework definitions for primitive descriptors.
+Arbitrary struct and Nullable<T> boxing, boxed virtual/interface dispatch adapters,
+and general string/array-to-object conversions remain unsupported. A reachable
+virtual dispatch that could target an allocated box is rejected during compilation.
+Composite String.Format and boxed ToString are separate work; boxing adds no
+culture/resource loading or host formatting dependency.

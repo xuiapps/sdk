@@ -167,13 +167,17 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Isinst:
             case OpCode.Castclass:
-                var targetType = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments).Identity!.Value;
-                if ((targetType.Handle.Kind != HandleKind.TypeDefinition && !Model.DelegateInfo.IsRuntimeBase(targetType) && Model.Exceptions.ExceptionTypes.Kind(targetType) is null) || targetType.IsValueType)
-                    throw new NotSupportedException("Type tests currently require same-module classes.");
+                var testToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                var testBox = Model.BoxingType.Read(module, testToken, context.Arguments, methodArguments);
+                var testStorage = SignatureReader.StorageType(module, testToken, context.Arguments, methodArguments);
+                var targetType = testBox?.Identity ?? testStorage.Identity;
+                if (testStorage.Code != SignatureTypeCode.Object && (targetType is not { } testIdentity ||
+                    testIdentity.Handle.Kind != HandleKind.TypeDefinition && !Model.DelegateInfo.IsRuntimeBase(testIdentity) && Model.Exceptions.ExceptionTypes.Kind(testIdentity) is null))
+                    throw new NotSupportedException("Type tests require linked classes or supported boxed values.");
                 var tested = stack.Pop();
                 if (tested.Type is not (StackType.ObjectReference or StackType.Null))
                     throw stack.Error("Class type tests require a class reference");
-                stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, targetType, IsReferenceType: true)));
+                stack.Push(StackEntry.From(testBox is not null || testStorage.Code == SignatureTypeCode.Object ? new SignatureType(SignatureTypeCode.Object) : new SignatureType(SignatureTypeCode.TypeHandle, targetType, IsReferenceType: true)));
                 break;
             case OpCode.Ldftn:
             case OpCode.Ldvirtftn:
@@ -216,20 +220,30 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 stack.Push(StackEntry.From(constructor.Parameters[0] with { IsByReference = false }));
                 break;
             case OpCode.Box:
-                var boxed = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments);
-                if (!boxed.IsReferenceType && boxed.Code is not (SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray))
-                    throw new NotSupportedException("Boxing value types is not implemented.");
-                stack.Store(StackEntry.From(boxed));
-                stack.Push(StackEntry.From(boxed));
+            case OpCode.Unbox:
+            case OpCode.Unbox_any:
+                var boxToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                var box = Model.BoxingType.Read(module, boxToken, context.Arguments, methodArguments);
+                var boxValue = SignatureReader.StorageType(module, boxToken, context.Arguments, methodArguments);
+                if (node.Code == OpCode.Box)
+                {
+                    stack.Store(StackEntry.From(boxValue));
+                    stack.Push(StackEntry.From(box is null ? boxValue : new SignatureType(SignatureTypeCode.Object)));
+                }
+                else
+                {
+                    if (stack.Pop().Type is not (StackType.ObjectReference or StackType.Null))
+                        throw stack.Error("Unboxing requires an object reference");
+                    if (node.Code == OpCode.Unbox && box is null) throw new NotSupportedException("unbox requires a value type.");
+                    stack.Push(StackEntry.From(node.Code == OpCode.Unbox ? boxValue.ByReference() : boxValue));
+                }
                 break;
             case OpCode.Initobj:
             case OpCode.Ldobj:
             case OpCode.Stobj:
             case OpCode.Cpobj:
                 var valueHandle = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
-                var resolvedValue = SignatureReader.Resolve(module, valueHandle, context.Arguments, methodArguments);
-                if (resolvedValue.Identity is not { } && resolvedValue.Code is not (SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray))
-                    throw new NotSupportedException("Primitive generic initobj/object operations are not implemented.");
+                var resolvedValue = SignatureReader.StorageType(module, valueHandle, context.Arguments, methodArguments);
                 var value = resolvedValue;
                 var pointer = StackEntry.From(value.ByReference());
                 if (node.Code == OpCode.Stobj) stack.Store(StackEntry.From(value));

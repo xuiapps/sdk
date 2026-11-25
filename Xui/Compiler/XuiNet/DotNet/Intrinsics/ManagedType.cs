@@ -27,6 +27,7 @@ public sealed record ManagedType(
         if (token.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification))
             throw new NotSupportedException("Runtime field and method handles are not implemented.");
         var signature = SignatureReader.Resolve(module, token, typeArguments, methodArguments);
+        if (BoxingType.Read(module, token, typeArguments, methodArguments) is { } boxed) return boxed.Identity;
         if (signature.Identity is not { Handle.Kind: HandleKind.TypeDefinition, IsValueType: false } identity ||
             FrameworkTypes.IsRuntimeBase(identity) || Is(identity) || DefaultEquality.Is(identity) ||
             Exceptions.ExceptionTypes.Kind(identity) is not null)

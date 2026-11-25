@@ -7,10 +7,51 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
+    private static void RequireTypeTest(MethodPlan method, XuiNet.DotNet.Module source, EntityHandle token)
+    {
+        method.Storage.ExceptionsEnabled = true;
+        method.RequireGcTemporaries();
+        var signature = XuiNet.DotNet.Signatures.SignatureReader.StorageType(source, token, method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+        if (signature.Code == SignatureTypeCode.Object) return;
+        if (BoxingType.Read(source, token, method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } box)
+        {
+            _ = method.Storage.Box(box);
+            return;
+        }
+        if (signature.Identity is not { } target || !method.Storage.IsClass(target))
+            throw new NotSupportedException("Reference type tests currently require a named class or interface.");
+        method.RequireGc(target);
+        if (XuiNet.DotNet.Intrinsics.DefaultEquality.IsInterface(target))
+            method.RequireGc(XuiNet.DotNet.Intrinsics.DefaultEquality.InterfaceOwner(target));
+    }
+
     private void EmitIsinst(Instruction.Token instruction, int offset) => EmitTypeTest(instruction, offset, false);
 
     private void EmitTypeTest(Instruction.Token instruction, int offset, bool throwing)
     {
+        var testedStorage = XuiNet.DotNet.Signatures.SignatureReader.StorageType(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+        if (testedStorage.Code == SignatureTypeCode.Object)
+        {
+            if (!IsObjectReference(Pop(instruction.Code, offset))) throw new NotSupportedException("Object type tests require a managed object reference.");
+            stack.Push(new(SignatureTypeCode.Object));
+            return;
+        }
+        var testedBox = BoxingType.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+        if (testedBox is { } box)
+        {
+            if (!IsObjectReference(Pop(instruction.Code, offset))) throw new InvalidProgramException("Box type tests require an object reference.");
+            // Preserve null separately; EmitBoxTest uses the GC scratch references.
+            writer.LocalTee(method.GcOwner).RefIsNull().LocalSet(method.GcI32).LocalGet(method.GcOwner);
+            EmitBoxTest(box, compatible: false);
+            if (throwing)
+            {
+                writer.LocalTee(method.GcOwner).RefIsNull().LocalGet(method.GcI32).I32Eqz().I32And().If();
+                ThrowException(XuiNet.DotNet.Exceptions.ExceptionKind.InvalidCastException);
+                writer.End().LocalGet(method.GcOwner);
+            }
+            stack.Push(new(SignatureTypeCode.Object));
+            return;
+        }
         var target = Xui.Compiler.XuiNet.DotNet.Signatures.SignatureReader.Resolve(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments).Identity
             ?? throw new NotSupportedException("Type tests currently require same-module classes.");
         var value = Pop(instruction.Code, offset);

@@ -1,5 +1,6 @@
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Xui.Compiler.XuiNet.DotNet;
 using Xui.Compiler.XuiNet.DotNet.Op;
 using Xui.Compiler.XuiNet.DotNet.Signatures;
 
@@ -9,10 +10,22 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitBox(Instruction.Token instruction, int offset)
     {
-        var type = method.Storage.Bind(SignatureReader.Resolve(source, MetadataTokens.EntityHandle(instruction.Value),
+        var token = MetadataTokens.EntityHandle(instruction.Value);
+        var box = BoxingType.Read(source, token, method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+        var type = method.Storage.Bind(SignatureReader.StorageType(source, token,
             method.Identity.DeclaringType.Arguments, method.Identity.Arguments));
-        if (!StorageModel.IsReference(type)) throw new NotSupportedException("Boxing value types is not implemented.");
         PopAssignable(type, instruction.Code, offset);
-        stack.Push(new(type.StackType, type.Identity, array: type.Array));
+        if (box is not { } value)
+        {
+            stack.Push(new(type.StackType, type.Identity, array: type.Array));
+            return;
+        }
+        var shape = method.Storage.Box(value);
+        var scratch = GcScratch(type);
+        StorePrimitive(type, scratch);
+        writer.GlobalGet(method.Storage.Classes.Resolve(value.Identity).Descriptor).LocalGet(scratch);
+        if (type.TypeCode == SignatureTypeCode.Single) writer.F32DemoteF64();
+        writer.StructNew(shape.Type);
+        stack.Push(new(SignatureTypeCode.Object));
     }
 }

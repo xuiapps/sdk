@@ -25,7 +25,7 @@ public readonly ref partial struct CodeEmitter
                 break;
             case ManagedTypeOperation.GetType:
                 var receiver = Pop(instruction.Code, offset);
-                if (!receiver.IsNull && (receiver.IsByReference || receiver.Identity is not { } identity ||
+                if (!receiver.IsNull && receiver.TypeCode != SignatureTypeCode.Object && (receiver.IsByReference || receiver.Identity is not { } identity ||
                     !storage.IsClass(identity) || ManagedType.Is(identity) || DefaultEquality.Is(identity) || DefaultEquality.IsInterface(identity) ||
                     ExceptionTypes.Kind(identity) is not null || DelegateInfo.IsRuntimeBase(identity)))
                     throw new NotSupportedException("GetType currently requires a named class or interface receiver with a runtime descriptor.");
