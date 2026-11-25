@@ -30,6 +30,7 @@ public readonly ref partial struct CodeEmitter
         if (TryInt32Formatting(instruction, offset)) return;
         if (TryConstructorFactory(instruction, offset)) return;
         if (TryArrayCopy(instruction, offset)) return;
+        if (TryArrayClear(instruction, offset)) return;
         if (TryMath(instruction, offset)) return;
         if (TryStringEquality(instruction, offset)) return;
         if (TryDefaultEquality(instruction, offset)) return;

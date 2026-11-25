@@ -135,6 +135,11 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("Array.Copy"), node, DependencyReason.Call, offset);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ArrayClear.Read(module, token) is not null)
+                    {
+                        Add(new Dependency.Intrinsic("Array.Clear"), node, DependencyReason.Call, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.MonotonicClock.Read(module, token) is { } clock)
                     {
                         Add(new Dependency.Intrinsic("Clock." + clock.Operation), node, DependencyReason.Call, offset);

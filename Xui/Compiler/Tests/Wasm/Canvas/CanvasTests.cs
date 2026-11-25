@@ -104,7 +104,7 @@ public class CanvasTests
     [Fact]
     public void UnsupportedNativeFloatMembersFailExplicitly()
     {
-        var image = Frontend.Roslyn.Compile("using System.Runtime.InteropServices; NFloat a = (NFloat)2; NFloat b = NFloat.Exp(a); return 0;");
+        var image = Frontend.Roslyn.Compile("using System.Runtime.InteropServices; NFloat a = (NFloat)2; NFloat b = NFloat.Acos(a); return 0;");
         using var app = Read(image);
         Assert.Throws<NotSupportedException>(() => new WasmEmitter().Emit(app));
     }

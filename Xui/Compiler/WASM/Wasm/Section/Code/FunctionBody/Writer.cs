@@ -55,11 +55,39 @@ public ref partial struct Writer
         return this;
     }
 
-    /// <summary>Computes the square root at f32 precision, preserving signed zero.</summary>
+    /// <summary>Rounds f32 toward positive infinity.</summary>
+    public readonly Writer F32Ceil() { body.Instruction(OpCode.F32Ceil); return this; }
+    /// <summary>Rounds f32 down.</summary>
+    public readonly Writer F32Floor() { body.Instruction(OpCode.F32Floor); return this; }
+    /// <summary>Rounds f32 toward zero.</summary>
+    public readonly Writer F32Trunc() { body.Instruction(OpCode.F32Trunc); return this; }
+    /// <summary>Rounds f32 to nearest, ties to even.</summary>
+    public readonly Writer F32Nearest() { body.Instruction(OpCode.F32Nearest); return this; }
+    /// <summary>Rounds f64 up.</summary>
+    public readonly Writer F64Ceil() { body.Instruction(OpCode.F64Ceil); return this; }
+    /// <summary>Rounds f64 down.</summary>
+    public readonly Writer F64Floor() { body.Instruction(OpCode.F64Floor); return this; }
+    /// <summary>Rounds f64 toward zero.</summary>
+    public readonly Writer F64Trunc() { body.Instruction(OpCode.F64Trunc); return this; }
+    /// <summary>Rounds f64 to nearest, ties to even.</summary>
+    public readonly Writer F64Nearest() { body.Instruction(OpCode.F64Nearest); return this; }
+    /// <summary>Computes f32 square root.</summary>
     public readonly Writer F32Sqrt() { body.Instruction(OpCode.F32Sqrt); return this; }
 
     /// <summary>Computes the square root at f64 precision, preserving signed zero.</summary>
     public readonly Writer F64Sqrt() { body.Instruction(OpCode.F64Sqrt); return this; }
+
+    /// <summary>Clears the f64 sign bit.</summary>
+    public readonly Writer F64Abs() { body.Instruction(OpCode.F64Abs); return this; }
+    /// <summary>Copies the second f64 sign bit to the first operand.</summary>
+    public readonly Writer F64CopySign() { body.Instruction(OpCode.F64CopySign); return this; }
+
+    /// <summary>Copies the second f32 sign bit to the first operand.</summary>
+    public readonly Writer F32CopySign() { body.Instruction(OpCode.F32CopySign); return this; }
+    /// <summary>Minimum f64, propagating NaN and preferring negative zero.</summary>
+    public readonly Writer F64Min() { body.Instruction(OpCode.F64Min); return this; }
+    /// <summary>Maximum f64, propagating NaN and preferring positive zero.</summary>
+    public readonly Writer F64Max() { body.Instruction(OpCode.F64Max); return this; }
 
     /// <summary>Adds two f64 values.</summary>
     public readonly Writer F64Add()

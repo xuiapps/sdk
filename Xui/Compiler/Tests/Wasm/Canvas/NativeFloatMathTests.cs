@@ -1,5 +1,6 @@
 using Xui.Compiler.Tests.Wasm.Gc;
 using Xui.Compiler.Tests.Wasm.Structs;
+using Xui.Compiler.Tests.Wasm.Repl;
 using Xunit;
 
 namespace Xui.Compiler.Tests.Wasm.Canvas;
@@ -45,6 +46,18 @@ public class NativeFloatMathTests
         using System.Runtime.InteropServices;
         public static class Program { public static int Main() => (float)NFloat.Pi == float.Pi ? 42 : 1; }
         """, "", 42);
+
+    [Fact]
+    public async Task LimitsHaveTargetFloatPrecision()
+    {
+        // WASM32 limits intentionally differ from the host's 64-bit NFloat limits.
+        var image = Frontend.Roslyn.Compile("""
+            using System.Runtime.InteropServices;
+            public static class Program { public static int Main() =>
+                (float)NFloat.MaxValue == float.MaxValue && (float)NFloat.MinValue == float.MinValue && (float)NFloat.Epsilon == float.Epsilon ? 42 : 1; }
+            """);
+        Assert.Equal(42, (await Node.ExecuteAsync(GcTests.Emit(image))).ExitCode);
+    }
 
     [Fact]
     public Task InitOnlyPropertiesUseTheOrdinarySetterAbi() => GcTests.AssertExecution("""

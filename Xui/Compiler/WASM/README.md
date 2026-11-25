@@ -295,11 +295,17 @@ uses WASM32 single precision; signed zero, infinities, and NaNs preserve IEEE be
 [Square-root tests](../Tests/Wasm/Mathematics/SquareRootTests.cs) compare CLR results,
 including subnormals and float rounding boundaries.
 
-The corresponding `Sin` and `Cos` methods import `xui-math.sin/cos`, supplied by
+The corresponding `Sin`, `Cos`, `Log`, and `Exp` methods import `xui-math.sin/cos/log/exp`, supplied by
 JavaScript Math. Single/NFloat inputs and outputs round to f32; special-value,
 signed-zero, and finite-result comparisons are covered by
 [trigonometry tests](../Tests/Wasm/Mathematics/TrigonometryTests.cs).
 Finite transcendental results need not be bit-identical across host platforms.
+`Abs`, `CopySign`, `Min`, `Max`, `Floor`, `Ceiling`, `Truncate`, and unary `Round`
+emit scalar WASM instructions. Round defaults to ties-to-even; the MidpointRounding
+overload implements all five modes and rejects invalid modes with ArgumentException.
+Away-from-zero uses fractional magnitude to avoid rounding midpoint predecessors
+incorrectly. Decimal/digits overloads are not intrinsic. NFloat limits and epsilon
+use the target's f32 constants, not the compilation host's f64 constants.
 Floating `rem` and NFloat modulus use the host's truncated remainder (`%`), including
 NaN, infinities and signed zero. NFloat casts to Int32/Int64 use the existing signed
 saturating conversion policy, after target-width rounding.
@@ -850,6 +856,13 @@ elements use an overlap-aware field-copy loop into existing holders, preserving
 outstanding element/field references and independent value storage.
 System.Array-typed operands, covariance, element conversions, multidimensional
 arrays, and 64-bit index overloads are not supported.
+
+Array.Clear's whole-vector and int-indexed range overloads zero scalar elements
+and null reference elements. Struct elements reset flattened fields in place so
+existing element/field byrefs remain valid. Null arrays throw ArgumentNullException;
+invalid ranges throw IndexOutOfRangeException before mutation. Empty ranges at the
+end of an array are accepted. [Clear tests](../Tests/Wasm/Arrays/ClearTests.cs)
+compare Debug/Release CLR and Node execution.
 
 Default equality for named classes preserves null and reference-identity behavior,
 retaining virtual Object.Equals overrides on reachable instantiated receivers.

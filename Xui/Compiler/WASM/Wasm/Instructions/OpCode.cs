@@ -177,10 +177,36 @@ public enum OpCode : byte
     F32Le = 0x5f,
     /// <summary>Ordered f32 greater-than-or-equal comparison.</summary>
     F32Ge = 0x60,
+    /// <summary>Rounds f32 toward positive infinity.</summary>
+    F32Ceil = 0x8d,
+    /// <summary>Rounds f32 toward negative infinity.</summary>
+    F32Floor = 0x8e,
+    /// <summary>Rounds f32 toward zero.</summary>
+    F32Trunc = 0x8f,
+    /// <summary>Rounds f32 to nearest with ties to even.</summary>
+    F32Nearest = 0x90,
+    /// <summary>Rounds f64 toward positive infinity.</summary>
+    F64Ceil = 0x9b,
+    /// <summary>Rounds f64 toward negative infinity.</summary>
+    F64Floor = 0x9c,
+    /// <summary>Rounds f64 toward zero.</summary>
+    F64Trunc = 0x9d,
+    /// <summary>Rounds f64 to nearest with ties to even.</summary>
+    F64Nearest = 0x9e,
     /// <summary>Computes the IEEE 754 square root of f32.</summary>
     F32Sqrt = 0x91,
     /// <summary>Computes the IEEE 754 square root of f64.</summary>
     F64Sqrt = 0x9f,
+    /// <summary>Clears the f64 sign bit.</summary>
+    F64Abs = 0x99,
+    /// <summary>Copies the second f64 sign bit to the first operand.</summary>
+    F64CopySign = 0xa6,
+    /// <summary>Copies the second f32 sign bit to the first operand.</summary>
+    F32CopySign = 0x98,
+    /// <summary>Minimum f64, propagating NaN and preferring negative zero.</summary>
+    F64Min = 0xa4,
+    /// <summary>Maximum f64, propagating NaN and preferring positive zero.</summary>
+    F64Max = 0xa5,
     /// <summary>Adds two f64 values.</summary>
     F64Add = 0xa0,
     /// <summary>Subtracts f64 values.</summary>

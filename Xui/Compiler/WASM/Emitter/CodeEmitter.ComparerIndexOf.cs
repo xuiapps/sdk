@@ -31,11 +31,11 @@ public readonly ref partial struct CodeEmitter
         CheckCopyNegative(method.ArrayIndex, "startIndex");
         writer.LocalGet(method.ArrayReference).RefCast(shape.Type).ArrayLen().LocalSet(method.GcI32);
         writer.LocalGet(method.ArrayIndex).LocalGet(method.GcI32).I32GtU().If();
-        ThrowCopyArgument(ExceptionKind.ArgumentOutOfRangeException, "startIndex"); writer.End();
+        ThrowArgumentException(ExceptionKind.ArgumentOutOfRangeException, "startIndex"); writer.End();
         if (!hasCount) writer.LocalGet(method.GcI32).LocalGet(method.ArrayIndex).I32Sub().LocalSet(method.EqualitySearchEnd);
         CheckCopyNegative(method.EqualitySearchEnd, "count");
         writer.LocalGet(method.EqualitySearchEnd).LocalGet(method.GcI32).LocalGet(method.ArrayIndex).I32Sub().I32GtU().If();
-        ThrowCopyArgument(ExceptionKind.ArgumentOutOfRangeException, "count"); writer.End();
+        ThrowArgumentException(ExceptionKind.ArgumentOutOfRangeException, "count"); writer.End();
         writer.LocalGet(method.EqualitySearchEnd).LocalGet(method.ArrayIndex).I32Add().LocalSet(method.EqualitySearchEnd);
         writer.I32Const(-1).LocalSet(method.EqualitySearchResult);
         writer.Block(method.Storage.EmptyBlock).Loop(method.Storage.EmptyBlock);

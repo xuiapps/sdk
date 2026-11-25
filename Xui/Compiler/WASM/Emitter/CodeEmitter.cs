@@ -695,6 +695,17 @@ public readonly ref partial struct CodeEmitter
                         method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.TargetInvocationException);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ArrayClear.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is not null)
+                    {
+                        method.UsesArrayCopy = true;
+                        method.RequireGcTemporaries();
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentNullException);
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.IndexOutOfRangeException);
+                        if (seenLiterals.Add("array")) literals.Add("array");
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.ArrayCopy.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is not null)
                     {
@@ -717,11 +728,20 @@ public readonly ref partial struct CodeEmitter
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.MathMethod.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } math)
                     {
+                        if (math.HasRoundingMode)
+                        {
+                            method.RequireGcTemporaries();
+                            method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentException);
+                            if (seenLiterals.Add("mode")) literals.Add("mode");
+                        }
+                        method.Storage.MathImports.UsesExp |= math.Operation == "Exp";
+                        method.Storage.MathImports.UsesLog |= math.Operation == "Log";
                         method.Storage.MathImports.UsesSin |= math.Operation == "Sin";
                         method.Storage.MathImports.UsesCos |= math.Operation == "Cos";
-                        if (math.Operation == "Pow")
+                        if (math.Operation is "Pow" or "CopySign" or "Min" or "Max")
                         {
-                            method.Storage.MathImports.UsesPow = true;
+                            method.Storage.MathImports.UsesPow |= math.Operation == "Pow";
                             method.UsesNativeFloat |= math.IsSingle;
                         }
                         break;

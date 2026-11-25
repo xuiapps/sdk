@@ -196,6 +196,8 @@ globalThis.xuiRuntimeImports = Object.freeze({
     'xui-math': Object.freeze({
         remainder: (x, y) => x % y,
         sin: Math.sin,
+        log: Math.log,
+        exp: Math.exp,
         cos: Math.cos,
         pow(x, y) {
             // CoreLib follows IEEE/C pow identities; ECMAScript differs for NaN and ±1.

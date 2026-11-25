@@ -301,6 +301,13 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     }
                     break;
                 }
+                if (Model.Intrinsics.ArrayClear.Read(module, MetadataTokens.EntityHandle(callToken)) is { } clear)
+                {
+                    if (clear.HasIndices) { stack.Pop(StackType.Int32); stack.Pop(StackType.Int32); }
+                    if (stack.Pop().Type is not (StackType.ArrayReference or StackType.Null))
+                        throw new NotSupportedException("Array.Clear requires a statically typed vector.");
+                    break;
+                }
                 if (Model.Intrinsics.ArrayCopy.Read(module, MetadataTokens.EntityHandle(callToken)) is { } copy)
                 {
                     stack.Pop(StackType.Int32);

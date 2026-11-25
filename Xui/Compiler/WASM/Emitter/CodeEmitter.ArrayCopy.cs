@@ -65,14 +65,14 @@ public readonly ref partial struct CodeEmitter
     private void CheckCopyNull(LocalIndex array, string name)
     {
         writer.LocalGet(array).RefIsNull().If();
-        ThrowCopyArgument(ExceptionKind.ArgumentNullException, name);
+        ThrowArgumentException(ExceptionKind.ArgumentNullException, name);
         writer.End();
     }
 
     private void CheckCopyNegative(LocalIndex index, string name)
     {
         writer.LocalGet(index).I32Const(0).I32LtS().If();
-        ThrowCopyArgument(ExceptionKind.ArgumentOutOfRangeException, name);
+        ThrowArgumentException(ExceptionKind.ArgumentOutOfRangeException, name);
         writer.End();
     }
 
@@ -85,7 +85,7 @@ public readonly ref partial struct CodeEmitter
         ThrowException(ExceptionKind.ArgumentException); writer.End();
     }
 
-    private void ThrowCopyArgument(ExceptionKind kind, string name)
+    private void ThrowArgumentException(ExceptionKind kind, string name)
     {
         EmitString(ExceptionTypes.Message(kind)); writer.LocalSet(method.GcExtern);
         EmitString(name); writer.LocalSet(method.ExceptionParamName);

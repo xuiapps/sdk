@@ -79,6 +79,9 @@ public readonly ref partial struct CodeEmitter
                 "get_NegativeInfinity" => double.NegativeInfinity,
                 "get_NaN" => double.NaN,
                 "get_Pi" => (double)float.Pi,
+                "get_MaxValue" => (double)float.MaxValue,
+                "get_MinValue" => (double)float.MinValue,
+                "get_Epsilon" => (double)float.Epsilon,
                 _ => throw new NotSupportedException($"NFloat constant {operation} is not implemented.")
             });
         }

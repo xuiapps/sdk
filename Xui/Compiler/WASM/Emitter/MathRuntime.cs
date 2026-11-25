@@ -10,6 +10,10 @@ internal sealed class MathRuntime
 {
     public bool UsesPow { get; set; }
     public bool UsesSin { get; set; }
+    public bool UsesExp { get; set; }
+    public FunctionIndex Exp { get; private set; }
+    public bool UsesLog { get; set; }
+    public FunctionIndex Log { get; private set; }
     public bool UsesCos { get; set; }
     public bool UsesRemainder { get; set; }
     public FunctionIndex Remainder { get; private set; }
@@ -21,7 +25,7 @@ internal sealed class MathRuntime
     public void DefineTypes(ref TypeWriter writer)
     {
         if (UsesPow || UsesRemainder) binaryType = writer.FunctionType([F64, F64], F64);
-        if (UsesSin || UsesCos) unaryType = writer.FunctionType([F64], F64);
+        if (UsesSin || UsesCos || UsesLog || UsesExp) unaryType = writer.FunctionType([F64], F64);
     }
 
     public void Import(ref ImportWriter writer)
@@ -29,6 +33,8 @@ internal sealed class MathRuntime
         if (UsesPow) Pow = writer.Function("xui-math", "pow", binaryType);
         if (UsesRemainder) Remainder = writer.Function("xui-math", "remainder", binaryType);
         if (UsesSin) Sin = writer.Function("xui-math", "sin", unaryType);
+        if (UsesExp) Exp = writer.Function("xui-math", "exp", unaryType);
+        if (UsesLog) Log = writer.Function("xui-math", "log", unaryType);
         if (UsesCos) Cos = writer.Function("xui-math", "cos", unaryType);
     }
 }
