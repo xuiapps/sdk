@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Default comparer member is not implemented: System.Collections.Generic.EqualityComparer<Int32>.GetHashCode.
+Framework IEqualityComparer dispatch is not implemented; default comparers currently require their concrete API.
 ```
 
 ## Dependency path
@@ -48,6 +48,7 @@ Root { Value = Method { Identity = Program.Main } }
  → VirtualCall { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryGetValue }
  → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryGetValue }
  → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.FindValue }
+ → VirtualCall { Identity = System.Collections.Generic.IEqualityComparer<Int32>.GetHashCode }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

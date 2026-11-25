@@ -51,8 +51,8 @@ The next sequence is:
    existing runtime descriptors, and example IDs now concatenate native JS strings.
    Typeof-based service lookup now executes with interface dispatch. The browser
    resource boundary now reads neutral message strings from supplied BCL resources
-   and emits only requested literals. Dependency discovery next reaches Int32 default
-   hashing in EventRouter’s Dictionary; BCL helper switches still need emission support.
+   and emits only requested literals. Int32/UInt32 default hashing now executes;
+   dependency discovery next reaches IEqualityComparer dispatch in EventRouter’s Dictionary; BCL helper switches still need emission support.
    Continue through the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.

@@ -650,6 +650,7 @@ public readonly ref partial struct CodeEmitter
                     {
                         if (IR.Intrinsics.DefaultEquality.Is(equality.Owner)) method.RequireGc(equality.Owner);
                         else method.RequireGcTemporaries();
+                        if (equality.Operation == "GetHashCode") method.Storage.ExceptionsEnabled = true;
                         if (equality.Operation is "Equals" or "IndexOf")
                         {
                             method.Storage.ExceptionsEnabled = true;

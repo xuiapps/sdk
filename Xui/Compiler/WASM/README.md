@@ -274,6 +274,11 @@ rounding boundaries, infinities, and exception messages. Composite overloads,
 formatting, parsing, and clock reads are not supplied by these intrinsics. Duration
 conversion has no JavaScript host dependency.
 
+`EqualityComparer<int/uint>.Default.GetHashCode` preserves the 32-bit value's bits,
+including enums with those underlying types. Null comparer receivers throw managed
+NullReferenceException. Other hash representations and comparer-interface dispatch
+remain unsupported.
+
 `String.Concat` with two, three, or four string arguments calls `wasm:js-string.concat`.
 The emitter preserves evaluation order and normalizes null arguments to empty strings;
 UTF-16 contents remain native JS strings. Object, array, and enumerable Concat
@@ -767,7 +772,7 @@ Structs implementing IEquatable<T> call their concrete typed equality method,
 including explicit implementations and closed generic structs. Arguments retain
 value-copy semantics; NFloat field Equals handles NaN and signed zero.
 Null comparer receivers throw managed NullReferenceException. Custom comparer
-subclasses, IEqualityComparer interface dispatch, hashing, IEquatable class contracts,
+subclasses, IEqualityComparer interface dispatch, hashing outside Int32/UInt32 storage, IEquatable class contracts,
 object-typed/boxed equality, and fallback ValueType.Equals remain explicitly unsupported.
 
 String equality operators, static Equals(string, string), and instance Equals(string)

@@ -27,6 +27,13 @@ public sealed partial record DefaultEquality(
         if (member.Name == ".ctor") throw new NotSupportedException("Custom EqualityComparer subclasses are not implemented.");
         var signature = SignatureReader.Method(module, member.Signature, comparer.Arguments);
         var element = comparer.Arguments.Values[0];
+        if (member.Name == "GetHashCode" && signature.HasThis && signature.Result.Code == SignatureTypeCode.Int32 &&
+            signature.Parameters.Length == 1 && signature.Parameters[0] == element)
+        {
+            if (EnumInfo.Storage(element).Code is not (SignatureTypeCode.Int32 or SignatureTypeCode.UInt32))
+                throw new NotSupportedException($"Default hashing is not implemented for {element}.");
+            return new(member.Name, comparer, element, signature);
+        }
         if (member.Name == "get_Default" && !signature.HasThis && signature.Parameters.Length == 0 && signature.Result.Identity == comparer ||
             member.Name == "Equals" && signature.HasThis && signature.Result.Code == SignatureTypeCode.Boolean &&
             signature.Parameters.Length == 2 && signature.Parameters.All(p => p == element) ||

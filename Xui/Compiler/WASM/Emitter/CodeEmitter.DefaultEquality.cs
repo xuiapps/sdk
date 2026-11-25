@@ -20,6 +20,18 @@ public readonly ref partial struct CodeEmitter
             return true;
         }
         if (access.Operation == "IndexOf") return TryComparerIndexOf(access, instruction, offset);
+        if (access.Operation == "GetHashCode")
+        {
+            PopAssignable(method.Storage.Bind(access.Element), instruction.Code, offset);
+            writer.LocalSet(method.GcI32);
+            var comparer = Pop(instruction.Code, offset);
+            if (comparer.IsByReference || comparer.Identity is not null && comparer.Identity != access.Owner)
+                throw new InvalidProgramException("Default hashing requires its declared comparer receiver.");
+            writer.RefIsNull().If(); ThrowException(ExceptionKind.NullReferenceException); writer.End();
+            writer.LocalGet(method.GcI32);
+            stack.Push(new(SignatureTypeCode.Int32));
+            return true;
+        }
         var storage = method.Storage.Bind(access.Element);
         var (left, right) = method.EqualityTemporaries[storage];
         PopAssignable(storage, instruction.Code, offset); writer.LocalSet(right);
