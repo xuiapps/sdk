@@ -31,7 +31,10 @@ internal static class MobileProjects
         void Add(string directory, string name, string[]? exclude = null)
         {
             byte[] image = SourceProject.Compile(directory, name, references,
-                extraSources: name == "TestApp.Mobile" ? [File.ReadAllText(Path.Combine(SourceProject.XuiRoot, "Compiler/Tests/Fixtures/TestApp/Mobile/BrowserMenu.cs"))] : null,
+                extraSources: name switch {
+                    "TestApp.Mobile" => [File.ReadAllText(Path.Combine(SourceProject.XuiRoot, "Compiler/Tests/Fixtures/TestApp/Mobile/BrowserMenu.cs"))],
+                    "Xui.Middleware.Emulator" => [File.ReadAllText(Path.Combine(SourceProject.XuiRoot, "Compiler/Tests/Fixtures/TestApp/Mobile/PhoneHost.cs"))],
+                    _ => null },
                 exclude: exclude, generateShaders: name == "TestApp.Mobile");
             result.Add(name, image); references.Add(MetadataReference.CreateFromImage(image));
         }

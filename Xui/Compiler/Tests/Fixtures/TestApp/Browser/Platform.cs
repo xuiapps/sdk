@@ -10,7 +10,8 @@ namespace TestAppCanvas;
 // The browser supplies only platform services; Window, RootView and the design root are real Xui.
 public sealed class BrowserPlatform(CanvasContext context) : IServiceProvider, IRuntime, IDeviceInfo
 {
-    public object GetService(Type type) => type == typeof(IRuntime) || type == typeof(IDeviceInfo) ? this : null;
+    public readonly BrowserClock Clock = new();
+    public object GetService(Type type) => type == typeof(TimeProvider) ? Clock : type == typeof(IRuntime) || type == typeof(IDeviceInfo) ? this : null;
     public IDispatcher MainDispatcher => throw new NotSupportedException("Browser dispatcher is not connected yet.");
     public IRunLoop CreateRunloop(Abstract.Application application) => throw new NotSupportedException("The browser owns its event loop.");
     public IWindow CreateWindow(Abstract.IWindow window, IServiceProvider services) => new BrowserWindow(window, services, context);
@@ -35,4 +36,11 @@ public sealed class BrowserWindow(Abstract.IWindow window, IServiceProvider serv
     public object GetService(Type type) => services.GetService(type);
     public void Show() => Invalidate();
     public void Invalidate() => Dirty = true;
+}
+
+public sealed class BrowserClock : TimeProvider
+{
+    public long Ticks;
+    public override long GetTimestamp() => Ticks;
+    public override long TimestampFrequency => 10_000_000;
 }

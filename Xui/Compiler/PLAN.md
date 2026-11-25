@@ -1,5 +1,16 @@
 # Plan: display a Xui app using the Xui WASM compiler
 
+## Current milestone: interactive mobile shell
+
+[BrowserInteractive.html](Tests/Wasm/TestApp/Snapshots/BrowserInteractive.html)
+runs the real themed TestApp home, EventRouter, press feedback, Canvas Drawing
+example and animated Back navigation inside the middleware phone renderer. Node
+and offline Chromium verify this path, including cancellation, resize and idle.
+The fixture retains a real Window/RootView, supplies a browser clock, and calls
+Measure/Arrange/Render explicitly. Full EmulatedWindow composition, keyboard/IME,
+multitouch, diagnostics and the complete async/GPU catalogue remain future work.
+The earlier gates below document the incremental route to this milestone.
+
 ## Objective and shortest path
 
 Produce a visible canvas frame from C# compiled through **Roslyn → PE/MSIL → XuiNet → our WASM emitter**. Start with a small rendering slice using real Xui geometry and color types, then grow it into a persistent, interactive Xui window/view application.
@@ -302,25 +313,17 @@ Allocation-free full Xui event dispatch remains a separate acceptance gate: the 
 
 ## Immediate next work
 
-The first canvas slice is complete: dependency-defined numeric structs, actual Xui
-geometry, a narrow NFloat policy, drawing imports, and standalone browser artifacts
-all execute with regression coverage.
+1. Expand the injected browser catalogue with ordinary layout, widget and gesture
+   examples; verify real scrolling/inertia and navigation transitions visually.
+2. Route the complete Window update/render lifecycle, then the EmulatedWindow
+   composition, keeping the current persistent-session tests as regression gates.
+3. Add browser keyboard/IME and multitouch adapters with explicit cleanup tests.
+4. Bring the same Core assemblies and host adapter into the playground worker.
+5. Expand assets, async services and optional demos only as their concrete
+   dependency closures become supported. Do not claim full catalogue coverage.
 
-1. **Real View layout/render gate:** extend the passing unchanged `FillRectTest`
-   construction test to Measure/Arrange/Render, supplying a minimal Canvas adapter.
-   Use that dependency closure to identify the next required compiler features.
-2. **Editor integration:** supply Core to the playground compiler and replay drawing
-   commands from its worker into a canvas output area.
-3. **Persistent rendering:** export frame/input entry points, retain application state,
-   and keep one instance alive across callbacks.
-4. **Real Window/View:** use its dependency closure to drive remaining static-state,
-   span, class-storage, and BCL work, with explicit profile cuts where appropriate.
-
-General BCL compilation remains outside the first-frame scope; supplied cross-assembly
-GC classes already execute. Linear struct constructors/receivers and frame-owned reference slots already
-work; flattened value representation can improve the ABI without removing the
-addressable storage path. Keep the reachability graph as the explanation of what
-each added feature brings into the emitted module.
+General BCL coverage is still incremental. Keep the reachability graph as the
+explanation of what each added feature brings into the emitted module.
 
 ## Themed TestApp home now renders
 
@@ -334,7 +337,7 @@ leaving normal TestApp builds unchanged.
 This step required managed-owner spans/inline arrays, sin/cos and floating
 remainder, signed NFloat conversions, shared exception-block type reuse and
 chunked delegate metadata above the engine's fixed-array initializer limit.
-The next gate is a persistent shell session with actual routed pointer events and
-animation updates inside the existing middleware phone renderer. The current
-first-frame page has no input routing; MobilePhone remains the smaller interactive
-FillRect milestone. Full catalogue assets/async/GPU demos remain outside the profile.
+The subsequent interactive gate now passes in BrowserInteractive: persistent shell
+state, actual routed touches and animation updates inside the middleware phone
+renderer. BrowserShell remains the first-frame snapshot and MobilePhone the smaller
+FillRect fixture. Full catalogue assets/async/GPU demos remain outside the profile.

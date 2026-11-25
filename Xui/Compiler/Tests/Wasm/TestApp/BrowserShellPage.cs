@@ -59,6 +59,6 @@ internal static class BrowserShellPage
         </html>
         """ + "\n";
 
-    private static string Font(string name, int weight) =>
+    internal static string Font(string name, int weight) =>
         $"@font-face {{ font-family:Inter; font-weight:{weight}; src:url(data:font/ttf;base64,{Convert.ToBase64String(File.ReadAllBytes(Path.Combine(Frontend.SourceProject.XuiRoot, $"Core/Fonts/Inter/Inter-{name}.ttf")))}) format('truetype'); }}";
 }

@@ -151,7 +151,7 @@ NFloat conversions in Color use direct target-width conversion.
 
 The construction gate remains separate from the themed first-frame gate below.
 The existing phone HTML still displays the interactive FillRect fixture; the real
-shell's persistent window callbacks and EventRouter connection are the next step.
+shell's persistent window callbacks and EventRouter connection now execute in BrowserInteractive below.
 
 ## Themed mobile home: first frame
 
@@ -171,9 +171,8 @@ for the command snapshot; Chromium uses actual font shaping. Unsupported images,
 radial gradients and remaining Canvas operations fail explicitly.
 
 [The snapshot](Snapshots/BrowserShellRender.md) records the first frame and exit
-code. This milestone does not yet route input or run persistent animation frames
-for the complete shell. The separate MobilePhone preview still exercises its
-smaller interactive fixture.
+code. This first-frame page remains separate from the interactive shell below.
+The MobilePhone preview retains its smaller interaction fixture.
 
 ```sh
 node Xui/Compiler/Tests/Wasm/TestApp/shell.browser.mjs
@@ -182,3 +181,37 @@ node Xui/Compiler/Tests/Wasm/TestApp/shell.browser.mjs
 The runner verifies offline loading, real labels, nonempty pixels, embedded fonts,
 balanced drawing state, repeat rendering and a narrow viewport. Screenshots go to
 the ignored playground browser-test output directory.
+
+
+## Interactive mobile shell
+
+Open [BrowserInteractive.html](Snapshots/BrowserInteractive.html) and tap **Canvas
+Drawing**, then **Back**. The page embeds the compiled module, Canvas host and
+licensed Inter fonts. No HTTP server, network resources, or framework WASM runtime
+is needed. The compiler emits 1.07 MB of WASM for 1,263 retained managed methods.
+
+A persistent fixture session owns the real Abstract.Window, RootView and themed
+MobileTestAppShell. Pointer events become stack-backed TouchEventRef values and
+pass through Window.OnTouch and EventRouter. The browser clock drives
+Window.OnAnimationFrame, press feedback and NavigationView transitions. Rendering
+explicitly calls RootView.Measure/Arrange/Render. The host reuses middleware phone
+geometry/chrome; it does not instantiate the complete EmulatedWindow composition.
+
+The browser catalogue contains the unchanged FillRectTest in a real example page.
+Optional diagnostics and async/GPU/resource-heavy examples remain excluded. The
+adapter currently accepts one touch contact; keyboard, IME and full multi-touch
+support remain future work. Native canvas text metrics and the documented portable
+surface-effects approximation apply as in the first-frame gate.
+
+```sh
+dotnet test Xui/Compiler/Tests/Xui.Compiler.Tests.csproj -c Release --filter FullyQualifiedName~BrowserInteractionTests
+node Xui/Compiler/Tests/Wasm/TestApp/interactive.browser.mjs
+```
+
+Node checks both navigation directions and animation completion. Chromium checks
+offline loading, the phone frame, cancelled presses, mouse and touch navigation,
+RGB pixels from the actual example, DPR resizing, idle scheduling and disposal.
+Screenshots are saved under the ignored playground browser-test output directory.
+Array.Clear preserves element byrefs; logarithm/exponential, scalar rounding and
+NFloat limits support the reached animation/event-routing paths. Math and array
+regressions compare CLR and Node execution, with explicit WASM32 limit checks.
