@@ -573,6 +573,12 @@ public readonly ref partial struct CodeEmitter
                         literals.Add("");
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ResourceString.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } resourceText)
+                    {
+                        if (seenLiterals.Add(resourceText)) literals.Add(resourceText);
+                        break;
+                    }
                     if (method.InvariantFormatting.ContainsKey(offset) || instruction.Code == OpCode.Call && IR.Intrinsics.Int32Formatting.Is(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
                     {

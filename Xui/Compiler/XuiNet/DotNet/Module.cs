@@ -5,7 +5,7 @@ namespace Xui.Compiler.XuiNet.DotNet;
 
 /// <summary>A view of a module's metadata, with handles for traversing its declarations.</summary>
 /// <remarks>Declaration views and blob readers borrow the PE image owned by the assembly.</remarks>
-public sealed class Module
+public sealed partial class Module
 {
     private readonly Assembly assembly;
     private readonly Dictionary<MethodDefinitionHandle, MethodBody?> bodies = new();

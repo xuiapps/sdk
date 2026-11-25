@@ -50,6 +50,7 @@ public sealed class Assembly : IDisposable
     {
         if (disposed) return;
         disposed = true;
+        ManifestModule.DisposeResourceReaders();
         pe.Dispose();
     }
 }

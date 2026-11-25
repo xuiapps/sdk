@@ -27,7 +27,7 @@ return shell.Count;
 ## Compiler failure
 
 ```text
-Catch type is not a supported built-in exception: System.Resources.MissingManifestResourceException.
+Default comparer member is not implemented: System.Collections.Generic.EqualityComparer<Int32>.GetHashCode.
 ```
 
 ## Dependency path
@@ -36,17 +36,18 @@ Catch type is not a supported built-in exception: System.Resources.MissingManife
 Root { Value = Method { Identity = Program.Main } }
  → Method { Identity = Program.Main }
  → Method { Identity = Xui.Apps.TestApp.BrowserMenu..ctor }
- → Method { Identity = Xui.Core.UI.View.AddProtectedChild }
- → Method { Identity = Xui.Core.UI.View.AttachSubtree }
- → VirtualCall { Identity = Xui.Core.UI.View.get_Item }
- → Method { Identity = Xui.Core.UI.ViewCollection.get_Item }
- → VirtualCall { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.get_Item }
- → Method { Identity = System.Collections.Generic.List<Xui.Core.UI.View>.get_Item }
- → Method { Identity = System.ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException }
- → Method { Identity = System.ThrowHelper.GetArgumentOutOfRangeException }
- → Method { Identity = System.ThrowHelper.GetResourceString }
- → Method { Identity = System.SR.get_ArgumentOutOfRange_IndexMustBeLessOrEqual }
- → Method { Identity = System.SR.GetResourceString }
+ → Method { Identity = Xui.Apps.TestApp.MobileDemoCategoryPanel..ctor }
+ → Method { Identity = Xui.DevKit.UI.Widgets.Card.set_Content }
+ → Method { Identity = Xui.Core.UI.View.SetProtectedChild<Xui.Core.UI.View> }
+ → Method { Identity = Xui.Core.UI.View.RemoveProtectedChild }
+ → Method { Identity = Xui.Core.UI.View.DeactivateSubtree }
+ → VirtualCall { Identity = Xui.Core.UI.View.OnDeactivate }
+ → Method { Identity = Xui.Core.UI.ScrollView.OnDeactivate }
+ → Method { Identity = Xui.Core.UI.View.ReleasePointer }
+ → Method { Identity = Xui.Core.UI.Input.EventRouter.ReleasePointer }
+ → VirtualCall { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryGetValue }
+ → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.TryGetValue }
+ → Method { Identity = System.Collections.Generic.Dictionary<Int32, PointerTracking>.FindValue }
 ```
 
 This probe injects a Canvas-only catalogue into the real MobileTestAppShell. It retains the real home/header, rating controls, navigation, and mobile page wrapper. The full-menu probe remains separate and includes optional async/GPU/resource showcases. This is not an execution claim.

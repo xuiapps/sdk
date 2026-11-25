@@ -49,9 +49,11 @@ The next sequence is:
    TargetInvocationException wrapping. The header’s Int32.ToString now produces native
    JS strings, including direct InvariantCulture calls. GetType().Name now uses
    existing runtime descriptors, and example IDs now concatenate native JS strings.
-   Typeof-based service lookup now executes with interface dispatch. The next browser
-   probe blocker is List<View> index guards pulling in BCL exception resources;
-   then continue through the window and service paths.
+   Typeof-based service lookup now executes with interface dispatch. The browser
+   resource boundary now reads neutral message strings from supplied BCL resources
+   and emits only requested literals. Dependency discovery next reaches Int32 default
+   hashing in EventRouter’s Dictionary; BCL helper switches still need emission support.
+   Continue through the window and service paths.
 2. Re-run the full-shell probe; implement reachable static initialization and
    collections as their actual dependencies appear.
 3. Supply service/type lookup and a persistent Actual window, then connect the real

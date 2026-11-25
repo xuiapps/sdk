@@ -80,6 +80,12 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("String.Concat"), node, DependencyReason.Call, offset);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ResourceString.Read(module, token) is { } resourceText)
+                    {
+                        Add(new Dependency.Intrinsic("BCL.ResourceString"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Literal(resourceText), node, DependencyReason.Literal, offset);
+                        break;
+                    }
                     if (invariantFormatting.ContainsKey(offset))
                     {
                         Add(new Dependency.Intrinsic("Int32.ToString.InvariantCulture"), node, DependencyReason.Call, offset);

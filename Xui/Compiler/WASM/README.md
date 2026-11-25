@@ -330,6 +330,17 @@ handlers forward foreign host exceptions too; managed catches match our tag only
 Rethrow preserves the original exception reference. See the
 [failed-cast demo](../Tests/Wasm/Exceptions/Snapshots/Casts.md).
 
+BCL resource strings come from the supplied implementation PE. XuiNet exposes borrowed
+manifest resource declarations and embedded-data readers, plus string-only `.resources`
+lookup. For trusted `System.SR` getters whose IL is exactly a constant key followed by
+`GetResourceString` and `ret`, compilation reads the neutral resource table and emits
+only the requested text as an ordinary cached UTF-16/JS string literal. Messages are
+not copied into a compiler-maintained list. This avoids retaining ResourceManager,
+culture probing, and the complete resource table in WASM. Linked resources, dynamic
+keys, satellite cultures, and runtime culture/resource-key switching remain unsupported.
+The surrounding BCL exception helpers still compile as ordinary IL and require the
+same opcode coverage as other methods, including their switches.
+
 The managed payload is a GC struct containing a nominal exception kind and a
 native JavaScript message string, with a parameter-name slot when needed.
 Recognized framework references are `Exception`, `SystemException`,
@@ -348,7 +359,7 @@ SystemException, and Exception. CLR/Node tests cover Debug and Release, with and
 without linked framework implementation PEs.
 `throw null` throws `NullReferenceException`. Default messages are English;
 cast failures use the default message rather than CLR-generated runtime type names.
-Filters, custom exception subclasses, inner exceptions, managed stack traces, and
+Filters, custom exception subclasses, managed stack traces, and
 protected regions with multiple normal continuations remain unsupported. This is
 an explicit intrinsic exception surface, not the full BCL exception implementation.
 WASM traps are not converted to managed exceptions; currently emitted null and

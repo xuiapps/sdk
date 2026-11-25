@@ -8,7 +8,8 @@ internal static class Roslyn
 {
     public static byte[] Compile(string source, OutputKind outputKind = OutputKind.ConsoleApplication,
         string assemblyName = "HelloWorld", OptimizationLevel optimizationLevel = OptimizationLevel.Release,
-        IEnumerable<MetadataReference>? additionalReferences = null, IEnumerable<string>? additionalSources = null)
+        IEnumerable<MetadataReference>? additionalReferences = null, IEnumerable<string>? additionalSources = null,
+        IEnumerable<ResourceDescription>? resources = null)
     {
         var references = new[]
         {
@@ -30,7 +31,7 @@ internal static class Roslyn
         );
 
         using var pe = new MemoryStream();
-        var result = compilation.Emit(pe);
+        var result = compilation.Emit(pe, manifestResources: resources);
         if (!result.Success)
         {
             throw new InvalidOperationException(string.Join("\n", result.Diagnostics));

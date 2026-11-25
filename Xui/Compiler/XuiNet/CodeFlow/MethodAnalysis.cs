@@ -384,6 +384,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 StackEntry.From(managedType.Signature.Result));
         else if (Model.Intrinsics.StringConcatenation.Read(module, handle) is { } concat)
             signature = new(concat.Signature.Parameters.ToArray(), StackType.String);
+        else if (Model.Intrinsics.ResourceString.Read(module, handle) is not null)
+            signature = new([], StackType.String);
         else if (Model.Intrinsics.Int32Formatting.Is(module, handle))
             signature = new([new(SignatureTypeCode.Int32, IsByReference: true)], StackType.String);
         else if (Model.Intrinsics.ConstructorFactory.Read(module, handle, context.Arguments, methodArguments) is { } constructor)
