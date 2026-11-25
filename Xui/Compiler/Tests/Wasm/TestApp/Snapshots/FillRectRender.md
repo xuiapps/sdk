@@ -489,7 +489,7 @@ public class FillRectTest : View, ICanvasDrawingExample
   (type (;39;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32))))
   (type (;40;) (struct (field (mut i32)) (field (mut f32)) (field (mut f32))))
   (type (;41;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32))))
-  (type (;42;) (struct (field (mut i32)) (field (mut i32))))
+  (type (;42;) (struct (field (mut eqref)) (field (mut i32)) (field (mut i32))))
   (type (;43;) (struct (field (mut i32)) (field (mut f32))))
   (type (;44;) (struct (field (mut f32))))
   (type (;45;) (struct (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut f32))))
@@ -17402,10 +17402,10 @@ public class FillRectTest : View, ICanvasDrawingExample
     local.set 2
     local.get 2
     i32.const 0
-    i32.const 8
+    i32.const 12
     memory.fill
     local.get 50
-    i32.const 8
+    i32.const 12
     i32.add
     local.set 3
     local.get 3
@@ -17413,7 +17413,7 @@ public class FillRectTest : View, ICanvasDrawingExample
     i32.const 8
     memory.fill
     local.get 50
-    i32.const 16
+    i32.const 20
     i32.add
     local.set 4
     local.get 4
@@ -17421,7 +17421,7 @@ public class FillRectTest : View, ICanvasDrawingExample
     i32.const 12
     memory.fill
     local.get 50
-    i32.const 28
+    i32.const 32
     i32.add
     local.set 5
     local.get 5
@@ -17429,7 +17429,7 @@ public class FillRectTest : View, ICanvasDrawingExample
     i32.const 8
     memory.fill
     local.get 50
-    i32.const 36
+    i32.const 40
     i32.add
     local.set 6
     local.get 6
@@ -17438,20 +17438,34 @@ public class FillRectTest : View, ICanvasDrawingExample
     memory.fill
     global.get 28
     local.tee 47
-    i32.const 65535
+    i32.const 65533
     i32.gt_u
     if ;; label = @1
       unreachable
     end
     local.get 47
-    i32.const 1
+    i32.const 3
     i32.add
     global.set 28
     local.get 50
-    i32.const 120
+    i32.const 0
     i32.add
     local.get 47
     i32.const 0
+    i32.add
+    i32.store align=1
+    local.get 50
+    i32.const 48
+    i32.add
+    local.get 47
+    i32.const 1
+    i32.add
+    i32.store align=1
+    local.get 50
+    i32.const 128
+    i32.add
+    local.get 47
+    i32.const 2
     i32.add
     i32.store align=1
     block (type 7) (result exnref) ;; label = @1
@@ -17738,13 +17752,14 @@ public class FillRectTest : View, ICanvasDrawingExample
           local.get 8
           i32.const 0
           i32.add
+          i32.load align=1
         else
           local.get 8
           i32.const 0
           i32.add
         end
-        i32.const 0
-        call 147
+        ref.null eq
+        call 135
         local.get 7
         ref.is_null
         local.get 8
@@ -17782,16 +17797,81 @@ public class FillRectTest : View, ICanvasDrawingExample
         end
         i32.const 0
         call 147
+        local.get 7
+        ref.is_null
+        local.get 8
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 23
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 23
+            i32.const 0
+            i32.const 53
+            call 1
+            global.set 23
+          end
+          global.get 23
+          struct.new 3
+          throw 0
+        end
+        local.get 7
+        local.get 7
+        ref.is_null
+        if (type 59) (result i32) ;; label = @3
+          local.get 8
+          i32.const 8
+          i32.add
+        else
+          local.get 8
+          i32.const 2
+          i32.add
+        end
+        i32.const 0
+        call 147
         local.get 2
         local.set 51
         local.get 50
-        i32.const 44
+        i32.const 48
         i32.add
         local.get 51
+        local.set 48
+        local.set 49
+        local.get 49
+        i32.const 0
+        i32.add
+        local.get 48
+        i32.const 0
+        i32.add
+        i32.load align=1
+        table.get 1
+        local.set 46
+        i32.load align=1
+        local.get 46
+        table.set 1
+        local.get 49
+        i32.const 4
+        i32.add
+        local.get 48
+        i32.const 4
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 49
         i32.const 8
-        memory.copy
+        i32.add
+        local.get 48
+        i32.const 8
+        i32.add
+        i32.load align=1
+        i32.store align=1
         local.get 50
-        i32.const 44
+        i32.const 48
         i32.add
         local.set 25
         local.set 24
@@ -17829,7 +17909,7 @@ public class FillRectTest : View, ICanvasDrawingExample
         local.get 1
         i32.const 255
         local.get 50
-        i32.const 52
+        i32.const 60
         i32.add
         call 86
         local.set 27
@@ -17868,7 +17948,7 @@ public class FillRectTest : View, ICanvasDrawingExample
         local.get 1
         i32.const -2139062017
         local.get 50
-        i32.const 68
+        i32.const 76
         i32.add
         call 86
         local.set 29
@@ -18026,13 +18106,13 @@ public class FillRectTest : View, ICanvasDrawingExample
         local.get 3
         local.set 51
         local.get 50
-        i32.const 84
+        i32.const 92
         i32.add
         local.get 51
         i32.const 8
         memory.copy
         local.get 50
-        i32.const 84
+        i32.const 92
         i32.add
         local.get 4
         local.set 8
@@ -18214,13 +18294,13 @@ public class FillRectTest : View, ICanvasDrawingExample
         local.get 4
         local.set 51
         local.get 50
-        i32.const 92
+        i32.const 100
         i32.add
         local.get 51
         i32.const 12
         memory.copy
         local.get 50
-        i32.const 92
+        i32.const 100
         i32.add
         local.get 5
         local.set 8
@@ -18328,13 +18408,13 @@ public class FillRectTest : View, ICanvasDrawingExample
         local.get 5
         local.set 51
         local.get 50
-        i32.const 104
+        i32.const 112
         i32.add
         local.get 51
         i32.const 8
         memory.copy
         local.get 50
-        i32.const 104
+        i32.const 112
         i32.add
         local.get 6
         local.set 8
@@ -18442,13 +18522,13 @@ public class FillRectTest : View, ICanvasDrawingExample
         local.get 6
         local.set 51
         local.get 50
-        i32.const 112
+        i32.const 120
         i32.add
         local.get 51
         i32.const 8
         memory.copy
         local.get 50
-        i32.const 112
+        i32.const 120
         i32.add
         local.set 36
         local.set 35
@@ -18458,7 +18538,7 @@ public class FillRectTest : View, ICanvasDrawingExample
         f32.demote_f64
         local.set 31
         local.get 50
-        i32.const 120
+        i32.const 128
         i32.add
         local.set 49
         local.get 49
@@ -18507,7 +18587,7 @@ public class FillRectTest : View, ICanvasDrawingExample
         ref.null eq
         local.set 30
         local.get 50
-        i32.const 120
+        i32.const 128
         i32.add
         local.set 37
         local.get 30
@@ -18520,7 +18600,7 @@ public class FillRectTest : View, ICanvasDrawingExample
         local.get 37
         call 87
         local.get 50
-        i32.const 120
+        i32.const 128
         i32.add
         local.set 39
         local.set 38
@@ -18659,11 +18739,11 @@ public class FillRectTest : View, ICanvasDrawingExample
         call_indirect (type 273)
         local.get 47
         ref.null eq
-        i32.const 1
+        i32.const 3
         table.fill 1
         local.get 47
         ref.null extern
-        i32.const 1
+        i32.const 3
         table.fill 2
         local.get 47
         global.set 28
@@ -18677,11 +18757,11 @@ public class FillRectTest : View, ICanvasDrawingExample
     local.set 45
     local.get 47
     ref.null eq
-    i32.const 1
+    i32.const 3
     table.fill 1
     local.get 47
     ref.null extern
-    i32.const 1
+    i32.const 3
     table.fill 2
     local.get 47
     global.set 28
@@ -20537,12 +20617,58 @@ public class FillRectTest : View, ICanvasDrawingExample
     i32.const 16
     i32.add
     global.set 27
+    global.get 28
+    local.tee 8
+    i32.const 65535
+    i32.gt_u
+    if ;; label = @1
+      unreachable
+    end
+    local.get 8
+    i32.const 1
+    i32.add
+    global.set 28
+    local.get 11
+    i32.const 0
+    i32.add
+    local.get 8
+    i32.const 0
+    i32.add
+    i32.store align=1
     local.get 11
     i32.const 0
     i32.add
     local.get 1
+    local.set 9
+    local.set 10
+    local.get 10
+    i32.const 0
+    i32.add
+    local.get 9
+    i32.const 0
+    i32.add
+    i32.load align=1
+    table.get 1
+    local.set 7
+    i32.load align=1
+    local.get 7
+    table.set 1
+    local.get 10
+    i32.const 4
+    i32.add
+    local.get 9
+    i32.const 4
+    i32.add
+    i32.load align=1
+    i32.store align=1
+    local.get 10
     i32.const 8
-    memory.copy
+    i32.add
+    local.get 9
+    i32.const 8
+    i32.add
+    i32.load align=1
+    i32.store align=1
     local.get 11
     i32.const 0
     i32.add
@@ -20585,7 +20711,7 @@ public class FillRectTest : View, ICanvasDrawingExample
           unreachable
         end
         local.get 3
-        i32.const 4
+        i32.const 8
         i32.add
         i32.load align=1
         i32.eqz
@@ -20619,6 +20745,16 @@ public class FillRectTest : View, ICanvasDrawingExample
           end
           global.get 1
           call 0
+          local.get 8
+          ref.null eq
+          i32.const 1
+          table.fill 1
+          local.get 8
+          ref.null extern
+          i32.const 1
+          table.fill 2
+          local.get 8
+          global.set 28
           local.get 11
           global.set 27
           return
@@ -20684,6 +20820,16 @@ public class FillRectTest : View, ICanvasDrawingExample
       unreachable
     end
     local.set 6
+    local.get 8
+    ref.null eq
+    i32.const 1
+    table.fill 1
+    local.get 8
+    ref.null extern
+    i32.const 1
+    table.fill 2
+    local.get 8
+    global.set 28
     local.get 11
     global.set 27
     local.get 6

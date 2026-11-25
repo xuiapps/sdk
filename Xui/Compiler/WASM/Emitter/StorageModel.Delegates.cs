@@ -1,4 +1,5 @@
 using System.Reflection.Metadata;
+using Xui.Compiler.WASM.Wasm.Section;
 using Xui.Compiler.XuiNet.DotNet;
 using Xui.Compiler.WASM.Wasm.Section.TypeDefinitions;
 using TypeWriter = Xui.Compiler.WASM.Wasm.Section.TypeDefinitions.Writer;
@@ -31,6 +32,8 @@ internal sealed partial class StorageModel
             DelegateTargets.Add(identity, target);
         }
         if (methods.Values.Any(m => m.IsDelegateInvoke) && TableSize == 0) TableSize = 1;
+        if (DelegatesEnabled && TableSize > 10000)
+            DelegateMethodChunksType = writer.ArrayType(ValueTypeCode.EqRef, Mutability.Immutable);
     }
 
     public static void EmitDelegateAdapter(BodyWriter writer, DelegateTarget target)

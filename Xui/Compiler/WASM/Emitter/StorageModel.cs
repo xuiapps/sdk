@@ -123,8 +123,9 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
         if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity))
         {
             var span = new GcShape(identity);
-            span.Leaves.Add(new(new(SignatureTypeCode.Int32), 0));
+            span.Leaves.Add(new(new(SignatureTypeCode.Object, UsesGc: true), 0));
             span.Leaves.Add(new(new(SignatureTypeCode.Int32), 4));
+            span.Leaves.Add(new(new(SignatureTypeCode.Int32), 8));
             shapes.Add(identity, span);
             return span;
         }

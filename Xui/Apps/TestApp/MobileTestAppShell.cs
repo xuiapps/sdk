@@ -18,9 +18,13 @@ public sealed class MobileTestAppShell : View, IFullScreenView
 
     /// <summary>Creates the real mobile shell with a host-selected demo catalogue.</summary>
     public MobileTestAppShell(MobilePerformanceMetrics performanceMetrics, View demoMenu)
+        : this(performanceMetrics, demoMenu, new MobilePerformanceOverlay(performanceMetrics)) { }
+
+    /// <summary>Creates the shell with a host-selected diagnostics surface; null omits the optional overlay.</summary>
+    public MobileTestAppShell(MobilePerformanceMetrics performanceMetrics, View demoMenu, View? diagnosticsOverlay)
     {
         ArgumentNullException.ThrowIfNull(demoMenu);
-        navigation = new MobileNavigation(new MobileHomePage(performanceMetrics.FrameRate, demoMenu), performanceMetrics);
+        navigation = new MobileNavigation(new MobileHomePage(performanceMetrics.FrameRate, demoMenu), performanceMetrics, diagnosticsOverlay);
         this.AddProtectedChild(navigation);
     }
 

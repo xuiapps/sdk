@@ -68,10 +68,10 @@ The browser holds one opaque managed session, schedules frames only after invali
   (type (;40;) (struct (field (mut i32))))
   (type (;41;) (struct (field (mut i32))))
   (type (;42;) (struct (field (mut i32))))
-  (type (;43;) (struct (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i64)) (field (mut i32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut eqref))))
-  (type (;44;) (struct (field (mut i32)) (field (mut i32))))
+  (type (;43;) (struct (field (mut eqref)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i64)) (field (mut i32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut eqref)) (field (mut i32)) (field (mut i32)) (field (mut eqref)) (field (mut i32)) (field (mut i32)) (field (mut eqref))))
+  (type (;44;) (struct (field (mut eqref)) (field (mut i32)) (field (mut i32))))
   (type (;45;) (struct (field (mut i32))))
-  (type (;46;) (struct (field (mut i32)) (field (mut i32))))
+  (type (;46;) (struct (field (mut eqref)) (field (mut i32)) (field (mut i32))))
   (type (;47;) (struct (field (mut i64))))
   (type (;48;) (struct (field (mut i64)) (field (mut i64)) (field (mut eqref)) (field (mut eqref)) (field (mut eqref))))
   (type (;49;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32))))
@@ -85,7 +85,7 @@ The browser holds one opaque managed session, schedules frames only after invali
   (type (;57;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut i32))))
   (type (;58;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32))))
   (type (;59;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32))))
-  (type (;60;) (struct (field (mut i32)) (field (mut i32))))
+  (type (;60;) (struct (field (mut eqref)) (field (mut i32)) (field (mut i32))))
   (type (;61;) (struct (field (mut i32)) (field (mut f32))))
   (type (;62;) (struct (field (mut f32))))
   (type (;63;) (struct (field (mut i32)) (field (mut i32)) (field (mut i32)) (field (mut f32))))
@@ -2427,13 +2427,13 @@ The browser holds one opaque managed session, schedules frames only after invali
     (local i32 i32 i32 eqref i32 eqref i32 f32 i32 i64 f64 externref eqref f32 f32 i32 eqref f32 f32 i32 eqref i32 i32 f32 f32 i32 f32 f32 f32 i32 i32 i32 i32 eqref i32 i32 i64 i32 i32 i32 i32 eqref i32 eqref eqref i32 i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 34
     local.tee 58
-    i32.const 1048288
+    i32.const 1048272
     i32.gt_u
     if ;; label = @1
       unreachable
     end
     local.get 58
-    i32.const 288
+    i32.const 304
     i32.add
     global.set 34
     local.get 58
@@ -2450,32 +2450,74 @@ The browser holds one opaque managed session, schedules frames only after invali
     local.set 7
     local.get 7
     i32.const 0
-    i32.const 112
+    i32.const 120
     memory.fill
     local.get 58
-    i32.const 168
+    i32.const 176
     i32.add
     local.set 8
     local.get 8
     i32.const 0
-    i32.const 8
+    i32.const 12
     memory.fill
     global.get 35
     local.tee 55
-    i32.const 65535
+    i32.const 65529
     i32.gt_u
     if ;; label = @1
       unreachable
     end
     local.get 55
-    i32.const 1
+    i32.const 7
     i32.add
     global.set 35
     local.get 58
-    i32.const 160
+    i32.const 56
     i32.add
     local.get 55
     i32.const 0
+    i32.add
+    i32.store align=1
+    local.get 58
+    i32.const 144
+    i32.add
+    local.get 55
+    i32.const 1
+    i32.add
+    i32.store align=1
+    local.get 58
+    i32.const 156
+    i32.add
+    local.get 55
+    i32.const 2
+    i32.add
+    i32.store align=1
+    local.get 58
+    i32.const 168
+    i32.add
+    local.get 55
+    i32.const 3
+    i32.add
+    i32.store align=1
+    local.get 58
+    i32.const 176
+    i32.add
+    local.get 55
+    i32.const 4
+    i32.add
+    i32.store align=1
+    local.get 58
+    i32.const 280
+    i32.add
+    local.get 55
+    i32.const 5
+    i32.add
+    i32.store align=1
+    local.get 58
+    i32.const 292
+    i32.add
+    local.get 55
+    i32.const 6
     i32.add
     i32.store align=1
     block (type 7) (result exnref) ;; label = @1
@@ -2752,11 +2794,11 @@ The browser holds one opaque managed session, schedules frames only after invali
               i32.const 0
               local.get 55
               ref.null eq
-              i32.const 1
+              i32.const 7
               table.fill 1
               local.get 55
               ref.null extern
-              i32.const 1
+              i32.const 7
               table.fill 2
               local.get 55
               global.set 35
@@ -2795,11 +2837,11 @@ The browser holds one opaque managed session, schedules frames only after invali
               i32.const 0
               local.get 55
               ref.null eq
-              i32.const 1
+              i32.const 7
               table.fill 1
               local.get 55
               ref.null extern
-              i32.const 1
+              i32.const 7
               table.fill 2
               local.get 55
               global.set 35
@@ -2814,11 +2856,11 @@ The browser holds one opaque managed session, schedules frames only after invali
                 i32.const 0
                 local.get 55
                 ref.null eq
-                i32.const 1
+                i32.const 7
                 table.fill 1
                 local.get 55
                 ref.null extern
-                i32.const 1
+                i32.const 7
                 table.fill 2
                 local.get 55
                 global.set 35
@@ -2833,11 +2875,11 @@ The browser holds one opaque managed session, schedules frames only after invali
                   i32.const 0
                   local.get 55
                   ref.null eq
-                  i32.const 1
+                  i32.const 7
                   table.fill 1
                   local.get 55
                   ref.null extern
-                  i32.const 1
+                  i32.const 7
                   table.fill 2
                   local.get 55
                   global.set 35
@@ -2852,11 +2894,11 @@ The browser holds one opaque managed session, schedules frames only after invali
                     i32.const 0
                     local.get 55
                     ref.null eq
-                    i32.const 1
+                    i32.const 7
                     table.fill 1
                     local.get 55
                     ref.null extern
-                    i32.const 1
+                    i32.const 7
                     table.fill 2
                     local.get 55
                     global.set 35
@@ -2902,11 +2944,11 @@ The browser holds one opaque managed session, schedules frames only after invali
                       i32.const 0
                       local.get 55
                       ref.null eq
-                      i32.const 1
+                      i32.const 7
                       table.fill 1
                       local.get 55
                       ref.null extern
-                      i32.const 1
+                      i32.const 7
                       table.fill 2
                       local.get 55
                       global.set 35
@@ -2934,7 +2976,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           f32.demote_f64
           local.set 19
           local.get 58
-          i32.const 176
+          i32.const 188
           i32.add
           i32.const 0
           i32.const 8
@@ -2942,7 +2984,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           ref.null eq
           local.set 18
           local.get 58
-          i32.const 176
+          i32.const 188
           i32.add
           local.set 21
           local.get 18
@@ -2951,7 +2993,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           local.get 21
           call 29
           local.get 58
-          i32.const 176
+          i32.const 188
           i32.add
           i32.const 1
           f32.convert_i32_s
@@ -2964,7 +3006,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           f32.demote_f64
           local.set 23
           local.get 58
-          i32.const 184
+          i32.const 196
           i32.add
           i32.const 0
           i32.const 8
@@ -2972,7 +3014,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           ref.null eq
           local.set 22
           local.get 58
-          i32.const 184
+          i32.const 196
           i32.add
           local.set 25
           local.get 22
@@ -2981,10 +3023,10 @@ The browser holds one opaque managed session, schedules frames only after invali
           local.get 25
           call 19
           local.get 58
-          i32.const 184
+          i32.const 196
           i32.add
           local.get 58
-          i32.const 192
+          i32.const 204
           i32.add
           call 20
           local.get 5
@@ -3004,7 +3046,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           f32.demote_f64
           local.set 23
           local.get 58
-          i32.const 200
+          i32.const 212
           i32.add
           i32.const 0
           i32.const 8
@@ -3012,7 +3054,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           ref.null eq
           local.set 22
           local.get 58
-          i32.const 200
+          i32.const 212
           i32.add
           local.set 25
           local.get 22
@@ -3021,10 +3063,10 @@ The browser holds one opaque managed session, schedules frames only after invali
           local.get 25
           call 19
           local.get 58
-          i32.const 200
+          i32.const 212
           i32.add
           local.get 58
-          i32.const 208
+          i32.const 220
           i32.add
           call 30
           i32.const 0
@@ -3099,13 +3141,13 @@ The browser holds one opaque managed session, schedules frames only after invali
           local.get 6
           local.set 59
           local.get 58
-          i32.const 216
+          i32.const 228
           i32.add
           local.get 59
           i32.const 52
           memory.copy
           local.get 58
-          i32.const 216
+          i32.const 228
           i32.add
           local.get 8
           local.set 10
@@ -3166,13 +3208,14 @@ The browser holds one opaque managed session, schedules frames only after invali
             local.get 10
             i32.const 0
             i32.add
+            i32.load align=1
           else
             local.get 10
             i32.const 0
             i32.add
           end
-          i32.const 0
-          call 216
+          ref.null eq
+          call 210
           local.get 9
           ref.is_null
           local.get 10
@@ -3210,16 +3253,81 @@ The browser holds one opaque managed session, schedules frames only after invali
           end
           i32.const 0
           call 216
+          local.get 9
+          ref.is_null
+          local.get 10
+          i32.const -1
+          i32.eq
+          i32.and
+          if ;; label = @4
+            i32.const 4
+            global.get 30
+            ref.is_null
+            if ;; label = @5
+              i32.const 0
+              i32.const 53
+              array.new_data 0 30
+              i32.const 0
+              i32.const 53
+              call 1
+              global.set 30
+            end
+            global.get 30
+            struct.new 3
+            throw 0
+          end
+          local.get 9
+          local.get 9
+          ref.is_null
+          if (type 76) (result i32) ;; label = @4
+            local.get 10
+            i32.const 8
+            i32.add
+          else
+            local.get 10
+            i32.const 2
+            i32.add
+          end
+          i32.const 0
+          call 216
           local.get 8
           local.set 59
           local.get 58
-          i32.const 268
+          i32.const 280
           i32.add
           local.get 59
+          local.set 56
+          local.set 57
+          local.get 57
+          i32.const 0
+          i32.add
+          local.get 56
+          i32.const 0
+          i32.add
+          i32.load align=1
+          table.get 1
+          local.set 54
+          i32.load align=1
+          local.get 54
+          table.set 1
+          local.get 57
+          i32.const 4
+          i32.add
+          local.get 56
+          i32.const 4
+          i32.add
+          i32.load align=1
+          i32.store align=1
+          local.get 57
           i32.const 8
-          memory.copy
+          i32.add
+          local.get 56
+          i32.const 8
+          i32.add
+          i32.load align=1
+          i32.store align=1
           local.get 58
-          i32.const 268
+          i32.const 280
           i32.add
           local.get 8
           local.set 10
@@ -3280,13 +3388,14 @@ The browser holds one opaque managed session, schedules frames only after invali
             local.get 10
             i32.const 0
             i32.add
+            i32.load align=1
           else
             local.get 10
             i32.const 0
             i32.add
           end
-          i32.const 0
-          call 216
+          ref.null eq
+          call 210
           local.get 9
           ref.is_null
           local.get 10
@@ -3324,16 +3433,81 @@ The browser holds one opaque managed session, schedules frames only after invali
           end
           i32.const 0
           call 216
+          local.get 9
+          ref.is_null
+          local.get 10
+          i32.const -1
+          i32.eq
+          i32.and
+          if ;; label = @4
+            i32.const 4
+            global.get 30
+            ref.is_null
+            if ;; label = @5
+              i32.const 0
+              i32.const 53
+              array.new_data 0 30
+              i32.const 0
+              i32.const 53
+              call 1
+              global.set 30
+            end
+            global.get 30
+            struct.new 3
+            throw 0
+          end
+          local.get 9
+          local.get 9
+          ref.is_null
+          if (type 76) (result i32) ;; label = @4
+            local.get 10
+            i32.const 8
+            i32.add
+          else
+            local.get 10
+            i32.const 2
+            i32.add
+          end
+          i32.const 0
+          call 216
           local.get 8
           local.set 59
           local.get 58
-          i32.const 276
+          i32.const 292
           i32.add
           local.get 59
+          local.set 56
+          local.set 57
+          local.get 57
+          i32.const 0
+          i32.add
+          local.get 56
+          i32.const 0
+          i32.add
+          i32.load align=1
+          table.get 1
+          local.set 54
+          i32.load align=1
+          local.get 54
+          table.set 1
+          local.get 57
+          i32.const 4
+          i32.add
+          local.get 56
+          i32.const 4
+          i32.add
+          i32.load align=1
+          i32.store align=1
+          local.get 57
           i32.const 8
-          memory.copy
+          i32.add
+          local.get 56
+          i32.const 8
+          i32.add
+          i32.load align=1
+          i32.store align=1
           local.get 58
-          i32.const 276
+          i32.const 292
           i32.add
           local.get 0
           local.tee 64
@@ -3513,11 +3687,11 @@ The browser holds one opaque managed session, schedules frames only after invali
               i32.const 1
               local.get 55
               ref.null eq
-              i32.const 1
+              i32.const 7
               table.fill 1
               local.get 55
               ref.null extern
-              i32.const 1
+              i32.const 7
               table.fill 2
               local.get 55
               global.set 35
@@ -3590,11 +3764,11 @@ The browser holds one opaque managed session, schedules frames only after invali
           i32.const 1
           local.get 55
           ref.null eq
-          i32.const 1
+          i32.const 7
           table.fill 1
           local.get 55
           ref.null extern
-          i32.const 1
+          i32.const 7
           table.fill 2
           local.get 55
           global.set 35
@@ -3605,11 +3779,11 @@ The browser holds one opaque managed session, schedules frames only after invali
           i32.const 0
           local.get 55
           ref.null eq
-          i32.const 1
+          i32.const 7
           table.fill 1
           local.get 55
           ref.null extern
-          i32.const 1
+          i32.const 7
           table.fill 2
           local.get 55
           global.set 35
@@ -3625,11 +3799,11 @@ The browser holds one opaque managed session, schedules frames only after invali
     local.set 53
     local.get 55
     ref.null eq
-    i32.const 1
+    i32.const 7
     table.fill 1
     local.get 55
     ref.null extern
-    i32.const 1
+    i32.const 7
     table.fill 2
     local.get 55
     global.set 35
@@ -9842,15 +10016,54 @@ The browser holds one opaque managed session, schedules frames only after invali
     (local eqref i32 eqref i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 34
     local.tee 19
-    i32.const 1048432
+    i32.const 1048416
     i32.gt_u
     if ;; label = @1
       unreachable
     end
     local.get 19
-    i32.const 144
+    i32.const 160
     i32.add
     global.set 34
+    global.get 35
+    local.tee 16
+    i32.const 65532
+    i32.gt_u
+    if ;; label = @1
+      unreachable
+    end
+    local.get 16
+    i32.const 4
+    i32.add
+    global.set 35
+    local.get 19
+    i32.const 52
+    i32.add
+    local.get 16
+    i32.const 0
+    i32.add
+    i32.store align=1
+    local.get 19
+    i32.const 64
+    i32.add
+    local.get 16
+    i32.const 1
+    i32.add
+    i32.store align=1
+    local.get 19
+    i32.const 128
+    i32.add
+    local.get 16
+    i32.const 2
+    i32.add
+    i32.store align=1
+    local.get 19
+    i32.const 140
+    i32.add
+    local.get 16
+    i32.const 3
+    i32.add
+    i32.store align=1
     local.get 19
     i32.const 0
     i32.add
@@ -9865,20 +10078,76 @@ The browser holds one opaque managed session, schedules frames only after invali
     i32.const 52
     i32.add
     local.get 6
+    local.set 17
+    local.set 18
+    local.get 18
+    i32.const 0
+    i32.add
+    local.get 17
+    i32.const 0
+    i32.add
+    i32.load align=1
+    table.get 1
+    local.set 15
+    i32.load align=1
+    local.get 15
+    table.set 1
+    local.get 18
+    i32.const 4
+    i32.add
+    local.get 17
+    i32.const 4
+    i32.add
+    i32.load align=1
+    i32.store align=1
+    local.get 18
     i32.const 8
-    memory.copy
+    i32.add
+    local.get 17
+    i32.const 8
+    i32.add
+    i32.load align=1
+    i32.store align=1
     local.get 19
     i32.const 52
     i32.add
     local.set 6
     local.get 19
-    i32.const 60
+    i32.const 64
     i32.add
     local.get 7
+    local.set 17
+    local.set 18
+    local.get 18
+    i32.const 0
+    i32.add
+    local.get 17
+    i32.const 0
+    i32.add
+    i32.load align=1
+    table.get 1
+    local.set 15
+    i32.load align=1
+    local.get 15
+    table.set 1
+    local.get 18
+    i32.const 4
+    i32.add
+    local.get 17
+    i32.const 4
+    i32.add
+    i32.load align=1
+    i32.store align=1
+    local.get 18
     i32.const 8
-    memory.copy
+    i32.add
+    local.get 17
+    i32.const 8
+    i32.add
+    i32.load align=1
+    i32.store align=1
     local.get 19
-    i32.const 60
+    i32.const 64
     i32.add
     local.set 7
     block (type 7) (result exnref) ;; label = @1
@@ -9977,13 +10246,14 @@ The browser holds one opaque managed session, schedules frames only after invali
           local.get 11
           i32.const 0
           i32.add
+          i32.load align=1
         else
           local.get 11
           i32.const 0
           i32.add
         end
-        i32.const 0
-        call 216
+        ref.null eq
+        call 210
         local.get 10
         ref.is_null
         local.get 11
@@ -10021,12 +10291,6 @@ The browser holds one opaque managed session, schedules frames only after invali
         end
         i32.const 0
         call 216
-        local.get 0
-        local.get 9
-        i32.const 0
-        local.set 26
-        local.set 11
-        local.set 10
         local.get 10
         ref.is_null
         local.get 11
@@ -10062,13 +10326,11 @@ The browser holds one opaque managed session, schedules frames only after invali
           i32.const 2
           i32.add
         end
-        local.get 26
-        i32.const 255
-        i32.and
-        call 220
+        i32.const 0
+        call 216
         local.get 0
         local.get 9
-        local.get 1
+        i32.const 0
         local.set 26
         local.set 11
         local.set 10
@@ -10108,10 +10370,12 @@ The browser holds one opaque managed session, schedules frames only after invali
           i32.add
         end
         local.get 26
-        call 216
+        i32.const 255
+        i32.and
+        call 220
         local.get 0
         local.get 9
-        local.get 2
+        local.get 1
         local.set 26
         local.set 11
         local.set 10
@@ -10154,6 +10418,49 @@ The browser holds one opaque managed session, schedules frames only after invali
         call 216
         local.get 0
         local.get 9
+        local.get 2
+        local.set 26
+        local.set 11
+        local.set 10
+        local.get 10
+        ref.is_null
+        local.get 11
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 30
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 30
+            i32.const 0
+            i32.const 53
+            call 1
+            global.set 30
+          end
+          global.get 30
+          struct.new 3
+          throw 0
+        end
+        local.get 10
+        local.get 10
+        ref.is_null
+        if (type 76) (result i32) ;; label = @3
+          local.get 11
+          i32.const 20
+          i32.add
+        else
+          local.get 11
+          i32.const 5
+          i32.add
+        end
+        local.get 26
+        call 216
+        local.get 0
+        local.get 9
         local.get 3
         local.set 27
         local.set 11
@@ -10190,7 +10497,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           i32.add
         else
           local.get 11
-          i32.const 5
+          i32.const 6
           i32.add
         end
         local.get 27
@@ -10233,7 +10540,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           i32.add
         else
           local.get 11
-          i32.const 6
+          i32.const 7
           i32.add
         end
         local.get 26
@@ -10245,13 +10552,13 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 5
         local.set 20
         local.get 19
-        i32.const 68
+        i32.const 76
         i32.add
         local.get 20
         i32.const 52
         memory.copy
         local.get 19
-        i32.const 68
+        i32.const 76
         i32.add
         local.set 26
         local.set 11
@@ -10288,7 +10595,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           i32.add
         else
           local.get 11
-          i32.const 7
+          i32.const 8
           i32.add
         end
         local.set 11
@@ -10858,13 +11165,41 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 6
         local.set 20
         local.get 19
-        i32.const 120
+        i32.const 128
         i32.add
         local.get 20
+        local.set 17
+        local.set 18
+        local.get 18
+        i32.const 0
+        i32.add
+        local.get 17
+        i32.const 0
+        i32.add
+        i32.load align=1
+        table.get 1
+        local.set 15
+        i32.load align=1
+        local.get 15
+        table.set 1
+        local.get 18
+        i32.const 4
+        i32.add
+        local.get 17
+        i32.const 4
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 18
         i32.const 8
-        memory.copy
+        i32.add
+        local.get 17
+        i32.const 8
+        i32.add
+        i32.load align=1
+        i32.store align=1
         local.get 19
-        i32.const 120
+        i32.const 128
         i32.add
         local.set 26
         local.set 11
@@ -10901,7 +11236,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           i32.add
         else
           local.get 11
-          i32.const 21
+          i32.const 22
           i32.add
         end
         local.set 11
@@ -10936,6 +11271,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           local.get 11
           i32.const 0
           i32.add
+          i32.load align=1
         else
           local.get 11
           i32.const 0
@@ -10945,7 +11281,8 @@ The browser holds one opaque managed session, schedules frames only after invali
         i32.const 0
         i32.add
         i32.load align=1
-        call 216
+        table.get 1
+        call 210
         local.get 10
         ref.is_null
         local.get 11
@@ -10986,18 +11323,86 @@ The browser holds one opaque managed session, schedules frames only after invali
         i32.add
         i32.load align=1
         call 216
+        local.get 10
+        ref.is_null
+        local.get 11
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 30
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 30
+            i32.const 0
+            i32.const 53
+            call 1
+            global.set 30
+          end
+          global.get 30
+          struct.new 3
+          throw 0
+        end
+        local.get 10
+        local.get 10
+        ref.is_null
+        if (type 76) (result i32) ;; label = @3
+          local.get 11
+          i32.const 8
+          i32.add
+        else
+          local.get 11
+          i32.const 2
+          i32.add
+        end
+        local.get 26
+        i32.const 8
+        i32.add
+        i32.load align=1
+        call 216
         local.get 0
         local.get 9
         local.get 7
         local.set 20
         local.get 19
-        i32.const 128
+        i32.const 140
         i32.add
         local.get 20
+        local.set 17
+        local.set 18
+        local.get 18
+        i32.const 0
+        i32.add
+        local.get 17
+        i32.const 0
+        i32.add
+        i32.load align=1
+        table.get 1
+        local.set 15
+        i32.load align=1
+        local.get 15
+        table.set 1
+        local.get 18
+        i32.const 4
+        i32.add
+        local.get 17
+        i32.const 4
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 18
         i32.const 8
-        memory.copy
+        i32.add
+        local.get 17
+        i32.const 8
+        i32.add
+        i32.load align=1
+        i32.store align=1
         local.get 19
-        i32.const 128
+        i32.const 140
         i32.add
         local.set 26
         local.set 11
@@ -11030,11 +11435,11 @@ The browser holds one opaque managed session, schedules frames only after invali
         ref.is_null
         if (type 76) (result i32) ;; label = @3
           local.get 11
-          i32.const 96
+          i32.const 100
           i32.add
         else
           local.get 11
-          i32.const 23
+          i32.const 25
           i32.add
         end
         local.set 11
@@ -11069,6 +11474,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           local.get 11
           i32.const 0
           i32.add
+          i32.load align=1
         else
           local.get 11
           i32.const 0
@@ -11078,7 +11484,8 @@ The browser holds one opaque managed session, schedules frames only after invali
         i32.const 0
         i32.add
         i32.load align=1
-        call 216
+        table.get 1
+        call 210
         local.get 10
         ref.is_null
         local.get 11
@@ -11116,6 +11523,46 @@ The browser holds one opaque managed session, schedules frames only after invali
         end
         local.get 26
         i32.const 4
+        i32.add
+        i32.load align=1
+        call 216
+        local.get 10
+        ref.is_null
+        local.get 11
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 30
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 30
+            i32.const 0
+            i32.const 53
+            call 1
+            global.set 30
+          end
+          global.get 30
+          struct.new 3
+          throw 0
+        end
+        local.get 10
+        local.get 10
+        ref.is_null
+        if (type 76) (result i32) ;; label = @3
+          local.get 11
+          i32.const 8
+          i32.add
+        else
+          local.get 11
+          i32.const 2
+          i32.add
+        end
+        local.get 26
+        i32.const 8
         i32.add
         i32.load align=1
         call 216
@@ -11153,16 +11600,26 @@ The browser holds one opaque managed session, schedules frames only after invali
         ref.is_null
         if (type 76) (result i32) ;; label = @3
           local.get 11
-          i32.const 104
+          i32.const 112
           i32.add
           i32.load align=1
         else
           local.get 11
-          i32.const 25
+          i32.const 28
           i32.add
         end
         local.get 24
         call 210
+        local.get 16
+        ref.null eq
+        i32.const 4
+        table.fill 1
+        local.get 16
+        ref.null extern
+        i32.const 4
+        table.fill 2
+        local.get 16
+        global.set 35
         local.get 19
         global.set 34
         return
@@ -11171,6 +11628,16 @@ The browser holds one opaque managed session, schedules frames only after invali
       unreachable
     end
     local.set 14
+    local.get 16
+    ref.null eq
+    i32.const 4
+    table.fill 1
+    local.get 16
+    ref.null extern
+    i32.const 4
+    table.fill 2
+    local.get 16
+    global.set 35
     local.get 19
     global.set 34
     local.get 14
@@ -22889,7 +23356,7 @@ The browser holds one opaque managed session, schedules frames only after invali
             i32.add
           else
             local.get 5
-            i32.const 7
+            i32.const 8
             i32.add
           end
           local.set 5
@@ -23032,7 +23499,7 @@ The browser holds one opaque managed session, schedules frames only after invali
             i32.add
           else
             local.get 5
-            i32.const 7
+            i32.const 8
             i32.add
           end
           local.set 5
@@ -23171,11 +23638,11 @@ The browser holds one opaque managed session, schedules frames only after invali
           ref.is_null
           if (type 76) (result i32) ;; label = @4
             local.get 5
-            i32.const 12
+            i32.const 16
             i32.add
           else
             local.get 5
-            i32.const 3
+            i32.const 4
             i32.add
           end
           call 215
@@ -23216,11 +23683,11 @@ The browser holds one opaque managed session, schedules frames only after invali
             ref.is_null
             if (type 76) (result i32) ;; label = @5
               local.get 5
-              i32.const 12
+              i32.const 16
               i32.add
             else
               local.get 5
-              i32.const 3
+              i32.const 4
               i32.add
             end
             call 215
@@ -36496,10 +36963,10 @@ The browser holds one opaque managed session, schedules frames only after invali
     local.set 2
     local.get 2
     i32.const 0
-    i32.const 8
+    i32.const 12
     memory.fill
     local.get 50
-    i32.const 8
+    i32.const 12
     i32.add
     local.set 3
     local.get 3
@@ -36507,7 +36974,7 @@ The browser holds one opaque managed session, schedules frames only after invali
     i32.const 8
     memory.fill
     local.get 50
-    i32.const 16
+    i32.const 20
     i32.add
     local.set 4
     local.get 4
@@ -36515,7 +36982,7 @@ The browser holds one opaque managed session, schedules frames only after invali
     i32.const 12
     memory.fill
     local.get 50
-    i32.const 28
+    i32.const 32
     i32.add
     local.set 5
     local.get 5
@@ -36523,7 +36990,7 @@ The browser holds one opaque managed session, schedules frames only after invali
     i32.const 8
     memory.fill
     local.get 50
-    i32.const 36
+    i32.const 40
     i32.add
     local.set 6
     local.get 6
@@ -36532,20 +36999,34 @@ The browser holds one opaque managed session, schedules frames only after invali
     memory.fill
     global.get 35
     local.tee 47
-    i32.const 65535
+    i32.const 65533
     i32.gt_u
     if ;; label = @1
       unreachable
     end
     local.get 47
-    i32.const 1
+    i32.const 3
     i32.add
     global.set 35
     local.get 50
-    i32.const 120
+    i32.const 0
     i32.add
     local.get 47
     i32.const 0
+    i32.add
+    i32.store align=1
+    local.get 50
+    i32.const 48
+    i32.add
+    local.get 47
+    i32.const 1
+    i32.add
+    i32.store align=1
+    local.get 50
+    i32.const 128
+    i32.add
+    local.get 47
+    i32.const 2
     i32.add
     i32.store align=1
     block (type 7) (result exnref) ;; label = @1
@@ -36832,13 +37313,14 @@ The browser holds one opaque managed session, schedules frames only after invali
           local.get 8
           i32.const 0
           i32.add
+          i32.load align=1
         else
           local.get 8
           i32.const 0
           i32.add
         end
-        i32.const 0
-        call 216
+        ref.null eq
+        call 210
         local.get 7
         ref.is_null
         local.get 8
@@ -36876,16 +37358,81 @@ The browser holds one opaque managed session, schedules frames only after invali
         end
         i32.const 0
         call 216
+        local.get 7
+        ref.is_null
+        local.get 8
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 30
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 30
+            i32.const 0
+            i32.const 53
+            call 1
+            global.set 30
+          end
+          global.get 30
+          struct.new 3
+          throw 0
+        end
+        local.get 7
+        local.get 7
+        ref.is_null
+        if (type 76) (result i32) ;; label = @3
+          local.get 8
+          i32.const 8
+          i32.add
+        else
+          local.get 8
+          i32.const 2
+          i32.add
+        end
+        i32.const 0
+        call 216
         local.get 2
         local.set 51
         local.get 50
-        i32.const 44
+        i32.const 48
         i32.add
         local.get 51
+        local.set 48
+        local.set 49
+        local.get 49
+        i32.const 0
+        i32.add
+        local.get 48
+        i32.const 0
+        i32.add
+        i32.load align=1
+        table.get 1
+        local.set 46
+        i32.load align=1
+        local.get 46
+        table.set 1
+        local.get 49
+        i32.const 4
+        i32.add
+        local.get 48
+        i32.const 4
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 49
         i32.const 8
-        memory.copy
+        i32.add
+        local.get 48
+        i32.const 8
+        i32.add
+        i32.load align=1
+        i32.store align=1
         local.get 50
-        i32.const 44
+        i32.const 48
         i32.add
         local.set 25
         local.set 24
@@ -36923,7 +37470,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 1
         i32.const 255
         local.get 50
-        i32.const 52
+        i32.const 60
         i32.add
         call 87
         local.set 27
@@ -36962,7 +37509,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 1
         i32.const -2139062017
         local.get 50
-        i32.const 68
+        i32.const 76
         i32.add
         call 87
         local.set 29
@@ -37120,13 +37667,13 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 3
         local.set 51
         local.get 50
-        i32.const 84
+        i32.const 92
         i32.add
         local.get 51
         i32.const 8
         memory.copy
         local.get 50
-        i32.const 84
+        i32.const 92
         i32.add
         local.get 4
         local.set 8
@@ -37308,13 +37855,13 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 4
         local.set 51
         local.get 50
-        i32.const 92
+        i32.const 100
         i32.add
         local.get 51
         i32.const 12
         memory.copy
         local.get 50
-        i32.const 92
+        i32.const 100
         i32.add
         local.get 5
         local.set 8
@@ -37422,13 +37969,13 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 5
         local.set 51
         local.get 50
-        i32.const 104
+        i32.const 112
         i32.add
         local.get 51
         i32.const 8
         memory.copy
         local.get 50
-        i32.const 104
+        i32.const 112
         i32.add
         local.get 6
         local.set 8
@@ -37536,13 +38083,13 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 6
         local.set 51
         local.get 50
-        i32.const 112
+        i32.const 120
         i32.add
         local.get 51
         i32.const 8
         memory.copy
         local.get 50
-        i32.const 112
+        i32.const 120
         i32.add
         local.set 36
         local.set 35
@@ -37552,7 +38099,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         f32.demote_f64
         local.set 31
         local.get 50
-        i32.const 120
+        i32.const 128
         i32.add
         local.set 49
         local.get 49
@@ -37601,7 +38148,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         ref.null eq
         local.set 30
         local.get 50
-        i32.const 120
+        i32.const 128
         i32.add
         local.set 37
         local.get 30
@@ -37614,7 +38161,7 @@ The browser holds one opaque managed session, schedules frames only after invali
         local.get 37
         call 163
         local.get 50
-        i32.const 120
+        i32.const 128
         i32.add
         local.set 39
         local.set 38
@@ -37753,11 +38300,11 @@ The browser holds one opaque managed session, schedules frames only after invali
         call_indirect (type 226)
         local.get 47
         ref.null eq
-        i32.const 1
+        i32.const 3
         table.fill 1
         local.get 47
         ref.null extern
-        i32.const 1
+        i32.const 3
         table.fill 2
         local.get 47
         global.set 35
@@ -37771,11 +38318,11 @@ The browser holds one opaque managed session, schedules frames only after invali
     local.set 45
     local.get 47
     ref.null eq
-    i32.const 1
+    i32.const 3
     table.fill 1
     local.get 47
     ref.null extern
-    i32.const 1
+    i32.const 3
     table.fill 2
     local.get 47
     global.set 35
@@ -40306,12 +40853,58 @@ The browser holds one opaque managed session, schedules frames only after invali
     i32.const 16
     i32.add
     global.set 34
+    global.get 35
+    local.tee 8
+    i32.const 65535
+    i32.gt_u
+    if ;; label = @1
+      unreachable
+    end
+    local.get 8
+    i32.const 1
+    i32.add
+    global.set 35
+    local.get 11
+    i32.const 0
+    i32.add
+    local.get 8
+    i32.const 0
+    i32.add
+    i32.store align=1
     local.get 11
     i32.const 0
     i32.add
     local.get 1
+    local.set 9
+    local.set 10
+    local.get 10
+    i32.const 0
+    i32.add
+    local.get 9
+    i32.const 0
+    i32.add
+    i32.load align=1
+    table.get 1
+    local.set 7
+    i32.load align=1
+    local.get 7
+    table.set 1
+    local.get 10
+    i32.const 4
+    i32.add
+    local.get 9
+    i32.const 4
+    i32.add
+    i32.load align=1
+    i32.store align=1
+    local.get 10
     i32.const 8
-    memory.copy
+    i32.add
+    local.get 9
+    i32.const 8
+    i32.add
+    i32.load align=1
+    i32.store align=1
     local.get 11
     i32.const 0
     i32.add
@@ -40354,7 +40947,7 @@ The browser holds one opaque managed session, schedules frames only after invali
           unreachable
         end
         local.get 3
-        i32.const 4
+        i32.const 8
         i32.add
         i32.load align=1
         i32.eqz
@@ -40388,6 +40981,16 @@ The browser holds one opaque managed session, schedules frames only after invali
           end
           global.get 2
           call 0
+          local.get 8
+          ref.null eq
+          i32.const 1
+          table.fill 1
+          local.get 8
+          ref.null extern
+          i32.const 1
+          table.fill 2
+          local.get 8
+          global.set 35
           local.get 11
           global.set 34
           return
@@ -40453,6 +41056,16 @@ The browser holds one opaque managed session, schedules frames only after invali
       unreachable
     end
     local.set 6
+    local.get 8
+    ref.null eq
+    i32.const 1
+    table.fill 1
+    local.get 8
+    ref.null extern
+    i32.const 1
+    table.fill 2
+    local.get 8
+    global.set 35
     local.get 11
     global.set 34
     local.get 6

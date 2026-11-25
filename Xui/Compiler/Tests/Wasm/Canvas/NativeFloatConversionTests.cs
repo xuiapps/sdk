@@ -6,8 +6,26 @@ using Xunit;
 
 namespace Xui.Compiler.Tests.Wasm.Canvas;
 
+[Collection(nameof(Xui.Compiler.Tests.Wasm.Structs.ManagedConsoleCollection))]
 public class NativeFloatConversionTests
 {
+    [Fact]
+    public Task NativeFloatSignedConversionsSaturateLikeClr() => Xui.Compiler.Tests.Wasm.InlineArrays.InlineArrayTests.AssertLinked("""
+        using System;
+        using System.Runtime.InteropServices;
+        public static class Program {
+            static int Int(NFloat value) => (int)value;
+            static long Long(NFloat value) => (long)value;
+            public static int Main() {
+                Console.WriteLine(Int((NFloat)3.75)); Console.WriteLine(Int((NFloat)(-3.75)));
+                Console.WriteLine(Int(NFloat.NaN)); Console.WriteLine(Int(NFloat.PositiveInfinity)); Console.WriteLine(Int(NFloat.NegativeInfinity));
+                Console.WriteLine(Long((NFloat)3.75)); Console.WriteLine(Long(NFloat.NaN));
+                Console.WriteLine(Long(NFloat.PositiveInfinity)); Console.WriteLine(Long(NFloat.NegativeInfinity));
+                return 42;
+            }
+        }
+        """, "3\n-3\n0\n2147483647\n-2147483648\n3\n0\n9223372036854775807\n-9223372036854775808\n", 42);
+
     [Theory]
     [InlineData("byte", "255", "255f")]
     [InlineData("sbyte", "-128", "-128f")]

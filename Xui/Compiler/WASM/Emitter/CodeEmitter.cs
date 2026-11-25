@@ -428,6 +428,8 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Div_un:
                 case OpCode.Rem:
                 case OpCode.Rem_un:
+                    if (instruction.Code == OpCode.Rem && node.Before?.Entry?.Type == XuiNet.CodeFlow.StackType.Float)
+                        method.Storage.MathImports.UsesRemainder = true;
                     if (node.Before?.Entry?.Type != XuiNet.CodeFlow.StackType.Float)
                     {
                         var category = node.Before?.Entry?.Type switch {
@@ -715,6 +717,8 @@ public readonly ref partial struct CodeEmitter
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.MathMethod.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } math)
                     {
+                        method.Storage.MathImports.UsesSin |= math.Operation == "Sin";
+                        method.Storage.MathImports.UsesCos |= math.Operation == "Cos";
                         if (math.Operation == "Pow")
                         {
                             method.Storage.MathImports.UsesPow = true;
@@ -731,8 +735,8 @@ public readonly ref partial struct CodeEmitter
                         if (spanAccess.Operation == "Slice") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
                         if (spanAccess.Operation == "CopyTo") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentException);
                         method.RequireGcTemporaries();
-                        if (spanAccess.Operation is "CopyTo" or "TryCopyTo" && spanAccess.Owner.Arguments!.Values[0].Identity is { IsValueType: true } element)
-                            _ = method.Storage.Shape(element);
+                        if (spanAccess.Operation is "CopyTo" or "TryCopyTo")
+                            method.Storage.RequireAddress(method.Storage.Bind(spanAccess.Owner.Arguments!.Values[0]));
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.InlineArrayAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null)
@@ -826,6 +830,7 @@ public readonly ref partial struct CodeEmitter
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.NativeFloat.TryMethod(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), out var nativeOperation, out _))
                     {
                         method.UsesNativeFloat = true;
+                        if (nativeOperation == "op_Modulus") method.Storage.MathImports.UsesRemainder = true;
                         if (nativeOperation == "Equals") method.RequireGcTemporaries();
                         if (nativeOperation == "Clamp")
                         {

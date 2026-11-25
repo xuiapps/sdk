@@ -8,7 +8,7 @@ public sealed record MathMethod(
     string Operation,
     bool IsSingle)
 {
-    /// <summary>Recognizes checked Pow/Sqrt signatures, including target-width NFloat operations.</summary>
+    /// <summary>Recognizes checked Pow/Sqrt/Sin/Cos signatures, including target-width NFloat operations.</summary>
     public static MathMethod? Read(Module module, EntityHandle token)
     {
         TypeIdentity owner;
@@ -26,7 +26,7 @@ public sealed record MathMethod(
             owner = new(module, method.DeclaringType); name = method.Name; blob = method.Signature;
         }
         else return null;
-        if (name is not ("Pow" or "Sqrt")) return null;
+        if (name is not ("Pow" or "Sqrt" or "Sin" or "Cos")) return null;
         bool native = NativeFloat.Is(owner);
         bool single = native || FrameworkTypes.Is(owner, "System", "MathF") || FrameworkTypes.Is(owner, "System", "Single");
         if (!single && !FrameworkTypes.Is(owner, "System", "Math") && !FrameworkTypes.Is(owner, "System", "Double")) return null;

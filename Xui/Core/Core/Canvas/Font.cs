@@ -24,7 +24,7 @@ public readonly partial struct Font : IEquatable<Font>
         FontFamily = fontFamily;
         FontSize = fontSize;
 #if XUI_COMPILER_CANVAS
-        // The first-frame compiler profile does not yet initialize static fields.
+        // Keep the narrow Canvas profile's immutable defaults inline.
         FontWeight = fontWeight ?? new FontWeight(400);
 #else
         FontWeight = fontWeight ?? FontWeight.Normal;
@@ -58,7 +58,7 @@ public readonly partial struct Font : IEquatable<Font>
 
     /// <inheritdoc/>
     public bool Equals(Font other) =>
-        StringComparer.Ordinal.Equals(FontFamily, other.FontFamily) &&
+        string.Equals(FontFamily, other.FontFamily) &&
         FontSize.Equals(other.FontSize) &&
         FontWeight == other.FontWeight &&
         FontStyle.IsItalic == other.FontStyle.IsItalic &&
@@ -72,7 +72,7 @@ public readonly partial struct Font : IEquatable<Font>
 
     /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(
-        StringComparer.Ordinal.GetHashCode(FontFamily ?? string.Empty),
+        (FontFamily ?? string.Empty).GetHashCode(),
         FontSize,
         FontWeight,
         FontStyle.IsItalic,

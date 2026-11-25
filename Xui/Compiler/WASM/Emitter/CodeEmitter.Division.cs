@@ -12,8 +12,10 @@ public readonly ref partial struct CodeEmitter
         Pop(value.TypeCode, code, offset);
         if (value.TypeCode == SignatureTypeCode.Double)
         {
-            if (code != OpCode.Div) throw new NotSupportedException("Floating remainder and unsigned floating division are not implemented.");
-            writer.F64Div(); stack.Push(value); return;
+            if (code == OpCode.Div) writer.F64Div();
+            else if (code == OpCode.Rem) writer.Call(method.Storage.MathImports.Remainder);
+            else throw new InvalidProgramException("Unsigned floating division and remainder are not valid MSIL.");
+            stack.Push(value); return;
         }
         if (value.TypeCode is not (SignatureTypeCode.Int32 or SignatureTypeCode.Int64 or SignatureTypeCode.IntPtr))
             throw new NotSupportedException($"Unsupported division type: {value.TypeCode}.");

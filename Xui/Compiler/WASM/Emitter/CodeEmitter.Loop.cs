@@ -7,6 +7,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitLoop(LoopBlock loop)
     {
+        loopExitInitialization.Remove(loop);
         CheckStack(loop.Header.Before!, loop.Header.Offset);
         var type = method.BlockTypes[loop];
         writer.Block(type);

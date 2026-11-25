@@ -29,12 +29,12 @@ public static class NativeFloat
         return operation switch
         {
             "op_Implicit" or "op_Explicit" => signature.Parameters.Length == 1 &&
-                (N(signature.Result) && Scalar(signature.Parameters[0]) || N(signature.Parameters[0]) && signature.Result.Identity is null && signature.Result.Code is SignatureTypeCode.Single or SignatureTypeCode.Double),
+                (N(signature.Result) && Scalar(signature.Parameters[0]) || N(signature.Parameters[0]) && signature.Result.Identity is null && signature.Result.Code is SignatureTypeCode.Single or SignatureTypeCode.Double or SignatureTypeCode.Int32 or SignatureTypeCode.Int64),
             "IsFinite" or "IsNaN" or "IsInfinity" => signature.Parameters.Length == 1 && N(signature.Parameters[0]) && signature.Result.Code == SignatureTypeCode.Boolean,
             "Abs" or "op_UnaryNegation" => signature.Parameters.Length == 1 && N(signature.Parameters[0]) && N(signature.Result),
             "Clamp" => signature.Parameters.Length == 3 && signature.Parameters.All(N) && N(signature.Result),
             "Min" or "Max" => signature.Parameters.Length == 2 && signature.Parameters.All(N) && N(signature.Result),
-            "op_Addition" or "op_Subtraction" or "op_Multiply" or "op_Division" => signature.Parameters.Length == 2 && N(signature.Result) && signature.Parameters.All(N),
+            "op_Addition" or "op_Subtraction" or "op_Multiply" or "op_Division" or "op_Modulus" => signature.Parameters.Length == 2 && N(signature.Result) && signature.Parameters.All(N),
             "op_Equality" or "op_Inequality" or "op_LessThan" or "op_LessThanOrEqual" or "op_GreaterThan" or "op_GreaterThanOrEqual" =>
                 signature.Parameters.Length == 2 && signature.Result.Code == SignatureTypeCode.Boolean && signature.Parameters.All(N),
             "get_PositiveInfinity" or "get_NegativeInfinity" or "get_NaN" or "get_Pi" => signature.Parameters.Length == 0 && N(signature.Result),

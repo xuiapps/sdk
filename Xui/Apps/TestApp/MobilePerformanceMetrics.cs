@@ -17,10 +17,10 @@ public sealed class MobilePerformanceMetrics
     private long previousAllocation;
     private bool hasPreviousAllocation;
     private long frameStart;
-    private readonly LayoutFrameInstruments layoutInstruments;
+    private readonly LayoutFrameInstruments? layoutInstruments;
 
-    /// <summary>Initializes mobile metrics backed by the window's layout instrumentation sink.</summary>
-    public MobilePerformanceMetrics(LayoutFrameInstruments layoutInstruments)
+    /// <summary>Initializes mobile metrics, optionally backed by a layout instrumentation sink.</summary>
+    public MobilePerformanceMetrics(LayoutFrameInstruments? layoutInstruments = null)
     {
         this.layoutInstruments = layoutInstruments;
     }
@@ -35,10 +35,10 @@ public sealed class MobilePerformanceMetrics
     public long HeapBytes { get; private set; }
     public int SampleCount => count;
     public bool IsEnabled { get; set; }
-    public int AnimationCount => layoutInstruments.AnimationCount;
-    public int MeasureCount => layoutInstruments.MeasureCount;
-    public int ArrangeCount => layoutInstruments.ArrangeCount;
-    public int RenderCount => layoutInstruments.RenderCount;
+    public int AnimationCount => layoutInstruments?.AnimationCount ?? 0;
+    public int MeasureCount => layoutInstruments?.MeasureCount ?? 0;
+    public int ArrangeCount => layoutInstruments?.ArrangeCount ?? 0;
+    public int RenderCount => layoutInstruments?.RenderCount ?? 0;
 
     /// <summary>Records the frame interval requested by the most recent iOS display-link callback.</summary>
     public void RecordDisplayLinkCadence(in FrameEventRef frame)

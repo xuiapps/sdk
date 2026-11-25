@@ -321,3 +321,20 @@ GC classes already execute. Linear struct constructors/receivers and frame-owned
 work; flattened value representation can improve the ABI without removing the
 addressable storage path. Keep the reachability graph as the explanation of what
 each added feature brings into the emitted module.
+
+## Themed TestApp home now renders
+
+The browser-catalogue fixture now constructs a real Window/RootView, activates
+TestAppDesignRoot, and renders the mobile home with actual theme tokens. Its
+self-contained [HTML](Tests/Wasm/TestApp/Snapshots/BrowserShell.html) embeds the
+WASM, Canvas host and Inter fonts. Node records the first frame; Chromium checks
+pixels and offline execution. Optional diagnostics use constructor injection,
+leaving normal TestApp builds unchanged.
+
+This step required managed-owner spans/inline arrays, sin/cos and floating
+remainder, signed NFloat conversions, shared exception-block type reuse and
+chunked delegate metadata above the engine's fixed-array initializer limit.
+The next gate is a persistent shell session with actual routed pointer events and
+animation updates inside the existing middleware phone renderer. The current
+first-frame page has no input routing; MobilePhone remains the smaller interactive
+FillRect milestone. Full catalogue assets/async/GPU demos remain outside the profile.

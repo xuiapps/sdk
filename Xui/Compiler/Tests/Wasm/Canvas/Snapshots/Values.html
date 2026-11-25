@@ -194,6 +194,9 @@ globalThis.xuiRuntimeImports = Object.freeze({
         'timestamp': () => BigInt(Math.floor(performance.now() * 1_000_000))
     }),
     'xui-math': Object.freeze({
+        remainder: (x, y) => x % y,
+        sin: Math.sin,
+        cos: Math.cos,
         pow(x, y) {
             // CoreLib follows IEEE/C pow identities; ECMAScript differs for NaN and ±1.
             if (x === 1 || y === 0 || (x === -1 && (y === Infinity || y === -Infinity))) return 1;

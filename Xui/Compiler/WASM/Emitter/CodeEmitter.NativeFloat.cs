@@ -17,7 +17,13 @@ public readonly ref partial struct CodeEmitter
         }
         for (int i = signature.Parameters.Length - 1; i >= 0; i--)
             Pop(method.Storage.Bind(signature.Parameters[i]).StackType, instruction.Code, offset);
-        if (operation == "Clamp")
+        if (operation == "op_Modulus")
+        {
+            writer.F32DemoteF64().LocalSet(method.NativeFloatTemporary).F32DemoteF64().F64PromoteF32()
+                .LocalGet(method.NativeFloatTemporary).F64PromoteF32().Call(method.Storage.MathImports.Remainder)
+                .F32DemoteF64().F64PromoteF32();
+        }
+        else if (operation == "Clamp")
         {
             writer.F32DemoteF64().LocalSet(method.NativeFloatMax).F32DemoteF64().LocalSet(method.NativeFloatMin)
                 .F32DemoteF64().LocalSet(method.NativeFloatTemporary);
@@ -90,6 +96,8 @@ public readonly ref partial struct CodeEmitter
             }
             writer.F64PromoteF32();
         }
+        else if (signature.Result.Code == SignatureTypeCode.Int32) writer.I32TruncSatF64S();
+        else if (signature.Result.Code == SignatureTypeCode.Int64) writer.I64TruncSatF64S();
         // NFloat values already carry f32 rounding; conversion to double is an exact promotion.
         stack.Push(new(method.Storage.Bind(signature.Result).StackType));
         return true;

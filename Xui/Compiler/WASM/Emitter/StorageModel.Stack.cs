@@ -23,7 +23,7 @@ internal sealed partial class StorageModel
     public bool HasStackReferences(TypeIdentity type)
     {
         if (XuiNet.DotNet.Intrinsics.InterpolatedStringHandler.Is(type)) return true;
-        if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(type)) return false; // Borrowed backing, no owned reference slots.
+        if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(type)) return true; // Root the borrowed managed owner.
         if (stackReferenceKinds.TryGetValue(type, out bool found)) return found;
         if (type.Handle.Kind != HandleKind.TypeDefinition || !type.IsValueType || Layouts(type).Classify(type) == StorageKind.LinearMemory)
             return false;
@@ -78,9 +78,13 @@ internal sealed partial class StorageModel
             ReferenceSlotsEnabled = ExceptionsEnabled = true;
             return stackLayouts[identity] = new(8, 4, new Dictionary<FieldDefinitionHandle, FieldLayout>());
         }
-        // Spans over inline storage borrow a linear address and element count. This is
-        // an emission ABI, not a claim that CLR spans have unmanaged byte layouts.
-        if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity)) return stackLayouts[identity] = new(8, 4, new Dictionary<FieldDefinitionHandle, FieldLayout>());
+        // A span borrows (managed owner, selector, element count). The owner uses a
+        // frame-owned reference slot; selector is a byte address or flattened-field index.
+        if (XuiNet.DotNet.Intrinsics.SpanAccess.Is(identity))
+        {
+            ReferenceSlotsEnabled = ExceptionsEnabled = true;
+            return stackLayouts[identity] = new(12, 4, new Dictionary<FieldDefinitionHandle, FieldLayout>());
+        }
         if (identity.Handle.Kind != HandleKind.TypeDefinition || !identity.IsValueType)
             throw new NotSupportedException($"External struct storage is not implemented: {identity}.");
         if (Layouts(identity).Classify(identity) == StorageKind.LinearMemory)

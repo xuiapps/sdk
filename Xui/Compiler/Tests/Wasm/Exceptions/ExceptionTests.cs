@@ -14,6 +14,22 @@ namespace Xui.Compiler.Tests.Wasm.Exceptions;
 public class ExceptionTests
 {
     [Fact]
+    public Task SharedExceptionTailsDefineTheirBlockTypesOnce() => GcTests.AssertExecution("""
+        public static class Program {
+            static int Run(bool first, bool second) {
+                int value=0;
+                if(first && second) value=1;
+                else {
+                    try { if(first) value=2; else value=3; }
+                    finally { if(second) { for(int i=0;i<2;i++) value+=5; } }
+                }
+                return value>10 ? value : value+100;
+            }
+            public static int Main() => Run(true,true)+Run(true,false)+Run(false,true)+Run(false,false);
+        }
+        """, "", 319);
+
+    [Fact]
     public async Task FailedCastIsCaughtAndFinallyRuns()
     {
         string source = File.ReadAllText(Path.Combine(SourceDirectory(), "..", "..", "Fixtures", "Exceptions", "Casts.cs"));

@@ -7,6 +7,55 @@ namespace Xui.Compiler.Tests.Wasm.InlineArrays;
 public class SpanTests
 {
     [Fact]
+    public Task ManagedSpansPreserveOwnersAcrossReturnsSlicesAndOverlappingCopies() => InlineArrayTests.AssertLinked("""
+        using System;
+        using System.Runtime.CompilerServices;
+        public struct Entry { public string Name; public int Value; }
+        [InlineArray(4)] public struct Buffer { private Entry first; }
+        public class Owner { public Buffer Items; }
+        public static class Program {
+            static Span<Entry> Create() {
+                var owner=new Owner();
+                for(int i=0;i<4;i++) owner.Items[i]=new Entry { Name="item", Value=i+1 };
+                return owner.Items;
+            }
+            static void Copy(ReadOnlySpan<Entry> a, Span<Entry> b) => a.CopyTo(b);
+            public static int Main() {
+                Span<Entry> span=Create(); ref Entry alias=ref span[1];
+                Copy(span[..3],span[1..]); Console.WriteLine(alias.Value);
+                Copy(span[1..],span[..3]); Console.WriteLine(alias.Value);
+                Buffer local=default; Copy(span,local);
+                local[0].Name="local"; local[0].Value=42;
+                Console.WriteLine(span[0].Name);
+                var second=new Owner(); Copy(local,second.Items);
+                for(int i=0;i<70000;i++) Copy(second.Items,span);
+                Console.WriteLine(span[0].Name); Console.WriteLine(span.TryCopyTo(span[..1]));
+                Console.WriteLine(span.Slice(4).IsEmpty);
+                try { _=span[4]; } catch(IndexOutOfRangeException) { Console.WriteLine("bounds"); }
+                return span[0].Value;
+            }
+        }
+        """, "1\n2\nitem\nlocal\nFalse\nTrue\nbounds\n", 42);
+
+    [Fact]
+    public Task NumericSpanCopiesCrossManagedAndLinearBacking() => InlineArrayTests.AssertLinked("""
+        using System;
+        using System.Runtime.CompilerServices;
+        [InlineArray(4)] public struct Buffer { private int first; }
+        public class Owner { public Buffer Items; }
+        public static class Program { public static int Main() {
+            var owner=new Owner(); Span<int> span=owner.Items;
+            for(int i=0;i<4;i++) span[i]=i+10;
+            span[..3].CopyTo(span[1..]); Console.WriteLine(span[3]);
+            span[1..].CopyTo(span[..3]); Console.WriteLine(span[0]);
+            Buffer local=default; span.CopyTo(local); local[0]=42;
+            ((ReadOnlySpan<int>)local).CopyTo(span);
+            var other=new Owner(); span.CopyTo(other.Items);
+            return other.Items[0];
+        } }
+        """, "12\n10\n", 42);
+
+    [Fact]
     public Task SlicesBorrowNumericStorageAndCopiesHandleOverlap() => InlineArrayTests.AssertLinked("""
         using System;
         using System.Runtime.CompilerServices;
@@ -44,7 +93,7 @@ public class SpanTests
         [InlineArray(4)] public struct Entries { private Entry first; }
         [InlineArray(4)] public struct Names { private string first; }
         public static class Program {
-            // These methods own no reference slots: both spans borrow their caller's storage.
+            // Each span roots its borrowed owner independently of the element reference slots.
             static void Copy(ReadOnlySpan<Entry> source, Span<Entry> destination) => source.CopyTo(destination);
             static void NamesCopy(ReadOnlySpan<string> source, Span<string> destination) => source.CopyTo(destination);
             public static int Main() {

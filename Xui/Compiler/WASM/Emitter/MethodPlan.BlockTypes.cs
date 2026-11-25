@@ -9,33 +9,34 @@ internal sealed partial class MethodPlan
 {
     public void DefineBlockTypes(ref TypeWriter types)
     {
-        if (Flow is not null) DefineBlockTypes(Flow, ref types);
+        if (Flow is not null) DefineBlockTypes(Flow, ref types, new HashSet<FlowNode>());
     }
 
-    private void DefineBlockTypes(SequenceBlock sequence, ref TypeWriter types)
+    private void DefineBlockTypes(SequenceBlock sequence, ref TypeWriter types, HashSet<FlowNode> defined)
     {
         foreach (var child in sequence.Children)
         {
+            if (!defined.Add(child)) continue;
             switch (child)
             {
                 case ExceptionBlock exception:
-                    DefineBlockTypes(exception.Body, ref types);
-                    foreach (var handler in exception.Handlers) DefineBlockTypes(handler.Body, ref types);
+                    DefineBlockTypes(exception.Body, ref types, defined);
+                    foreach (var handler in exception.Handlers) DefineBlockTypes(handler.Body, ref types, defined);
                     break;
                 case ConditionalBlock block:
                     BlockTypes.Add(block, types.FunctionType(block.Parameters.SelectMany(Types).ToArray(), block.Results.SelectMany(Types).ToArray()));
-                    DefineBlockTypes(block.Taken, ref types);
-                    DefineBlockTypes(block.NotTaken, ref types);
+                    DefineBlockTypes(block.Taken, ref types, defined);
+                    DefineBlockTypes(block.NotTaken, ref types, defined);
                     break;
                 case SwitchBlock selection:
                     var parameters = selection.Parameters.SelectMany(Types).ToArray();
                     BlockTypes.Add(selection, types.FunctionType(parameters, selection.Results.SelectMany(Types).ToArray()));
                     SwitchArmTypes.Add(selection, types.FunctionType(parameters, parameters));
-                    foreach (var arm in selection.Arms) DefineBlockTypes(arm.Body, ref types);
+                    foreach (var arm in selection.Arms) DefineBlockTypes(arm.Body, ref types, defined);
                     break;
                 case LoopBlock loop:
                     BlockTypes.Add(loop, types.FunctionType(loop.Parameters.SelectMany(Types).ToArray(), loop.Results.SelectMany(Types).ToArray()));
-                    DefineBlockTypes(loop.Body, ref types);
+                    DefineBlockTypes(loop.Body, ref types, defined);
                     break;
                 case ForwardRegion forward:
                     foreach (var segment in forward.Segments.Skip(1))

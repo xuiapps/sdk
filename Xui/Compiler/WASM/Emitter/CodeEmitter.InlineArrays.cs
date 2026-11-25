@@ -41,23 +41,34 @@ public readonly ref partial struct CodeEmitter
         var address = Pop(instruction.Code, offset);
         if (address.Identity != access.Buffer || !address.IsByReference)
             throw new InvalidProgramException("Inline-array helper requires the declared buffer address.");
-        LinearAddressValue();
         if (span)
         {
-            writer.LocalSet(Frame.AddressScratch);
-            FrameAddress(Frame.Values[offset]); writer.LocalGet(Frame.AddressScratch).I32Store();
-            FrameAddress(Frame.Values[offset] + 4); writer.LocalGet(Frame.I32Scratch).I32Store();
+            SaveAddress();
+            CheckSavedAddress(method.AddressOwner, method.AddressSelector);
+            FrameAddress(Frame.Values[offset]); writer.I32Load().LocalGet(method.AddressOwner).TableSet(Runtime.ObjectReferences!.Value);
+            FrameAddress(Frame.Values[offset] + 4); writer.LocalGet(method.AddressSelector).I32Store();
+            FrameAddress(Frame.Values[offset] + 8); writer.LocalGet(Frame.I32Scratch).I32Store();
             FrameAddress(Frame.Values[offset]);
             stack.Push(new(SignatureTypeCode.TypeHandle, access.Signature.Result.Identity));
         }
         else
         {
+            var element = method.Storage.Bind(access.Layout.Element);
+            SaveAddress();
+            CheckSavedAddress(method.AddressOwner, method.AddressSelector);
+            // A GC owner's selector counts flattened fields; a linear selector counts bytes.
+            writer.LocalGet(method.AddressOwner).LocalGet(method.AddressOwner).RefIsNull()
+                .If(method.Storage.AddressIndexType).LocalGet(method.AddressSelector);
             if (!first) writer.LocalGet(Frame.I32Scratch).I32Const(ElementSize(access.Layout.Element)).I32Mul().I32Add();
-            var element = EnumInfo.Storage(access.Layout.Element);
-            if (StorageModel.IsReference(method.Storage.Bind(element)))
-                LinearReferenceAddress();
-            else LinearValueAddress();
-            stack.Push(new(element.Code, element.Identity, true, element.Array));
+            if (StorageModel.IsReference(element)) writer.I32Load();
+            writer.Else().LocalGet(method.AddressSelector);
+            if (!first)
+            {
+                int stride = method.Storage.Shape(access.Buffer).Leaves.Count / access.Layout.Length;
+                writer.LocalGet(Frame.I32Scratch).I32Const(stride).I32Mul().I32Add();
+            }
+            writer.End();
+            stack.Push(new(element.TypeCode, element.Identity, true, element.Array));
         }
         return true;
     }

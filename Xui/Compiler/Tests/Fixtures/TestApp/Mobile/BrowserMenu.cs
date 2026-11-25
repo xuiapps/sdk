@@ -6,6 +6,9 @@ namespace Xui.Apps.TestApp;
 /// <summary>First browser catalogue: real TestApp cards and navigation, without optional async/GPU showcases.</summary>
 public sealed class BrowserMenu : View
 {
+    public static View CreateRoot(MobilePerformanceMetrics metrics) =>
+        new TestAppDesignRoot(new MobileTestAppShell(metrics, new BrowserMenu(), diagnosticsOverlay: null));
+
     private readonly MobileDemoCategoryPanel canvas;
     public BrowserMenu()
     {

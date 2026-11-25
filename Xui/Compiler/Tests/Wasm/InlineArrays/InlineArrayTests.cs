@@ -13,6 +13,47 @@ namespace Xui.Compiler.Tests.Wasm.InlineArrays;
 public class InlineArrayTests
 {
     [Fact]
+    public Task InlineArraysInGcOwnersKeepAliasingAndStructCopies() => AssertLinked("""
+        using System;
+        using System.Runtime.CompilerServices;
+        public struct Item { public int X, Y; public string Text; }
+        [InlineArray(3)] public struct Buffer { private Item element; }
+        public struct State { public Buffer Items; public string Name; }
+        public class Owner { public State State; }
+        public static class Program {
+            static void Write(ref Item item,int value) { item.X=value; item.Y=value+1; item.Text="item"; }
+            public static int Main() {
+                var owner=new Owner(); owner.State.Name="state";
+                for(int i=0;i<3;i++) Write(ref owner.State.Items[i],i+10);
+                State copy=owner.State;
+                copy.Items[0].X=99;
+                int sum=0;
+                for(int i=0;i<3;i++) { sum+=owner.State.Items[i].Y; Console.WriteLine(owner.State.Items[i].Text); }
+                Console.WriteLine(copy.Items[0].X);
+                Console.WriteLine(owner.State.Items[0].X);
+                return sum+6;
+            }
+        }
+        """, "item\nitem\nitem\n99\n10\n", 42);
+
+    [Fact]
+    public Task NativeFloatAddressesUseTargetStorageInInlineArraysAndSpans() => AssertLinked("""
+        using System;
+        using System.Runtime.InteropServices;
+        [System.Runtime.CompilerServices.InlineArray(3)] public struct Buffer { private NFloat element; }
+        public static class Program {
+            static double Sum(ReadOnlySpan<NFloat> values) {
+                double sum=0; for(int i=0;i<values.Length;i++) sum+=(double)values[i]; return sum;
+            }
+            public static int Main() {
+                Buffer values=default; values[0]=(NFloat)10; values[1]=(NFloat)12;
+                Span<NFloat> span=values; span[2]=(NFloat)20;
+                return Sum(span)==42 ? 42 : -1;
+            }
+        }
+        """, "", 42, typeof(System.Runtime.InteropServices.NFloat).Assembly);
+
+    [Fact]
     public Task InlineValuesAreCopiedIndependently() => GcTests.AssertExecution("""
         [System.Runtime.CompilerServices.InlineArray(4)]
         public struct Buffer { private int element; }

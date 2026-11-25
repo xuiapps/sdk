@@ -21,6 +21,9 @@ public sealed partial class WasmEmitter
     /// <summary>The source dependency graph from the most recent successful emission.</summary>
     public DependencyGraph? Dependencies { get; private set; }
 
+    /// <summary>Maps emitted WASM function indices to managed methods for runtime stack-trace diagnostics.</summary>
+    public IReadOnlyDictionary<FunctionIndex, IR.MethodIdentity> Methods { get; private set; } = new Dictionary<FunctionIndex, IR.MethodIdentity>();
+
     /// <summary>Emits the managed entry point and its dependencies, with optional rewrites and additional preservation roots.</summary>
     /// <remarks>Additional roots preserve code. Named exports also root static methods with a host-callable ABI.</remarks>
     public byte[] Emit(IR.Assembly assembly, CodeRewriter? rewriter = null, IEnumerable<Root>? additionalRoots = null,
@@ -203,7 +206,13 @@ public sealed partial class WasmEmitter
         var globals = writer.GlobalSection();
         try
         {
-            if (storage.DelegatesEnabled) storage.DelegateMethodIds = globals.I32Array(storage.DelegateMethodsType, storage.DelegateTableMethods(methods));
+            if (storage.DelegatesEnabled)
+            {
+                int[] ids = storage.DelegateTableMethods(methods);
+                storage.DelegateMethodIds = storage.DelegateMethodChunksType is { } chunks
+                    ? globals.I32ArrayChunks(chunks, storage.DelegateMethodsType, ids)
+                    : globals.I32Array(storage.DelegateMethodsType, ids);
+            }
             for (int i = 0; i < literals.Count; i++)
                 literalIndices.Add(literals[i], (new DataIndex((uint)i), globals.RefNull(ExternRef, Mutability.Mutable)));
             if (hasFrames) stackPointer = globals.I32(MemoryFrame.Start, Mutability.Mutable);
@@ -320,6 +329,8 @@ public sealed partial class WasmEmitter
         finally { data.Dispose(); }
         Types = Array.AsReadOnly(storage.Classes.Types.ToArray());
         Dependencies = dependencies;
+        Methods = orderedMethods.Where(method => !method.IsDeclaration || method.IsDelegateInvoke)
+            .ToDictionary(method => method.Function, method => method.Identity);
         return module.ToArray();
     }
 }

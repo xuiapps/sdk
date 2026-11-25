@@ -15,6 +15,7 @@ internal sealed partial class StorageModel
     public TypeIndex DelegateType { get; private set; }
     public TypeIndex DelegateListType { get; private set; }
     public TypeIndex DelegateMethodsType { get; private set; }
+    public TypeIndex? DelegateMethodChunksType { get; private set; }
     public GlobalIndex DelegateMethodIds { get; set; }
     public HashSet<string> DelegateOperations { get; } = new();
     public Dictionary<DelegateHelper, DelegateFunction> DelegateFunctions { get; } = new();

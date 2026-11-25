@@ -70,11 +70,11 @@ public static class Program
   (type (;9;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32))))
   (type (;10;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32))))
   (type (;11;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32))))
-  (type (;12;) (struct (field (mut f32)) (field (mut i32))))
-  (type (;13;) (struct (field (mut f32)) (field (mut f32))))
-  (type (;14;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut i32)) (field (mut i32))))
-  (type (;15;) (struct (field (mut f32)) (field (mut f32))))
-  (type (;16;) (struct (field (mut i32)) (field (mut i32))))
+  (type (;12;) (struct (field (mut eqref)) (field (mut i32)) (field (mut i32))))
+  (type (;13;) (struct (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut f32)) (field (mut eqref)) (field (mut i32)) (field (mut i32))))
+  (type (;14;) (struct (field (mut f32)) (field (mut f32))))
+  (type (;15;) (struct (field (mut f32)) (field (mut i32))))
+  (type (;16;) (struct (field (mut f32)) (field (mut f32))))
   (type (;17;) (func (result i32)))
   (type (;18;) (func (param eqref i32) (result eqref)))
   (type (;19;) (func (param eqref i32 eqref)))
@@ -100,6 +100,8 @@ public static class Program
   (type (;39;) (func (param eqref i32 i32)))
   (import "xui" "console-log" (func (;0;) (type 2) (param f64)))
   (import "wasm:js-string" "fromCharCodeArray" (func (;1;) (type 1) (param (ref null 0) i32 i32) (result (ref extern))))
+  (table (;0;) 65536 65536 eqref)
+  (table (;1;) 65536 65536 externref)
   (memory (;0;) 16 16)
   (tag (;0;) (type 4) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
@@ -110,44 +112,84 @@ public static class Program
   (global (;5;) (mut externref) ref.null extern)
   (global (;6;) (mut externref) ref.null extern)
   (global (;7;) (mut i32) i32.const 16)
+  (global (;8;) (mut i32) i32.const 0)
   (export "main" (func 2))
   (func (;2;) (type 28) (result i32)
-    (local i32 i32 i32 eqref i32 eqref i32 f32 eqref f32 i32 i32 eqref f32 f32 i32 eqref i32 i32 i32 i32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local i32 i32 i32 eqref i32 eqref i32 f32 eqref f32 i32 i32 eqref f32 f32 i32 eqref i32 i32 i32 i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 22
-    i32.const 1048384
+    local.tee 26
+    i32.const 1048368
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 22
-    i32.const 192
+    local.get 26
+    i32.const 208
     i32.add
     global.set 7
-    local.get 22
+    local.get 26
     i32.const 0
     i32.add
     local.set 0
     local.get 0
     i32.const 0
-    i32.const 8
+    i32.const 12
     memory.fill
-    local.get 22
-    i32.const 8
+    local.get 26
+    i32.const 12
     i32.add
     local.set 1
     local.get 1
     i32.const 0
     i32.const 8
     memory.fill
-    local.get 22
-    i32.const 16
+    local.get 26
+    i32.const 20
     i32.add
     local.set 2
     local.get 2
     i32.const 0
     i32.const 40
     memory.fill
+    global.get 8
+    local.tee 23
+    i32.const 65532
+    i32.gt_u
+    if ;; label = @1
+      unreachable
+    end
+    local.get 23
+    i32.const 4
+    i32.add
+    global.set 8
+    local.get 26
+    i32.const 0
+    i32.add
+    local.get 23
+    i32.const 0
+    i32.add
+    i32.store align=1
+    local.get 26
+    i32.const 116
+    i32.add
+    local.get 23
+    i32.const 1
+    i32.add
+    i32.store align=1
+    local.get 26
+    i32.const 168
+    i32.add
+    local.get 23
+    i32.const 2
+    i32.add
+    i32.store align=1
+    local.get 26
+    i32.const 196
+    i32.add
+    local.get 23
+    i32.const 3
+    i32.add
+    i32.store align=1
     block (type 7) (result exnref) ;; label = @1
       try_table (catch_all_ref 0 (;@1;)) ;; label = @2
         local.get 2
@@ -554,8 +596,8 @@ public static class Program
         ref.null eq
         local.get 4
         i32.const 0
-        local.set 24
-        local.get 24
+        local.set 28
+        local.get 28
         i32.const 2
         i32.lt_u
         i32.eqz
@@ -602,19 +644,21 @@ public static class Program
           throw 0
         end
         local.get 3
+        local.get 3
         ref.is_null
-        i32.eqz
-        if ;; label = @3
-          unreachable
+        if (type 17) (result i32) ;; label = @3
+          local.get 4
+          local.get 28
+          i32.const 20
+          i32.mul
+          i32.add
+        else
+          local.get 4
+          local.get 28
+          i32.const 5
+          i32.mul
+          i32.add
         end
-        local.get 4
-        local.get 24
-        i32.const 20
-        i32.mul
-        i32.add
-        local.set 4
-        ref.null eq
-        local.get 4
         i32.const 0
         f32.convert_i32_s
         f64.promote_f32
@@ -622,16 +666,16 @@ public static class Program
         local.set 10
         f32.demote_f64
         local.set 9
-        local.get 22
-        i32.const 56
+        local.get 26
+        i32.const 60
         i32.add
         i32.const 0
         i32.const 8
         memory.fill
         ref.null eq
         local.set 8
-        local.get 22
-        i32.const 56
+        local.get 26
+        i32.const 60
         i32.add
         local.set 11
         local.get 8
@@ -639,14 +683,14 @@ public static class Program
         local.get 10
         local.get 11
         call 3
-        local.get 22
-        i32.const 56
+        local.get 26
+        i32.const 60
         i32.add
-        local.get 22
-        i32.const 64
+        local.get 26
+        i32.const 68
         i32.add
         call 4
-        local.set 29
+        local.set 33
         local.set 4
         local.set 3
         local.get 3
@@ -707,7 +751,7 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 0
         i32.add
         f32.load align=1
@@ -747,7 +791,7 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 4
         i32.add
         f32.load align=1
@@ -787,7 +831,7 @@ public static class Program
           i32.const 2
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 8
         i32.add
         f32.load align=1
@@ -827,7 +871,7 @@ public static class Program
           i32.const 3
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 12
         i32.add
         f32.load align=1
@@ -867,7 +911,7 @@ public static class Program
           i32.const 4
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 16
         i32.add
         f32.load align=1
@@ -877,8 +921,8 @@ public static class Program
         ref.null eq
         local.get 4
         i32.const 1
-        local.set 24
-        local.get 24
+        local.set 28
+        local.get 28
         i32.const 2
         i32.lt_u
         i32.eqz
@@ -925,19 +969,21 @@ public static class Program
           throw 0
         end
         local.get 3
+        local.get 3
         ref.is_null
-        i32.eqz
-        if ;; label = @3
-          unreachable
+        if (type 17) (result i32) ;; label = @3
+          local.get 4
+          local.get 28
+          i32.const 20
+          i32.mul
+          i32.add
+        else
+          local.get 4
+          local.get 28
+          i32.const 5
+          i32.mul
+          i32.add
         end
-        local.get 4
-        local.get 24
-        i32.const 20
-        i32.mul
-        i32.add
-        local.set 4
-        ref.null eq
-        local.get 4
         i32.const 1
         f32.convert_i32_s
         f64.promote_f32
@@ -945,16 +991,16 @@ public static class Program
         local.set 10
         f32.demote_f64
         local.set 9
-        local.get 22
-        i32.const 84
+        local.get 26
+        i32.const 88
         i32.add
         i32.const 0
         i32.const 8
         memory.fill
         ref.null eq
         local.set 8
-        local.get 22
-        i32.const 84
+        local.get 26
+        i32.const 88
         i32.add
         local.set 11
         local.get 8
@@ -962,14 +1008,14 @@ public static class Program
         local.get 10
         local.get 11
         call 3
-        local.get 22
-        i32.const 84
+        local.get 26
+        i32.const 88
         i32.add
-        local.get 22
-        i32.const 92
+        local.get 26
+        i32.const 96
         i32.add
         call 4
-        local.set 29
+        local.set 33
         local.set 4
         local.set 3
         local.get 3
@@ -1030,7 +1076,7 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 0
         i32.add
         f32.load align=1
@@ -1070,7 +1116,7 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 4
         i32.add
         f32.load align=1
@@ -1110,7 +1156,7 @@ public static class Program
           i32.const 2
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 8
         i32.add
         f32.load align=1
@@ -1150,7 +1196,7 @@ public static class Program
           i32.const 3
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 12
         i32.add
         f32.load align=1
@@ -1190,7 +1236,7 @@ public static class Program
           i32.const 4
           i32.add
         end
-        local.get 29
+        local.get 33
         i32.const 16
         i32.add
         f32.load align=1
@@ -1200,8 +1246,8 @@ public static class Program
         ref.null eq
         local.get 4
         i32.const 2
-        local.set 24
-        local.get 24
+        local.set 28
+        local.get 28
         i32.const 3
         i32.lt_u
         i32.eqz
@@ -1247,32 +1293,58 @@ public static class Program
           struct.new 3
           throw 0
         end
-        local.get 3
-        ref.is_null
-        i32.eqz
-        if ;; label = @3
-          unreachable
-        end
-        local.get 4
-        local.set 23
-        local.get 22
-        i32.const 112
-        i32.add
-        local.get 23
-        i32.store align=1
-        local.get 22
+        local.get 26
         i32.const 116
         i32.add
-        local.get 24
-        i32.store align=1
-        local.get 22
-        i32.const 112
+        i32.load align=1
+        local.get 3
+        table.set 0
+        local.get 26
+        i32.const 120
         i32.add
-        local.set 23
+        local.get 4
+        i32.store align=1
+        local.get 26
+        i32.const 124
+        i32.add
+        local.get 28
+        i32.store align=1
+        local.get 26
+        i32.const 116
+        i32.add
+        local.set 27
         local.get 0
-        local.get 23
+        local.get 27
+        local.set 24
+        local.set 25
+        local.get 25
+        i32.const 0
+        i32.add
+        local.get 24
+        i32.const 0
+        i32.add
+        i32.load align=1
+        table.get 0
+        local.set 22
+        i32.load align=1
+        local.get 22
+        table.set 0
+        local.get 25
+        i32.const 4
+        i32.add
+        local.get 24
+        i32.const 4
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 25
         i32.const 8
-        memory.copy
+        i32.add
+        local.get 24
+        i32.const 8
+        i32.add
+        i32.load align=1
+        i32.store align=1
         i32.const 0
         f32.convert_i32_s
         f64.promote_f32
@@ -1283,16 +1355,16 @@ public static class Program
         local.set 14
         f32.demote_f64
         local.set 13
-        local.get 22
-        i32.const 120
+        local.get 26
+        i32.const 128
         i32.add
         i32.const 0
         i32.const 8
         memory.fill
         ref.null eq
         local.set 12
-        local.get 22
-        i32.const 120
+        local.get 26
+        i32.const 128
         i32.add
         local.set 15
         local.get 12
@@ -1300,11 +1372,11 @@ public static class Program
         local.get 14
         local.get 15
         call 5
-        local.get 22
-        i32.const 120
-        i32.add
-        local.get 22
+        local.get 26
         i32.const 128
+        i32.add
+        local.get 26
+        i32.const 136
         i32.add
         call 6
         i32.const 100
@@ -1317,16 +1389,16 @@ public static class Program
         local.set 14
         f32.demote_f64
         local.set 13
-        local.get 22
-        i32.const 136
+        local.get 26
+        i32.const 144
         i32.add
         i32.const 0
         i32.const 8
         memory.fill
         ref.null eq
         local.set 12
-        local.get 22
-        i32.const 136
+        local.get 26
+        i32.const 144
         i32.add
         local.set 15
         local.get 12
@@ -1334,53 +1406,117 @@ public static class Program
         local.get 14
         local.get 15
         call 5
-        local.get 22
-        i32.const 136
-        i32.add
-        local.get 22
+        local.get 26
         i32.const 144
         i32.add
-        call 6
-        local.set 23
-        local.get 1
-        local.get 23
-        i32.const 8
-        memory.copy
-        local.get 1
-        local.set 23
-        local.get 22
+        local.get 26
         i32.const 152
         i32.add
-        local.get 23
+        call 6
+        local.set 27
+        local.get 1
+        local.get 27
         i32.const 8
         memory.copy
-        local.get 22
-        i32.const 152
+        local.get 1
+        local.set 27
+        local.get 26
+        i32.const 160
+        i32.add
+        local.get 27
+        i32.const 8
+        memory.copy
+        local.get 26
+        i32.const 160
         i32.add
         local.get 0
-        local.set 23
-        local.get 22
-        i32.const 160
+        local.set 27
+        local.get 26
+        i32.const 168
         i32.add
-        local.get 23
-        i32.const 8
-        memory.copy
+        local.get 27
+        local.set 24
+        local.set 25
+        local.get 25
+        i32.const 0
+        i32.add
+        local.get 24
+        i32.const 0
+        i32.add
+        i32.load align=1
+        table.get 0
+        local.set 22
+        i32.load align=1
         local.get 22
-        i32.const 160
+        table.set 0
+        local.get 25
+        i32.const 4
+        i32.add
+        local.get 24
+        i32.const 4
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 25
+        i32.const 8
+        i32.add
+        local.get 24
+        i32.const 8
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 26
+        i32.const 168
         i32.add
         local.set 19
         local.set 18
         local.set 17
+        local.get 26
+        i32.const 180
+        i32.add
+        local.set 25
+        local.get 25
+        i32.const 0
+        i32.add
+        f32.const 0x0p+0 (;=0;)
+        f32.store align=1
+        local.get 25
+        i32.const 4
+        i32.add
+        f32.const 0x0p+0 (;=0;)
+        f32.store align=1
+        local.get 25
+        i32.const 8
+        i32.add
+        f32.const 0x0p+0 (;=0;)
+        f32.store align=1
+        local.get 25
+        i32.const 12
+        i32.add
+        f32.const 0x0p+0 (;=0;)
+        f32.store align=1
+        local.get 25
+        i32.const 16
+        i32.add
+        ref.null eq
+        local.set 22
+        i32.load align=1
         local.get 22
-        i32.const 168
+        table.set 0
+        local.get 25
+        i32.const 20
         i32.add
         i32.const 0
+        i32.store align=1
+        local.get 25
         i32.const 24
-        memory.fill
+        i32.add
+        i32.const 0
+        i32.store align=1
         ref.null eq
         local.set 16
-        local.get 22
-        i32.const 168
+        local.get 26
+        i32.const 180
         i32.add
         local.set 20
         local.get 16
@@ -1389,11 +1525,21 @@ public static class Program
         local.get 19
         local.get 20
         call 7
-        local.get 22
-        i32.const 168
+        local.get 26
+        i32.const 180
         i32.add
         call 8
-        local.get 22
+        local.get 23
+        ref.null eq
+        i32.const 4
+        table.fill 0
+        local.get 23
+        ref.null extern
+        i32.const 4
+        table.fill 1
+        local.get 23
+        global.set 8
+        local.get 26
         global.set 7
         return
         unreachable
@@ -1401,21 +1547,31 @@ public static class Program
       unreachable
     end
     local.set 21
-    local.get 22
+    local.get 23
+    ref.null eq
+    i32.const 4
+    table.fill 0
+    local.get 23
+    ref.null extern
+    i32.const 4
+    table.fill 1
+    local.get 23
+    global.set 8
+    local.get 26
     global.set 7
     local.get 21
     throw_ref
   )
   (func (;3;) (type 29) (param eqref f32 i32 i32)
-    (local eqref i32 eqref i32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local eqref i32 eqref i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 9
+    local.tee 13
     i32.const 1048576
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 9
+    local.get 13
     i32.const 0
     i32.add
     global.set 7
@@ -1425,7 +1581,7 @@ public static class Program
         local.get 3
         local.get 1
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 5
         local.set 4
         local.get 4
@@ -1463,13 +1619,13 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
         local.get 0
         local.get 3
         local.get 2
-        local.set 16
+        local.set 20
         local.set 5
         local.set 4
         local.get 4
@@ -1507,9 +1663,9 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 16
+        local.get 20
         call 19
-        local.get 9
+        local.get 13
         global.set 7
         return
         unreachable
@@ -1517,45 +1673,45 @@ public static class Program
       unreachable
     end
     local.set 8
-    local.get 9
+    local.get 13
     global.set 7
     local.get 8
     throw_ref
   )
   (func (;4;) (type 30) (param i32 i32) (result i32)
-    (local eqref i32 eqref i32 eqref f32 i32 i32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local eqref i32 eqref i32 eqref f32 i32 i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 11
+    local.tee 15
     i32.const 1048528
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 11
+    local.get 15
     i32.const 48
     i32.add
     global.set 7
-    local.get 11
+    local.get 15
     i32.const 0
     i32.add
     local.get 0
     i32.const 8
     memory.copy
-    local.get 11
+    local.get 15
     i32.const 0
     i32.add
     local.set 0
     block (type 7) (result exnref) ;; label = @1
       try_table (catch_all_ref 0 (;@1;)) ;; label = @2
         local.get 0
-        local.set 12
-        local.get 11
+        local.set 16
+        local.get 15
         i32.const 8
         i32.add
-        local.get 12
+        local.get 16
         i32.const 8
         memory.copy
-        local.get 11
+        local.get 15
         i32.const 8
         i32.add
         i32.const 0
@@ -1563,14 +1719,14 @@ public static class Program
         f32.load align=1
         f64.promote_f32
         local.get 0
-        local.set 12
-        local.get 11
+        local.set 16
+        local.get 15
         i32.const 16
         i32.add
-        local.get 12
+        local.get 16
         i32.const 8
         memory.copy
-        local.get 11
+        local.get 15
         i32.const 16
         i32.add
         i32.const 4
@@ -1579,7 +1735,7 @@ public static class Program
         local.set 8
         f32.demote_f64
         local.set 7
-        local.get 11
+        local.get 15
         i32.const 24
         i32.add
         i32.const 0
@@ -1587,7 +1743,7 @@ public static class Program
         memory.fill
         ref.null eq
         local.set 6
-        local.get 11
+        local.get 15
         i32.const 24
         i32.add
         local.set 9
@@ -1596,16 +1752,16 @@ public static class Program
         local.get 8
         local.get 9
         call 9
-        local.get 11
+        local.get 15
         i32.const 24
         i32.add
-        local.set 12
+        local.set 16
         local.get 1
-        local.get 12
+        local.get 16
         i32.const 20
         memory.copy
         local.get 1
-        local.get 11
+        local.get 15
         global.set 7
         return
         unreachable
@@ -1613,21 +1769,21 @@ public static class Program
       unreachable
     end
     local.set 10
-    local.get 11
+    local.get 15
     global.set 7
     local.get 10
     throw_ref
   )
   (func (;5;) (type 31) (param eqref f32 f32 i32)
-    (local eqref i32 eqref i32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local eqref i32 eqref i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 9
+    local.tee 13
     i32.const 1048576
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 9
+    local.get 13
     i32.const 0
     i32.add
     global.set 7
@@ -1637,7 +1793,7 @@ public static class Program
         local.get 3
         local.get 1
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 5
         local.set 4
         local.get 4
@@ -1675,14 +1831,14 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
         local.get 0
         local.get 3
         local.get 2
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 5
         local.set 4
         local.get 4
@@ -1720,10 +1876,10 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
-        local.get 9
+        local.get 13
         global.set 7
         return
         unreachable
@@ -1731,45 +1887,45 @@ public static class Program
       unreachable
     end
     local.set 8
-    local.get 9
+    local.get 13
     global.set 7
     local.get 8
     throw_ref
   )
   (func (;6;) (type 32) (param i32 i32) (result i32)
-    (local eqref i32 eqref i32 eqref f32 f32 i32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local eqref i32 eqref i32 eqref f32 f32 i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 11
+    local.tee 15
     i32.const 1048544
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 11
+    local.get 15
     i32.const 32
     i32.add
     global.set 7
-    local.get 11
+    local.get 15
     i32.const 0
     i32.add
     local.get 0
     i32.const 8
     memory.copy
-    local.get 11
+    local.get 15
     i32.const 0
     i32.add
     local.set 0
     block (type 7) (result exnref) ;; label = @1
       try_table (catch_all_ref 0 (;@1;)) ;; label = @2
         local.get 0
-        local.set 12
-        local.get 11
+        local.set 16
+        local.get 15
         i32.const 8
         i32.add
-        local.get 12
+        local.get 16
         i32.const 8
         memory.copy
-        local.get 11
+        local.get 15
         i32.const 8
         i32.add
         i32.const 0
@@ -1777,14 +1933,14 @@ public static class Program
         f32.load align=1
         f64.promote_f32
         local.get 0
-        local.set 12
-        local.get 11
+        local.set 16
+        local.get 15
         i32.const 16
         i32.add
-        local.get 12
+        local.get 16
         i32.const 8
         memory.copy
-        local.get 11
+        local.get 15
         i32.const 16
         i32.add
         i32.const 4
@@ -1795,7 +1951,7 @@ public static class Program
         local.set 8
         f32.demote_f64
         local.set 7
-        local.get 11
+        local.get 15
         i32.const 24
         i32.add
         i32.const 0
@@ -1803,7 +1959,7 @@ public static class Program
         memory.fill
         ref.null eq
         local.set 6
-        local.get 11
+        local.get 15
         i32.const 24
         i32.add
         local.set 9
@@ -1812,16 +1968,16 @@ public static class Program
         local.get 8
         local.get 9
         call 10
-        local.get 11
+        local.get 15
         i32.const 24
         i32.add
-        local.set 12
+        local.set 16
         local.get 1
-        local.get 12
+        local.get 16
         i32.const 8
         memory.copy
         local.get 1
-        local.get 11
+        local.get 15
         global.set 7
         return
         unreachable
@@ -1829,51 +1985,104 @@ public static class Program
       unreachable
     end
     local.set 10
-    local.get 11
+    local.get 15
     global.set 7
     local.get 10
     throw_ref
   )
   (func (;7;) (type 33) (param eqref i32 i32 i32 i32)
-    (local eqref i32 eqref i32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local eqref i32 eqref i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 10
-    i32.const 1048528
+    local.tee 14
+    i32.const 1048512
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 10
-    i32.const 48
+    local.get 14
+    i32.const 64
     i32.add
     global.set 7
-    local.get 10
+    global.get 8
+    local.tee 11
+    i32.const 65534
+    i32.gt_u
+    if ;; label = @1
+      unreachable
+    end
+    local.get 11
+    i32.const 2
+    i32.add
+    global.set 8
+    local.get 14
+    i32.const 16
+    i32.add
+    local.get 11
+    i32.const 0
+    i32.add
+    i32.store align=1
+    local.get 14
+    i32.const 44
+    i32.add
+    local.get 11
+    i32.const 1
+    i32.add
+    i32.store align=1
+    local.get 14
     i32.const 0
     i32.add
     local.get 1
     i32.const 8
     memory.copy
-    local.get 10
+    local.get 14
     i32.const 0
     i32.add
     local.set 1
-    local.get 10
+    local.get 14
     i32.const 8
     i32.add
     local.get 2
     i32.const 8
     memory.copy
-    local.get 10
+    local.get 14
     i32.const 8
     i32.add
     local.set 2
-    local.get 10
+    local.get 14
     i32.const 16
     i32.add
     local.get 3
-    i32.const 8
-    memory.copy
+    local.set 12
+    local.set 13
+    local.get 13
+    i32.const 0
+    i32.add
+    local.get 12
+    i32.const 0
+    i32.add
+    i32.load align=1
+    table.get 0
+    local.set 10
+    i32.load align=1
     local.get 10
+    table.set 0
+    local.get 13
+    i32.const 4
+    i32.add
+    local.get 12
+    i32.const 4
+    i32.add
+    i32.load align=1
+    i32.store align=1
+    local.get 13
+    i32.const 8
+    i32.add
+    local.get 12
+    i32.const 8
+    i32.add
+    i32.load align=1
+    i32.store align=1
+    local.get 14
     i32.const 16
     i32.add
     local.set 3
@@ -1882,17 +2091,17 @@ public static class Program
         local.get 0
         local.get 4
         local.get 1
-        local.set 11
-        local.get 10
-        i32.const 24
+        local.set 15
+        local.get 14
+        i32.const 28
         i32.add
-        local.get 11
+        local.get 15
         i32.const 8
         memory.copy
-        local.get 10
-        i32.const 24
+        local.get 14
+        i32.const 28
         i32.add
-        local.set 17
+        local.set 21
         local.set 6
         local.set 5
         local.get 5
@@ -1967,7 +2176,7 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 17
+        local.get 21
         i32.const 0
         i32.add
         f32.load align=1
@@ -2007,7 +2216,7 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 17
+        local.get 21
         i32.const 4
         i32.add
         f32.load align=1
@@ -2015,17 +2224,17 @@ public static class Program
         local.get 0
         local.get 4
         local.get 2
-        local.set 11
-        local.get 10
-        i32.const 32
+        local.set 15
+        local.get 14
+        i32.const 36
         i32.add
-        local.get 11
+        local.get 15
         i32.const 8
         memory.copy
-        local.get 10
-        i32.const 32
+        local.get 14
+        i32.const 36
         i32.add
-        local.set 17
+        local.set 21
         local.set 6
         local.set 5
         local.get 5
@@ -2100,7 +2309,7 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 17
+        local.get 21
         i32.const 0
         i32.add
         f32.load align=1
@@ -2140,7 +2349,7 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 17
+        local.get 21
         i32.const 4
         i32.add
         f32.load align=1
@@ -2148,17 +2357,45 @@ public static class Program
         local.get 0
         local.get 4
         local.get 3
-        local.set 11
-        local.get 10
-        i32.const 40
+        local.set 15
+        local.get 14
+        i32.const 44
         i32.add
-        local.get 11
+        local.get 15
+        local.set 12
+        local.set 13
+        local.get 13
+        i32.const 0
+        i32.add
+        local.get 12
+        i32.const 0
+        i32.add
+        i32.load align=1
+        table.get 0
+        local.set 10
+        i32.load align=1
+        local.get 10
+        table.set 0
+        local.get 13
+        i32.const 4
+        i32.add
+        local.get 12
+        i32.const 4
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 13
         i32.const 8
-        memory.copy
-        local.get 10
-        i32.const 40
         i32.add
-        local.set 17
+        local.get 12
+        i32.const 8
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 14
+        i32.const 44
+        i32.add
+        local.set 21
         local.set 6
         local.set 5
         local.get 5
@@ -2228,16 +2465,18 @@ public static class Program
           local.get 6
           i32.const 0
           i32.add
+          i32.load align=1
         else
           local.get 6
           i32.const 0
           i32.add
         end
-        local.get 17
+        local.get 21
         i32.const 0
         i32.add
         i32.load align=1
-        call 21
+        table.get 0
+        call 13
         local.get 5
         ref.is_null
         local.get 6
@@ -2273,12 +2512,62 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 17
+        local.get 21
         i32.const 4
         i32.add
         i32.load align=1
         call 21
-        local.get 10
+        local.get 5
+        ref.is_null
+        local.get 6
+        i32.const -1
+        i32.eq
+        i32.and
+        if ;; label = @3
+          i32.const 4
+          global.get 3
+          ref.is_null
+          if ;; label = @4
+            i32.const 0
+            i32.const 53
+            array.new_data 0 3
+            i32.const 0
+            i32.const 53
+            call 1
+            global.set 3
+          end
+          global.get 3
+          struct.new 3
+          throw 0
+        end
+        local.get 5
+        local.get 5
+        ref.is_null
+        if (type 17) (result i32) ;; label = @3
+          local.get 6
+          i32.const 8
+          i32.add
+        else
+          local.get 6
+          i32.const 2
+          i32.add
+        end
+        local.get 21
+        i32.const 8
+        i32.add
+        i32.load align=1
+        call 21
+        local.get 11
+        ref.null eq
+        i32.const 2
+        table.fill 0
+        local.get 11
+        ref.null extern
+        i32.const 2
+        table.fill 1
+        local.get 11
+        global.set 8
+        local.get 14
         global.set 7
         return
         unreachable
@@ -2286,58 +2575,220 @@ public static class Program
       unreachable
     end
     local.set 9
-    local.get 10
+    local.get 11
+    ref.null eq
+    i32.const 2
+    table.fill 0
+    local.get 11
+    ref.null extern
+    i32.const 2
+    table.fill 1
+    local.get 11
+    global.set 8
+    local.get 14
     global.set 7
     local.get 9
     throw_ref
   )
   (func (;8;) (type 34) (param i32) (result i32)
-    (local i32 eqref i32 eqref i32 f32 i32 i64 f64 externref exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local i32 eqref i32 eqref i32 f32 i32 i64 f64 externref exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 12
-    i32.const 1048480
+    local.tee 16
+    i32.const 1048464
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 12
-    i32.const 96
+    local.get 16
+    i32.const 112
     i32.add
     global.set 7
-    local.get 12
+    global.get 8
+    local.tee 13
+    i32.const 65533
+    i32.gt_u
+    if ;; label = @1
+      unreachable
+    end
+    local.get 13
+    i32.const 3
+    i32.add
+    global.set 8
+    local.get 16
+    i32.const 16
+    i32.add
+    local.get 13
+    i32.const 0
+    i32.add
+    i32.store align=1
+    local.get 16
+    i32.const 44
+    i32.add
+    local.get 13
+    i32.const 1
+    i32.add
+    i32.store align=1
+    local.get 16
+    i32.const 80
+    i32.add
+    local.get 13
+    i32.const 2
+    i32.add
+    i32.store align=1
+    local.get 16
     i32.const 0
     i32.add
     local.get 0
-    i32.const 24
-    memory.copy
+    local.set 14
+    local.set 15
+    local.get 15
+    i32.const 0
+    i32.add
+    local.get 14
+    i32.const 0
+    i32.add
+    f32.load align=1
+    f32.store align=1
+    local.get 15
+    i32.const 4
+    i32.add
+    local.get 14
+    i32.const 4
+    i32.add
+    f32.load align=1
+    f32.store align=1
+    local.get 15
+    i32.const 8
+    i32.add
+    local.get 14
+    i32.const 8
+    i32.add
+    f32.load align=1
+    f32.store align=1
+    local.get 15
+    i32.const 12
+    i32.add
+    local.get 14
+    i32.const 12
+    i32.add
+    f32.load align=1
+    f32.store align=1
+    local.get 15
+    i32.const 16
+    i32.add
+    local.get 14
+    i32.const 16
+    i32.add
+    i32.load align=1
+    table.get 0
+    local.set 12
+    i32.load align=1
     local.get 12
+    table.set 0
+    local.get 15
+    i32.const 20
+    i32.add
+    local.get 14
+    i32.const 20
+    i32.add
+    i32.load align=1
+    i32.store align=1
+    local.get 15
+    i32.const 24
+    i32.add
+    local.get 14
+    i32.const 24
+    i32.add
+    i32.load align=1
+    i32.store align=1
+    local.get 16
     i32.const 0
     i32.add
     local.set 0
     block (type 7) (result exnref) ;; label = @1
       try_table (catch_all_ref 0 (;@1;)) ;; label = @2
         local.get 0
-        local.set 13
+        local.set 17
+        local.get 16
+        i32.const 28
+        i32.add
+        local.get 17
+        local.set 14
+        local.set 15
+        local.get 15
+        i32.const 0
+        i32.add
+        local.get 14
+        i32.const 0
+        i32.add
+        f32.load align=1
+        f32.store align=1
+        local.get 15
+        i32.const 4
+        i32.add
+        local.get 14
+        i32.const 4
+        i32.add
+        f32.load align=1
+        f32.store align=1
+        local.get 15
+        i32.const 8
+        i32.add
+        local.get 14
+        i32.const 8
+        i32.add
+        f32.load align=1
+        f32.store align=1
+        local.get 15
+        i32.const 12
+        i32.add
+        local.get 14
+        i32.const 12
+        i32.add
+        f32.load align=1
+        f32.store align=1
+        local.get 15
+        i32.const 16
+        i32.add
+        local.get 14
+        i32.const 16
+        i32.add
+        i32.load align=1
+        table.get 0
+        local.set 12
+        i32.load align=1
         local.get 12
+        table.set 0
+        local.get 15
+        i32.const 20
+        i32.add
+        local.get 14
+        i32.const 20
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 15
         i32.const 24
         i32.add
-        local.get 13
+        local.get 14
         i32.const 24
-        memory.copy
-        local.get 12
-        i32.const 24
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 16
+        i32.const 28
         i32.add
         i32.const 0
         i32.add
-        local.set 13
-        local.get 12
-        i32.const 48
+        local.set 17
+        local.get 16
+        i32.const 56
         i32.add
-        local.get 13
+        local.get 17
         i32.const 8
         memory.copy
-        local.get 12
-        i32.const 48
+        local.get 16
+        i32.const 56
         i32.add
         i32.const 0
         i32.add
@@ -2345,27 +2796,87 @@ public static class Program
         f64.promote_f32
         call 0
         local.get 0
-        local.set 13
-        local.get 12
-        i32.const 56
+        local.set 17
+        local.get 16
+        i32.const 64
         i32.add
-        local.get 13
+        local.get 17
+        local.set 14
+        local.set 15
+        local.get 15
+        i32.const 0
+        i32.add
+        local.get 14
+        i32.const 0
+        i32.add
+        f32.load align=1
+        f32.store align=1
+        local.get 15
+        i32.const 4
+        i32.add
+        local.get 14
+        i32.const 4
+        i32.add
+        f32.load align=1
+        f32.store align=1
+        local.get 15
+        i32.const 8
+        i32.add
+        local.get 14
+        i32.const 8
+        i32.add
+        f32.load align=1
+        f32.store align=1
+        local.get 15
+        i32.const 12
+        i32.add
+        local.get 14
+        i32.const 12
+        i32.add
+        f32.load align=1
+        f32.store align=1
+        local.get 15
+        i32.const 16
+        i32.add
+        local.get 14
+        i32.const 16
+        i32.add
+        i32.load align=1
+        table.get 0
+        local.set 12
+        i32.load align=1
+        local.get 12
+        table.set 0
+        local.get 15
+        i32.const 20
+        i32.add
+        local.get 14
+        i32.const 20
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 15
         i32.const 24
-        memory.copy
-        local.get 12
-        i32.const 56
+        i32.add
+        local.get 14
+        i32.const 24
+        i32.add
+        i32.load align=1
+        i32.store align=1
+        local.get 16
+        i32.const 64
         i32.add
         i32.const 8
         i32.add
-        local.set 13
-        local.get 12
-        i32.const 80
+        local.set 17
+        local.get 16
+        i32.const 92
         i32.add
-        local.get 13
+        local.get 17
         i32.const 8
         memory.copy
-        local.get 12
-        i32.const 80
+        local.get 16
+        i32.const 92
         i32.add
         i32.const 0
         i32.add
@@ -2450,7 +2961,7 @@ public static class Program
               unreachable
             end
             local.get 3
-            i32.const 4
+            i32.const 8
             i32.add
             i32.load align=1
             i32.lt_s
@@ -2497,7 +3008,7 @@ public static class Program
                 i32.add
               end
               local.get 1
-              local.set 14
+              local.set 18
               local.set 3
               local.set 2
               local.get 2
@@ -2530,10 +3041,10 @@ public static class Program
                 unreachable
               end
               local.get 3
-              local.set 13
-              local.get 14
-              local.get 13
-              i32.const 4
+              local.set 17
+              local.get 18
+              local.get 17
+              i32.const 8
               i32.add
               i32.load align=1
               i32.lt_u
@@ -2555,21 +3066,41 @@ public static class Program
                 struct.new 3
                 throw 0
               end
-              local.get 13
+              local.get 17
               i32.load align=1
-              local.get 14
-              i32.const 20
-              i32.mul
+              table.get 0
+              local.set 2
+              local.get 17
+              i32.const 4
               i32.add
+              i32.load align=1
               local.set 3
-              ref.null eq
-              local.get 3
-              local.set 19
-              local.set 18
-              local.get 18
-              local.get 19
-              local.get 18
-              local.get 19
+              local.get 2
+              local.get 2
+              ref.is_null
+              if (type 17) (result i32) ;; label = @6
+                local.get 3
+                local.get 18
+                i32.const 20
+                i32.mul
+                i32.add
+                i32.const 0
+                i32.add
+              else
+                local.get 3
+                local.get 18
+                i32.const 5
+                i32.mul
+                i32.add
+                i32.const 0
+                i32.add
+              end
+              local.set 23
+              local.set 22
+              local.get 22
+              local.get 23
+              local.get 22
+              local.get 23
               local.set 3
               local.set 2
               local.get 2
@@ -2610,12 +3141,12 @@ public static class Program
               call 16
               f64.promote_f32
               call 0
-              local.set 19
-              local.set 18
-              local.get 18
-              local.get 19
-              local.get 18
-              local.get 19
+              local.set 23
+              local.set 22
+              local.get 22
+              local.get 23
+              local.get 22
+              local.get 23
               local.set 3
               local.set 2
               local.get 2
@@ -2854,10 +3385,20 @@ public static class Program
           unreachable
         end
         local.get 3
-        i32.const 4
+        i32.const 8
         i32.add
         i32.load align=1
-        local.get 12
+        local.get 13
+        ref.null eq
+        i32.const 3
+        table.fill 0
+        local.get 13
+        ref.null extern
+        i32.const 3
+        table.fill 1
+        local.get 13
+        global.set 8
+        local.get 16
         global.set 7
         return
         unreachable
@@ -2865,21 +3406,31 @@ public static class Program
       unreachable
     end
     local.set 11
-    local.get 12
+    local.get 13
+    ref.null eq
+    i32.const 3
+    table.fill 0
+    local.get 13
+    ref.null extern
+    i32.const 3
+    table.fill 1
+    local.get 13
+    global.set 8
+    local.get 16
     global.set 7
     local.get 11
     throw_ref
   )
   (func (;9;) (type 37) (param eqref f32 i32 i32)
-    (local eqref i32 eqref i32 eqref i32 i32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local eqref i32 eqref i32 eqref i32 i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 12
+    local.tee 16
     i32.const 1048560
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 12
+    local.get 16
     i32.const 16
     i32.add
     global.set 7
@@ -2889,7 +3440,7 @@ public static class Program
         local.get 3
         local.get 1
         f64.promote_f32
-        local.set 21
+        local.set 25
         local.set 5
         local.set 4
         local.get 4
@@ -2927,14 +3478,14 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 21
+        local.get 25
         f32.demote_f64
         call 17
         local.get 0
         local.get 3
         local.get 2
         local.set 9
-        local.get 12
+        local.get 16
         i32.const 0
         i32.add
         i32.const 0
@@ -2942,7 +3493,7 @@ public static class Program
         memory.fill
         ref.null eq
         local.set 8
-        local.get 12
+        local.get 16
         i32.const 0
         i32.add
         local.set 10
@@ -2950,10 +3501,10 @@ public static class Program
         local.get 9
         local.get 10
         call 11
-        local.get 12
+        local.get 16
         i32.const 0
         i32.add
-        local.set 19
+        local.set 23
         local.set 5
         local.set 4
         local.get 4
@@ -3028,7 +3579,7 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 19
+        local.get 23
         i32.const 0
         i32.add
         f32.load align=1
@@ -3068,7 +3619,7 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 19
+        local.get 23
         i32.const 4
         i32.add
         f32.load align=1
@@ -3108,7 +3659,7 @@ public static class Program
           i32.const 2
           i32.add
         end
-        local.get 19
+        local.get 23
         i32.const 8
         i32.add
         f32.load align=1
@@ -3148,12 +3699,12 @@ public static class Program
           i32.const 3
           i32.add
         end
-        local.get 19
+        local.get 23
         i32.const 12
         i32.add
         f32.load align=1
         call 17
-        local.get 12
+        local.get 16
         global.set 7
         return
         unreachable
@@ -3161,21 +3712,21 @@ public static class Program
       unreachable
     end
     local.set 11
-    local.get 12
+    local.get 16
     global.set 7
     local.get 11
     throw_ref
   )
   (func (;10;) (type 38) (param eqref f32 f32 i32)
-    (local eqref i32 eqref i32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local eqref i32 eqref i32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 9
+    local.tee 13
     i32.const 1048576
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 9
+    local.get 13
     i32.const 0
     i32.add
     global.set 7
@@ -3185,7 +3736,7 @@ public static class Program
         local.get 3
         local.get 1
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 5
         local.set 4
         local.get 4
@@ -3223,14 +3774,14 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
         local.get 0
         local.get 3
         local.get 2
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 5
         local.set 4
         local.get 4
@@ -3268,10 +3819,10 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
-        local.get 9
+        local.get 13
         global.set 7
         return
         unreachable
@@ -3279,21 +3830,21 @@ public static class Program
       unreachable
     end
     local.set 8
-    local.get 9
+    local.get 13
     global.set 7
     local.get 8
     throw_ref
   )
   (func (;11;) (type 39) (param eqref i32 i32)
-    (local eqref i32 eqref i32 f32 exnref i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
+    (local eqref i32 eqref i32 f32 exnref eqref i32 i32 i32 i32 i32 i32 i64 f64 eqref eqref i32 i64 f64 externref)
     global.get 7
-    local.tee 9
+    local.tee 13
     i32.const 1048576
     i32.gt_u
     if ;; label = @1
       unreachable
     end
-    local.get 9
+    local.get 13
     i32.const 0
     i32.add
     global.set 7
@@ -3317,7 +3868,7 @@ public static class Program
         local.get 7
         f32.div
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 4
         local.set 3
         local.get 3
@@ -3355,7 +3906,7 @@ public static class Program
           i32.const 0
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
         local.get 0
@@ -3376,7 +3927,7 @@ public static class Program
         local.get 7
         f32.div
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 4
         local.set 3
         local.get 3
@@ -3414,7 +3965,7 @@ public static class Program
           i32.const 1
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
         local.get 0
@@ -3435,7 +3986,7 @@ public static class Program
         local.get 7
         f32.div
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 4
         local.set 3
         local.get 3
@@ -3473,7 +4024,7 @@ public static class Program
           i32.const 2
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
         local.get 0
@@ -3492,7 +4043,7 @@ public static class Program
         local.get 7
         f32.div
         f64.promote_f32
-        local.set 18
+        local.set 22
         local.set 4
         local.set 3
         local.get 3
@@ -3530,10 +4081,10 @@ public static class Program
           i32.const 3
           i32.add
         end
-        local.get 18
+        local.get 22
         f32.demote_f64
         call 17
-        local.get 9
+        local.get 13
         global.set 7
         return
         unreachable
@@ -3541,7 +4092,7 @@ public static class Program
       unreachable
     end
     local.set 8
-    local.get 9
+    local.get 13
     global.set 7
     local.get 8
     throw_ref
@@ -3570,6 +4121,13 @@ public static class Program
       struct.new 3
       throw 0
     end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      table.get 0
+      return
+    end
     unreachable
   )
   (func (;13;) (type 19) (param eqref i32 eqref)
@@ -3595,6 +4153,14 @@ public static class Program
       global.get 3
       struct.new 3
       throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      local.get 2
+      table.set 0
+      return
     end
     unreachable
   )
@@ -3622,6 +4188,13 @@ public static class Program
       struct.new 3
       throw 0
     end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      table.get 1
+      return
+    end
     unreachable
   )
   (func (;15;) (type 21) (param eqref i32 externref)
@@ -3647,6 +4220,14 @@ public static class Program
       global.get 3
       struct.new 3
       throw 0
+    end
+    local.get 0
+    ref.is_null
+    if ;; label = @1
+      local.get 1
+      local.get 2
+      table.set 1
+      return
     end
     unreachable
   )

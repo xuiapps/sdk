@@ -398,8 +398,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Rem:
             case OpCode.Rem_un:
                 var quotient = NumericPair(ref stack);
-                if (quotient == StackType.Float && node.Code != OpCode.Div)
-                    throw new NotSupportedException("Floating remainder and unsigned floating division are not implemented.");
+                if (quotient == StackType.Float && node.Code is OpCode.Div_un or OpCode.Rem_un)
+                    throw new NotSupportedException("Unsigned floating division and remainder are not valid MSIL.");
                 stack.Push(quotient); break;
             case OpCode.And:
             case OpCode.Or:

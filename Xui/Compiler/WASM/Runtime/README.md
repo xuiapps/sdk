@@ -24,8 +24,9 @@ struct results and byrefs, default overrides, and linked assemblies.
 The shared [JavaScript host source](xui-runtime.js) defines `xuiRuntimeImports`.
 Spread it into the import object when instantiating generated modules. The compiler
 imports `xui-math.pow` only when reachable code uses Math/MathF/Double/Single/NFloat
-Pow. Its IEEE identities account for the differences in JavaScript Math.pow;
+Pow, and `xui-math.sin/cos` for reachable trigonometry. Pow's IEEE identities account for the differences in JavaScript Math.pow;
 MathF and WASM32 NFloat operands/results round to f32 in generated WASM.
+Floating remainder imports `xui-math.remainder`, implemented with JavaScript `%`.
 Finite transcendental results depend on the host math implementation and need not
 be bit-identical across platforms. The same source is embedded for Node/standalone
 HTML hosts and linked into the playground worker's published assets.

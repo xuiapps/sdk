@@ -149,7 +149,36 @@ content queries specialize from actual field classification, avoiding recursive 
 intrinsic stub bodies. DateTime uses compiler-owned automatic storage, and byte-channel
 NFloat conversions in Color use direct target-width conversion.
 
-This is a construction milestone. The existing phone HTML still displays the
-interactive FillRect fixture. Rendering the complete shell needs a Canvas host with
-text measurement and the remaining drawing operations, followed by the real
-window/RootView/EventRouter connection.
+The construction gate remains separate from the themed first-frame gate below.
+The existing phone HTML still displays the interactive FillRect fixture; the real
+shell's persistent window callbacks and EventRouter connection are the next step.
+
+## Themed mobile home: first frame
+
+[BrowserShell.html](Snapshots/BrowserShell.html) now displays the real mobile home
+screen offline. Its embedded WASM executes Window/RootView construction and view
+activation, TestAppDesignRoot's device-aware palette/spacing/typography, and the
+actual Measure/Arrange/Render traversal. The explicit browser platform provides
+mobile device identity and a Canvas context; it does not substitute view code.
+The catalogue remains Canvas-only and the diagnostics overlay is omitted through
+constructor injection. Normal TestApp constructors retain their original overlay.
+
+The expanded fixture adapter supports Canvas text metrics, text, paths, ellipses,
+linear gradients and Core's SurfaceEffects renderer. Shadows and backdrops use
+Core's documented portable approximation. Inter regular/medium/semibold/bold font
+bytes and their license are embedded in the HTML. Node uses deterministic metrics
+for the command snapshot; Chromium uses actual font shaping. Unsupported images,
+radial gradients and remaining Canvas operations fail explicitly.
+
+[The snapshot](Snapshots/BrowserShellRender.md) records the first frame and exit
+code. This milestone does not yet route input or run persistent animation frames
+for the complete shell. The separate MobilePhone preview still exercises its
+smaller interactive fixture.
+
+```sh
+node Xui/Compiler/Tests/Wasm/TestApp/shell.browser.mjs
+```
+
+The runner verifies offline loading, real labels, nonempty pixels, embedded fonts,
+balanced drawing state, repeat rendering and a narrow viewport. Screenshots go to
+the ignored playground browser-test output directory.

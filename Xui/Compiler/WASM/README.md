@@ -295,6 +295,15 @@ uses WASM32 single precision; signed zero, infinities, and NaNs preserve IEEE be
 [Square-root tests](../Tests/Wasm/Mathematics/SquareRootTests.cs) compare CLR results,
 including subnormals and float rounding boundaries.
 
+The corresponding `Sin` and `Cos` methods import `xui-math.sin/cos`, supplied by
+JavaScript Math. Single/NFloat inputs and outputs round to f32; special-value,
+signed-zero, and finite-result comparisons are covered by
+[trigonometry tests](../Tests/Wasm/Mathematics/TrigonometryTests.cs).
+Finite transcendental results need not be bit-identical across host platforms.
+Floating `rem` and NFloat modulus use the host's truncated remainder (`%`), including
+NaN, infinities and signed zero. NFloat casts to Int32/Int64 use the existing signed
+saturating conversion policy, after target-width rounding.
+
 `Environment.TickCount64` and `Stopwatch.GetTimestamp` import the host's monotonic
 `performance.now()` clock. Environment uses whole milliseconds; Stopwatch uses
 nanosecond units with `Frequency = 1_000_000_000`. Precision still depends on the
@@ -517,7 +526,7 @@ supported operations that require no emitted bytes.
 | `mul` | `i32.mul` / `i64.mul` / `f64.mul` | Type stack selects integer width or f64; integer overflow wraps. |
 | `div` | `i32.div_s`, `i64.div_s`, `f64.div` | Integer zero/overflow throw managed exceptions; floating division follows IEEE. |
 | `div.un` | `i32.div_u`, `i64.div_u` | Zero divisor throws a managed DivideByZeroException. |
-| `rem` | `i32.rem_s`, `i64.rem_s` | Signed minimum modulo minus one throws OverflowException; floats unsupported. |
+| `rem` | `i32.rem_s`, `i64.rem_s`, host `%` | Signed integer overflow throws; floating remainder uses JavaScript semantics. |
 | `rem.un` | `i32.rem_u`, `i64.rem_u` | Zero divisor throws a managed DivideByZeroException. |
 | `and` | `i32.and` / `i64.and` | Requires two integers of matching width; floating-point operands are rejected. |
 | `or` | `i32.or` / `i64.or` | Requires two integers of matching width; floating-point operands are rejected. |
@@ -703,9 +712,12 @@ Inline arrays repeat the element's storage with size `length * elementSize`. Num
 buffers use the linear frame; string/object buffers repeat frame-owned reference slots.
 Copies retain independent values/slots, and class fields flatten every repeated leaf.
 Roslyn's inline-array helpers and Span/ReadOnlySpan length, empty checks, indexing,
-slicing, CopyTo/TryCopyTo, and Span-to-ReadOnlySpan conversion over this linear
-backing are recognized intrinsically. A span borrows an address
-and length; it does not own or copy its backing elements. This compiler ABI does
+slicing, CopyTo/TryCopyTo, and Span-to-ReadOnlySpan conversion work over both linear
+backing and inline fields in GC owners. A span holds a rooted owner, selector, and
+length in a 12-byte frame value. A null owner selects a linear byte address; a GC
+owner selects flattened fields. Copies root the same owner in independent frame
+slots; they do not copy the backing elements. NFloat element addresses use f32
+storage consistently, including inline-array and span helpers. This compiler ABI does
 not change XuiNet's classification of CLR spans as containing managed references.
 Slice validates start/count without overflowing their sum. CopyTo supports overlap;
 reference-bearing copies transfer values into destination-owned handles, preserving
@@ -729,9 +741,10 @@ unsigned NFloat conversion used by Color is a scalar intrinsic.
 Still unsupported: multidimensional arrays, array covariance/type tests/object
 conversions, primitive/reference array-element byrefs, managed-array static-data initialization (`RuntimeHelpers.InitializeArray`),
 and arbitrary Array/BCL collection methods. Span construction from managed arrays,
-enumeration helpers, stackalloc, and inline-array access through GC-field
-addresses remain unsupported. Private span/interpolation helpers require linear backing;
-a GC owner at that boundary traps rather than being treated as a byte pointer.
+enumeration helpers and stackalloc remain unsupported. The span descriptor itself
+lives in a linear frame; its borrowed backing can be linear or managed. Linear,
+reference-free copies retain the memory.copy fast path. Managed copies use typed
+field accessors and preserve overlap direction and destination reference ownership.
 
 ## Generic interface variance
 
@@ -957,3 +970,12 @@ need supported natural-loop structure. RuntimeHelpers.IsReferenceOrContainsRefer
 is a compile-time query over closed type/field classification, not a call into its
 recursive CLR intrinsic stub. Address-taken reference locals have initialized null
 frame slots even for SkipLocalsInit methods, matching the existing scalar-frame policy.
+
+`WasmEmitter.Methods` maps emitted function indices to managed method identities,
+allowing hosts/tests to annotate engine `wasm-function[N]` stack traces without
+adding debug metadata to the module. Shared exception subtrees define their block
+types once, while repeated emissions reset loop-exit initialization state.
+
+Delegate method-ID metadata larger than 10,000 entries uses immutable 4,096-entry
+chunks, staying below engine limits for array.new_fixed. Lookup splits the table
+index into a chunk and element index; virtual delegate identity stays unchanged.

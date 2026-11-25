@@ -12,8 +12,9 @@ public readonly ref partial struct CodeEmitter
         if (Pop(instruction.Code, offset).FieldToken != span.Field)
             throw new InvalidProgramException("CreateSpan requires its paired static data token.");
         writer.LocalSet(Frame.AddressScratch);
-        FrameAddress(Frame.Values[offset]); writer.LocalGet(Frame.AddressScratch).I32Store();
-        FrameAddress(Frame.Values[offset] + 4); writer.I32Const(span.ElementCount).I32Store();
+        FrameAddress(Frame.Values[offset]); writer.I32Load().RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef).TableSet(Runtime.ObjectReferences!.Value);
+        FrameAddress(Frame.Values[offset] + 4); writer.LocalGet(Frame.AddressScratch).I32Store();
+        FrameAddress(Frame.Values[offset] + 8); writer.I32Const(span.ElementCount).I32Store();
         FrameAddress(Frame.Values[offset]);
         stack.Push(new(SignatureTypeCode.TypeHandle, span.Result.Identity));
         return true;
