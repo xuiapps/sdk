@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
     <ProjectReference Include="../WASM/Xui.Compiler.WASM.csproj" />
-    <Content Include="../Tests/Wasm/TestApp/Snapshots/BrowserInteractive.html" Link="wwwroot/testapp.html"
+    <Content Include="../Tests/Wasm/TestApp/Snapshots/BrowserInteractive.html" Link="wwwroot/index.html"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../WASM/Runtime/xui-runtime.js" Link="wwwroot/xui-runtime.js"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
