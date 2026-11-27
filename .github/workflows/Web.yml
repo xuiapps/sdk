@@ -42,7 +42,12 @@ jobs:
             throw "The website requires the .NET 10 SDK; selected '$sdkVersion'."
           }
           Write-Host "Selected .NET SDK: $sdkVersion"
-          dotnet workload restore Xui/Apps/TestApp/TestApp.Browser.csproj
+          # The default interpreter build discovers no AOT workload to restore.
+          dotnet workload install wasm-tools
+          if ($LASTEXITCODE -ne 0) { throw "Installing wasm-tools failed." }
+
+      - name: Verify AOT workload before building docs
+        run: dotnet restore Xui/Apps/TestApp/TestApp.Browser.csproj -p:Configuration=Release -p:RunAOTCompilation=true -p:WasmStripILAfterAOT=true
 
       - name: Build docs and published WASM apps
         shell: pwsh
