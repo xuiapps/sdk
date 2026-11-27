@@ -13,6 +13,23 @@ namespace Xui.Compiler.Tests.Wasm.Strings;
 
 public class ResourceStringTests
 {
+    [Fact]
+    public async Task XmlGettersReadTheirOwnAssemblyResourceTable()
+    {
+        const string key = "InvalidOperation_ExpectedEndOfFile";
+        var xml = typeof(System.Xml.Linq.XDocument).Assembly;
+        using var app = CanvasTests.Read(Caller(key, xml.GetName()));
+        using var framework = new Frontend.Framework(xml.GetName().Name + ".dll");
+        _ = new Xui.Compiler.XuiNet.Compilation([app, .. framework.Assemblies]);
+        var resources = new ResourceManager("FxResources." + xml.GetName().Name + ".SR", xml);
+        try
+        {
+            string expected = resources.GetString(key, CultureInfo.InvariantCulture)!;
+            Assert.Equal(expected + "\n", (await Node.ExecuteAsync(new WasmEmitter().Emit(app, new ConsoleWriteLineRewriter()))).Output);
+        }
+        finally { resources.ReleaseAllResources(); }
+    }
+
     [Theory]
     [InlineData("ArgumentOutOfRange_IndexMustBeLess")]
     [InlineData("ArgumentOutOfRange_IndexMustBeLessOrEqual")]
@@ -56,7 +73,7 @@ public class ResourceStringTests
         finally { resources.ReleaseAllResources(); }
     }
 
-    private static byte[] Caller(string key)
+    private static byte[] Caller(string key, System.Reflection.AssemblyName? resourceAssembly = null)
     {
         MemberReferenceHandle getter = default, write = default;
         return Frontend.Msil.Compile(il =>
@@ -64,7 +81,10 @@ public class ResourceStringTests
             il.Call(getter); il.Call(write); il.LoadConstantI4(0); il.OpCode(ILOpCode.Ret);
         }, configureMetadata: metadata =>
         {
-            var sr = metadata.AddTypeReference(MetadataTokens.AssemblyReferenceHandle(1), metadata.GetOrAddString("System"), metadata.GetOrAddString("SR"));
+            var owner = resourceAssembly is null ? MetadataTokens.AssemblyReferenceHandle(1) :
+                metadata.AddAssemblyReference(metadata.GetOrAddString(resourceAssembly.Name!), resourceAssembly.Version!, default,
+                    metadata.GetOrAddBlob(resourceAssembly.GetPublicKeyToken()!), 0, default);
+            var sr = metadata.AddTypeReference(owner, metadata.GetOrAddString("System"), metadata.GetOrAddString("SR"));
             var signature = new BlobBuilder();
             new BlobEncoder(signature).MethodSignature().Parameters(0, result => result.Type().String(), _ => { });
             getter = metadata.AddMemberReference(sr, metadata.GetOrAddString("get_" + key), metadata.GetOrAddBlob(signature));

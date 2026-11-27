@@ -18,6 +18,7 @@ public readonly ref partial struct CodeEmitter
                 writer.I64Eqz();
                 break;
             case SignatureTypeCode.SZArray:
+            case SignatureTypeCode.Array:
             case SignatureTypeCode.Object:
             case SignatureTypeCode.TypeHandle when value.Identity is { } identity && method.Storage.IsClass(identity):
             case SignatureTypeCode.String:

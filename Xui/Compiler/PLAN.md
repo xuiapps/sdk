@@ -1,5 +1,104 @@
 # Plan: display a Xui app using the Xui WASM compiler
 
+## Active objective: compile and run the complete TestApp
+
+The acceptance target is the production TestApp catalogue and window lifecycle,
+compiled from its implementation assemblies by XuiNet. The current curated
+browser menu is a preview and does not satisfy this target.
+
+Work proceeds through production-page execution probes, followed by the complete
+application entry point. Each passing compiler/runtime increment is committed.
+Remaining work is measured by actual reachable dependencies and browser behavior:
+
+1. **Production page dependencies.** Exercise the unchanged carousel pages and
+   their sections. Native string operations, constrained struct interface calls,
+   static array initialization, array collection interfaces, attached-property
+   dictionary keys, and formatting are the current integration path.
+   The production Basics (3), Flexbox (3), and Grid (12) sections now execute and
+   pass offline Chromium rendering/input checks. This includes attached-property
+   dictionaries, named grid areas, native string object storage, and array-backed
+   spans. Canvas Drawing (22) and Canvas Animations (3) also execute, including
+   packaged image drawing and bitmap fills through the injected asset catalogue.
+   Gestures (6) now renders with invariant Double.ToString custom decimal formats.
+   Text Layout, Text Metrics, View Collection Alignment, Device Info, and Haptics
+   also execute, together with Text Input, Design System, both Vibration pages and Market: sixteen production
+   examples, 59 sections (14 of the 17 mobile-menu entries). Haptics renders its actual
+   controls; absent platform services leave haptic calls inactive. The host does
+   not claim hardware haptics support.
+   Full multi-touch input is still a separate host/lifecycle requirement.
+   Borrowed string spans, character search, scalar Cbrt/Atan2, enum names, and
+   floating-point interpolation now pass CLR/Node comparisons. Shared array pools,
+   span fill/clear, primitive ordering, span concatenation, String.Empty and host
+   grapheme boundaries now support the real Text Input page. Its browser gate tests
+   typing, deletion, Tab navigation, password masking, input filters and committed
+   IME text. Provisional composition and native selection handles remain future work.
+   Design System's palette, live-preview tabs and action button also pass; its
+   color-wheel PNGs are embedded in the injected asset catalogue. Bounded linear
+   stackalloc and pointer-backed spans for reference-free elements now execute,
+   including dynamic lengths and return/exception cleanup.
+   Vibration pages now support invariant-provider interpolation and sizeof-driven
+   stackalloc. Chromium checks live dragging, recorded curve playback, and Stop/Start;
+   hardware vibration remains absent. Market now runs its real 5,000-stock list and
+   price-history detail pages, with signed numeric sections, NFloat formatting,
+   invariant lowercasing, Span.ToArray and static interface specialization.
+   The remaining mobile-menu pages are 3D and the two Floorplan renderers.
+   Generic virtual LINQ dispatch now specializes; Nested Stacks (off-menu) still needs a fresh browser gate.
+   The legacy standalone AnimatedHeart example executes but has a zero-height view
+   in the carousel and is not counted as visually accepted. The production Canvas
+   Animations heart is already covered. Browser task state machines now execute in focused tests; complete startup integration remains.
+2. **Actual window and services.** Complete application startup, the emulator
+   middleware lifecycle, async asset loading, resize, animation, pointer capture,
+   keyboard/IME, and navigation. Preserve real service contracts.
+3. **DOM composition.** Honor stable group keys, child order, inherited drawing
+   state, transforms, clipping, border/radius/shadow, and invalidation. Give retained
+   groups dedicated DOM surfaces. This is now implemented in the production-page
+   host, including browser blur for LiquidGlass. Keyed elements are reused, omitted
+   children released, and visible content redrawn every frame. Arbitrary inherited
+   Canvas clips choose the immediate fallback. Hidden caching and dirty-content
+   reuse remain optimizations; full-shell integration follows the page gates.
+4. **Assets and fonts.** Publish an injected asset catalogue alongside WASM; resolve
+   `asset://` identifiers, decode/cache images, preload fonts, and report missing
+   assets through the normal application paths. The standalone page gate embeds
+   its required PNGs, predecodes them before startup, and supplies synchronous
+   IImage.Load/Size and Canvas drawing/patterns. Async loading and raw pixel upload
+   remain explicit unsupported operations.
+5. **GPU and 3D.** Generate browser shader code from the shared shader model and
+   supply a browser GPU surface. Render the production 3D views in their canvas;
+   do not replace them with screenshots or prerecorded frames.
+   The production GpuHardwareCubeTestView now compiles with its real mesh, shaders,
+   matrix calculation and input handling. A browser WebGL 2 device consumes borrowed
+   typed vertex/constant uploads and presents into retained composition surfaces.
+   Native backends use the same typed API through synchronous pointer defaults;
+   WASM copies GC-array values into a bounded linear scratch frame instead of pinning.
+   The standalone HardwareCubeExample gate isolates this actual production view.
+   The complete ThreeDExample also constructs the optional software renderer, whose
+   pinned arrays/native framebuffer are still unsupported. Do not count the full
+   3D page as ready yet. Texture/sampler services and async Floorplan loading remain
+   separate dependencies. Both real GLSL shaders already pass matrix/depth/mip/fade
+   pixel tests (see [GPU gates](Tests/Wasm/Gpu/README.md)).
+   Full-shell discovery now passes missing-constructor branches, single-agent
+   monitors, browser Task/Lazy replacements and closed generic virtual dispatch.
+   TestApp PEs now contain their declared embedded resources. The browser resource
+   profile serves original manifest streams and BinaryReader calls; gzip assets
+   are decompressed before startup and read synchronously through bounded 4 KB
+   linear scratch buffers into GC arrays. All bytes of the real 2048×2048 atlas
+   and its five mip levels match the CLR checksum. This adds loading infrastructure,
+   not a rendered Floorplan page. Neutral XML message getters now resolve against
+   their own supplied PE resource tables. Single-agent thread identity now supports XML's generated iterators.
+   Virtual Object.ToString now passes XML attribute conversion. Default IEquatable class equality now supports the floorplan Region record,
+   including Type descriptor keys. Primitive Buffer.BlockCopy now passes JSON resource loading; XML namespace caching
+   now uses managed wrappers around JavaScript WeakRef. Struct/tuple hashing now
+   runs declared overrides with value-copy semantics and a browser HashCode seed.
+   Null-check-only boxing of non-nullable structs is folded; escaping struct boxes
+   (including dictionary error formatting) remain unsupported. The next discovery
+   rejection is string reference CompareExchange in BCL local-timezone discovery reached by XML value conversion; integer interpolation now preserves signed widths and hexadecimal formats; UriFormatException catches now preserve FormatException ancestry; Rect now exposes its typed equality through IEquatable; StringBuilder now uses mutable GC character buffers and native string snapshots; execution-stack queries now use a bounded per-instance call-depth budget; single-agent memory barriers now bypass CLR thread implementation; ordinal String.Equals comparison modes now execute using native strings; Unicode encoding-name lookup now executes; streaming Unicode decoding and character-buffer string construction now execute; UTF-16 conversion now supports both byte orders; explicit NativeMemory allocation/free now has a reusable linear heap; ordinal string replacement now supports SVG dimension parsing; constrained reference hashing now preserves virtual overrides; invariant Double/UInt32 parsing now supports SVG coordinates and colors; the explicit browser JSON document profile now bypasses the BCL parser; built-in exception text now formats managed payloads and inner chains; all signed/unsigned integer widths now support invariant formatting; invariant Decimal formatting now preserves coefficient and scale; proven null-format Int32 and invariant NumberFormatInfo pairs now execute; primitive-field struct hashing now covers AffineTransform; comparer acquisition now defers operation validation and arrays support identity hashing/equality; the Threading facade now uses existing single-agent Monitor operations; XML exception payloads, Stream.ReadAtLeast and MissingManifestResourceException catches now pass. Explicit managed-span UTF-8 now passes JSON transcoding without pinned locals; reference Interlocked.Exchange passes disposal. The actual encoding facades are supplied. Exact-element array slicing and typed managed-buffer copies now pass the FloorplanDrawing.BuildSurfaces path. Repeated-character String construction now supports SVG hex-color expansion with UTF-16 semantics. The shared SVG transform scanner preserves the prior regex matching behavior without the regex engine. Real LINQ iterator-to-array materialization now passes for tuples with string fields, using checked add/subtract, AppContext switches and array collection/enumeration adapters. Unpinned GC array factories now allocate WASM GC vectors; Object.GetHashCode preserves class overrides and scalar-box semantics. SVG syntax searches use explicit ordinal operations, and encoding fallback exception catches pass JSON discovery.
+6. **Acceptance.** Navigate every production page in the browser, exercise controls
+   and animations, inspect screenshots, and make `/wasm/` host that build. Keep the
+   curated preview until this gate passes; an unsupported feature remains visible
+   in development probes rather than becoming a silent no-op.
+
+The sections below record earlier milestones and their narrower acceptance gates.
+
 ## Current milestone: interactive mobile shell
 
 [BrowserInteractive.html](Tests/Wasm/TestApp/Snapshots/BrowserInteractive.html)
@@ -46,8 +145,12 @@ The rating panel's interpolated strings now use compiler-owned mutable UTF-16 GC
 buffers. Strings, characters, booleans, and default integer formatting execute in
 WASM; handler bodies, ArrayPool, and pointer-based Span<char> are not retained.
 Closed generic interface navigation calls now have specialized dispatch slots.
-The full-menu probe currently reaches the optional Lazy/async floorplan preload.
-Optional floorplan preloading retains known unsupported Lazy/async dependencies. The full application has not executed yet.
+The full-menu probe now passes single-agent volatile field access and supplies
+the XML implementation assemblies. Rectangular array signatures, row-major storage,
+dimension queries, and element byrefs now execute in CLR/Node comparison tests.
+The full shell next reaches `System.MissingMethodException` in the default-constructor
+branch of `Lazy<Task<FloorplanDrawing>>`. Async floorplan preloading and complete
+application execution remain unverified.
 
 The next sequence is:
 

@@ -30,9 +30,9 @@ public readonly record struct StackEntry(
             SignatureTypeCode.Int16 or SignatureTypeCode.UInt16 or SignatureTypeCode.Int32 or SignatureTypeCode.UInt32 => StackType.Int32,
             SignatureTypeCode.Int64 or SignatureTypeCode.UInt64 => StackType.Int64,
             SignatureTypeCode.Single or SignatureTypeCode.Double => StackType.Float,
-            SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr => StackType.NativeInt,
+            SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr or SignatureTypeCode.Pointer => StackType.NativeInt,
             SignatureTypeCode.String => StackType.String,
-            SignatureTypeCode.SZArray => new(StackType.ArrayReference, type),
+            SignatureTypeCode.SZArray or SignatureTypeCode.Array => new(StackType.ArrayReference, type),
             _ => throw new NotSupportedException($"Unsupported stack signature type {type}.")
         };
     }

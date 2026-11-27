@@ -12,7 +12,13 @@ public readonly ref partial struct CodeEmitter
     private bool TryConstructorFactory(Instruction.Token instruction, int offset)
     {
         var target = ConstructorFactory.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
-        if (target is not { } constructor) return false;
+        if (target is not { } factory) return false;
+        if (factory.Constructor is not { } constructor)
+        {
+            ThrowException(ExceptionKind.MissingMethodException);
+            stack.Push(new(SignatureTypeCode.TypeHandle, factory.Type));
+            return true;
+        }
         var storage = method.Storage;
         var shape = storage.Shape(constructor.DeclaringType);
         var instance = method.CallTemporaries[constructor][0];
@@ -30,7 +36,10 @@ public readonly ref partial struct CodeEmitter
         writer.LocalSet(method.GcSource).I32Const((int)ExceptionKind.TargetInvocationException);
         EmitString(ExceptionTypes.Message(ExceptionKind.TargetInvocationException));
         if (storage.ArgumentExceptionsEnabled) writer.RefNull(ValueTypeCode.ExternRef);
-        writer.LocalGet(method.GcSource).StructNew(storage.ExceptionType).Throw(storage.ExceptionTag);
+        writer.LocalGet(method.GcSource);
+        if (storage.ActualValueExceptionsEnabled) writer.RefNull(ValueTypeCode.EqRef);
+        storage.WriteXmlExceptionDefaults(writer);
+        writer.StructNew(storage.ExceptionType).Throw(storage.ExceptionTag);
         CloseExceptionLabel();
         writer.LocalGet(instance);
         stack.Push(new(SignatureTypeCode.TypeHandle, constructor.DeclaringType));

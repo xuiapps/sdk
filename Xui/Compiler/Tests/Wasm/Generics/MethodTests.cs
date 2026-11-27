@@ -25,15 +25,6 @@ public class MethodTests
             }
         }
         """, "generic\n2.5\n", 13);
-    [Fact]
-    public void GenericVirtualDispatchStillFailsExplicitly()
-    {
-        byte[] pe = Frontend.Roslyn.Compile("""
-            public class Base { public virtual T Identity<T>(T value) => value; }
-            public static class Program { public static int Main() => new Base().Identity<int>(3); }
-            """);
-        Assert.Contains("Generic virtual method dispatch", Assert.Throws<NotSupportedException>(() => GcTests.Emit(pe)).Message);
-    }
 
     [Fact]
     public void ExpandingGenericMethodRecursionFailsWithABoundedDiagnostic()

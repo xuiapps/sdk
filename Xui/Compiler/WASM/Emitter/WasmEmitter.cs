@@ -25,10 +25,13 @@ public sealed partial class WasmEmitter
     public IReadOnlyDictionary<FunctionIndex, IR.MethodIdentity> Methods { get; private set; } = new Dictionary<FunctionIndex, IR.MethodIdentity>();
 
     /// <summary>Emits the managed entry point and its dependencies, with optional rewrites and additional preservation roots.</summary>
-    /// <remarks>Additional roots preserve code. Named exports also root static methods with a host-callable ABI.</remarks>
+    /// <remarks>Additional roots preserve code. Named exports also root static methods with a host-callable ABI.
+    /// exportMemory opts into exporting existing linear storage as memory for synchronous host interop.</remarks>
     public byte[] Emit(IR.Assembly assembly, CodeRewriter? rewriter = null, IEnumerable<Root>? additionalRoots = null,
-        IReadOnlyDictionary<string, IR.MethodIdentity>? namedExports = null)
+        IReadOnlyDictionary<string, IR.MethodIdentity>? namedExports = null, bool exportMemory = false)
     {
+        if (exportMemory && namedExports?.ContainsKey("memory") == true)
+            throw new ArgumentException("The memory export name is reserved when exporting linear memory.", nameof(namedExports));
         var source = assembly.ManifestModule;
         if (source.EntryPoint.IsNil)
             throw new NotSupportedException("WASM emission currently requires a managed entry point.");
@@ -55,6 +58,15 @@ public sealed partial class WasmEmitter
             if (module != source && (source.Compilation is null || module.Compilation != source.Compilation))
                 throw new NotSupportedException("Only same-module roots or assemblies bound to the same compilation can be emitted together.");
         }
+        if (dependencies.Contains(new Dependency.Intrinsic("GC.SuppressFinalize")))
+            foreach (var type in dependencies.Nodes.OfType<Dependency.Type>())
+                if (type.Identity.Handle.Kind == HandleKind.TypeDefinition && !IR.FrameworkTypes.Is(type.Identity, "System", "Object"))
+                    foreach (var handle in type.Identity.Module.GetType((TypeDefinitionHandle)type.Identity.Handle).Methods)
+                    {
+                        var definition = type.Identity.Module.GetMethod(handle);
+                        if (definition.Name == "Finalize" && (definition.Attributes & System.Reflection.MethodAttributes.Virtual) != 0)
+                            throw new NotSupportedException($"Managed finalizers are not implemented: {type.Identity}.");
+                    }
         var methods = new Dictionary<IR.MethodIdentity, MethodPlan>();
         var orderedMethods = new List<MethodPlan>();
         var literals = new List<string>();
@@ -75,7 +87,7 @@ public sealed partial class WasmEmitter
                 foreach (string literal in CodeEmitter.CollectRequirements(identity.DeclaringType.Module, method, dependencies))
                     if (seenLiterals.Add(literal)) literals.Add(literal);
             }
-            catch (NotSupportedException error)
+            catch (Exception error) when (error is NotSupportedException or InvalidProgramException)
             {
                 error.Data["Xui.Method"] ??= identity;
                 error.Data["Xui.DependencyPath"] ??= string.Join("\n → ", dependencies.PathTo(new Dependency.Method(identity)));
@@ -86,10 +98,18 @@ public sealed partial class WasmEmitter
         foreach (var layout in dependencies.Nodes.OfType<Dependency.Layout>())
             if (storage.IsGc(layout.Identity)) _ = storage.Shape(layout.Identity);
         storage.CollectArrayElementShapes();
+        storage.ValidateArrayInterfaceUses();
+        foreach (string text in storage.ObjectTextLiterals())
+            if (seenLiterals.Add(text)) literals.Add(text);
         if (storage.ExceptionsEnabled)
             foreach (var kind in Enum.GetValues<XuiNet.DotNet.Exceptions.ExceptionKind>())
             {
                 if (kind > XuiNet.DotNet.Exceptions.ExceptionKind.ArgumentException && !storage.ExtraExceptionKinds.Contains(kind)) continue;
+                if (storage.Formatting.ExceptionText)
+                {
+                    string name = IR.Exceptions.ExceptionTypes.TypeName(kind);
+                    if (seenLiterals.Add(name)) literals.Add(name);
+                }
                 string message = XuiNet.DotNet.Exceptions.ExceptionTypes.Message(kind);
                 if (seenLiterals.Add(message)) literals.Add(message);
             }
@@ -120,9 +140,16 @@ public sealed partial class WasmEmitter
             if (storage.StringEqualityEnabled) stringEqualsType = types.FunctionType([ExternRef, ExternRef], I32);
             storage.Interpolation.DefineTypes(ref types);
             storage.MathImports.DefineTypes(ref types);
+            storage.Monitors.DefineTypes(ref types);
+            storage.Tasks.DefineTypes(ref types);
+            storage.HostImports.DefineTypes(ref types, storage);
             storage.Formatting.DefineTypes(ref types);
             storage.Primitives.DefineTypes(ref types);
             storage.Clock.DefineTypes(ref types);
+            storage.StringSplit.DefineTypes(ref types);
+            storage.StringAccess.DefineTypes(ref types);
+            storage.StringObjects.DefineTypes(ref types);
+            storage.ArrayIdentity.DefineTypes(ref types);
             rewriter.DefineTypes(ref types);
             storage.DefineTypes(ref types, utf16ArrayType);
             storage.DefineReferenceAddressTypes(ref types);
@@ -157,9 +184,16 @@ public sealed partial class WasmEmitter
             if (storage.StringEqualityEnabled) stringEquals = imports.Function("wasm:js-string", "equals", stringEqualsType);
             storage.Interpolation.Import(ref imports);
             storage.MathImports.Import(ref imports);
+            storage.Monitors.Import(ref imports);
+            storage.Tasks.Import(ref imports);
+            storage.HostImports.Import(ref imports);
             storage.Formatting.Import(ref imports);
             storage.Primitives.Import(ref imports);
             storage.Clock.Import(ref imports);
+            storage.StringSplit.Import(ref imports);
+            storage.StringAccess.Import(ref imports);
+            storage.StringObjects.Import(ref imports);
+            storage.ArrayIdentity.Import(ref imports);
             importedFunctionCount = imports.FunctionCount;
         }
         finally
@@ -193,10 +227,12 @@ public sealed partial class WasmEmitter
                 stringReferences = table.References(ExternRef, StorageModel.ReferenceCapacity);
             }
         }
-        if (hasFrames || storage.HasScalarAddressAccessors || storage.HasAddressProjection || storage.StaticData.Count != 0)
+        bool usesMemory = hasFrames || storage.HasScalarAddressAccessors || storage.HasAddressProjection || storage.StaticData.Count != 0 || storage.HostImports.UsesNativeHeap;
+        if (usesMemory)
         {
             using var memory = writer.MemorySection();
-            memory.Memory(storage.StaticData.MemoryPages, storage.StaticData.MemoryPages);
+            // Reserve only the stack/static pages initially; persistent buffers grow on demand.
+            memory.Memory(storage.StaticData.MemoryPages, 32768);
         }
         if (storage.ExceptionsEnabled)
         {
@@ -215,8 +251,20 @@ public sealed partial class WasmEmitter
             }
             for (int i = 0; i < literals.Count; i++)
                 literalIndices.Add(literals[i], (new DataIndex((uint)i), globals.RefNull(ExternRef, Mutability.Mutable)));
+            if (storage.ExecutionStack.Enabled) storage.ExecutionStack.Depth = globals.I32(0, Mutability.Mutable);
             if (hasFrames) stackPointer = globals.I32(MemoryFrame.Start, Mutability.Mutable);
             if (storage.ReferenceSlotsEnabled) referenceStackPointer = globals.I32(0, Mutability.Mutable);
+            foreach (var provider in storage.InvariantCultures.Keys.ToArray())
+            {
+                using var value = globals.Struct(storage.Shape(provider).Type);
+                storage.InvariantCultures[provider] = value.Index;
+            }
+            foreach (var pool in storage.SharedPools.Keys.ToArray())
+            {
+                GlobalIndex instance;
+                using (var value = globals.Struct(storage.Shape(pool).Type)) instance = value.Index;
+                storage.SharedPools[pool] = (instance, globals.RefNull(EqRef, Mutability.Mutable));
+            }
             foreach (var comparer in storage.DefaultComparers.Keys.ToArray())
             {
                 using var value = globals.Struct(storage.Shape(comparer).Type);
@@ -233,6 +281,8 @@ public sealed partial class WasmEmitter
                     .I32(type.VirtualSlots.Count).I32((int)type.FieldCount);
                 if (storage.ManagedTypesEnabled)
                     descriptor.Utf16Array(utf16ArrayType, type.Identity.Module.GetType((TypeDefinitionHandle)type.Identity.Handle).Name);
+                if (storage.ManagedAssemblyEnabled)
+                    descriptor.Utf16Array(utf16ArrayType, Runtime.ResourceCatalog.AssemblyKey(source.Compilation!.Assemblies.Single(a => a.ManifestModule == type.Identity.Module)));
             }
             storage.DefineStaticGlobals(ref globals);
         }
@@ -242,19 +292,31 @@ public sealed partial class WasmEmitter
         using (var exports = writer.ExportSection())
         {
             exports.Function("main", main.Function);
+            if (exportMemory || storage.HostImports.UsesNativeHeap)
+            {
+                if (!usesMemory) throw new NotSupportedException("The module has no linear memory to export.");
+                exports.Memory("memory", new(0));
+            }
             if (namedExports is not null)
                 foreach (var (name, identity) in namedExports)
                     exports.Function(name, methods[identity].Function);
         }
-        if (storage.TableSize != 0)
+        if (storage.TableSize != 0 || storage.Tasks.Callback is not null)
         {
             using var elements = writer.ElementSection();
+            if (storage.Tasks.Callback is { } callback) elements.DeclareFunctions([methods[callback].Function]);
             foreach (var target in storage.DelegateTargets.Values) elements.Functions(target.TableSlot, [target.Function]);
             foreach (var type in storage.Classes.Types)
             {
                 foreach (var slot in type.VirtualSlots)
                     if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsDeclaration)
-                        elements.Functions(type.TableStart + (uint)storage.Classes.InterfaceMethods.Count + slot.Index, [implementation.Function]);
+                        elements.Functions(type.TableStart + (uint)storage.Classes.DispatchMethods.Count + slot.Index, [implementation.Function]);
+                foreach (var slot in type.GenericVirtualSlots)
+                    if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsDeclaration)
+                    {
+                        InterfaceAbi.Validate(methods[slot.Declaration], implementation);
+                        elements.Functions(type.TableStart + slot.Index, [implementation.Function]);
+                    }
                 foreach (var slot in type.InterfaceSlots)
                     if (methods.TryGetValue(slot.Implementation, out var implementation) && !implementation.IsDeclaration)
                     {

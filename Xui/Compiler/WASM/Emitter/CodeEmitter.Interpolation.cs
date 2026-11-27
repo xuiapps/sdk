@@ -14,16 +14,51 @@ public readonly ref partial struct CodeEmitter
             method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
         if (call is null) return false;
         var helpers = method.Storage.Interpolation;
+        if (call.Operation == "Create")
+        {
+            var handler = Pop(instruction.Code, offset);
+            if (handler.Identity != call.Owner || !handler.IsByReference)
+                throw new InvalidProgramException("String.Create requires a handler address.");
+            LinearAddressValue(); writer.LocalSet(Frame.AddressScratch);
+            Pop(instruction.Code, offset); writer.Drop(); // Like CoreLib, Create uses the provider already captured at construction.
+            writer.LocalGet(Frame.AddressScratch).I32Const(1).Call(helpers.Finish);
+            stack.Push(new(SignatureTypeCode.String));
+            return true;
+        }
         bool construct = call.Operation == ".ctor";
         if (construct)
         {
+            if (call.HasProvider)
+            {
+                Pop(instruction.Code, offset);
+                writer.LocalTee(method.GcOwner).RefIsNull().I32Eqz().If();
+                writer.LocalGet(method.GcOwner).GlobalGet(method.Storage.InvariantCultures[InvariantCulture.Resolve(source)]).RefEq().I32Eqz().If();
+                ThrowException(Xui.Compiler.XuiNet.DotNet.Exceptions.ExceptionKind.NotSupportedException);
+                writer.End().End();
+            }
             // These are capacity hints, not observable text. Allocate lazily on the first append.
             Pop(SignatureTypeCode.Int32, instruction.Code, offset); writer.Drop();
             Pop(SignatureTypeCode.Int32, instruction.Code, offset); writer.Drop();
         }
+        else if (call.IsFormattedInteger)
+        {
+            Pop(SignatureTypeCode.String, instruction.Code, offset); writer.LocalSet(method.GcExtern);
+            var storage = method.Storage.Bind(call.Signature.Parameters[0]);
+            PopAssignable(storage, instruction.Code, offset); Narrow(storage);
+            writer.LocalSet(storage.StackType == SignatureTypeCode.Int64 ? method.GcI64 : method.GcI32);
+        }
+        else if (call.IsFloatingPoint)
+        {
+            if (call.Signature.Parameters.Length == 2) Pop(SignatureTypeCode.String, instruction.Code, offset);
+            else writer.RefNull(ValueTypeCode.ExternRef);
+            writer.LocalSet(method.GcExtern);
+            PopAssignable(method.Storage.Bind(call.Signature.Parameters[0]), instruction.Code, offset);
+            if (call.IsSingle) writer.F32DemoteF64().F64PromoteF32();
+            writer.LocalSet(method.GcF64);
+        }
         else if (call.Signature.Parameters.Length == 1)
         {
-            var type = call.Signature.Parameters[0].Code;
+            var type = method.Storage.Bind(call.Signature.Parameters[0]).TypeCode;
             PopAssignable(method.Storage.Bind(call.Signature.Parameters[0]), instruction.Code, offset);
             if (type == SignatureTypeCode.String) writer.LocalSet(method.GcExtern);
             else if (type is SignatureTypeCode.Int64 or SignatureTypeCode.UInt64) writer.LocalSet(method.GcI64);
@@ -58,6 +93,27 @@ public readonly ref partial struct CodeEmitter
         }
         else
         {
+            if (call.IsEnum)
+            {
+                var storage = method.Storage.Bind(call.Signature.Parameters[0]);
+                writer.LocalGet(storage.TypeCode is SignatureTypeCode.Int64 or SignatureTypeCode.UInt64 ? method.GcI64 : method.GcI32);
+                FormatEnum(call.Signature.Parameters[0].Identity!.Value, storage);
+                writer.LocalSet(method.GcExtern).LocalGet(Frame.AddressScratch).LocalGet(method.GcExtern).Call(helpers.AppendString);
+                return true;
+            }
+            if (call.IsFormattedInteger)
+            {
+                FormatInterpolatedInteger(call.Signature.Parameters[0].Code);
+                writer.LocalSet(method.GcExtern).LocalGet(Frame.AddressScratch).LocalGet(method.GcExtern).Call(helpers.AppendString);
+                return true;
+            }
+            if (call.IsFloatingPoint)
+            {
+                writer.LocalGet(method.GcF64).LocalGet(method.GcExtern);
+                FormatFloatingPoint(call.IsSingle);
+                writer.LocalSet(method.GcExtern).LocalGet(Frame.AddressScratch).LocalGet(method.GcExtern).Call(helpers.AppendString);
+                return true;
+            }
             var type = call.Signature.Parameters[0].Code;
             writer.LocalGet(Frame.AddressScratch);
             if (type == SignatureTypeCode.String) writer.LocalGet(method.GcExtern).Call(helpers.AppendString);

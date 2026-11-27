@@ -630,4 +630,10 @@ public ref partial struct Writer
         body.Dispose();
         disposed = true;
     }
+    /// <summary>Reinterprets i32 bits as f32 without numeric conversion.</summary>
+    public readonly Writer F32ReinterpretI32() { body.Instruction(OpCode.F32ReinterpretI32); return this; }
+
+    /// <summary>Reinterprets i64 bits as f64 without numeric conversion.</summary>
+    public readonly Writer F64ReinterpretI64() { body.Instruction(OpCode.F64ReinterpretI64); return this; }
+
 }

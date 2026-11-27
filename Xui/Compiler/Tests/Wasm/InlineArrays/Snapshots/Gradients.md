@@ -102,7 +102,7 @@ public static class Program
   (import "wasm:js-string" "fromCharCodeArray" (func (;1;) (type 1) (param (ref null 0) i32 i32) (result (ref extern))))
   (table (;0;) 65536 65536 eqref)
   (table (;1;) 65536 65536 externref)
-  (memory (;0;) 16 16)
+  (memory (;0;) 16 32768)
   (tag (;0;) (type 4) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
   (global (;1;) (mut externref) ref.null extern)

@@ -6,6 +6,7 @@ public sealed class StructuredBlocks
 {
     private readonly Dictionary<InstructionNode, LoopRegion> loops;
     private readonly HashSet<InstructionNode> emitted = [];
+    private readonly Dictionary<LoopRegion, int> completedLoops = new();
 
     private readonly Dictionary<(InstructionNode Node, InstructionNode? Stop, LoopRegion? Region), bool> duplicateTails = new();
     private int remainingInstructions;
@@ -47,8 +48,18 @@ public sealed class StructuredBlocks
             enteringLoop = false;
             if (loops.TryGetValue(node, out var nested) && nested != region)
             {
-                var innerContinuations = new RegionContinuations(node, loops, nested);
-                nested.Block.Body = Sequence(node, null, nested, innerContinuations, enteringLoop: true);
+                if (completedLoops.TryGetValue(nested, out int size))
+                {
+                    remainingInstructions -= size;
+                    if (remainingInstructions < 0) throw Unsupported(node, "shared-tail expansion exceeds the structured code size budget");
+                }
+                else
+                {
+                    int before = remainingInstructions;
+                    var innerContinuations = new RegionContinuations(node, loops, nested);
+                    nested.Block.Body = Sequence(node, null, nested, innerContinuations, enteringLoop: true);
+                    completedLoops.Add(nested, before - remainingInstructions);
+                }
                 children.Add(nested.Block);
                 node = nested.Block.Exit;
                 continue;
@@ -57,7 +68,7 @@ public sealed class StructuredBlocks
             // can itself contain conditionals; copying an acyclic tail preserves its
             // side effects because only one of the mutually exclusive arms executes.
             if (!emitted.Add(node) && !CanDuplicateTail(node, stop, region)) throw Unsupported(node, "overlapping regions");
-            if (remainingInstructions-- == 0) throw Unsupported(node, "shared-tail expansion exceeds the structured code size budget");
+            if (remainingInstructions-- <= 0) throw Unsupported(node, "shared-tail expansion exceeds the structured code size budget");
             if (node.Code == DotNet.Op.OpCode.Switch)
             {
                 var join = continuations.Join(node, stop);
@@ -77,7 +88,8 @@ public sealed class StructuredBlocks
                 int depth = Math.Min(Lowest(taken, node.After!.Depth), Lowest(notTaken, node.After.Depth));
                 var preserved = node.After;
                 while (preserved.Depth > depth) preserved = preserved.Pop();
-                children.Add(new ConditionalBlock(node, taken, notTaken, join, preserved));
+                children.Add(new ConditionalBlock(node, taken, notTaken, join, preserved,
+                    ReachesJoin(node.Successors[1], join, region), ReachesJoin(node.Successors[0], join, region)));
                 node = join;
             }
             else
@@ -94,12 +106,15 @@ public sealed class StructuredBlocks
         if (node == stop || region is not null && (node == region.Block.Header || node == region.Block.Exit)) return true;
         var key = (node, stop, region);
         if (duplicateTails.TryGetValue(key, out bool found)) return found;
-        // Loop nodes have a single structured owner; do not clone their mutable labels.
-        if (loops.ContainsKey(node)) return duplicateTails[key] = false;
+        // A completed natural loop can appear in mutually exclusive tails. Reuse
+        // its structured body; each emission creates its own lexical WASM labels.
+        if (loops.TryGetValue(node, out var nested))
+            return duplicateTails[key] = CanDuplicateTail(nested.Block.Exit, stop, region);
         // RegionContinuations already rejected unstructured cycles. Remaining edges
         // form a DAG terminating at the join, return/throw, or a region transfer.
         return duplicateTails[key] = node.Successors.Length == 0
-            ? node.Code is DotNet.Op.OpCode.Ret or DotNet.Op.OpCode.Throw or DotNet.Op.OpCode.Rethrow
+            ? node.Code is DotNet.Op.OpCode.Ret or DotNet.Op.OpCode.Throw or DotNet.Op.OpCode.Rethrow or
+                DotNet.Op.OpCode.Leave or DotNet.Op.OpCode.Leave_s or DotNet.Op.OpCode.Endfinally
             : node.Successors.All(next => CanDuplicateTail(next, stop, region));
     }
 

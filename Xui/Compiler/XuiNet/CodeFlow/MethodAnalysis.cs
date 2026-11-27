@@ -11,10 +11,13 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
 {
     private readonly SignatureType[] locals = SignatureReader.Locals(module, body.LocalSignature, context.Arguments, methodArguments).ToArray();
     private readonly Dictionary<int, Signature> calls = new();
+    private readonly IReadOnlyDictionary<int, Model.Intrinsics.SpanAccess> spanCalls = SpanCalls.Read(module, body, graph, context, methodArguments);
     private readonly IReadOnlyDictionary<int, Model.Intrinsics.InterpolatedStringHandler> interpolationCalls = InterpolationCalls.Read(module, body, graph, context, methodArguments);
     private readonly IReadOnlyDictionary<int, StaticSpanCall> staticSpans = StaticSpanCalls.Read(module, body, graph, context, methodArguments);
     private readonly IReadOnlyDictionary<int, PrimitiveCall> primitiveCalls = PrimitiveCalls.Read(module, body, graph, context, methodArguments);
     private readonly IReadOnlyDictionary<int, InvariantFormattingCall> invariantFormatting = InvariantFormattingCalls.Read(module, body, graph);
+
+    private readonly IReadOnlyDictionary<int, ConstrainedCall> constrainedCalls = ConstrainedCalls.Read(module, body, graph, context, methodArguments);
 
     public void Apply(InstructionNode node)
     {
@@ -25,7 +28,9 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         if (graph.Specializations.TryGetValue(node.Offset, out var specialized))
         {
             if (specialized.Kind == SpecializationKind.Int32) stack.Push(StackType.Int32);
-            else if (specialized.Kind == SpecializationKind.Branch) stack.Pop(StackType.Int32);
+            else if (specialized.Kind == SpecializationKind.Branch) stack.Pop();
+            else if (specialized.Kind == SpecializationKind.NullTypeTest) { stack.Pop(); stack.Push(StackType.Null); }
+            else if (specialized.Kind is SpecializationKind.DiscardAndInt32 or SpecializationKind.NullCheckAndInt32) { stack.Pop(); stack.Push(StackType.Int32); }
             node.After = stack.State; node.Lowest = stack.Lowest;
             return;
         }
@@ -44,6 +49,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Ldsfld:
                 var staticField = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                if (Model.Intrinsics.StringEmpty.Is(module, staticField)) { stack.Push(StackType.String); break; }
                 if (Model.Intrinsics.StopwatchConstant.Read(module, staticField) is { } clockConstant)
                 {
                     stack.Push(StackEntry.From(new SignatureType(clockConstant.Code))); break;
@@ -67,6 +73,9 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 var element = SignatureReader.StorageType(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value), context.Arguments, methodArguments);
                 stack.Push(StackEntry.From(SignatureType.Vector(element)));
                 break;
+            case OpCode.Sizeof:
+                _ = instruction.ReadToken(ref reader);
+                stack.Push(StackType.Int32); break;
             case OpCode.Ldlen:
                 var vector = stack.Pop();
                 if (vector.Type is not (StackType.ArrayReference or StackType.Null)) throw stack.Error("Expected an array");
@@ -87,9 +96,14 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Constrained:
                 _ = instruction.ReadToken(ref reader);
-                if (!interpolationCalls.ContainsKey(reader.Offset) && !primitiveCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString and primitive hashing/equality.");
+                if (!spanCalls.ContainsKey(reader.Offset) && !interpolationCalls.ContainsKey(reader.Offset) && !primitiveCalls.ContainsKey(reader.Offset) && !constrainedCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch requiring boxing or a native primitive receiver is not implemented.");
                 break;
-            case OpCode.Nop: break;
+            case OpCode.Nop:
+            case OpCode.Volatile: break;
+            case OpCode.Localloc:
+                ArrayIndex(ref stack);
+                if (stack.State.Depth != 0) throw stack.Error("localloc requires only its size on the evaluation stack");
+                stack.Push(StackType.NativeInt); break;
             case OpCode.Ldind_i1:
             case OpCode.Ldind_u1:
             case OpCode.Ldind_i2:
@@ -188,12 +202,18 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 var testToken = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
                 var testBox = Model.BoxingType.Read(module, testToken, context.Arguments, methodArguments);
                 var testStorage = SignatureReader.StorageType(module, testToken, context.Arguments, methodArguments);
+                if (testStorage.Code == SignatureTypeCode.String)
+                {
+                    if (stack.Pop().Type is not (StackType.ObjectReference or StackType.String or StackType.Null))
+                        throw stack.Error("String casts require an object or native string reference");
+                    stack.Push(StackType.String); break;
+                }
                 var targetType = testBox?.Identity ?? testStorage.Identity;
                 if (testStorage.Code != SignatureTypeCode.Object && (targetType is not { } testIdentity ||
                     testIdentity.Handle.Kind != HandleKind.TypeDefinition && !Model.DelegateInfo.IsRuntimeBase(testIdentity) && Model.Exceptions.ExceptionTypes.Kind(testIdentity) is null))
                     throw new NotSupportedException("Type tests require linked classes or supported boxed values.");
                 var tested = stack.Pop();
-                if (tested.Type is not (StackType.ObjectReference or StackType.Null))
+                if (tested.Type is not (StackType.ObjectReference or StackType.ArrayReference or StackType.Null))
                     throw stack.Error("Class type tests require a class reference");
                 stack.Push(StackEntry.From(testBox is not null || testStorage.Code == SignatureTypeCode.Object ? new SignatureType(SignatureTypeCode.Object) : new SignatureType(SignatureTypeCode.TypeHandle, targetType, IsReferenceType: true)));
                 break;
@@ -209,11 +229,37 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Newobj:
                 var constructorToken = instruction.ReadToken(ref reader).Value;
+                if (Model.Intrinsics.RectangularArray.Read(module, MetadataTokens.EntityHandle(constructorToken), context.Arguments, methodArguments) is { Operation: ".ctor" } rectangleConstructor)
+                {
+                    foreach (var parameter in rectangleConstructor.Signature.Parameters.Reverse()) stack.Store(StackEntry.From(parameter));
+                    stack.Push(StackEntry.From(rectangleConstructor.ArrayType!.Value)); break;
+                }
+                if (Model.Intrinsics.StringCharacters.Read(module, MetadataTokens.EntityHandle(constructorToken)) is { } characters)
+                {
+                    foreach (var parameter in characters.Parameters.Reverse()) stack.Store(StackEntry.From(parameter));
+                    stack.Push(StackType.String); break;
+                }
+                if (Model.Intrinsics.StringRepeat.Is(module, MetadataTokens.EntityHandle(constructorToken)))
+                {
+                    stack.Store(StackType.Int32); stack.Store(StackType.Int32);
+                    stack.Push(StackType.String); break;
+                }
+                if (Model.Intrinsics.StringSpan.Read(module,MetadataTokens.EntityHandle(constructorToken)) is { Constructor:true } stringConstructor)
+                {
+                    stack.Store(StackEntry.From(stringConstructor.Signature.Parameters[0]));
+                    stack.Push(StackType.String); break;
+                }
                 if (staticSpans.TryGetValue(node.Offset, out var staticConstructor))
                 {
                     stack.Store(StackType.Int32);
                     stack.Pop(new(StackType.RuntimeFieldHandle, FieldToken: staticConstructor.Field));
                     stack.Push(StackEntry.From(staticConstructor.Result)); break;
+                }
+                if (Model.Intrinsics.SpanAccess.Read(module, MetadataTokens.EntityHandle(constructorToken), context.Arguments, methodArguments) is { Operation: "FromArray" or "FromReference" or "FromPointer" } arraySpan)
+                {
+                    for (int i = arraySpan.Signature.Parameters.Length - 1; i >= 0; i--)
+                        stack.Store(arraySpan.Operation == "FromPointer" && i == 0 ? new(StackType.NativeInt) : StackEntry.From(arraySpan.Signature.Parameters[i]));
+                    stack.Push(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, arraySpan.Owner))); break;
                 }
                 var constructor = CallSignature(constructorToken);
                 if (Model.DelegateInfo.Member(module, MetadataTokens.EntityHandle(constructorToken), new(context, default, methodArguments)) is { } delegateConstructor)
@@ -250,7 +296,8 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 }
                 else
                 {
-                    if (stack.Pop().Type is not (StackType.ObjectReference or StackType.Null))
+                    var unboxed = stack.Pop();
+                    if (unboxed.Type is not (StackType.ObjectReference or StackType.Null) && !(boxValue.Code == SignatureTypeCode.String && unboxed.Type == StackType.String))
                         throw stack.Error("Unboxing requires an object reference");
                     if (node.Code == OpCode.Unbox && box is null) throw new NotSupportedException("unbox requires a value type.");
                     stack.Push(StackEntry.From(node.Code == OpCode.Unbox ? boxValue.ByReference() : boxValue));
@@ -272,6 +319,21 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Callvirt:
             case OpCode.Call:
                 int callToken = instruction.ReadToken(ref reader).Value;
+                if (Model.Intrinsics.MonitorMethod.Read(module, MetadataTokens.EntityHandle(callToken)) is { } monitorCall &&
+                    (monitorCall.HasLockTaken ? stack.State.Parent : stack.State)?.Entry?.Type == StackType.String)
+                    throw new NotSupportedException("Monitors on native strings require managed string identity.");
+                if (Model.Intrinsics.BitConversion.Read(module, MetadataTokens.EntityHandle(callToken)) is { } bitConversion)
+                { stack.Store(StackEntry.From(bitConversion.Input)); stack.Push(StackEntry.From(bitConversion.Result)); break; }
+                if (Model.Intrinsics.SuppressFinalization.Is(module, MetadataTokens.EntityHandle(callToken)))
+                { stack.Store(StackEntry.From(new Model.Signatures.SignatureType(SignatureTypeCode.Object, IsReferenceType: true))); break; }
+                if (Model.Intrinsics.RectangularArray.Read(module, MetadataTokens.EntityHandle(callToken), context.Arguments, methodArguments) is { } rectangle)
+                {
+                    foreach (var parameter in rectangle.Signature.Parameters.Reverse()) stack.Store(StackEntry.From(parameter));
+                    if (rectangle.ArrayType is { } arrayType) stack.Store(StackEntry.From(arrayType));
+                    else if (stack.Pop().DeclaredType?.Array is null) throw stack.Error("Array dimension queries require an exact array type");
+                    if (rectangle.Signature.Result.Code != SignatureTypeCode.Void) stack.Push(StackEntry.From(rectangle.Signature.Result));
+                    break;
+                }
                 if (Model.Intrinsics.ManagedType.Read(module, MetadataTokens.EntityHandle(callToken)) is { Operation: Model.Intrinsics.ManagedTypeOperation.FromHandle } typeHandle)
                 {
                     if (stack.Pop().Type != StackType.RuntimeTypeHandle) throw stack.Error("GetTypeFromHandle requires a type token");
@@ -296,7 +358,15 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     else
                     {
                         stack.Pop(StackEntry.From(formatting.Provider));
-                        stack.Pop(StackEntry.From(new SignatureType(SignatureTypeCode.Int32, IsByReference: true)));
+                        if (formatting.Parsing is { } parsing)
+                        {
+                            if (parsing.HasStyle) stack.Pop(StackType.Int32);
+                            stack.Store(StackEntry.From(parsing.Input));
+                            stack.Push(StackEntry.From(parsing.Result));
+                            break;
+                        }
+                        if (formatting.HasNullFormat || formatting.ValueType is SignatureTypeCode.Double or SignatureTypeCode.Single) stack.Store(StackType.String);
+                        stack.Pop(StackEntry.From(formatting.Value.ByReference()));
                         stack.Push(StackType.String);
                     }
                     break;
@@ -317,7 +387,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                     var sourceArray = stack.Pop();
                     if (sourceArray.Type is not (StackType.ArrayReference or StackType.Null) || destination.Type is not (StackType.ArrayReference or StackType.Null))
                         throw new NotSupportedException("Array.Copy requires statically typed vectors.");
-                    if (sourceArray.DeclaredType?.Array is { } from && destination.DeclaredType?.Array is { } to && from != to)
+                    if (!copy.ByteOffsets && sourceArray.DeclaredType?.Array is { } from && destination.DeclaredType?.Array is { } to && from != to)
                         throw new NotSupportedException("Array.Copy requires the same exact vector element type.");
                     break;
                 }
@@ -336,7 +406,14 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 if (staticSpans.TryGetValue(node.Offset, out var staticSpan))
                 {
                     stack.Pop(new(StackType.RuntimeFieldHandle, FieldToken: staticSpan.Field));
-                    stack.Push(StackEntry.From(staticSpan.Result)); break;
+                    if (staticSpan.ArrayInitializer)
+                    {
+                        var initialized = stack.Pop();
+                        if (initialized.DeclaredType?.Array is not { } initializedArray || StaticSpanCalls.ArrayElementSize(initializedArray.Element) == 0)
+                            throw new NotSupportedException("InitializeArray requires an exact primitive or enum vector.");
+                    }
+                    else stack.Push(StackEntry.From(staticSpan.Result));
+                    break;
                 }
                 if (node.Code == OpCode.Callvirt && stack.State.Type is StackType.String or StackType.Null &&
                     PrimitiveCalls.IsObjectHash(module, MetadataTokens.EntityHandle(callToken)))
@@ -345,13 +422,20 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 }
                 if (primitiveCalls.TryGetValue(node.Offset, out var primitive))
                 {
-                    if (primitive.Operation == "Equals") stack.Store(StackEntry.From(primitive.Element));
+                    if (primitive.Operation is "Equals" or "CompareTo") stack.Store(StackEntry.From(primitive.Element));
                     stack.Store(StackEntry.From(primitive.AddressReceiver ? primitive.Element.ByReference() : primitive.Element));
-                    stack.Push(StackType.Int32); break;
+                    stack.Push(primitive.Operation == "ToString" ? StackType.String : StackType.Int32); break;
+                }
+                if (spanCalls.TryGetValue(node.Offset,out var spanCall))
+                {
+                    stack.Store(StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle,spanCall.Owner,IsByReference:true)));
+                    stack.Push(StackType.String); break;
                 }
                 var called = interpolationCalls.TryGetValue(node.Offset, out var handlerCall)
                     ? new Signature([new SignatureType(SignatureTypeCode.TypeHandle, handlerCall.Owner, IsByReference: true)], StackEntry.From(handlerCall.Signature.Result))
-                    : CallSignature(callToken);
+                    : constrainedCalls.TryGetValue(node.Offset, out var concrete)
+                        ? ConstrainedSignature(concrete)
+                        : CallSignature(callToken);
                 for (int i = called.Parameters.Length - 1; i >= 0; i--) stack.Store(StackEntry.From(called.Parameters[i]));
                 if (called.Result is StackEntry result) stack.Push(result);
                 break;
@@ -369,7 +453,7 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 break;
             case OpCode.Ret:
                 if (signature.Result is StackEntry returned) stack.Store(returned);
-                if (stack.State.Depth != 0) throw stack.Error("Return leaves unconsumed values");
+                if (stack.State.Depth != 0) throw stack.Error("Return requires an empty evaluation stack after consuming its result");
                 break;
             case OpCode.Br:
             case OpCode.Br_s: break;
@@ -400,6 +484,18 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
             case OpCode.Sub:
             case OpCode.Mul:
                 stack.Push(NumericPair(ref stack)); break;
+            case OpCode.Mul_ovf_un:
+            case OpCode.Add_ovf:
+            case OpCode.Add_ovf_un:
+            case OpCode.Sub_ovf:
+            case OpCode.Sub_ovf_un:
+                var factor = Numeric(ref stack);
+                var multiplicand = Numeric(ref stack);
+                if (factor.Type == StackType.Float || multiplicand.Type == StackType.Float ||
+                    (factor.Type == StackType.Int64) != (multiplicand.Type == StackType.Int64))
+                    throw stack.Error("Checked arithmetic requires compatible integer operands");
+                stack.Push(factor.Type == StackType.NativeInt || multiplicand.Type == StackType.NativeInt ? new(StackType.NativeInt) : factor);
+                break;
             case OpCode.Div:
             case OpCode.Div_un:
             case OpCode.Rem:
@@ -459,11 +555,22 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
     }
 
     private static StackEntry Slot(SignatureType[] slots, int index, InstructionNode instruction) =>
-        index < slots.Length ? StackEntry.From(slots[index]) : throw new InvalidProgramException($"Invalid slot {index} at IL_{instruction.Offset:x4}.");
+        index < slots.Length ? StackEntry.From(slots[index]) : throw new InvalidProgramException($"Invalid {SlotKind(instruction.Code)} index {index} at IL_{instruction.Offset:x4}.");
 
     private static StackEntry Address(SignatureType[] slots, int index, InstructionNode node) =>
         index < slots.Length ? StackEntry.From(slots[index].ByReference()) :
-            throw new InvalidProgramException($"Invalid slot {index} at IL_{node.Offset:x4}.");
+            throw new InvalidProgramException($"Invalid {SlotKind(node.Code)} index {index} at IL_{node.Offset:x4}.");
+
+    private static string SlotKind(OpCode code) => code is >= OpCode.Ldarg_0 and <= OpCode.Ldarg_3 or
+        OpCode.Ldarg or OpCode.Ldarg_s or OpCode.Ldarga or OpCode.Ldarga_s or OpCode.Starg or OpCode.Starg_s ? "argument" : "local";
+
+    private static Signature ConstrainedSignature(ConstrainedCall call)
+    {
+        var target = call.Target;
+        var signature = Signature.Read(target.DeclaringType.Module, target.DeclaringType.Module.GetMethod(target.Handle).Signature, target.DeclaringType, target.Arguments);
+        if (call.ReferenceReceiver is { } receiver) signature.Parameters[0] = receiver.ByReference();
+        return signature;
+    }
 
     private Signature CallSignature(int token)
     {
@@ -474,27 +581,62 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
                 StackEntry.From(managedType.Signature.Result));
         else if (Model.Intrinsics.CompositeFormatting.Read(module, handle) is { } format)
             signature = new(format.Signature.Parameters.ToArray(), StackType.String);
+        else if (Model.Intrinsics.NativeStringComparer.Read(module, handle) is { } nativeComparer)
+            signature = new(nativeComparer.Parameters.ToArray(), StackEntry.From(nativeComparer.Result));
+        else if (Model.Intrinsics.CharFormatting.Read(module, handle) is { } character)
+            signature = new([new(SignatureTypeCode.Char, IsByReference: character.HasThis)], StackType.String);
+        else if (Model.Intrinsics.StringAccess.Read(module, handle) is { } stringAccess)
+            signature = new([new(SignatureTypeCode.String), .. stringAccess.Signature.Parameters], StackEntry.From(stringAccess.Signature.Result));
+        else if (Model.Intrinsics.StringSplit.Read(module, handle) is { } split)
+            signature = new([new(SignatureTypeCode.String), .. split.Signature.Parameters], StackEntry.From(split.Signature.Result));
+        else if (Model.Intrinsics.TextElement.Read(module, handle) is { } textElement)
+            signature = new(textElement.Signature.Parameters.ToArray(), StackType.Int32);
         else if (Model.Intrinsics.StringConcatenation.Read(module, handle) is { } concat)
             signature = new(concat.Signature.Parameters.ToArray(), StackType.String);
         else if (Model.Intrinsics.ResourceString.Read(module, handle) is not null)
             signature = new([], StackType.String);
         else if (Model.Intrinsics.MonotonicClock.Read(module, handle) is not null)
             signature = new([], StackType.Int64);
+        else if (Model.Intrinsics.ExecutionStack.Read(module, handle) is { } stackQuery)
+            signature = new([], stackQuery == "TryEnsureSufficientExecutionStack" ? StackType.Int32 : null);
+        else if (Model.Intrinsics.MemoryBarrier.Is(module, handle))
+            signature = new([], null);
+        else if (Model.Intrinsics.CurrentThread.Is(module, handle))
+            signature = new([], StackType.Int32);
+        else if (Model.Intrinsics.ObjectText.Is(module, handle))
+            signature = new([new(SignatureTypeCode.Object)], StackType.String);
+        else if (Model.Intrinsics.ObjectHash.Is(module, handle))
+            signature = new([new(SignatureTypeCode.Object)], StackType.Int32);
+        else if (Model.Intrinsics.GcArrayAllocation.Read(module, handle, context.Arguments, methodArguments) is { } allocation)
+            signature = new(allocation.Signature.Parameters.ToArray(), StackEntry.From(allocation.Signature.Result));
+        else if (Model.Intrinsics.Int32Formatting.InvariantProvider(module, handle) is { } provider)
+            signature = new([], StackEntry.From(provider));
         else if (Model.Intrinsics.Int32Formatting.Is(module, handle))
             signature = new([new(SignatureTypeCode.Int32, IsByReference: true)], StackType.String);
+        else if (Model.Intrinsics.HostScheduler.Read(module, handle) is { } scheduler)
+            signature = new(scheduler.Signature.Parameters.ToArray(), null);
+        else if (Model.Intrinsics.MonitorMethod.Read(module, handle) is { } monitor)
+            signature = new(monitor.Signature.Parameters.ToArray(), monitor.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(monitor.Signature.Result));
         else if (Model.Intrinsics.ConstructorFactory.Read(module, handle, context.Arguments, methodArguments) is { } constructor)
-            signature = new([], StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, constructor.DeclaringType, IsReferenceType: true)));
+            signature = new([], StackEntry.From(new SignatureType(SignatureTypeCode.TypeHandle, constructor.Type, IsReferenceType: true)));
         else if (Model.Intrinsics.InlineArrayAccess.Read(module, handle, context.Arguments, methodArguments) is { } inline)
             signature = new(inline.Signature.Parameters.ToArray(), StackEntry.From(inline.Signature.Result));
+        else if (Model.Intrinsics.StringSpan.Read(module,handle) is { } stringSpan)
+            signature = new(stringSpan.Signature.Parameters.ToArray(),StackEntry.From(stringSpan.Signature.Result));
         else if (Model.Intrinsics.SpanAccess.Read(module, handle, context.Arguments, methodArguments) is { } span)
             signature = new(span.Signature.HasThis
-                ? [new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters]
+                ? [new SignatureType(SignatureTypeCode.TypeHandle, span.Owner, IsByReference: true), .. span.Signature.Parameters.Select(p => span.Operation == "FromPointer" && p.Code == SignatureTypeCode.Pointer ? new SignatureType(SignatureTypeCode.IntPtr) : p)]
                 : span.Signature.Parameters.ToArray(), span.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(span.Signature.Result));
         else if (Model.Intrinsics.InterpolatedStringHandler.Read(module, handle, context.Arguments, methodArguments) is { } interpolation)
-            signature = new([new SignatureType(SignatureTypeCode.TypeHandle, interpolation.Owner, IsByReference: true), .. interpolation.Signature.Parameters],
+            signature = new(interpolation.Operation == "Create" ? interpolation.Signature.Parameters.ToArray() : [new SignatureType(SignatureTypeCode.TypeHandle, interpolation.Owner, IsByReference: true), .. interpolation.Signature.Parameters],
                 interpolation.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(interpolation.Signature.Result));
         else if (Model.Intrinsics.StringEquality.Read(module, handle) is { } textEquality)
-            signature = new([new(SignatureTypeCode.String), new(SignatureTypeCode.String)], StackType.Int32);
+            signature = new([new(SignatureTypeCode.String), new(SignatureTypeCode.String),
+                .. textEquality.HasComparison ? new[] { textEquality.Signature.Parameters[^1] } : []], StackType.Int32);
+        else if (Model.Intrinsics.SharedArrayPool.Read(module, handle, context.Arguments, methodArguments) is { } pool)
+            signature = new(pool.Signature.HasThis
+                ? [new SignatureType(SignatureTypeCode.TypeHandle, pool.Owner, IsReferenceType: true), .. pool.Signature.Parameters]
+                : pool.Signature.Parameters.ToArray(), pool.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(pool.Signature.Result));
         else if (Model.Intrinsics.DefaultEquality.Read(module, handle, context.Arguments, methodArguments) is { } equality)
             signature = new(equality.Signature.HasThis
                 ? [new SignatureType(SignatureTypeCode.TypeHandle, equality.Owner, IsReferenceType: true), .. equality.Signature.Parameters]
@@ -506,9 +648,11 @@ internal sealed class MethodAnalysis(Model.Module module, Model.MethodBody body,
         }
         else if (Model.Intrinsics.TimeSpanFactory.Read(module, handle) is { } duration)
             signature = new(duration.Signature.Parameters.ToArray(), StackEntry.From(duration.Signature.Result));
+        else if (Model.Intrinsics.ManagedBuffer.Read(module, handle, context.Arguments, methodArguments) is { } buffer)
+            signature = new(buffer.Signature.Parameters.ToArray(), buffer.Signature.Result.Code == SignatureTypeCode.Void ? null : StackEntry.From(buffer.Signature.Result));
         else if (Model.Intrinsics.ManagedReference.Read(module, handle, context.Arguments, methodArguments) is { } address)
             signature = new(address.Signature.Parameters.ToArray(), StackEntry.From(address.Signature.Result));
-        else if (Model.Intrinsics.ReferenceCompareExchange.Read(module, handle, context.Arguments, methodArguments) is { } exchange)
+        else if (Model.Intrinsics.ReferenceInterlocked.Read(module, handle, context.Arguments, methodArguments) is { } exchange)
             signature = new(exchange.Parameters.ToArray(), StackEntry.From(exchange.Result));
         else if (Model.Exceptions.ExceptionTypes.TryMember(module, handle, out _, out _))
         {

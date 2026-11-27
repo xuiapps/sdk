@@ -24,7 +24,13 @@ public static class FrameworkTypes
         }
         else return false;
         return assembly is "System.Private.CoreLib" or "System.Runtime" or "mscorlib" ||
-            assembly == "System.Runtime.InteropServices" && ns == "System.Runtime.InteropServices";
+            assembly == "System.Runtime.InteropServices" && ns == "System.Runtime.InteropServices" ||
+            assembly == "System.Memory" && ns == "System" && name == "MemoryExtensions" ||
+            assembly == "System.Private.Uri" && ns == "System" && name == "UriFormatException" ||
+            assembly == "System.Text.Json" && ns == "System.Text.Json" && name == "JsonException" ||
+            assembly == "System.Threading" && ns == "System.Threading" && name is "Monitor" or "Interlocked" ||
+            assembly == "System.Threading.Thread" && ns == "System.Threading" && name == "Thread" ||
+            assembly is "System.Private.Xml" or "System.Xml.ReaderWriter" && ns == "System.Xml" && name == "XmlException";
     }
 
     /// <summary>Whether this is a framework ValueTuple declaration (zero through eight generic arguments).</summary>

@@ -9,6 +9,8 @@ public enum ManagedTypeOperation
     GetType,
     FromHandle,
     Name,
+    IsValueType,
+    Assembly,
     Equal,
     NotEqual
 }
@@ -16,7 +18,8 @@ public enum ManagedTypeOperation
 /// <summary>A narrow System.Type facade; arbitrary reflection is not a runtime dependency.</summary>
 public sealed record ManagedType(
     ManagedTypeOperation Operation,
-    MethodSignature Signature)
+    MethodSignature Signature,
+    MethodIdentity? Factory = null)
 {
     /// <summary>Identifies the opaque managed reference backed by a module's immutable type descriptor.</summary>
     public static bool Is(TypeIdentity identity) => FrameworkTypes.Is(identity, "System", "Type");
@@ -29,7 +32,7 @@ public sealed record ManagedType(
         var signature = SignatureReader.Resolve(module, token, typeArguments, methodArguments);
         if (BoxingType.Read(module, token, typeArguments, methodArguments) is { } boxed) return boxed.Identity;
         if (signature.Identity is not { Handle.Kind: HandleKind.TypeDefinition, IsValueType: false } identity ||
-            FrameworkTypes.IsRuntimeBase(identity) || Is(identity) || DefaultEquality.Is(identity) ||
+            FrameworkTypes.IsRuntimeBase(identity) || Is(identity) || InvariantCulture.Is(identity) || DefaultEquality.Is(identity) || SharedArrayPool.Is(identity) ||
             Exceptions.ExceptionTypes.Kind(identity) is not null)
             throw new NotSupportedException($"typeof currently requires a linked class or interface descriptor: {signature}.");
         return identity;
@@ -66,6 +69,15 @@ public sealed record ManagedType(
                 return new(ManagedTypeOperation.GetType, signature);
             if (name == "get_Name" && (Is(owner) || FrameworkTypes.Is(owner, "System.Reflection", "MemberInfo")) && signature.Result.Code == SignatureTypeCode.String)
                 return new(ManagedTypeOperation.Name, signature);
+            if (name == "get_Assembly" && Is(owner) && signature.Result.Identity is { Handle.Kind: HandleKind.TypeDefinition } assembly)
+            {
+                var definition = assembly.Module.GetType((TypeDefinitionHandle)assembly.Handle);
+                if (definition.Namespace == "Xui.Compiler.Runtime.Reflection" && definition.Name == "Assembly" &&
+                    assembly.Module.Metadata.GetString(assembly.Module.Metadata.GetAssemblyDefinition().Name) == "Xui.Compiler.Runtime")
+                    return new(ManagedTypeOperation.Assembly, signature, new(assembly, definition.Methods.Single(h => assembly.Module.GetMethod(h).Name == "FromName")));
+            }
+            if (name == "get_IsValueType" && Is(owner) && signature.Result.Code == SignatureTypeCode.Boolean)
+                return new(ManagedTypeOperation.IsValueType, signature);
         }
         if (Is(owner) && !signature.HasThis && signature.Result.Code == SignatureTypeCode.Boolean && signature.Parameters.Length == 2 &&
             signature.Parameters.All(p => !p.IsByReference && p.Identity is { } type && Is(type)))

@@ -4,11 +4,15 @@ using Xui.Compiler.XuiNet.DotNet.Signatures;
 
 namespace Xui.Compiler.XuiNet.DotNet.Intrinsics;
 
-/// <summary>A closed generic Activator factory with a statically selected public parameterless class constructor.</summary>
+/// <summary>A closed generic Activator factory with a statically selected constructor or a managed missing-constructor failure.</summary>
 public static class ConstructorFactory
 {
-    /// <summary>Resolves new T() without runtime reflection; value types and missing public constructors remain explicit gaps.</summary>
-    public static MethodIdentity? Read(Module module, EntityHandle token, GenericArguments? context, GenericArguments? methodArguments)
+    public readonly record struct Target(
+        TypeIdentity Type,
+        MethodIdentity? Constructor);
+
+    /// <summary>Resolves new T() without runtime reflection; value types and abstract types remain explicit gaps.</summary>
+    public static Target? Read(Module module, EntityHandle token, GenericArguments? context, GenericArguments? methodArguments)
     {
         if (token.Kind != HandleKind.MethodSpecification) return null;
         var spec = module.GetMethodSpecification((MethodSpecificationHandle)token);
@@ -40,8 +44,8 @@ public static class ConstructorFactory
             var constructor = type.Module.GetMethod(handle);
             if (constructor.Name != ".ctor" || (constructor.Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public) continue;
             var declared = SignatureReader.Method(type.Module, constructor.Signature, type.Arguments);
-            if (declared.HasThis && declared.Parameters.Length == 0 && declared.Result.Code == SignatureTypeCode.Void) return new(type, handle);
+            if (declared.HasThis && declared.Parameters.Length == 0 && declared.Result.Code == SignatureTypeCode.Void) return new(type, new MethodIdentity(type, handle));
         }
-        throw new NotSupportedException($"Generic construction requires a public parameterless constructor: {type}.");
+        return new(type, null);
     }
 }

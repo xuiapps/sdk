@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
@@ -145,7 +144,7 @@ public sealed partial class FloorplanDrawing
                     style.LineCap == "round" ? LineCap.Round : style.LineCap == "square" ? LineCap.Square : LineCap.Butt,
                     style.LineJoin == "round" ? LineJoin.Round : style.LineJoin == "bevel" ? LineJoin.Bevel : LineJoin.Miter,
                     style.FillRule == "evenodd" ? FillRule.EvenOdd : FillRule.NonZero, alpha,
-                    style.PaintOrder.StartsWith("stroke"), tag == "text" && !insideMarkers, Region: region);
+                    style.PaintOrder.StartsWith("stroke", StringComparison.Ordinal), tag == "text" && !insideMarkers, Region: region);
                 if (tag == "text" && element.HasElements)
                 {
                     // The study uses explicitly positioned tspan lines, not inline text layout.
@@ -168,7 +167,7 @@ public sealed partial class FloorplanDrawing
                 return null;
             if (value == "currentColor")
                 value = style.Color;
-            if (!value.StartsWith("url("))
+            if (!value.StartsWith("url(", StringComparison.Ordinal))
             { var color = ColorOf(value); color.Alpha *= opacity; return new(color); }
             var gradient = ids[value[5..^1]];
             var stops = gradient.Elements().Select(stop =>
@@ -212,11 +211,12 @@ public sealed partial class FloorplanDrawing
         var result = AffineTransform.Identity;
         if (value is null)
             return result;
-        foreach (Match m in Regex.Matches(value, @"([a-zA-Z]+)\(([^)]+)\)"))
+        var transforms = new SvgTransformReader(value);
+        while (transforms.MoveNext())
         {
-            var r = new SvgPathReader(m.Groups[2].Value);
+            var r = new SvgPathReader(transforms.Arguments);
             var a = r.Number();
-            switch (m.Groups[1].Value)
+            switch (transforms.Name)
             {
                 case "translate":
                     result *= AffineTransform.Translate((a, r.More ? r.Number() : 0));

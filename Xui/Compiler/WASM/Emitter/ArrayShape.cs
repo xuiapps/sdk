@@ -10,4 +10,5 @@ internal sealed class ArrayShape(ArraySignature signature, LocalVariable element
     public LocalVariable Element { get; } = element;
     public bool StructElements => Element.Identity is { IsValueType: true };
     public TypeIndex Type { get; set; }
+    public ArrayShape? Backing { get; set; }
 }

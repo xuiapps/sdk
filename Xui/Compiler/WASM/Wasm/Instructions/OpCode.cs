@@ -247,6 +247,10 @@ public enum OpCode : byte
     I32ReinterpretF32 = 0xbc,
     /// <summary>Reinterprets the IEEE 754 bits of f64 as i64.</summary>
     I64ReinterpretF64 = 0xbd,
+    /// <summary>Reinterprets i32 bits as f32.</summary>
+    F32ReinterpretI32 = 0xbe,
+    /// <summary>Reinterprets i64 bits as f64.</summary>
+    F64ReinterpretI64 = 0xbf,
     /// <summary>Sign-extends the low eight bits to i32.</summary>
     I32Extend8S = 0xc0,
     /// <summary>Sign-extends the low sixteen bits to i32.</summary>
@@ -255,6 +259,8 @@ public enum OpCode : byte
     RefNull = 0xd0,
     /// <summary>Tests whether a reference is null.</summary>
     RefIsNull = 0xd1,
+    /// <summary>Pushes a declared function reference.</summary>
+    RefFunc = 0xd2,
     /// <summary>Compares GC references by identity.</summary>
     RefEq = 0xd3,
     /// <summary>Introduces a GC instruction with a U32 subopcode.</summary>

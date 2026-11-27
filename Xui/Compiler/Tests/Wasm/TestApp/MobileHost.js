@@ -4,12 +4,14 @@ async function startMobile(bytes) {
     const context = canvas.getContext('2d');
     const commands = [];
     const module = await WebAssembly.compile(bytes, { builtins: ['js-string'] });
-    const { exports: api } = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasImports(context, commands) });
+    const canvasHost = typeof createCompositionImports === 'function' ? createCompositionImports(canvas,commands) : canvasImports(context,commands);
+    const { exports: api } = await WebAssembly.instantiate(module, { ...globalThis.xuiRuntimeImports, canvas: canvasHost });
     let session = api.Create();
     let pending = 0, disposed = false;
     const contacts = new Map();
     const demo = { api, session, commands, ready: false, error: null, pending: false, disposed: false, invalidate, dispose };
     window.mobileDemo = demo;
+    const textInput = typeof createTextInputHost === "function" ? createTextInputHost(canvas,api,session,invalidate,fail) : null;
 
     function fail(error) {
         demo.error = String(error); status.textContent = `Unable to render: ${error.message ?? error}`;
@@ -34,7 +36,13 @@ async function startMobile(bytes) {
             context.setTransform(ratio, 0, 0, ratio, 0, 0);
             context.globalAlpha = 1; context.fillStyle = 'white'; context.fillRect(0, 0, width, height);
             commands.length = 0;
-            api.Frame(session, width, height, BigInt(Math.round(time * 10000)));
+            canvasHost.beginFrame?.(width,height,ratio);
+            if(api.FrameChecked) {
+                const error = api.FrameChecked(session, width, height, BigInt(Math.round(time * 10000)));
+                if(error !== null) throw new Error(error);
+            } else api.Frame(session, width, height, BigInt(Math.round(time * 10000)));
+            canvasHost.endFrame?.();
+            textInput?.sync();
             demo.ready = true;
             if (api.NeedsFrame(session)) invalidate();
         } catch (error) { fail(error); }
@@ -59,6 +67,7 @@ async function startMobile(bytes) {
                 contacts.delete(event.pointerId);
                 if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
             }
+            textInput?.sync(kind===2 || kind===4);
             invalidate();
         } catch (error) { fail(error); }
     }
@@ -89,6 +98,8 @@ async function startMobile(bytes) {
         contacts.clear();
         session = null; demo.session = null; demo.api = null; demo.disposed = true;
         commands.length = 0;
+        textInput?.dispose();
+        canvasHost.dispose?.();
     }
     for (const name of events) canvas.addEventListener(name, pointer, { passive: false });
     observer.observe(canvas);

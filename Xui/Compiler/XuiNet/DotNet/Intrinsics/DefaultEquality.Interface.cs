@@ -8,16 +8,16 @@ public sealed partial record DefaultEquality
     /// <summary>The trusted comparer interface whose default singleton needs a runtime adapter.</summary>
     public static bool IsInterface(TypeIdentity type) => FrameworkTypes.Is(type, "System.Collections.Generic", "IEqualityComparer`1");
 
-    /// <summary>Finds the default comparer corresponding to a closed scalar/string interface.</summary>
+    /// <summary>Finds the default comparer corresponding to a closed supported interface.</summary>
     public static TypeIdentity InterfaceOwner(TypeIdentity contract)
     {
         if (!IsInterface(contract) || contract.Arguments?.Values.Length != 1 || contract.Module.Compilation is not { } compilation)
             throw new NotSupportedException($"Default comparer interface requires a linked closed definition: {contract}.");
         var element = contract.Arguments.Values[0];
         var storage = EnumInfo.Storage(element);
-        if (storage.Identity is not null && !NativeFloat.Is(storage.Identity.Value) ||
-            storage.Code is SignatureTypeCode.Object or SignatureTypeCode.SZArray)
-            throw new NotSupportedException($"Default comparer interface adapters currently support scalar and string elements: {element}.");
+        if (storage.Identity is { IsValueType: false } && !ObjectHash.Supports(element) ||
+            storage.Code == SignatureTypeCode.Object)
+            throw new NotSupportedException($"Default comparer interface adapters require scalar, string, array, or named elements: {element}.");
         return compilation.ResolveType(contract.Module, "System.Collections.Generic", "EqualityComparer`1") with { Arguments = contract.Arguments };
     }
 

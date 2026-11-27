@@ -15,5 +15,11 @@ public enum SpecializationKind
     /// <summary>A metadata query replaced by an Int32 constant.</summary>
     Int32,
     /// <summary>A one-operand conditional whose selected successor is known; consume its condition.</summary>
-    Branch
+    Branch,
+    /// <summary>An impossible isinst: consume the reference and produce null, preserving evaluation side effects.</summary>
+    NullTypeTest,
+    /// <summary>Consumes an evaluated value and substitutes a proven Int32 result.</summary>
+    DiscardAndInt32,
+    /// <summary>Consumes a reference, throws on null, and substitutes a proven Int32 result.</summary>
+    NullCheckAndInt32
 }

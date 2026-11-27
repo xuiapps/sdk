@@ -35,6 +35,10 @@ public static class Analyzer
         while (work.TryDequeue(out var instruction))
         {
             try { analysis.Apply(instruction); }
+            catch (InvalidProgramException error)
+            {
+                throw new InvalidProgramException($"{error.Message} Method: {method}.", error);
+            }
             catch (NotSupportedException error)
             {
                 error.Data["Xui.Method"] = method.ToString();

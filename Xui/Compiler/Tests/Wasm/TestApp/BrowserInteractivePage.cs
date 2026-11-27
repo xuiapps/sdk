@@ -2,7 +2,7 @@ namespace Xui.Compiler.Tests.Wasm.TestApp;
 
 internal static class BrowserInteractivePage
 {
-    public static string Html(byte[] wasm, string host) => PageSizeBreakdown.AddTo($$"""
+    public static string Html(byte[] wasm, string host, string? assets = null, bool composition = false) => PageSizeBreakdown.AddTo($$"""
         <!doctype html>
         <html lang="en">
         <meta charset="utf-8">
@@ -16,8 +16,9 @@ internal static class BrowserInteractivePage
           html, body { margin:0; width:100%; height:100%; overflow:hidden; background:white; }
           canvas { display:block; width:100%; height:100%; touch-action:none; outline:none; }
           #status { position:fixed; left:12px; bottom:6px; margin:0; color:#666; font:11px system-ui,sans-serif; pointer-events:none; }
-          #status { max-width:calc(100% - 230px); }
+          #status { max-width:calc(100% - 230px); z-index:2; }
           #page-size { position:fixed; right:12px; bottom:6px; color:#444; font:12px system-ui,sans-serif; }
+          #page-size { z-index:3; }
           #page-size summary { cursor:pointer; text-align:right; }
           #page-size[open] { box-sizing:border-box; background:white; width:680px; max-width:calc(100vw - 24px); max-height:85vh; overflow:auto; padding:16px; border:1px solid #ddd; border-radius:8px; box-shadow:0 4px 24px #0002; }
           #page-size h2 { font-size:15px; margin:18px 0 8px; }
@@ -31,11 +32,13 @@ internal static class BrowserInteractivePage
         <p id="status" role="status">TestApp · drag to browse</p>
         {{PageSizeBreakdown.Placeholder}}
         <script>
+        {{assets}}
         {{Xui.Compiler.WASM.Runtime.JavaScript.Source}}
         {{BrowserCanvasHost.JavaScript}}
+        {{(composition ? File.ReadAllText(Path.Combine(Frontend.SourceProject.XuiRoot, "Compiler/Tests/Wasm/TestApp/BrowserCompositionHost.js")) : "")}}
         {{host}}
         const bytes = Uint8Array.from(atob('{{Convert.ToBase64String(wasm)}}'), c => c.charCodeAt(0));
-        Promise.all([400,500,600,700].map(weight => document.fonts.load(`${weight} 20px Inter`)))
+        Promise.all([...[400,500,600,700].map(weight => document.fonts.load(`${weight} 20px Inter`)), globalThis.xuiPrepareAssets?.()])
             .then(() => startMobile(bytes)).catch(error => {
                 window.mobileDemo = { error: String(error) };
                 document.getElementById('status').textContent = `Unable to start: ${error.message ?? error}`;

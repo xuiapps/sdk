@@ -22,6 +22,7 @@ public readonly ref partial struct CodeEmitter
         if (stack.Count != 0)
             throw new InvalidProgramException($"{returnType} Ret at IL_{offset:x4} requires an empty evaluation stack after its result; found {stack.Count} value(s).");
         LeaveFrame();
+        LeaveExecutionDepth();
         writer.Return();
     }
 }

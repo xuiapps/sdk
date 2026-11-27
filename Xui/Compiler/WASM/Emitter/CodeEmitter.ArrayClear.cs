@@ -20,6 +20,7 @@ public readonly ref partial struct CodeEmitter
         var array = Pop(instruction.Code, offset); writer.LocalSet(method.GcOwner);
         CheckCopyNull(method.GcOwner, "array");
         if (array.Array is not { } signature) { writer.Unreachable(); return true; }
+        if (!signature.IsVector) throw new NotSupportedException("Array.Clear on rectangular arrays is not implemented.");
         var shape = method.Storage.ArrayShape(signature);
         writer.LocalGet(method.GcOwner).RefCast(shape.Type).ArrayLen().LocalSet(method.GcI32);
         if (clear.HasIndices)
@@ -33,6 +34,12 @@ public readonly ref partial struct CodeEmitter
         else
             writer.I32Const(0).LocalSet(method.CopyDestinationIndex).LocalGet(method.GcI32).LocalSet(method.CopyLength);
 
+        ClearArray(shape);
+        return true;
+    }
+
+    private void ClearArray(ArrayShape shape)
+    {
         writer.Block(method.Storage.EmptyBlock).Loop().LocalGet(method.CopyLength).I32Eqz().BrIf(new(1));
         if (shape.StructElements)
         {
@@ -52,6 +59,5 @@ public readonly ref partial struct CodeEmitter
         }
         writer.LocalGet(method.CopyDestinationIndex).I32Const(1).I32Add().LocalSet(method.CopyDestinationIndex);
         writer.LocalGet(method.CopyLength).I32Const(1).I32Sub().LocalSet(method.CopyLength).Br(new(0)).End().End();
-        return true;
     }
 }

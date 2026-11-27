@@ -45,10 +45,10 @@ public readonly ref partial struct CodeEmitter
             return true;
         }
         Pop(SignatureTypeCode.Double, instruction.Code, offset);
-        if (operation.Operation is "Sin" or "Cos" or "Log" or "Exp")
+        if (operation.Operation is "Sin" or "Cos" or "Tan" or "Log" or "Exp" or "Cbrt")
         {
             if (operation.IsSingle) writer.F32DemoteF64().F64PromoteF32();
-            writer.Call(operation.Operation switch { "Sin" => method.Storage.MathImports.Sin, "Cos" => method.Storage.MathImports.Cos, "Log" => method.Storage.MathImports.Log, _ => method.Storage.MathImports.Exp });
+            writer.Call(operation.Operation switch { "Cbrt" => method.Storage.MathImports.Cbrt, "Sin" => method.Storage.MathImports.Sin, "Cos" => method.Storage.MathImports.Cos, "Tan" => method.Storage.MathImports.Tan, "Log" => method.Storage.MathImports.Log, _ => method.Storage.MathImports.Exp });
             if (operation.IsSingle) writer.F32DemoteF64().F64PromoteF32();
             stack.Push(new(SignatureTypeCode.Double));
             return true;
@@ -98,6 +98,7 @@ public readonly ref partial struct CodeEmitter
         if (operation.Operation == "CopySign") writer.F64CopySign();
         else if (operation.Operation == "Min") writer.F64Min();
         else if (operation.Operation == "Max") writer.F64Max();
+        else if (operation.Operation == "Atan2") writer.Call(method.Storage.MathImports.Atan2);
         else if (operation.Operation == "Pow") writer.Call(method.Storage.MathImports.Pow);
         else throw new NotSupportedException($"Math operation {operation.Operation} is not implemented.");
         if (operation.IsSingle) writer.F32DemoteF64().F64PromoteF32();

@@ -10,7 +10,7 @@ namespace Xui.Core.Math2D;
 /// Unlike <see cref="Frame"/>, which represents edge thicknesses around a box, 
 /// <see cref="Rect"/> defines a positioned, sized area used for layout and rendering.
 /// </remarks>
-public struct Rect : INonEnumerableSet<Point>
+public struct Rect : INonEnumerableSet<Point>, IEquatable<Rect>
 {
     /// <summary>The X-coordinate of the rectangle’s top-left corner.</summary>
     public nfloat X;

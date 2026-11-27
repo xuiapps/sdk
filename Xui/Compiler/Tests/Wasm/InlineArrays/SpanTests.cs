@@ -7,6 +7,37 @@ namespace Xui.Compiler.Tests.Wasm.InlineArrays;
 public class SpanTests
 {
     [Fact]
+    public Task SingleElementSpansAliasReferencesAndSurviveHelperReturns() => InlineArrayTests.AssertLinked("""
+        using System;
+        class Item { public string Name; public int Value; }
+        struct Entry { public string Name; public int Value; }
+        public static class Program {
+            static Span<string> Borrow(ref string text) => new Span<string>(ref text);
+            static Span<Entry> BorrowEntry(ref Entry value) => new Span<Entry>(ref value);
+            static ReadOnlySpan<Item> One(Item value) => new Item[] { value };
+            public static int Main() {
+                string text="before"; Span<string> names=Borrow(ref text);
+                names[0]="after"; Console.WriteLine(text);
+                text="alias"; Console.WriteLine(names.Slice(0)[0]);
+                Span<string> copy=new string[1]; names.CopyTo(copy); copy[0]="copy"; copy.CopyTo(names);
+                Console.WriteLine(text); Console.WriteLine(names.Slice(1).IsEmpty);
+                var item=new Item { Name="field", Value=10 };
+                var field=Borrow(ref item.Name); field[0]="changed"; Console.WriteLine(item.Name);
+                Item held=item; Span<Item> refs=new Span<Item>(ref held);
+                refs[0]=new Item { Value=20 }; Console.WriteLine(held.Value);
+                Entry entry=new Entry {Name="struct",Value=1};
+                var entries=BorrowEntry(ref entry); entries[0].Name="updated"; entries[0].Value=42;
+                Console.WriteLine(entry.Name);
+                int number=5; Span<int> numbers=new Span<int>(ref number); numbers[0]=6;
+                ReadOnlySpan<int> read=new ReadOnlySpan<int>(in number); Console.WriteLine(read[0]);
+                ReadOnlySpan<Item> single=[item]; Console.WriteLine(single[0].Name);
+                try { _=names[1]; } catch(IndexOutOfRangeException) { Console.WriteLine("bounds"); }
+                return entry.Value;
+            }
+        }
+        """, "after\nalias\ncopy\nTrue\nchanged\n20\nupdated\n6\nchanged\nbounds\n",42);
+
+    [Fact]
     public Task ManagedSpansPreserveOwnersAcrossReturnsSlicesAndOverlappingCopies() => InlineArrayTests.AssertLinked("""
         using System;
         using System.Runtime.CompilerServices;

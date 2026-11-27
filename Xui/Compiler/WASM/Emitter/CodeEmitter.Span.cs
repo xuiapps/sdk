@@ -12,8 +12,14 @@ public readonly ref partial struct CodeEmitter
 {
     private bool TrySpanAccess(Instruction.Token instruction, int offset)
     {
-        var access = SpanAccess.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+        var access = method.SpanCalls.GetValueOrDefault(offset) ?? SpanAccess.Read(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
         if (access is null) return false;
+        if (access.Operation == "ToArray") { EmitSpanToArray(access, instruction.Code, offset); return true; }
+        if (access.Operation is "Fill" or "Clear") { EmitSpanFill(access, instruction.Code, offset); return true; }
+        if (access.Operation == "FromPointer") { EmitPointerSpan(access, instruction.Code, offset); return true; }
+        if (access.Operation == "FromArray") { EmitArraySpan(access, instruction.Code, offset); return true; }
+        if (access.Operation == "FromReference") { EmitReferenceSpan(access, instruction.Code, offset); return true; }
+        if (access.Operation == "ToString") { EmitSpanString(access,instruction.Code,offset); return true; }
         if (access.Operation == "op_Implicit")
         {
             PopAssignable(method.Storage.Bind(access.Signature.Parameters[0]), instruction.Code, offset);
@@ -65,22 +71,35 @@ public readonly ref partial struct CodeEmitter
     }
 
     private int ElementLeaves(LocalVariable element) => element.Identity is { IsValueType: true } identity
-        ? method.Storage.Shape(identity).Leaves.Count : 1;
+        ? Math.Max(1, method.Storage.Shape(identity).Leaves.Count) : 1;
 
     // Span selectors are byte addresses for linear backing and field indices for GC backing.
+    // For a reference slot borrowed directly (Span(ref string/class)), a null owner
+    // plus the high selector bit denotes a table index, rather than a byte address
+    // containing that index. This preserves aliases across returns without a wrapper allocation.
+    private const int ReferenceSlotSelector = int.MinValue;
+
     private void SpanSelector(LocalIndex owner, LocalIndex selector, LocalIndex index, SignatureType element)
     {
-        writer.LocalGet(owner).RefIsNull().If(method.Storage.AddressIndexType)
-            .LocalGet(selector).LocalGet(index).I32Const(ElementSize(element)).I32Mul().I32Add()
-            .Else().LocalGet(selector).LocalGet(index).I32Const(ElementLeaves(method.Storage.Bind(element))).I32Mul().I32Add().End();
+        writer.LocalGet(owner).RefIsNull().If(method.Storage.AddressIndexType);
+        bool reference = StorageModel.IsReference(method.Storage.Bind(element));
+        if (reference) writer.LocalGet(selector).I32Const(0).I32LtS().If(method.Storage.AddressIndexType)
+            .LocalGet(selector).LocalGet(index).I32Add().Else();
+        writer.LocalGet(selector).LocalGet(index).I32Const(ElementSize(element)).I32Mul().I32Add();
+        if (reference) writer.End();
+        writer.Else().LocalGet(selector).LocalGet(index).I32Const(ElementLeaves(method.Storage.Bind(element))).I32Mul().I32Add().End();
     }
 
     private void ProjectSpanElement(LocalIndex owner, LocalIndex selector, LocalIndex index, SignatureType element,
         LocalVariable leaf, int byteOffset = 0, int leafOffset = 0)
     {
-        writer.LocalGet(owner).LocalGet(owner).RefIsNull().If(method.Storage.AddressIndexType)
-            .LocalGet(selector).LocalGet(index).I32Const(ElementSize(element)).I32Mul().I32Add().I32Const(byteOffset).I32Add();
+        writer.LocalGet(owner).LocalGet(owner).RefIsNull().If(method.Storage.AddressIndexType);
+        bool referenceElement = StorageModel.IsReference(method.Storage.Bind(element));
+        if (referenceElement) writer.LocalGet(selector).I32Const(0).I32LtS().If(method.Storage.AddressIndexType)
+            .LocalGet(selector).I32Const(int.MaxValue).I32And().LocalGet(index).I32Add().Else();
+        writer.LocalGet(selector).LocalGet(index).I32Const(ElementSize(element)).I32Mul().I32Add().I32Const(byteOffset).I32Add();
         if (StorageModel.IsReference(leaf)) writer.I32Load();
+        if (referenceElement) writer.End();
         writer.Else().LocalGet(selector).LocalGet(index).I32Const(ElementLeaves(method.Storage.Bind(element))).I32Mul().I32Add()
             .I32Const(leafOffset).I32Add().End();
     }

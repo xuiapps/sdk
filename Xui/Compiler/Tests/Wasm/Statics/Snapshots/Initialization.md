@@ -85,7 +85,7 @@ Xui
   (import "wasm:js-string" "fromCharCodeArray" (func (;2;) (type 1) (param (ref null 0) i32 i32) (result (ref extern))))
   (import "wasm:js-string" "concat" (func (;3;) (type 2) (param externref externref) (result (ref extern))))
   (import "wasm:js-string" "length" (func (;4;) (type 3) (param externref) (result i32)))
-  (memory (;0;) 16 16)
+  (memory (;0;) 16 32768)
   (tag (;0;) (type 7) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
   (global (;1;) (mut externref) ref.null extern)

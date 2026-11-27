@@ -11,7 +11,7 @@ public readonly ref partial struct CodeEmitter
         var right = stack.Peek(); var left = stack.ElementAt(1);
         var storage = method.Storage;
         bool Reference(MsilStackEntry value) => !value.IsByReference &&
-            (value.IsNull || value.TypeCode is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray ||
+            (value.IsNull || value.TypeCode is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray or SignatureTypeCode.Array ||
              (value.Identity is { } identity && storage.IsClass(identity)));
         if (!Reference(left) || !Reference(right)) return false;
         if (code == OpCode.Cgt_un && !right.IsNull) throw new NotSupportedException("Reference cgt.un requires null on the right.");

@@ -41,6 +41,30 @@ parent links; identical field layouts do not make unrelated classes interchangea
 [GC objects demo](../Tests/Wasm/Gc/Snapshots/Objects.md) and
 [polymorphism demo](../Tests/Wasm/Polymorphism/Snapshots/Units.md).
 
+Calls through `object.ToString()` preserve class overrides, inherited overrides,
+hidden-slot distinctions and explicit `base.ToString()` behavior. Default names
+include namespace, nested declarations, generic arguments and array element/rank
+identity. Native strings and supported primitive/enum boxes format through the
+JS-string runtime; numeric formatting uses the invariant browser profile.
+Reachability retains overrides on instantiated classes. Compiler-owned exception
+and Type carriers do not yet implement their ToString surface and throw managed
+NotSupportedException through an object call. Arbitrary struct boxing remains unsupported.
+
+Default equality for classes implementing `IEquatable<T>` uses their exact closed
+interface contract, including explicit implementations and virtual overrides.
+Both null operands compare equal; a single null operand compares unequal without
+calling user equality. Array search and dictionary keys use the same path.
+`System.Type` descriptors have identity equality and stable per-instance hashes,
+supporting generated record equality contracts. Sealed record keys are tested;
+record inheritance still reaches the unsupported covariant clone override.
+
+`Buffer.BlockCopy` supports statically known primitive vectors with byte offsets,
+unaligned ranges and memmove overlap semantics. Same-type byte-sized arrays use
+`array.copy`; wider/cross-type copies read and modify little-endian bytes within
+GC elements without pinning or temporary arrays. Floating-point payload bits are
+preserved. Native-sized elements follow the WASM32 width. Nonprimitive vectors
+throw ArgumentException; rectangular and type-erased Array inputs remain unsupported.
+
 Interfaces implemented by classes support implicit public implementations, explicit
 MethodImpl mappings, inherited implementations, reimplementation, and virtual overrides.
 Inherited interfaces and closed generic interfaces retain nominal identity; reference-type
@@ -103,10 +127,12 @@ identity and signature. It reads through the managed owner/selector address,
 compares with `ref.eq`, writes only on a match, and returns the original reference.
 It never uses delegate equality or calls user Equals methods. Existing accessors
 cover object fields and frame-owned slots, including reference fields in stack
-structs. The read/compare/write sequence makes no host calls and allocates no
+structs. The read/compare/write sequence has no suspension and allocates no
 objects. This implementation supports single-agent execution only; it provides no
 cross-thread atomicity or memory-ordering guarantees. Numeric Interlocked overloads
-remain unsupported. String reference CompareExchange is explicitly rejected because
+remain unsupported. Reference `Exchange` and `ExchangeObject` also read and replace
+the slot, returning its previous value. Exchange supports native JS strings because
+it needs no string-identity comparison. String reference CompareExchange is explicitly rejected because
 native JavaScript strings do not retain managed string object identity.
 Compiler-generated static caches for noncapturing lambdas/method groups still require
 static-field and initializer support; explicit delegate construction and capturing
@@ -127,19 +153,19 @@ stay distinct when `T` is `int`. [The DerivedBoxes demo](../Tests/Wasm/Generics/
 shows specialized fields, tables, base calls, and nominal `is`/`as` tests across a
 three-level hierarchy. Reference and primitive `default(T)` via `initobj` are supported; scalar `ldobj`/`stobj`/`cpobj` use typed managed-address accessors. Expanding instantiations stop at a nesting depth of 32.
 
-Generic virtual methods, open generic structs, arbitrary external calls, arbitrary
+Open generic structs, arbitrary external calls, arbitrary
 jump graphs, multidimensional arrays, unmanaged pointers,
 arbitrary struct boxing, and arbitrary BCL objects are not implemented. Class signatures and type tests require definitions in supplied implementation assemblies.
 `object` storage holds emitted class/interface references, supported scalar boxes, and null.
 Native JS strings and arbitrary BCL objects do not yet have a general object representation. Unresolved external class hierarchies,
-static-abstract interface dispatch, generic interface methods, boxed/constrained struct dispatch,
+boxed struct dispatch,
 and explicit class MethodImpl/covariant return overrides remain unsupported. Explicit-layout structs cannot
 be flattened into GC fields yet; their supported linear-memory layouts are unchanged.
 Closed generic **methods** now specialize through MethodSpec tokens, including calls
 across supplied assemblies, nested type/method arguments, recursion, and overloads.
 Each cache key includes both the declaring type and method argument list. Open
-method templates are expanded only by closed calls. Generic virtual dispatch remains
-unsupported; `box T` is a no-op only when T specializes to a supported reference type.
+method templates are expanded only by closed calls. Closed generic class and interface
+virtual calls retain specialized dispatch entries and resolve overrides in template space; `box T` is a no-op only when T specializes to a supported reference type.
 
 Managed `ref`/`in`/`out` arguments and local aliases carry an `eqref` owner plus an
 `i32` accessor selector. Generated getters/setters use constant WASM field indices.
@@ -164,10 +190,12 @@ joins widen to a common linked base class, including null/class joins.
 Class references can also join an existing assignable interface or `object` stack type.
 Other stack types still require exact matches; synthesizing a common interface for unrelated
 class stack types remains unsupported.
-Native-integer arithmetic, checked arithmetic, division/remainder, and floating-point
-to integer conversions also remain unsupported.
+Checked integer addition/subtraction and unsigned multiplication throw managed
+`OverflowException` for signed/unsigned i32/i64 bounds; native integers use WASM32
+width. General native-integer arithmetic, signed checked multiplication and checked
+numeric conversions remain incomplete; the opcode table records individual support.
 
-Methods with control flow or named object/value types use [XuiNet.CodeFlow](../XuiNet/CodeFlow) to check the stack on
+All emitted methods use [XuiNet.CodeFlow](../XuiNet/CodeFlow) to check the stack on
 all reachable edges before emission. Each `if` declares the input suffix its arms
 consume and the output suffix they produce; untouched values remain below the
 block. Non-empty inputs, multiple results, nested `if`/`else`, ternaries, and early
@@ -188,7 +216,7 @@ use a 32-bit WASM target representation. Stores narrow small integers and round
 zero/null defaults; without it, each slot must be stored before it is read.
 Unmanaged structs with a supported XuiNet layout use linear-memory local storage;
 classes and reference-containing structs without stack-address requirements use GC locals. Unresolved external types
-(such as `decimal`), pointers, and pinned locals remain unsupported. Supported boxes
+(such as `decimal`), general raw-pointer dereferences, and pinned locals remain unsupported. Supported boxes
 use object-reference locals; primitive local addresses use managed owner/selector pairs.
 
 Struct locals classified as `LinearMemory` occupy aligned slots in a per-invocation
@@ -289,13 +317,52 @@ numbers intentionally differ from CoreLib's randomized string hashes. Default
 string comparers hash null as zero, while null instance/comparer receivers throw
 managed NullReferenceException. Custom comparer implementations retain normal dispatch.
 
+Default comparers for named classes preserve virtual `Equals` and `GetHashCode`
+overrides. Classes without a hash override use stable host identity hashes held in
+a WeakMap; this does not retain collected objects. Null keys hash as zero at the
+comparer boundary (Dictionary still enforces its own null-key checks).
+Ordinary virtual `Object.GetHashCode` calls also retain class overrides, including
+inherited overrides while ignoring hidden new slots. Nonvirtual base calls use
+stable identity hashing. Object-slot strings and scalar/enum boxes use their
+typed hash operations; arrays use stable identity hashes. Null receivers throw.
+Every emitted method now receives stack analysis, including straight-line
+string-to-object arguments and returns that need a managed string carrier.
+Value-type default comparers call declared `GetHashCode` overrides on independent
+copies, including linear structs, structs containing references, records and
+tuples. Constrained hash calls use the same managed overrides. CoreLib's
+`HashCode.Combine` arithmetic runs as compiled WASM; browser crypto supplies its
+per-module seed. Hash numbers are not portable across module instances.
+Non-nullable struct boxing used only for a null check is folded without dropping
+producer side effects; nullable values retain their normal checks. Escaping
+arbitrary struct boxes remain unsupported, including tuple-key dictionary error
+formatting paths. This is not yet full support for dictionaries with struct keys.
+Closed type equality, proven constant boolean call arguments, and impossible
+interface/class tests can prune unreachable collection branches. Type-test pruning
+checks supplied subclasses, preserves receiver evaluation, and declines proof for
+open generic descendants or unresolved base types. No dynamic assembly loading is assumed.
+
+String-key dictionaries retain CoreLib's storage, resize, remove, and lookup code.
+The internal non-randomized string-comparer wrapper is replaced by the supplied
+native comparer; custom `IEqualityComparer<string>` instances remain unchanged.
+CoreLib's wrapper-specific rehash branch is unused with this representation.
+Native string hashes remain the runtime's UTF-16 hash described above.
+
+Strings stored in `object` locals, fields, arrays, or generic object slots use small
+GC carriers. Casts recover the native JS string; null remains null and invalid
+casts throw managed exceptions. A per-module weak cache reuses carriers while
+they are alive, without retaining their string contents indefinitely. Because JS
+primitive strings have value identity, equal text shares a carrier: this does not
+preserve .NET reference-identity differences between separately allocated equal
+strings. Arbitrary virtual/interface dispatch on these carriers is not implemented.
+
 `Math.Sqrt`, `MathF.Sqrt`, and the corresponding Single/Double/NFloat static methods
 emit `f32.sqrt` or `f64.sqrt` directly, without a host import. Native floating-point
 uses WASM32 single precision; signed zero, infinities, and NaNs preserve IEEE behavior.
 [Square-root tests](../Tests/Wasm/Mathematics/SquareRootTests.cs) compare CLR results,
 including subnormals and float rounding boundaries.
 
-The corresponding `Sin`, `Cos`, `Log`, and `Exp` methods import `xui-math.sin/cos/log/exp`, supplied by
+The corresponding `Sin`, `Cos`, `Log`, `Exp`, `Cbrt`, and `Atan2` methods import
+`xui-math.sin/cos/log/exp/cbrt/atan2`, supplied by
 JavaScript Math. Single/NFloat inputs and outputs round to f32; special-value,
 signed-zero, and finite-result comparisons are covered by
 [trigonometry tests](../Tests/Wasm/Mathematics/TrigonometryTests.cs).
@@ -331,12 +398,55 @@ UTF-16 contents remain native JS strings. Object, array, and enumerable Concat
 overloads are not intrinsic. This also covers Roslyn's short string interpolation
 optimization, such as `$"Example.{GetType().Name}"`.
 
+`String.Length`, character indexing, and both `Substring` overloads use
+`wasm:js-string` builtins after managed null/range checks. Indices and lengths count
+UTF-16 code units, including individual surrogate halves.
+
+`String.Split` supports char, string, char[] and string[] separators, optional count,
+and `RemoveEmptyEntries`/`TrimEntries`. The JS runtime uses .NET's UTF-16 whitespace
+set and preserves the unsplit remainder at the count limit. Results are copied into
+ordinary mutable WASM GC string arrays; null receivers and invalid arguments throw
+managed exceptions. Span separator overloads remain unsupported. [Parity tests](../Tests/Wasm/Strings/SplitTests.cs)
+compare Debug and Release code with CoreLib.
+
+String.IndexOf(char[, startIndex[, count]]) and Contains(char) search exact UTF-16
+code units, including individual surrogate halves. Bounds and null failures remain
+managed exceptions. Search uses the native string's length and charCodeAt builtins;
+no character array or culture search implementation is retained.
+
+`StartsWith`/`EndsWith` with a char, `Contains(string)`, and string searches with
+explicit `StringComparison.Ordinal` use native JavaScript UTF-16 searches.
+Empty patterns and surrogate halves follow CLR ordinal behavior; null inputs and
+invalid comparison values throw managed argument exceptions. Other comparison
+modes throw `NotSupportedException` instead of silently becoming ordinal. Default
+culture-sensitive prefix/suffix overloads are not substituted. The floorplan SVG
+parser explicitly selects ordinal matching for its syntax tokens.
+
 `Int32.ToString()` reads the current managed integer address and imports
 `xui-string.int32-to-string`, producing invariant decimal native JS strings. An
 adjacent `CultureInfo.InvariantCulture` getter consumed only by
 `Int32.ToString(IFormatProvider)` uses the same path. The compiler proves that the
 provider cannot escape or be entered through another control-flow edge; arbitrary
 providers and format strings are unsupported.
+
+`Double/Single/NFloat.ToString(format, CultureInfo.InvariantCulture)` uses the same proven
+provider pairing and produces native JS strings. It supports null/empty/general
+formats and custom `0`, `0.0`, `0.##`, … up to 99 fractional placeholders. Custom
+formats use the CLR's 15/7-significant-digit decimal buffer and midpoint rounding
+away from zero, including negative zero and extreme exponents; JavaScript's
+binary `toFixed` rounding is not substituted. Other formats throw a managed
+NotSupportedException. Arbitrary culture providers remain unsupported.
+The same fixed custom formats work in composite String.Format. One to three
+decimal sections with optional literal signs support positive/negative/zero formats
+such as `+0.00;-0.00;0.00`, including rounding-to-zero section selection. Other
+custom syntax (grouping, percent scaling, quoted literals) remains unsupported.
+NFloat uses this target’s 32-bit native floating-point storage.
+
+Volatile field signatures retain their ordinary storage shape. The `volatile.`
+prefix emits ordinary accesses on this single-agent target, whose GC objects and
+linear memory are not shared. Instance/static fields, generic reference fields,
+null failures and call ordering are tested against .NET. This is not shared-memory
+thread support; a shared target will require acquire/release access lowering.
 
 `DefaultInterpolatedStringHandler` has a compiler-owned eight-byte stack header:
 a frame-owned GC reference slot for a mutable packed UTF-16 array, plus a character
@@ -351,8 +461,10 @@ Normal and exceptional frame exit clears references. Allocation limits still use
 WASM allocation traps; managed OutOfMemoryException is not implemented.
 
 The handler's constrained Object.ToString call is specialized explicitly; this does
-not implement general constrained dispatch. Providers, alignment, format strings,
-floating-point/decimal/object formatting, and general char spans remain unsupported
+not implement general constrained dispatch. Single, Double and NFloat append through
+native JS formatting, including invariant G/R and custom decimal zero/optional-#
+placeholders. Enum values retain their closed type's names and flags metadata.
+Providers, alignment, decimal and arbitrary object formatting remain unsupported
 and fail explicitly. The BCL handler, ArrayPool, and pointer-based Span<char> code
 are not retained. [CLR/Node comparisons](../Tests/Wasm/Strings/InterpolationTests.cs)
 cover both optimization modes; [the REPL snapshot](../Tests/Wasm/Strings/Snapshots/RatingText.md)
@@ -396,10 +508,16 @@ native JavaScript message string, with a parameter-name slot when needed.
 Recognized framework references are `Exception`, `SystemException`,
 `InvalidCastException`, `NullReferenceException`, `InvalidOperationException`,
 `ArgumentException`, `ArgumentNullException`, `ArgumentOutOfRangeException`, `IndexOutOfRangeException`, and
-`OverflowException`. Parameterless/string constructors, `Message`, hierarchy tests,
+`OverflowException`. `EncoderFallbackException` and `DecoderFallbackException`
+also support default/message/message-with-inner constructors, their ArgumentException
+hierarchy, and inner identity. Encoding-specific index/character/byte payloads and
+constructors are not implemented. Parameterless/string constructors, `Message`, hierarchy tests,
 and casts work without compiling BCL bodies. ArgumentNullException and
 ArgumentOutOfRangeException take a parameter name in their single-string constructor;
-their two-string overload takes (paramName, message). ActualValue is unsupported. ArgumentException's two-string overload reverses those roles. `ParamName`
+their two-string overload takes (paramName, message). ArgumentOutOfRangeException also
+accepts `(paramName, actualValue, message)` and preserves `ActualValue`. Its message
+formats supported scalar/string values lazily when read; arbitrary object formatting
+remains unsupported. ArgumentException's two-string overload reverses those roles. `ParamName`
 preserves null and empty names, and `Message` appends a parameter suffix only for
 nonempty names. Dynamic names use the standard
 [JS string builtins](https://github.com/WebAssembly/js-string-builtins/blob/main/proposals/js-string-builtins/Overview.md)
@@ -409,8 +527,8 @@ SystemException, and Exception. CLR/Node tests cover Debug and Release, with and
 without linked framework implementation PEs.
 `throw null` throws `NullReferenceException`. Default messages are English;
 cast failures use the default message rather than CLR-generated runtime type names.
-Filters, custom exception subclasses, managed stack traces, and
-protected regions with multiple normal continuations remain unsupported. This is
+Filters, custom exception subclasses and managed stack traces remain unsupported.
+Protected regions with multiple normal continuations select a destination after cleanup. This is
 an explicit intrinsic exception surface, not the full BCL exception implementation.
 WASM traps are not converted to managed exceptions; currently emitted null and
 cast checks throw before a trap can occur.
@@ -620,12 +738,12 @@ supported operations that require no emitted bytes.
 | `conv.i` | No instruction (i32/native) / `i32.wrap_i64` (i64) | Native integers use 32 bits; floating-point inputs remain unsupported. |
 | `conv.ovf.i` |  |  |
 | `conv.ovf.u` |  |  |
-| `add.ovf` |  |  |
-| `add.ovf.un` |  |  |
+| `add.ovf` | `i32.add` / `i64.add`, sign-bit overflow test | Throws managed overflow when operands and wrapped result change sign. |
+| `add.ovf.un` | `i32.add` / `i64.add`, unsigned result comparison | Throws managed overflow when the result wraps below an operand. |
 | `mul.ovf` |  |  |
-| `mul.ovf.un` |  |  |
-| `sub.ovf` |  |  |
-| `sub.ovf.un` |  |  |
+| `mul.ovf.un` | widened `i64.mul` / unsigned division guard | Throws managed overflow; native integers use WASM32 width. |
+| `sub.ovf` | `i32.sub` / `i64.sub`, sign-bit overflow test | Throws managed overflow when opposite-sign subtraction exceeds signed bounds. |
+| `sub.ovf.un` | `i32.sub` / `i64.sub`, unsigned operand comparison | Throws managed overflow when subtracting a larger unsigned operand. |
 | `endfinally` | `br`; `throw_ref` | Completes cleanup, then resumes normal leave or exception unwinding. |
 | `leave` | `drop`; `br` | Clears evaluation stack and follows structured cleanup before continuation. |
 | `leave.s` | `drop`; `br` | Short relative target; same cleanup behavior as long leave. |
@@ -645,18 +763,18 @@ supported operations that require no emitted bytes.
 | `ldloc` | `local.get`; optional `f64.promote_f32`, `memory.copy`, or `struct.new` | Loads class references; struct loads copy values into independent storage. |
 | `ldloca` | `local.get` | Addresses scalar/struct locals or managed reference slots, preserving aliases. |
 | `stloc` | Optional `i32.extend8_s` / `i32.extend16_s` / `i32.const; i32.and` / `f32.demote_f64`; `local.set`, `memory.copy`, or `struct.set` | Copies structs; otherwise narrows scalars and marks the slot initialized. |
-| `localloc` |  |  |
+| `localloc` | stack global, aligned pointer arithmetic, `memory.fill` | Bounded frame lifetime; zeroes storage when InitLocals is set. |
 | `endfilter` |  |  |
 | `unaligned.` |  |  |
-| `volatile.` |  |  |
+| `volatile.` | ordinary memory access | Single-agent target only; shared memory requires acquire/release lowering. |
 | `tail.` |  |  |
 | `initobj` | `memory.fill` or `struct.set` | Clears struct storage, including null references in GC fields. |
-| `constrained.` | specialized call | Primitive hashing/equality and interpolation ToString; other constrained dispatch unsupported. |
+| `constrained.` | direct call | Struct implementations preserve byrefs; class receivers load then dispatch virtually. |
 | `cpblk` |  |  |
 | `initblk` |  |  |
 | `no.` |  |  |
 | `rethrow` | `throw_ref` | Preserves the original exception captured by the enclosing catch. |
-| `sizeof` |  |  |
+| `sizeof` | `i32.const` | Reference-free closed types use the target layout size. |
 | `refanytype` |  |  |
 | `readonly.` |  |  |
 
@@ -699,8 +817,7 @@ The [layout demo](../Tests/Wasm/Interfaces/Snapshots/Defaults.md) shows source, 
 selected dispatch targets, and WAT. Reachability retains a callable signature without
 retaining an overridden or uncalled default body. Conflicting defaults and reabstraction
 without a concrete implementation fail during compilation; runtime ambiguity exceptions
-are not implemented. Generic virtual methods, static-abstract dispatch, and boxed or
-constrained struct receivers remain unsupported.
+are not implemented. Boxed or constrained calls requiring boxing remain unsupported.
 
 ## Managed arrays and inline gradient buffers
 
@@ -713,6 +830,20 @@ use a separate GC struct, allocated eagerly and updated in place; these arrays d
 not promise contiguous linear-memory element layout. Null access, bounds failures,
 and negative allocation lengths throw managed exceptions. Engine resource exhaustion
 remains outside the managed exception surface.
+
+Zero-based rectangular arrays (`T[,]`, `T[,,]`, up to rank 32) use a GC struct
+containing immutable dimensions and a flat row-major backing array. Generic element
+types, primitive/reference elements, independent struct copies, and element/field
+byrefs share vector storage semantics. Every coordinate is checked separately;
+`Length`, `Rank`, `GetLength`, `GetLowerBound`, and `GetUpperBound` work on exact
+array receivers, including vectors. Empty dimensions produce empty storage.
+Negative dimensions and a nonempty dimension product exceeding Int32.MaxValue
+throw managed OverflowException (a compiler target limit; large CLR allocations
+can instead report OutOfMemoryException). Engine allocation limits still apply.
+Nonzero lower bounds, rectangular Array.Copy/Clear, covariance, and dimension
+queries through an erased System.Array receiver remain unsupported.
+[Rectangular-array tests](../Tests/Wasm/Arrays/RectangularArrayTests.cs) compare
+2D/3D indexing, bounds, copies, and outstanding aliases with CLR execution.
 
 Inline arrays repeat the element's storage with size `length * elementSize`. Numeric
 buffers use the linear frame; string/object buffers repeat frame-owned reference slots.
@@ -730,6 +861,43 @@ reference-bearing copies transfer values into destination-owned handles, preserv
 live aliases and independent slots. TryCopyTo leaves a short destination unchanged.
 [Span tests](../Tests/Wasm/InlineArrays/SpanTests.cs) compare these paths with CLR execution.
 
+Single-element Span(ref T) and ReadOnlySpan(in T) borrow the original managed
+address. Null-owner reference selectors use a tagged table index, distinct from a
+linear address containing a reference-slot index; returning or slicing a span keeps
+that distinction. No element copy is introduced.
+
+String.AsSpan, implicit string-to-ReadOnlySpan<char>, and their integer ranges borrow
+an immutable native string through a rooted string carrier and UTF-16 index. Reads,
+slices, copies and returned spans retain the owner. Character-span ToString and
+new string(ReadOnlySpan<char>) materialize native strings. Pointer-based span
+construction accepts reference-free linear elements; reference-bearing elements fail
+explicitly. General pointer locals and pointer arithmetic are still unsupported.
+[String-span tests](../Tests/Wasm/Strings/SpanTests.cs)
+compare UTF-16 code units, bounds, copying, and return lifetimes with CLR execution.
+
+Array-to-Span/ReadOnlySpan conversions and array constructors, including start/count
+ranges, borrow the GC array through that same owner/selector ABI. Scalars, class and
+string references, and flattened struct elements alias their original storage.
+Struct arrays use nominal array tags to distinguish otherwise identical WASM array
+shapes; overlapping span copies preserve value semantics and outstanding refs.
+Null arrays produce empty spans, and invalid ranges/indexing throw managed exceptions.
+[Array-span tests](../Tests/Wasm/Arrays/ArraySpanTests.cs) exercise these behaviors in Debug and Release.
+
+`localloc` reserves 16-byte-aligned blocks after the method's fixed linear frame.
+Allocations remain live until method return or exception unwind, including multiple
+allocations in loops; nested calls cannot reuse a live caller block. InitLocals zeroes
+new storage. The shared linear stack is bounded to 1 MiB, with checked capacity before
+advancing its pointer; exhaustion traps rather than throwing a managed exception.
+The Span/ReadOnlySpan(void*, int) constructor borrows reference-free linear backing.
+Roslyn's dynamic-size `mul.ovf.un` supports i32/native-int and i64 unsigned operands,
+throwing managed OverflowException instead of wrapping. Stackalloc character buffers
+can receive native-string spans and materialize new JS strings. Raw pointer
+loads/stores remain future work. `sizeof` uses the WASM32 layout for closed,
+reference-free types, including packed and explicit-layout structs; managed/reference
+storage is rejected. Struct stackalloc uses these same field offsets and sizes.
+[Stack-allocation tests](../Tests/Wasm/InlineArrays/StackAllocationTests.cs) cover
+CLR parity, recursive calls, loop lifetimes, unwind cleanup, overflow and stack limits.
+
 Constant `ReadOnlySpan<T>` data can be read from RVA-backed fields in supplied PEs.
 `RuntimeHelpers.CreateSpan<T>` and Roslyn's bounded field-address/length/span-constructor
 pattern retain fixed-width primitive or enum data once, in active WASM data segments
@@ -744,10 +912,8 @@ constructs `LinearGradient`, and reads its stops in a separate method. The suppl
 Core/framework PEs provide Point/Color/GradientStop and tuple constructors; the
 unsigned NFloat conversion used by Color is a scalar intrinsic.
 
-Still unsupported: multidimensional arrays, array covariance/type tests/object
-conversions, primitive/reference array-element byrefs, managed-array static-data initialization (`RuntimeHelpers.InitializeArray`),
-and arbitrary Array/BCL collection methods. Span construction from managed arrays,
-enumeration helpers and stackalloc remain unsupported. The span descriptor itself
+Still unsupported: array covariance and arbitrary Array/BCL
+collection methods and general span enumeration helpers remain unsupported. The span descriptor itself
 lives in a linear frame; its borrowed backing can be linear or managed. Linear,
 reference-free copies retain the memory.copy fast path. Managed copies use typed
 field accessors and preserve overlap direction and destination reference ownership.
@@ -799,7 +965,10 @@ Flags bit operations, unsigned comparisons, explicit casts, and unnamed values w
 See [enum widths](../Tests/Wasm/Enums/Snapshots/Widths.md).
 
 Enum byrefs preserve their underlying storage widths in linear locals and GC fields.
-Boxing, enum-name formatting, reflection, and arbitrary System.Enum helpers remain unsupported.
+Direct constrained enum ToString and interpolation use retained names and flags
+metadata, with signed/unsigned numeric fallback for unnamed values. Primitive enum
+boxing is supported; boxed enum formatting in String.Format, general reflection and
+arbitrary System.Enum helpers remain unsupported.
 
 
 The [persistent mobile preview](../Tests/Wasm/TestApp/Snapshots/MobilePhone.html)
@@ -837,20 +1006,35 @@ singleton, then use the existing specialized operation or ordinary interface dis
 for application implementations. Nominal is/as/casts distinguish closed default
 singletons even when their GC shapes are structurally identical. Single-precision
 arguments are promoted after ABI narrowing before equality comparisons. Null
-receivers throw managed NullReferenceException. Default comparer GetType through
-this interface and adapters for class/struct elements are not implemented.
-Custom comparer subclasses, arbitrary struct/class hashing, IEquatable class contracts,
-object-typed/boxed equality, and fallback ValueType.Equals remain explicitly unsupported.
+receivers throw managed NullReferenceException. Named class/struct adapters and
+class IEquatable contracts use the corresponding typed implementations. Custom
+comparer subclasses retain interface dispatch. Default comparer GetType through
+this interface, fallback ValueType.Equals/GetHashCode, and arbitrary boxed-value
+equality remain explicitly unsupported.
 
 String equality operators, static Equals(string, string), and instance Equals(string)
 use ordinal UTF-16 equality over JavaScript strings. Static comparisons accept null;
-instance equality throws managed NullReferenceException for a null receiver.
-Object/culture-sensitive overloads remain unsupported. Calls stage string arguments
+instance equality throws managed NullReferenceException for a null receiver. Comparison-mode
+static and instance overloads support Ordinal and OrdinalIgnoreCase through native
+JavaScript strings. Ignore-case uses scalar simple uppercase mappings (including
+supplementary letters), preserves lone surrogates, and avoids full-casing expansions
+and .NET's excluded dotless-I/long-S mappings. Unicode data follows the host engine.
+Invalid modes throw ArgumentException; culture-sensitive modes explicitly throw
+NotSupportedException until a culture comparison contract is implemented.
+Object overloads remain unsupported. Calls stage string arguments
 before converting MSIL null into externref, including multiple null arguments.
 
 Array.Copy's int-indexed three- and five-argument overloads emit GC array.copy
 for identical, statically known vector types containing scalars or references.
-Copies preserve object identity and overlap order; null, negative-index/length,
+
+`GC.AllocateArray<T>` and `GC.AllocateUninitializedArray<T>` with `pinned: false`
+allocate ordinary, zero-initialized WASM GC vectors, including independent struct
+element holders. Negative lengths throw managed `OverflowException`; pinned
+requests explicitly throw `NotSupportedException`. Explicit BCL guard throws of
+`OutOfMemoryException` have a managed identity and default message; this does not
+translate an engine allocation failure into a catchable managed exception.
+
+Array.Copy preserves object identity and overlap order; null, negative-index/length,
 and capacity failures throw managed argument exceptions before mutation. Struct
 elements use an overlap-aware field-copy loop into existing holders, preserving
 outstanding element/field references and independent value storage.
@@ -992,3 +1176,339 @@ types once, while repeated emissions reset loop-exit initialization state.
 Delegate method-ID metadata larger than 10,000 entries uses immutable 4,096-entry
 chunks, staying below engine limits for array.new_fixed. Lookup splits the table
 index into a chunk and element index; virtual delegate identity stays unchanged.
+
+Constrained calls to interface methods implemented by a closed struct resolve directly
+to that implementation. The receiver remains a managed address, including structs
+containing references, so mutations affect the original value. Explicit interface
+implementations and specialized `List<T>` enumerator disposal use this path.
+
+Primitive and enum array initializers copy bounded PE RVA data into independent,
+mutable WASM arrays. Packed integers, UTF-16 code units, floating-point values,
+and 64-bit values retain their declared widths and little-endian representation.
+
+Managed arrays can be passed as `IReadOnlyList<T>` and `IReadOnlyCollection<T>`
+for indexed reads and `Count`. Array and class implementations share call sites;
+struct items are copied on reads. Interface casts use weak host metadata to retain
+managed element identity even when WASM array storage is structurally identical.
+Signed/unsigned CLI element compatibility and named class covariance are supported.
+Exact-element `ICollection<T>` adds Count, IsReadOnly and CopyTo; Add, Remove and
+Clear throw managed NotSupportedException because vectors have fixed size. CopyTo
+copies struct fields into existing element holders, preserving outstanding byrefs.
+Exact-element `IEnumerable<T>` uses the supplied CoreLib's managed vector enumerator;
+its state checks, Current copies, Reset and Dispose compile through ordinary methods.
+The dependency graph retains it only when a compatible vector and enumeration call
+are reachable. Other collection operations, non-generic array contracts and collection
+covariance remain explicitly unsupported; readonly class covariance remains supported.
+
+Closed constrained class/interface receivers are loaded through their managed
+address before dispatch. Calls preserve virtual overrides and managed null checks,
+including receivers stored in locals, class fields, or array elements.
+
+### Shared array pools
+
+`ArrayPool<T>.Shared`, `Rent` and `Return` use a single-agent pool per closed
+element type. One returned array of at most 65,536 elements is cached; rents
+remove a suitable array before exposing it, so simultaneous leases stay distinct.
+Larger returned arrays are left to WASM GC. `clearArray` clears reference and
+value elements, preserving struct element holders for existing byrefs. This is
+not the CoreLib bucket/thread-local implementation. Custom pools and `Create`
+remain explicitly unsupported.
+
+`Span<T>.Fill` supports primitive and reference elements across linear memory,
+GC arrays and borrowed references. `Clear` also resets struct leaves in place.
+Struct-valued `Fill` remains unsupported until its input can be snapshotted
+independently of an overlapping destination.
+
+`StringInfo.GetNextTextElementLength(ReadOnlySpan<char>)` uses the host's
+`Intl.Segmenter` extended grapheme implementation, returning UTF-16 lengths.
+Combining marks, surrogate pairs, emoji ZWJ sequences, flags, CRLF, malformed
+surrogates and empty spans have CLR/Node comparisons. Unicode data follows the
+browser version; exact parity across different Unicode releases is not promised.
+The two-, three- and four-character-span `String.Concat` overloads also execute.
+
+Primitive typed `CompareTo`, including constrained `IComparable<T>` calls,
+specializes directly. Unsigned integers retain unsigned ordering; floating NaNs
+sort below numbers and compare equal to each other, matching .NET. Culture-sensitive
+string comparison remains outside this specialization.
+
+Explicit `CultureInfo.InvariantCulture` can escape into locals/arguments as an opaque
+singleton for `DefaultInterpolatedStringHandler` construction and
+`String.Create(IFormatProvider, ref DefaultInterpolatedStringHandler)`. Formatting
+stays in the existing invariant JS-string runtime; null providers use that same
+neutral default. Other non-null providers throw managed NotSupportedException.
+Culture objects, provider callbacks, reflection and casts involving this opaque
+provider remain unsupported. Scalar ToString's existing nonescaping provider pair
+still avoids allocating a token. [Provider tests](../Tests/Wasm/Strings/ProviderInterpolationTests.cs)
+compare CLR/Node output and verify that custom providers fail explicitly.
+
+Closed `constrained.` + `call` instructions for static interface members resolve
+directly to the selected implementation, without an instance or runtime table slot.
+Public, explicit, inherited class and default static interface implementations are
+supported, including specialized generic methods. Ambiguous/reabstracted defaults
+still fail explicitly. [Static interface tests](../Tests/Wasm/Interfaces/StaticInterfaceTests.cs)
+compare those selection rules with CLR execution.
+
+`Span<T>.ToArray()` and `ReadOnlySpan<T>.ToArray()` copy slices into owned GC arrays.
+Linear values and managed references use the same typed address accessors as span
+copy; struct fields are copied into independent element holders. This preserves
+value semantics after the source frame returns. Empty spans produce empty arrays.
+[Span materialization tests](../Tests/Wasm/Arrays/SpanToArrayTests.cs) cover linear,
+managed, reference-containing and borrowed string backing.
+
+`String.ToLowerInvariant()` calls a host import that applies simple scalar casing.
+It preserves dotted capital I, avoids contextual final sigma, and preserves lone
+surrogates. Unicode versions follow the browser engine, as with grapheme boundaries;
+locale-sensitive casing and uppercasing remain unsupported.
+
+
+## Borrowed GPU uploads and scalar runtime helpers
+
+Raw pointer parameters/locals use WASM32 native integers. This allows a bounded
+`stackalloc` buffer to be passed to a pointer-backed span or a synchronous host
+import. Managed byrefs retain their owner/selector representation; they are not
+converted into raw pointers. Pinning GC arrays and general pointer dereference
+remain unsupported. `WasmEmitter.Emit(exportMemory: true)` exports existing linear
+storage as `memory`; it rejects a conflicting export name or a module with no
+linear storage. The default does not expose memory.
+
+Trusted `BitConverter` float/int and double/long bit conversions, including unsigned
+overloads, use WASM reinterpret instructions. Finite patterns, signed zero,
+infinities and subnormals are covered by CLR/Node tests. Single values use the
+compiler's promoted F64 evaluation stack, so exact Single NaN payload preservation
+is not promised. `Math.Tan`, `MathF.Tan` and the reached NFloat tangent path use the
+JavaScript numeric host alongside the existing trigonometric operations.
+
+`GC.SuppressFinalize` checks for null and throws `ArgumentNullException("obj")`.
+For objects without managed finalizers it has no further action. A compilation
+retaining this intrinsic rejects reachable finalizable types; executing managed
+finalizers is not implemented. This enables normal non-finalizable IDisposable
+cleanup without importing the CLR's native finalization machinery.
+
+
+`MemberAccessException`, `MissingMemberException`, `MissingMethodException` and
+`MissingFieldException` support default/message construction, their nominal base
+hierarchy, catches, casts and rethrow. A closed generic `Activator.CreateInstance<T>()`
+for a concrete class with no public parameterless constructor now emits a managed
+`MissingMethodException` at the call site. It does not fail compilation or invoke
+private constructors. This uses the default English message, without CLR's dynamic
+type-name suffix. Valid constructors retain their existing direct specialization
+and TargetInvocationException wrapping. Abstract and value-type factories, the
+class/member-name exception constructors and general reflection remain unsupported.
+
+
+## Single-agent monitors
+
+`Monitor.Enter(object)`, `Enter(object, ref bool)`, `Exit` and `IsEntered` retain
+recursive entry counts in weak host metadata keyed by managed object identity.
+They never invoke user callbacks or suspend. Nested locks and compiler-generated
+try/finally release paths execute; an extra Exit throws SynchronizationLockException.
+The ref-bool overload checks that the flag starts false and writes true only after
+entry. Local, field and array-element flag aliases are tested against the CLR,
+as are null inputs and release during exception unwinding.
+
+These operations are for one JavaScript agent and provide no shared-memory
+synchronization. TryEnter/timeouts, Wait/Pulse, blocking waits and thread ownership
+across workers are not implemented. Direct native-string locks fail compilation;
+object-typed string carriers throw NotSupportedException before entry because
+content-based string canonicalization cannot preserve CLR monitor identity.
+The opt-in [browser task runtime](../Runtime/README.md) supplies factory-based Lazy
+and single-agent Task/async implementations without retaining the CLR scheduler.
+
+### Browser application switches
+
+The explicit `BrowserConfiguration` profile maps AppContext.SetSwitch and TryGetSwitch
+to a managed per-module switch table. Unknown switches return false with an unset
+result; callers can set and replace values. No host process environment or desktop
+configuration file is consulted. This allows ordinary BCL LINQ materialization to
+choose its default implementation. Real iterator-to-array tests cover tuples with
+managed string fields, including CoreLib buffer allocation and interface dispatch.
+Other AppContext APIs remain unsupported.
+
+`new string(char, int)` fills a packed UTF-16 GC array with `array.new` and
+materializes a native JS string through the existing js-string builtin. Empty
+strings, null characters and unpaired surrogates retain their code units; negative
+counts throw managed ArgumentOutOfRangeException with parameter name `count`.
+Engine allocation failure is still a host failure, not a managed OOM guarantee.
+
+### Typed managed buffers and array ranges
+
+MemoryMarshal.GetArrayDataReference<T> and element-relative Unsafe.Add<T> keep an
+owner plus a selector. Even ldelema of a struct keeps its array owner; advancing
+the reference reaches the next element rather than leaving an isolated holder.
+Buffer.Memmove<T> reuses span copying: reference-free linear backing uses
+memory.copy, while GC backing and structs containing references copy typed fields
+in overlap-safe order. These operations do not expose raw GC pointers.
+
+CoreLib range slicing executes for arrays of sealed reference classes, strings
+and non-enum named structs. The type-specialization pass proves their exact array
+type, retains GetType's null failure and removes the reflection-only covariance
+branch. Covariant classes, primitive/reduced-integer aliases and enums are not
+assumed exact. General reflective Array.CreateInstance remains unsupported.
+
+
+### Browser UTF-8 profile
+
+`BrowserEncoding.Replacements` explicitly substitutes `Encoding` and `UTF8Encoding`
+with a managed-span implementation. Array, string and span conversions support
+UTF-8 scalar decoding, surrogate pairs, replacement fallback, strict fallback,
+byte/character counts and the optional UTF-8 preamble. Invalid sequences consume
+the Unicode maximal subpart; strict conversion throws managed encoding fallback
+exceptions. Results become native JavaScript strings through the existing UTF-16
+GC-array conversion. No GC storage is pinned or exposed as a raw pointer.
+
+The profile currently covers whole-buffer UTF-8 conversion, not other encodings,
+streaming Encoder/Decoder state, configurable fallback objects or pointer overloads.
+Fallback exception byte/index payloads remain unsupported. CLR parity tests cover
+malformed and truncated bytes, all isolated surrogate units and a Unicode scalar
+sweep; Debug and Release modules execute conversion and span writes in Node.
+The real mobile-shell probe now passes JSON UTF-8 transcoding with this profile.
+
+`MissingManifestResourceException` supports typed/SystemException catches, default
+and supplied messages, and inner-exception identity without ResourceManager.
+
+The browser resource stream implements `ReadAtLeast`: short reads accumulate until
+the requested minimum, zero requests perform no read, and EOF either returns the
+partial count or throws EndOfStreamException. Invalid minima throw a managed
+ArgumentOutOfRangeException. Debug/Release tests compare custom short-reading
+streams with the CLR, including span writes and ReadExactly.
+
+
+XML exception support preserves line number, line position, source URI, resource
+text, messages and inner-exception identity. Public constructors and internal
+resource constructors accepting a string or string-array argument emit through
+the same WASM exception tag. Position suffixes and resource placeholders use
+native-string formatting. The optional payload is retained only in modules using
+XML exception members; other exceptions receive empty position fields there.
+Constructor overloads taking IXmlLineInfo, serialization and HResult access are
+not yet implemented. Tests compare public and internal constructors with the CLR,
+including rethrow, finally, type-initializer and constructor-factory wrappers.
+See the [.NET XML exception contract](https://github.com/dotnet/runtime/blob/v10.0.0/src/libraries/System.Private.Xml/src/System/Xml/XmlException.cs).
+
+
+Default-comparer acquisition does not require unused equality or hash operations.
+A struct declaring only GetHashCode can use that override without implementing
+IEquatable. Calling unsupported struct equality still fails explicitly.
+Array default comparers use reference identity, not element-wise equality;
+identity hashes stay stable across element mutations and null hashes to zero.
+This applies to vector, jagged and rectangular references, including comparer
+interface calls, array searches and dictionary keys. Hash values are runtime-local,
+not portable CLR hash codes.
+
+
+Default hashing for structs containing only primitive value fields combines the
+normalized scalar hashes in declaration order. Nested primitive-only structs,
+enums, packed fields and target-width NFloat are supported; padding is ignored.
+The resulting numeric hashes are compiler-runtime values, not replicas of CLR's
+runtime-specific hash algorithm. Declared GetHashCode overrides still take
+precedence. Reference fields, inline arrays and nested custom hash overrides
+remain explicitly unsupported by this fallback.
+
+
+Invariant formatting also recognizes NumberFormatInfo.InvariantInfo. Int32's
+`ToString(null, invariantProvider)` uses native decimal formatting only when the
+control-flow graph proves the format argument is null. Non-null or unknown
+integer formats are not silently dropped. Floating-point round-trip formatting
+uses the existing string host; actual XmlConvert integer/single/double calls pass
+CLR/WASM comparisons, including XML infinity spellings and negative zero.
+Custom decimal formatting, other culture objects and arbitrary provider callbacks remain
+unsupported.
+
+### Exact invariant decimal text
+
+A proven `Decimal.ToString(invariantProvider)` call (or the null-format overload)
+reads the supplied CoreLib representation through the existing managed-address
+accessors. Linear locals, array elements and inline class fields share this path.
+The host joins the 96-bit coefficient with `BigInt`, inserts the stored decimal
+scale, and suppresses the sign for zero. No floating-point conversion is involved.
+The real `XmlConvert.ToString(decimal)` body uses this specialization. Tests compare
+CLR and emitted Debug/Release WASM for extrema, scaled zero, preserved trailing
+zeros, and randomized coefficients. Custom formats and arbitrary providers remain
+explicitly unsupported; this does not implement general decimal arithmetic.
+
+Invariant provider/null-format pairs also support all signed and unsigned 8-, 16-,
+32- and 64-bit integers. The host formats i64 values with BigInt and reinterprets
+unsigned values at their declared width, including UInt64.MaxValue. These paths
+read managed addresses and preserve class-field/array aliases. Custom integer
+formats still require separate support.
+
+### Managed exception diagnostic text
+
+Built-in exception `ToString()` works both directly and through `object`. It uses
+the existing managed payload instead of retaining CoreLib's native string
+allocation path. Type names, default/custom/empty messages, argument actual
+values, nested inner exceptions, and single-inner aggregate messages are preserved.
+Message/inner constructors now apply to the supported built-in exception types.
+`PlatformNotSupportedException` is supported, including its NotSupportedException
+catch hierarchy. Unsupported derived exception representations fail explicitly.
+
+Diagnostic formatting currently has no captured managed source stack frames.
+Tests compare unthrown exception text with .NET; a thrown exception retains its
+payload and inner chain but does not acquire a CLR-style stack trace.
+
+### Browser JSON profile
+
+The opt-in `BrowserJson` profile supplies native JSON DOM parsing for the GPU
+floorplan metadata. It retains numeric lexemes for exact integer reads and uses
+GC-owned document tokens with disposal checks. It supports string/UTF-8-stream
+input, property lookup, array cursors and primitive getters, with explicit depth
+and duplicate-key policy. See [runtime limitations](../Runtime/README.md#browser-json-documents).
+The original 148 KB atlas metadata is checked field-by-field against the CLR.
+
+### Invariant SVG numeric parsing
+
+Adjacent invariant-provider calls to `Double.Parse` and `UInt32.Parse` accept
+strings and borrowed `ReadOnlySpan<char>` slices. The native string runtime
+preserves floating-point bits, unsigned ranges, signs, exponent/group syntax,
+hexadecimal/binary digits and managed null/format/overflow/style failures.
+Double supports Float/AllowThousands subsets; UInt32 supports Integer subsets,
+HexNumber and BinaryNumber. Other valid styles explicitly throw NotSupportedException;
+arbitrary providers and locale-aware parsing remain unsupported. CLR/Node tests
+compare both Debug and Release output, including malformed and boundary inputs.
+
+### Ordinal string replacement
+
+`String.Replace(string, string)` and `String.Replace(char, char)` now use native
+JavaScript strings. Matching and replacement preserve UTF-16 code units, are
+non-overlapping, and treat replacement dollar signs literally. Null new strings
+remove matches; null/empty old strings throw managed argument exceptions.
+Culture/comparison overloads remain outside this intrinsic.
+
+### Character-buffer strings
+
+The `String(char[])` and `String(char[], int, int)` constructors copy managed
+UTF-16 arrays into native JavaScript strings, including NUL and unpaired surrogate
+code units. Subsequent array writes cannot mutate the string. Null whole arrays
+produce empty strings; sliced construction preserves managed null/range failures
+and parameter names. No pinned array or CLR string allocation is retained.
+
+### Single-agent memory fences
+
+`Thread.MemoryBarrier()` and `Interlocked.MemoryBarrier()` are recognized as
+zero-stack-effect operations and emit no instructions. The module has no shared
+memory or concurrent agents; ordinary writes are already sequenced before later
+reads. Reachability records the intrinsic without retaining CLR Thread types.
+This does not provide cross-worker synchronization or shared-memory support.
+
+### Execution-stack queries
+
+Modules reaching `RuntimeHelpers.TryEnsureSufficientExecutionStack` or
+`EnsureSufficientExecutionStack` track emitted method-body depth in an instance-local
+global. The query reports insufficient space at 192 active bodies; the throwing
+form raises managed `InsufficientExecutionStackException`. Entry at depth 256 also
+throws, leaving a reserve between the advisory and hard limits for cleanup. Normal
+returns and exception unwinding release the depth count, including methods without
+linear frames. Modules without either query receive no depth instrumentation.
+
+This is a conservative target policy, not measurement of the browser's native stack
+bytes or the CLR stack limit. Large native frames, host recursion and WASM traps
+still have engine-specific limits; linear stack-frame bounds remain independent.
+
+### Formatted integer interpolation
+
+Interpolated signed/unsigned integers of every 8/16/32/64-bit width support general
+formatting and decimal/hexadecimal `D`/`X` formats with precision through the native
+JavaScript numeric formatter. Int64/UInt64 remain BigInt throughout; negative hex
+values retain their declared width. Invalid formats throw FormatException, and
+unsupported formats throw NotSupportedException. Alignment and culture-sensitive
+providers remain unsupported. This does not expand the direct integer ToString
+overloads, whose invariant-provider recognition remains separate.

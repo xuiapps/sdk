@@ -8,6 +8,20 @@ namespace Xui.Compiler.Tests.Wasm.Strings;
 public class ConcatenationTests
 {
     [Fact]
+    public Task ConcatenatesTwoThreeAndFourCharacterSpans() => InlineArrayTests.AssertLinked("""
+        using System;
+        public static class Program {
+            public static int Main() {
+                Span<char> buffer=stackalloc char[2]; buffer[0]='Ж';buffer[1]='!';
+                Console.WriteLine(string.Concat("🙂".AsSpan(), buffer));
+                Console.WriteLine(string.Concat("ab".AsSpan(0,1),buffer,"cd".AsSpan(1)));
+                Console.WriteLine(string.Concat(ReadOnlySpan<char>.Empty,buffer,buffer,"?".AsSpan()));
+                return 42;
+            }
+        }
+        """, "🙂Ж!\naЖ!d\nЖ!Ж!?\n",42);
+
+    [Fact]
     public Task FixedArityConcatenationKeepsOrderAndTreatsNullAsEmpty() => InlineArrayTests.AssertLinked("""
         using System;
         public class Example { public string Id; public Example() { Id=$"Example.{GetType().Name}"; } }

@@ -18,6 +18,9 @@ public ref struct Writer
     /// <summary>Exports a function by its module function index.</summary>
     public void Function(string name, FunctionIndex functionIndex) => Export(name, ExportKind.Function, functionIndex.Value);
 
+    /// <summary>Exports linear memory for explicit host interop.</summary>
+    public void Memory(string name, MemoryIndex memoryIndex) => Export(name, ExportKind.Memory, memoryIndex.Value);
+
     /// <summary>Exports a global by its module global index.</summary>
     public void Global(string name, GlobalIndex globalIndex) => Export(name, ExportKind.Global, globalIndex.Value);
 

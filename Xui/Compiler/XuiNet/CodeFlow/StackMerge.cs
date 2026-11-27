@@ -15,11 +15,17 @@ internal static class StackMerge
         return parent.Push(Merge(existing.Entry!.Value, incoming.Entry!.Value));
     }
 
+    private static bool ArrayToReference(StackEntry a, StackEntry b) => a.Type == StackType.ArrayReference && b.Type == StackType.ObjectReference &&
+        (b.DeclaredType?.Code == SignatureTypeCode.Object || a.DeclaredType?.Array is { } array && b.DeclaredType?.Identity is { } contract &&
+         DotNet.Intrinsics.ArrayInterface.Matches(array, contract));
+
     private static StackEntry Merge(StackEntry a, StackEntry b)
     {
         if (a == b) return a;
-        if (a.Type == StackType.Null && b.Type is StackType.ObjectReference or StackType.ArrayReference) return b;
-        if (b.Type == StackType.Null && a.Type is StackType.ObjectReference or StackType.ArrayReference) return a;
+        if (ArrayToReference(a, b)) return b;
+        if (ArrayToReference(b, a)) return a;
+        if (a.Type == StackType.Null && b.Type is StackType.ObjectReference or StackType.ArrayReference or StackType.String) return b;
+        if (b.Type == StackType.Null && a.Type is StackType.ObjectReference or StackType.ArrayReference or StackType.String) return a;
         if (a.Type == StackType.ObjectReference && b.Type == StackType.ObjectReference)
         {
             if (a.DeclaredType?.Code == SignatureTypeCode.Object) return a;

@@ -13,6 +13,8 @@ public sealed partial class Analyzer
     private void ReadMethod(Dependency.Method node)
     {
         var identity = node.Identity;
+        if (DotNet.Intrinsics.InvariantCulture.Is(identity.DeclaringType) || FrameworkTypes.Is(identity.DeclaringType, "System", "IFormatProvider"))
+            throw new NotSupportedException("Culture objects and provider callbacks are not implemented; invariant interpolation uses an opaque singleton.");
         var module = identity.DeclaringType.Module;
         var method = module.GetMethod(identity.Handle);
         ReadDeclaration(node, identity, true);
@@ -40,9 +42,11 @@ public sealed partial class Analyzer
 
         var graph = InstructionGraph.Read(body.Instructions);
         TypeSpecialization.Apply(module, body, identity, graph);
+        var spanCalls = SpanCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
         var interpolationCalls = InterpolationCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
         var staticSpans = StaticSpanCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
         var primitiveCalls = PrimitiveCalls.Discover(module, body, graph, identity);
+        var constrainedCalls = ConstrainedCalls.Read(module, body, graph, identity.DeclaringType, identity.Arguments);
         var invariantFormatting = InvariantFormattingCalls.Read(module, body, graph);
         var reachable = new HashSet<InstructionNode>();
         var pending = new Stack<InstructionNode>();
@@ -80,7 +84,7 @@ public sealed partial class Analyzer
                     var token = MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
                     if (staticSpans.TryGetValue(offset, out var staticSpan))
                     {
-                        Add(new Dependency.Intrinsic(staticSpan.PointerConstructor ? "ReadOnlySpan.StaticData" : "RuntimeHelpers.CreateSpan"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Intrinsic(staticSpan.ArrayInitializer ? "RuntimeHelpers.InitializeArray" : staticSpan.PointerConstructor ? "ReadOnlySpan.StaticData" : "RuntimeHelpers.CreateSpan"), node, DependencyReason.Call, offset);
                         Add(new Dependency.Field(staticSpan.Field), node, DependencyReason.FieldRead, offset);
                         Signature(node, staticSpan.Result, DependencyReason.Signature, offset);
                         break;
@@ -95,11 +99,97 @@ public sealed partial class Analyzer
                     {
                         Add(new Dependency.Intrinsic("Type." + managedType.Operation), node, DependencyReason.Call, offset);
                         Signature(node, managedType.Signature.Result, DependencyReason.Signature, offset);
+                        if (managedType.Factory is { } assemblyFactory) Add(new Dependency.Method(assemblyFactory), node, DependencyReason.Call, offset);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.CompositeFormatting.Read(module, token) is not null)
                     {
                         Add(new Dependency.Intrinsic("String.Format.Neutral"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.NativeStringComparer.Read(module, token) is not null)
+                    {
+                        Add(new Dependency.Intrinsic("Dictionary.NativeStringComparer"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.RuntimeImport.Read(module, token) is { } hostImport)
+                    {
+                        Add(new Dependency.Intrinsic("RuntimeImport." + hostImport.ModuleName + "." + hostImport.Name), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.HostScheduler.Read(module, token) is { } scheduler)
+                    {
+                        Add(new Dependency.Intrinsic("Task.Post"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Method(scheduler.Callback), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ExecutionStack.Read(module, token) is { } stackQuery)
+                    {
+                        Add(new Dependency.Intrinsic("RuntimeHelpers." + stackQuery), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.MemoryBarrier.Is(module, token))
+                    {
+                        Add(new Dependency.Intrinsic("SingleAgent.MemoryBarrier"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.CurrentThread.Is(module, token))
+                    {
+                        Add(new Dependency.Intrinsic("Environment.CurrentManagedThreadId"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt &&
+                        (!constrainedCalls.TryGetValue(offset, out var hashCall) || hashCall.ReferenceReceiver is not null) &&
+                        DotNet.Intrinsics.ObjectHash.Is(module, token))
+                    {
+                        Add(instruction.Code == OpCode.Callvirt ? new Dependency.ObjectHash() : new Dependency.Intrinsic("Object.GetHashCode.Base"),
+                            node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && !constrainedCalls.ContainsKey(offset) &&
+                        !spanCalls.ContainsKey(offset) && !interpolationCalls.ContainsKey(offset) && DotNet.Intrinsics.ObjectText.Is(module, token))
+                    {
+                        Add(instruction.Code == OpCode.Callvirt ? new Dependency.ObjectText() : new Dependency.Intrinsic("Object.ToString.Base"),
+                            node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.MonitorMethod.Read(module, token) is { } monitor)
+                    {
+                        Add(new Dependency.Intrinsic("Monitor." + monitor.Operation), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.BitConversion.Read(module, token) is not null)
+                    { Add(new Dependency.Intrinsic("BitConverter.Reinterpret"), node, DependencyReason.Call, offset); break; }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.SuppressFinalization.Is(module, token))
+                    {
+                        Add(new Dependency.Intrinsic("GC.SuppressFinalize"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (DotNet.Intrinsics.RectangularArray.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } rectangle)
+                    {
+                        Add(new Dependency.Intrinsic("Array." + rectangle.Operation), node, DependencyReason.Call, offset);
+                        if (rectangle.ArrayType is { } arrayType) Signature(node, arrayType, DependencyReason.Signature, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.CharFormatting.Read(module, token) is not null)
+                    {
+                        Add(new Dependency.Intrinsic("Char.ToString"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && DotNet.Intrinsics.StringAccess.Read(module, token) is { } stringAccess)
+                    {
+                        Add(new Dependency.Intrinsic("String." + stringAccess.Operation), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && DotNet.Intrinsics.StringSplit.Read(module, token) is { } split)
+                    {
+                        Add(new Dependency.Intrinsic("String.Split"), node, DependencyReason.Call, offset);
+                        Signature(node, split.Signature.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.TextElement.Read(module, token) is not null)
+                    {
+                        Add(new Dependency.Intrinsic("StringInfo.GetNextTextElementLength"), node, DependencyReason.Call, offset);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.StringConcatenation.Read(module, token) is not null)
@@ -113,9 +203,17 @@ public sealed partial class Analyzer
                         Add(new Dependency.Literal(resourceText), node, DependencyReason.Literal, offset);
                         break;
                     }
-                    if (invariantFormatting.ContainsKey(offset))
+                    if (invariantFormatting.TryGetValue(offset, out var scalarFormatting))
                     {
-                        Add(new Dependency.Intrinsic("Int32.ToString.InvariantCulture"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Intrinsic(scalarFormatting.ValueType + (scalarFormatting.Parsing is null ? ".ToString.InvariantCulture" : ".Parse.InvariantCulture")), node, DependencyReason.Call, offset);
+                        if (scalarFormatting.Value.Identity is not null) Signature(node, scalarFormatting.Value, DependencyReason.Signature, offset);
+                        if (scalarFormatting.Parsing is { } parsing) Signature(node, parsing.Input, DependencyReason.Signature, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.Int32Formatting.InvariantProvider(module, token) is { } provider)
+                    {
+                        Add(new Dependency.Intrinsic("CultureInfo.InvariantCulture"), node, DependencyReason.Call, offset);
+                        Signature(node, provider, DependencyReason.Signature, offset);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.Int32Formatting.Is(module, token))
@@ -123,16 +221,26 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("Int32.ToString"), node, DependencyReason.Call, offset);
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ConstructorFactory.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } constructor)
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.GcArrayAllocation.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } allocation)
                     {
-                        Add(new Dependency.Intrinsic("Activator.CreateInstance"), node, DependencyReason.Call, offset);
-                        Add(new Dependency.Method(constructor), node, DependencyReason.Call, offset);
-                        Add(new Dependency.Instantiation(constructor.DeclaringType), node, DependencyReason.Allocation, offset);
+                        Add(new Dependency.Intrinsic("GC." + allocation.Operation), node, DependencyReason.Allocation, offset);
+                        Signature(node, allocation.Signature.Result, DependencyReason.Signature, offset);
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ArrayCopy.Read(module, token) is not null)
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ConstructorFactory.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } factory)
                     {
-                        Add(new Dependency.Intrinsic("Array.Copy"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Intrinsic("Activator.CreateInstance"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Type(factory.Type), node, DependencyReason.Signature, offset);
+                        if (factory.Constructor is { } constructor)
+                        {
+                            Add(new Dependency.Method(constructor), node, DependencyReason.Call, offset);
+                            Add(new Dependency.Instantiation(factory.Type), node, DependencyReason.Allocation, offset);
+                        }
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ArrayCopy.Read(module, token) is { } copyOperation)
+                    {
+                        Add(new Dependency.Intrinsic(copyOperation.ByteOffsets ? "Buffer.BlockCopy" : "Array.Copy"), node, DependencyReason.Call, offset);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ArrayClear.Read(module, token) is not null)
@@ -157,10 +265,29 @@ public sealed partial class Analyzer
                         Signature(node, inline.Signature.Parameters[0], DependencyReason.Signature, offset);
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.SpanAccess.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } span)
+                    if ((spanCalls.GetValueOrDefault(offset) ?? (instruction.Code is OpCode.Call or OpCode.Newobj ? DotNet.Intrinsics.SpanAccess.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) : null)) is { } span)
                     {
                         Add(new Dependency.Intrinsic($"Span.{span.Operation}"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Layout(span.Owner), node, DependencyReason.Layout, offset);
+                        foreach (var parameter in span.Signature.Parameters) Signature(node, parameter, DependencyReason.Signature, offset);
                         Signature(node, span.Signature.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Newobj && DotNet.Intrinsics.StringCharacters.Read(module, token) is { } characters)
+                    {
+                        Add(new Dependency.Intrinsic("String.FromCharacters"), node, DependencyReason.Call, offset);
+                        Signature(node, characters.Parameters[0], DependencyReason.Signature, offset);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Newobj && DotNet.Intrinsics.StringRepeat.Is(module, token))
+                    {
+                        Add(new Dependency.Intrinsic("String.Repeat"), node, DependencyReason.Call, offset);
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Newobj && DotNet.Intrinsics.StringSpan.Read(module,token) is { } stringSpan)
+                    {
+                        Add(new Dependency.Intrinsic(stringSpan.Constructor?"String.FromSpan":"String.AsSpan"),node,DependencyReason.Call,offset);
+                        Signature(node,stringSpan.Constructor?stringSpan.Signature.Parameters[0]:stringSpan.Signature.Result,DependencyReason.Signature,offset);
                         break;
                     }
                     if ((interpolationCalls.GetValueOrDefault(offset) ?? (instruction.Code is OpCode.Call or OpCode.Newobj
@@ -180,14 +307,22 @@ public sealed partial class Analyzer
                         Add(new Dependency.Intrinsic("String." + textEquality.Operation), node, DependencyReason.Call, offset);
                         break;
                     }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && DotNet.Intrinsics.SharedArrayPool.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } pool)
+                    {
+                        Add(new Dependency.Intrinsic("SharedArrayPool." + pool.Operation), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Layout(pool.Owner), node, DependencyReason.Layout, offset);
+                        Signature(node, pool.Element, DependencyReason.Signature, offset);
+                        break;
+                    }
                     if (instruction.Code is OpCode.Call or OpCode.Callvirt && DotNet.Intrinsics.DefaultEquality.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } equality)
                     {
                         Add(new Dependency.Intrinsic("DefaultEquality." + equality.Operation), node, DependencyReason.Call, offset);
                         if (DotNet.Intrinsics.DefaultEquality.Is(equality.Owner))
                             Add(new Dependency.Layout(equality.Owner), node, DependencyReason.Layout, offset);
                         Signature(node, equality.Element, DependencyReason.Signature, offset);
-                        if (equality.Operation is "Equals" or "IndexOf" && equality.Implementation is { } equals)
-                            Add(new Dependency.Method(equals), node, DependencyReason.Call, offset);
+                        if (equality.Operation is "Equals" or "IndexOf" or "GetHashCode" && equality.Implementation is { } equals)
+                            Add(equals.DeclaringType.IsInterface ? new Dependency.VirtualCall(equals) : new Dependency.Method(equals), node, DependencyReason.Call, offset);
+                        if (equality.UsesObjectHash) Add(new Dependency.Hashing(equality.Element.Identity!.Value), node, DependencyReason.VirtualCall, offset);
                         if (equality.Operation is "Equals" or "IndexOf" && equality.UsesObjectEquality)
                             Add(new Dependency.Equality(equality.Element.Identity!.Value), node, DependencyReason.VirtualCall, offset);
                         break;
@@ -198,15 +333,22 @@ public sealed partial class Analyzer
                         Signature(node, duration.Signature.Result, DependencyReason.Signature, offset);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ManagedBuffer.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } buffer)
+                    {
+                        Add(new Dependency.Intrinsic("ManagedBuffer." + buffer.Operation), node, DependencyReason.Call, offset);
+                        foreach (var parameter in buffer.Signature.Parameters) Signature(node, parameter, DependencyReason.Signature, offset);
+                        Signature(node, buffer.Signature.Result, DependencyReason.Signature, offset);
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ManagedReference.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } address)
                     {
                         Add(new Dependency.Intrinsic("Unsafe." + address.Operation), node, DependencyReason.Call, offset);
                         Signature(node, address.Element, DependencyReason.Signature, offset);
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ReferenceCompareExchange.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } exchange)
+                    if (instruction.Code == OpCode.Call && DotNet.Intrinsics.ReferenceInterlocked.Read(module, token, identity.DeclaringType.Arguments, identity.Arguments) is { } exchange)
                     {
-                        Add(new Dependency.Intrinsic("Interlocked.CompareExchange.Reference"), node, DependencyReason.Call, offset);
+                        Add(new Dependency.Intrinsic(exchange.Parameters.Length == 3 ? "Interlocked.CompareExchange.Reference" : "Interlocked.Exchange.Reference"), node, DependencyReason.Call, offset);
                         Signature(node, exchange.Result, DependencyReason.Signature, offset);
                         break;
                     }
@@ -248,14 +390,14 @@ public sealed partial class Analyzer
                             (HandleKind.TypeDefinition or HandleKind.TypeSpecification))
                         throw new NotSupportedException($"Unsupported {instruction.Code} at IL_{offset:x4}; only same-module method definitions or explicit rewrites are supported.");
                     MethodIdentity target;
-                    try { target = MemberResolver.Method(module, token, identity.DeclaringType, identity.Arguments); }
+                    try { target = constrainedCalls.TryGetValue(offset, out var concrete) ? concrete.Target : MemberResolver.Method(module, token, identity.DeclaringType, identity.Arguments); }
                     catch (NotSupportedException error)
                     {
                         throw new NotSupportedException($"Unsupported {instruction.Code} at IL_{offset:x4} in {identity}: {error.Message}", error);
                     }
-                    bool isVirtual = instruction.Code is OpCode.Callvirt or OpCode.Ldvirtftn &&
+                    target = BooleanCallSpecialization.Target(body, graph, offset, target);
+                    bool isVirtual = (!constrainedCalls.TryGetValue(offset, out var constrainedCall) || constrainedCall.ReferenceReceiver is not null) && instruction.Code is OpCode.Callvirt or OpCode.Ldvirtftn &&
                         (target.DeclaringType.Module.GetMethod(target.Handle).Attributes & MethodAttributes.Virtual) != 0;
-                    if (isVirtual && target.Arguments is not null && !target.DeclaringType.IsInterface) throw new NotSupportedException($"Generic virtual method dispatch is not implemented: {target}.");
                     Add(isVirtual ? new Dependency.VirtualCall(target) : new Dependency.Method(target), node,
                         isVirtual ? DependencyReason.VirtualCall : DependencyReason.Call, offset);
                     if (instruction.Code == OpCode.Newobj)
@@ -271,6 +413,12 @@ public sealed partial class Analyzer
                     if (staticSpans.TryGetValue(offset, out var staticAddress))
                     {
                         Add(new Dependency.Field(staticAddress.Field), node, DependencyReason.FieldRead, offset); break;
+                    }
+                    if (DotNet.Intrinsics.StringEmpty.Is(module, fieldToken))
+                    {
+                        if (instruction.Code != OpCode.Ldsfld) throw new NotSupportedException("String.Empty supports value reads, not writable/addressable storage.");
+                        Add(new Dependency.Literal(""), node, DependencyReason.Literal, offset);
+                        break;
                     }
                     if (instruction.Code == OpCode.Ldsfld && DotNet.Intrinsics.StopwatchConstant.Read(module, fieldToken) is { } clockConstant)
                     {
@@ -298,6 +446,12 @@ public sealed partial class Analyzer
                     Add(new Dependency.Literal(module.GetString(MetadataTokens.UserStringHandle(instruction.ReadToken(ref reader).Value))),
                         node, DependencyReason.Literal, offset);
                     break;
+                case OpCode.Newarr:
+                    var element = SignatureReader.Resolve(module, MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value),
+                        identity.DeclaringType.Arguments, identity.Arguments);
+                    TrackArray(new(element), node);
+                    Signature(node, element, DependencyReason.TypeOperand, offset);
+                    break;
                 case OpCode.Box:
                 case OpCode.Unbox:
                 case OpCode.Unbox_any:
@@ -308,7 +462,6 @@ public sealed partial class Analyzer
                 case OpCode.Ldobj:
                 case OpCode.Stobj:
                 case OpCode.Sizeof:
-                case OpCode.Newarr:
                 case OpCode.Ldelema:
                 case OpCode.Ldelem:
                 case OpCode.Stelem:

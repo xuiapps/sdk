@@ -30,12 +30,13 @@ internal static class LoopRegions
             var terminal = new HashSet<InstructionNode>();
             if (exit is null)
             {
-                // Early returns/throws are terminal arms, not competing loop continuations.
+                // Absorb exit-only work, including a nested natural loop, up to the common
+                // continuation. Returns/throws are terminal arms rather than competing exits.
                 // Keep the candidate that absorbs the smallest finite terminal region.
                 foreach (var candidate in paths.SelectMany(path => path).Distinct())
                 {
                     var tails = new HashSet<InstructionNode>();
-                    if (!exits.All(entry => paths[Array.IndexOf(exits, entry)].Contains(candidate) || Terminal(entry, candidate, nodes, tails, new()))) continue;
+                    if (!exits.All(entry => paths[Array.IndexOf(exits, entry)].Contains(candidate) || ExitTail(entry, candidate, nodes, tails, new()))) continue;
                     if (exit is null || tails.Count < terminal.Count) { exit = candidate; terminal = tails; }
                 }
             }
@@ -59,15 +60,17 @@ internal static class LoopRegions
                     throw Unsupported(regions[i].Block.Header, "overlapping loops");
         return loops;
 
-        static bool Terminal(InstructionNode node, InstructionNode continuation, HashSet<InstructionNode> loop,
+        bool ExitTail(InstructionNode node, InstructionNode continuation, HashSet<InstructionNode> loop,
             HashSet<InstructionNode> completed, HashSet<InstructionNode> active)
         {
-            if (node == continuation || loop.Contains(node)) return false;
+            if (node == continuation) return true;
+            if (loop.Contains(node)) return false;
             if (completed.Contains(node)) return true;
-            if (!active.Add(node)) return false;
+            if (!active.Add(node))
+                return cycles.TryGetValue(node, out var nestedCycle) && !nestedCycle.Overlaps(loop);
             bool result = node.Successors.Length == 0
-                ? node.Code is OpCode.Ret or OpCode.Throw or OpCode.Rethrow
-                : node.Successors.All(next => Terminal(next, continuation, loop, completed, active));
+                ? node.Code is OpCode.Ret or OpCode.Throw or OpCode.Rethrow or OpCode.Leave or OpCode.Leave_s or OpCode.Endfinally
+                : node.Successors.All(next => ExitTail(next, continuation, loop, completed, active));
             active.Remove(node);
             if (result) completed.Add(node);
             return result;

@@ -13,6 +13,7 @@ public readonly ref partial struct CodeEmitter
     {
         var copy = ArrayCopy.Read(source, MetadataTokens.EntityHandle(instruction.Value));
         if (copy is null) return false;
+        if (copy.ByteOffsets) return EmitBufferBlockCopy(instruction, offset);
         Pop(SignatureTypeCode.Int32, instruction.Code, offset); writer.LocalSet(method.CopyLength);
         if (copy.HasIndices) { Pop(SignatureTypeCode.Int32, instruction.Code, offset); writer.LocalSet(method.CopyDestinationIndex); }
         else writer.I32Const(0).LocalSet(method.CopyDestinationIndex);
@@ -25,6 +26,7 @@ public readonly ref partial struct CodeEmitter
         CheckCopyNull(method.GcOwner, "destinationArray");
         var signature = sourceArray.Array ?? destination.Array;
         if (signature is null) { writer.Unreachable(); return true; } // Both operands are statically null.
+        if (!signature.IsVector) throw new NotSupportedException("Array.Copy on rectangular arrays is not implemented.");
         if (sourceArray.Array is { } sourceType && sourceType != signature || destination.Array is { } destinationType && destinationType != signature)
             throw new NotSupportedException("Array.Copy requires the same exact vector element type.");
         var shape = method.Storage.ArrayShape(signature);
@@ -85,9 +87,9 @@ public readonly ref partial struct CodeEmitter
         ThrowException(ExceptionKind.ArgumentException); writer.End();
     }
 
-    private void ThrowArgumentException(ExceptionKind kind, string name)
+    private void ThrowArgumentException(ExceptionKind kind, string name, string? message = null)
     {
-        EmitString(ExceptionTypes.Message(kind)); writer.LocalSet(method.GcExtern);
+        EmitString(message ?? ExceptionTypes.Message(kind)); writer.LocalSet(method.GcExtern);
         EmitString(name); writer.LocalSet(method.ExceptionParamName);
         WriteArgumentException(kind);
         writer.Throw(method.Storage.ExceptionTag);

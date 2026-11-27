@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <!-- Desktop and emulator image loading resolves relative paths from the app output. -->
-  <ItemGroup Condition="'$(XuiDesktop)' == 'true' Or '$(XuiEmulator)' == 'true'">
+  <ItemGroup Condition="('$(XuiDesktop)' == 'true' Or '$(XuiEmulator)' == 'true') And '$(XuiBrowser)' != 'true'">
     <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

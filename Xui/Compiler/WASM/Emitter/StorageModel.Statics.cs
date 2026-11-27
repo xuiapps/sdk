@@ -106,7 +106,10 @@ internal sealed partial class StorageModel
         // The auxiliary string payload is a parameter name for argument exceptions,
         // and a type name for initialization failures; the kinds cannot overlap.
         EmitStaticString(writer, type.Name, runtime, literals);
-        writer.LocalGet(new(0)).StructNew(ExceptionType).Throw(ExceptionTag);
+        writer.LocalGet(new(0));
+        if (ActualValueExceptionsEnabled) writer.RefNull(ValueTypeCode.EqRef);
+        WriteXmlExceptionDefaults(writer);
+        writer.StructNew(ExceptionType).Throw(ExceptionTag);
         writer.End().Unreachable().End().GlobalSet(type.Failure);
         writer.I32Const((int)TypeInitializationState.Failed).GlobalSet(type.State).GlobalGet(type.Failure).ThrowRef();
     }

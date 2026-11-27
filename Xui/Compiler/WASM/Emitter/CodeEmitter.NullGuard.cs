@@ -14,7 +14,7 @@ public readonly ref partial struct CodeEmitter
         Pop(SignatureTypeCode.String, instruction.Code, offset);
         writer.LocalSet(method.ExceptionParamName);
         var value = Pop(instruction.Code, offset);
-        if (value.IsByReference || value.TypeCode is not (SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray) &&
+        if (value.IsByReference || value.TypeCode is not (SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray or SignatureTypeCode.Array) &&
             value.Identity is not { IsValueType: false }) throw new InvalidProgramException("ThrowIfNull requires a reference value.");
         writer.RefIsNull().If();
         EmitString(ExceptionTypes.Message(ExceptionKind.ArgumentNullException));

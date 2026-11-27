@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Xui.Core.Canvas;
 using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Composition.GPU;
@@ -23,7 +22,7 @@ public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
         using var group = context.Group(new GroupOptions
         { Key = compositionKey, Bounds = Frame, ViewBacking = true });
         if (context.GpuSurface(new GroupOptions
-        { Key = this, Bounds = Frame, HasUpdates = IsLive && nativeVersion != SceneVersion }))
+        { Key = this, Bounds = Frame, HasUpdates = IsLive && nativeVersion != SceneVersion }, out var failure))
         {
             EnsureDevice();
             using var overlay = context.Group(new GroupOptions
@@ -36,7 +35,15 @@ public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
             context.TextAlign = TextAlign.Left;
             context.FillText(_nativeLabel, (Frame.X + 6, Frame.Y + 6));
         }
-        else base.RenderCore(context); // Explicit portable path for other runtimes and SVG capture.
+        else if (failure == GpuSurfaceFailure.NotSupported)
+        {
+            context.SetFill(new Color(0x000000CC));
+            context.SetFont(new Font(14, "Inter"));
+            context.TextBaseline = TextBaseline.Middle;
+            context.TextAlign = TextAlign.Center;
+            context.FillText("Not supported on this device", Frame.Center);
+        }
+        else base.RenderCore(context); // Explicit portable path for SVG capture and unsupported clips.
     }
 
     void IGpuSurfaceContent.Render(IGpuRenderTarget target)
@@ -96,7 +103,7 @@ public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
         base.OnDeactivate();
     }
 
-    private unsafe void RenderFrame(IGpuRenderTarget target)
+    private void RenderFrame(IGpuRenderTarget target)
     {
         var cmd = _commands ??= _gpuDevice!.CreateCommandList();
 
@@ -106,16 +113,9 @@ public class GpuHardwareCubeTestView : CubeSurface, IGpuSurfaceContent
 
         var mvp = ComputeMvpMatrix((float)target.Width / target.Height);
 
-        fixed (CubeMesh.Vertex* pVerts = vertices)
-        {
-            cmd.SetVertexBuffer(pVerts, new GpuVertexBufferDesc
-            {
-                Stride = Marshal.SizeOf<CubeMesh.Vertex>(),
-                VertexCount = vertices.Length
-            });
-            cmd.SetConstantBuffer(&mvp, sizeof(Float4x4));
-            cmd.Draw(vertices.Length);
-        }
+        cmd.SetVertexBuffer<CubeMesh.Vertex>(vertices);
+        cmd.SetConstantBuffer(in mvp);
+        cmd.Draw(vertices.Length);
 
         cmd.EndRenderPass();
         cmd.Commit();

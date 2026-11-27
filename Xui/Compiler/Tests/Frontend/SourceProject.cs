@@ -12,7 +12,8 @@ internal static class SourceProject
     private static string GetRoot([CallerFilePath] string file = "") => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, "../../.."));
 
     public static byte[] Compile(string relativeDirectory, string assemblyName, IEnumerable<MetadataReference> references,
-        IEnumerable<string>? extraSources = null, IEnumerable<string>? exclude = null, bool generateShaders = false)
+        IEnumerable<string>? extraSources = null, IEnumerable<string>? exclude = null, bool generateShaders = false,
+        IEnumerable<ResourceDescription>? resources = null)
     {
         string root = Path.Combine(XuiRoot, relativeDirectory);
         var options = new CSharpParseOptions(LanguageVersion.CSharp14, preprocessorSymbols: ["XUI_COMPILER_CANVAS"]);
@@ -36,7 +37,7 @@ internal static class SourceProject
         if (generateShaders)
             CSharpGeneratorDriver.Create([new Xui.CompileTime.ShaderProgramGenerator().AsSourceGenerator()], parseOptions: options)
                 .RunGeneratorsAndUpdateCompilation(compilation, out complete, out _);
-        using var output = new MemoryStream(); var result = complete.Emit(output);
+        using var output = new MemoryStream(); var result = complete.Emit(output, manifestResources: resources);
         if (!result.Success) throw new InvalidOperationException(assemblyName + ":\n" + string.Join("\n", result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error)));
         return output.ToArray();
     }

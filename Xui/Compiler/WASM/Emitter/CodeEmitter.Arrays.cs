@@ -25,6 +25,7 @@ public readonly ref partial struct CodeEmitter
         PopArrayIndex(code, offset);
         var value = Pop(code, offset);
         var shape = method.Storage.ArrayShape(value.Array ?? throw new InvalidProgramException("Expected a typed vector."));
+        if (!shape.Signature.IsVector) throw new NotSupportedException("Vector element opcodes cannot address rectangular arrays.");
         ArrayOperations.Validate(code, shape.Signature.Element, explicitElement);
         writer.LocalSet(method.ArrayIndex).LocalSet(method.ArrayReference);
         writer.LocalGet(method.ArrayReference);
@@ -39,10 +40,16 @@ public readonly ref partial struct CodeEmitter
     private void EmitArrayLoad(OpCode code, int offset, SignatureType? explicitElement = null, bool address = false)
     {
         var shape = CheckedArray(code, offset, explicitElement);
-        if (address && !shape.StructElements)
+        LoadArrayElement(shape, code, offset, address);
+    }
+
+    private void LoadArrayElement(ArrayShape shape, OpCode code, int offset, bool address)
+    {
+        if (address)
         {
-            // The array owns the storage; the selector is its already-checked index.
+            // Retain the array owner so typed ref arithmetic can reach adjacent elements.
             writer.LocalGet(method.ArrayReference).LocalGet(method.ArrayIndex);
+            if (shape.StructElements) writer.I32Const(ElementLeaves(shape.Element)).I32Mul();
             stack.Push(new(shape.Element.TypeCode, shape.Element.Identity, true, shape.Element.Array));
             return;
         }
@@ -51,12 +58,6 @@ public readonly ref partial struct CodeEmitter
         {
             var identity = shape.Element.Identity!.Value;
             var elementShape = method.Storage.Shape(identity);
-            if (address)
-            {
-                writer.I32Const(method.Storage.ReferenceField(new(elementShape, 0), shape.Element));
-                stack.Push(new(SignatureTypeCode.TypeHandle, identity, true));
-                return;
-            }
             ReadInlineValue(identity, new(elementShape, 0), offset);
         }
         else
@@ -77,6 +78,11 @@ public readonly ref partial struct CodeEmitter
         PopAssignable(element, code, offset);
         writer.LocalSet(GcScratch(element));
         var shape = CheckedArray(code, offset, explicitElement);
+        StoreArrayElement(shape, element);
+    }
+
+    private void StoreArrayElement(ArrayShape shape, LocalVariable element)
+    {
         writer.LocalGet(method.ArrayReference).RefCast(shape.Type).LocalGet(method.ArrayIndex);
         if (shape.StructElements)
         {

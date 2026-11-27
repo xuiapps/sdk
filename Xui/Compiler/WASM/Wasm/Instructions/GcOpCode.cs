@@ -3,6 +3,8 @@ namespace Xui.Compiler.WASM.Wasm.Instructions;
 /// <summary>GC instruction subopcodes currently emitted after the GC prefix.</summary>
 public enum GcOpCode : uint
 {
+    /// <summary>Allocates an array filled with the supplied element value.</summary>
+    ArrayNew = 0x06,
     /// <summary>Allocates a zero/null-filled array.</summary>
     ArrayNewDefault = 0x07,
     /// <summary>Reads an unpacked array element.</summary>
@@ -33,5 +35,8 @@ public enum GcOpCode : uint
     RefCast = 0x16,
 
     /// <summary>Creates an array from a data segment; followed by type and data indices.</summary>
-    ArrayNewData = 0x09
+    ArrayNewData = 0x09,
+
+    /// <summary>Externalizes an internal GC reference while preserving its identity.</summary>
+    ExternConvertAny = 0x1b
 }

@@ -179,7 +179,7 @@ public static class EntryPoint
   (type (;93;) (func (param i32) (result i32)))
   (import "xui" "console-log" (func (;0;) (type 2) (param i32)))
   (import "wasm:js-string" "fromCharCodeArray" (func (;1;) (type 1) (param (ref null 0) i32 i32) (result (ref extern))))
-  (memory (;0;) 16 16)
+  (memory (;0;) 16 32768)
   (tag (;0;) (type 4) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
   (global (;1;) (mut externref) ref.null extern)

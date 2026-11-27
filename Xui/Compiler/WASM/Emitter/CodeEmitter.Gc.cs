@@ -9,7 +9,7 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    private bool IsGc(MsilStackEntry value) => value.TypeCode is SignatureTypeCode.Object or SignatureTypeCode.SZArray ||
+    private bool IsGc(MsilStackEntry value) => value.TypeCode is SignatureTypeCode.Object or SignatureTypeCode.SZArray or SignatureTypeCode.Array ||
         (value.Identity is { } identity && method.Storage.IsGc(identity));
 
     private GcLocation Location(MsilStackEntry value) => new(method.Storage.Shape(value.Identity!.Value), 0);

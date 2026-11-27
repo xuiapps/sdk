@@ -1,0 +1,29 @@
+<Project>
+  <!-- Import from a Microsoft.NET.Sdk.BlazorWebAssembly app after its app targets. -->
+  <PropertyGroup>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <DefineConstants>$(DefineConstants);XUI_BROWSER_AOT</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatformAttribute">
+      <_Parameter1>browser</_Parameter1>
+    </AssemblyAttribute>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.13" PrivateAssets="all" />
+    <Content Include="$(MSBuildThisFileDirectory)Host/index.html" Link="wwwroot/index.html" CopyToOutputDirectory="PreserveNewest" Condition="!Exists('wwwroot/index.html')" />
+    <Content Include="$(MSBuildThisFileDirectory)wwwroot/**" Link="wwwroot/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)../../Core/Fonts/Inter/*.ttf" Link="wwwroot/fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!-- The development manifest otherwise points external linked files at the app's
+       source wwwroot. They live in the output wwwroot after the SDK's asset copy. -->
+  <Target Name="XuiBrowserLinkedAssetRoots" AfterTargets="ResolveProjectStaticWebAssets">
+    <ItemGroup>
+      <StaticWebAsset Update="@(StaticWebAsset)"
+                      Condition="'%(StaticWebAsset.SourceId)' == '$(PackageId)' And '%(StaticWebAsset.CopyToOutputDirectory)' == 'PreserveNewest'">
+        <ContentRoot>$([System.IO.Path]::GetFullPath('$(OutputPath)wwwroot/'))</ContentRoot>
+      </StaticWebAsset>
+    </ItemGroup>
+  </Target>
+</Project>

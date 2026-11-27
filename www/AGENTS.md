@@ -47,18 +47,8 @@ API metadata is configured in `docfx.json` and generated with:
 docfx metadata docfx.json
 ```
 
-Before relying on API metadata generation, resolve these current repository
-inconsistencies as part of a deliberate docs-tooling change:
-
-- `docfx.json` still references the removed
-  `Xui/Middleware/EmulatorLegacy/Xui.Middleware.EmulatorLegacy.csproj`.
-- `CONTRIBUTING.md` describes committed `www/api` YAML and a hand-maintained
-  `www/api/toc.yml`, while `www/api` is currently absent and the repository
-  ignores `api/`.
-
-Do not manufacture or restore an API TOC based only on the old instructions.
-First decide the intended generated/committed policy, then update configuration,
-ignore rules, contributor guidance, and CI together.
+Generated metadata and its navigation are ignored build output. Do not commit
+`www/api`; the Pages workflow regenerates it from the current source.
 
 ## Building the site
 
@@ -78,12 +68,10 @@ docfx build docfx.json --serve
 Use the explicit `build` subcommand. Running bare `docfx docfx.json` can also
 execute metadata generation and overwrite API navigation.
 
-The GitHub Pages workflow performs these steps on Windows:
-
-1. Run `Xui.Tests.Docs` in Release.
-2. Run `docfx metadata docfx.json`.
-3. Run `docfx build docfx.json`.
-4. Upload `_site`.
+The GitHub Pages workflow runs `tools/build-web.ps1` on Windows to generate
+figures and metadata, build DocFX, publish the AOT TestApp at `/wasm/`, and publish
+the compiler playground at `/wasm/compiler/`. Both published bundles are browser
+tested before upload. Pull requests validate the build; only `main` deploys.
 
 For an authored Markdown-only change, a DocFX build is sufficient. For generated
 figures, run the Docs tests first. For public API or metadata changes, validate

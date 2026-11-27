@@ -24,6 +24,8 @@ public sealed class InstructionNode
     public ImmutableArray<InstructionNode> Successors { get; internal set; } = [];
     /// <summary>Whether this instruction can be reached from method entry through the analyzed edges.</summary>
     public bool IsReachable => Before is not null;
+    /// <summary>Whether assignment at this instruction converts a native string into an object slot.</summary>
+    public bool StoresStringAsObject { get; internal set; }
     /// <summary>The stack before execution; shared by all incoming edges of a reachable instruction.</summary>
     public StackState? Before { get; internal set; }
     /// <summary>The stack after execution, propagated to every outgoing edge.</summary>

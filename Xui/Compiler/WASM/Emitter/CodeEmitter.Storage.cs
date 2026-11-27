@@ -8,8 +8,12 @@ public readonly ref partial struct CodeEmitter
     private void PopAssignable(LocalVariable storage, OpCode code, int offset)
     {
         var value = Pop(code, offset);
+        if (!value.IsByReference && !storage.IsByReference && value.TypeCode == SignatureTypeCode.String && storage.TypeCode == SignatureTypeCode.Object)
+        { EmitStringObject(); return; }
+        if (!value.IsByReference && !storage.IsByReference && value.Array is { } array && storage.Identity is { } contract &&
+            XuiNet.DotNet.Intrinsics.ArrayInterface.Matches(array, contract)) return;
         if (!storage.IsByReference && storage.TypeCode == SignatureTypeCode.Object && IsObjectReference(value)) return;
-        if (value.IsNull && (storage.TypeCode is SignatureTypeCode.String or SignatureTypeCode.SZArray ||
+        if (value.IsNull && (storage.TypeCode is SignatureTypeCode.String or SignatureTypeCode.SZArray or SignatureTypeCode.Array ||
             (storage.Identity is { } identity && method.Storage.IsClass(identity))))
         {
             if (storage.TypeCode == SignatureTypeCode.String) writer.Drop().RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.ExternRef);
@@ -27,7 +31,7 @@ public readonly ref partial struct CodeEmitter
     }
 
     private bool IsObjectReference(MsilStackEntry value) => !value.IsByReference &&
-        (value.IsNull || value.TypeCode == SignatureTypeCode.Object || value.Identity is { } identity && method.Storage.IsClass(identity));
+        (value.IsNull || value.Array is not null || value.TypeCode == SignatureTypeCode.Object || value.Identity is { } identity && method.Storage.IsClass(identity));
 
     private void Narrow(LocalVariable storage)
     {

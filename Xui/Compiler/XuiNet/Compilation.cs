@@ -15,9 +15,13 @@ public sealed class Compilation
     private readonly Dictionary<string, Model.Assembly> assemblies = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(Model.Module, EntityHandle), Model.TypeIdentity> resolved = new();
     private readonly Dictionary<Model.Module, Dictionary<(TypeDefinitionHandle Parent, string Namespace, string Name), TypeDefinitionHandle>> definitions = new();
+    private readonly Dictionary<Model.TypeIdentity, Model.TypeIdentity> replacements = new();
 
     /// <summary>Binds the supplied assemblies into one resolution context; duplicate names are rejected.</summary>
-    public Compilation(params Model.Assembly[] assemblies)
+    public Compilation(params Model.Assembly[] assemblies) : this(assemblies, []) { }
+
+    /// <summary>Binds assemblies with explicit runtime type implementations, fixed before any signature is resolved.</summary>
+    public Compilation(Model.Assembly[] assemblies, IReadOnlyList<TypeReplacement> replacements)
     {
         foreach (var assembly in assemblies)
         {
@@ -27,6 +31,21 @@ public sealed class Compilation
                 throw new ArgumentException($"Duplicate assembly name: {assembly.Identity.Name}.", nameof(assemblies));
         }
         Assemblies = Array.AsReadOnly(assemblies.ToArray());
+        foreach (var replacement in replacements)
+        {
+            var source = replacement.Source;
+            var target = replacement.Implementation;
+            if (source.Arguments is not null || target.Arguments is not null ||
+                source.Handle.Kind != HandleKind.TypeDefinition || target.Handle.Kind != HandleKind.TypeDefinition ||
+                !assemblies.Any(a => a.ManifestModule == source.Module) || !assemblies.Any(a => a.ManifestModule == target.Module))
+                throw new ArgumentException("Type replacements require open definitions in the supplied assemblies.", nameof(replacements));
+            if (source.IsValueType != target.IsValueType || source.IsInterface != target.IsInterface ||
+                source.Module.GetType((TypeDefinitionHandle)source.Handle).GenericParameterCount != target.Module.GetType((TypeDefinitionHandle)target.Handle).GenericParameterCount)
+                throw new ArgumentException("A replacement must preserve type category and generic arity.", nameof(replacements));
+            if (!this.replacements.TryAdd(source, target))
+                throw new ArgumentException($"Duplicate type replacement: {source}.", nameof(replacements));
+        }
+        foreach (var source in this.replacements.Keys) _ = Canonical(source);
         foreach (var assembly in assemblies) assembly.ManifestModule.Compilation = this;
     }
 
@@ -37,7 +56,7 @@ public sealed class Compilation
     public Model.TypeIdentity ResolveType(Model.Module module, EntityHandle handle)
     {
         if (module.Compilation != this) throw new ArgumentException("Module does not belong to this compilation.", nameof(module));
-        if (handle.Kind == HandleKind.TypeDefinition) return new(module, handle);
+        if (handle.Kind == HandleKind.TypeDefinition) return Canonical(new(module, handle));
         if (handle.Kind != HandleKind.TypeReference) throw new NotSupportedException($"Named type resolution does not support {handle.Kind}.");
         if (resolved.TryGetValue((module, handle), out var identity)) return identity;
         var reference = module.GetTypeReference((TypeReferenceHandle)handle);
@@ -86,7 +105,7 @@ public sealed class Compilation
             }
             definitions.Add(target, types);
         }
-        if (types.TryGetValue((parent, ns, name), out var definition)) return new(target, definition);
+        if (types.TryGetValue((parent, ns, name), out var definition)) return Canonical(new(target, definition));
         if (parent.IsNil)
             foreach (var handle in target.Metadata.ExportedTypes)
             {
@@ -102,6 +121,17 @@ public sealed class Compilation
                 return ResolveNamed(implementation.ManifestModule, default, ns, name, forwarding);
             }
         throw new NotSupportedException($"Cannot resolve type {ns}.{name} in {target.Name}.");
+    }
+
+    private Model.TypeIdentity Canonical(Model.TypeIdentity identity)
+    {
+        int remaining = replacements.Count;
+        while (replacements.TryGetValue(identity, out var target))
+        {
+            if (remaining-- == 0) throw new ArgumentException("Cyclic runtime type replacements.");
+            identity = target;
+        }
+        return identity;
     }
 
     private static bool Matches(Model.AssemblyIdentity definition, Model.AssemblyReference reference)

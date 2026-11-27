@@ -10,6 +10,41 @@ namespace Xui.Compiler.Tests.Wasm.Equality;
 public class DefaultEqualityTests
 {
     [Fact]
+    public async Task CoreRectUsesItsDeclaredTypedEquality()
+    {
+        const string source = """
+        using System;
+        using System.Collections.Generic;
+        using System.Runtime.InteropServices;
+        using Xui.Core.Math2D;
+        public static class Program {
+            public static int Main() {
+                var comparer=EqualityComparer<Rect>.Default;
+                Rect a=new Rect(1,2,3,4), b=new Rect(1,2,3,4);
+                Console.WriteLine(comparer.Equals(a,b));
+                b.Width=(NFloat)9; Console.WriteLine(comparer.Equals(a,b));
+                a.X=NFloat.NaN; b=a; Console.WriteLine(comparer.Equals(a,b));
+                a.X=(NFloat)0; b=a; b.X=(NFloat)(-0.0); Console.WriteLine(comparer.Equals(a,b));
+                return 42;
+            }
+        }
+        """;
+        foreach (var optimization in new[] { Microsoft.CodeAnalysis.OptimizationLevel.Release, Microsoft.CodeAnalysis.OptimizationLevel.Debug })
+        {
+            byte[] image = Frontend.Roslyn.Compile(source, optimizationLevel: optimization, additionalReferences:
+                new[] { typeof(Xui.Core.Math2D.Rect).Assembly, System.Reflection.Assembly.Load("System.Runtime.InteropServices") }
+                    .Select(a => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(a.Location)));
+            var expected = Gc.GcTests.RunManaged(image);
+            Assert.Equal("True\nFalse\nFalse\nTrue\n", expected.Output);
+            using var app = CanvasTests.Read(image);
+            using var core = CanvasTests.Read(File.ReadAllBytes(typeof(Xui.Core.Math2D.Rect).Assembly.Location));
+            using var framework = new Frontend.Framework();
+            _ = new Xui.Compiler.XuiNet.Compilation([app,core,..framework.Assemblies]);
+            Assert.Equal(expected, await Repl.Node.ExecuteAsync(new WasmEmitter().Emit(app,new Xui.Compiler.Playground.ConsoleWriteLineRewriter())));
+        }
+    }
+
+    [Fact]
     public Task StringEqualityIsOrdinalAndNullSafe() => InlineArrayTests.AssertLinked("""
         using System;
         using System.Collections.Generic;

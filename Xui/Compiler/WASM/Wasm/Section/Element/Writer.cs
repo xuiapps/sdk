@@ -18,6 +18,13 @@ public ref struct Writer
         foreach (var function in functions) section.U32(function.Value);
         count++;
     }
+    /// <summary>Declares function references without retaining an element segment at runtime.</summary>
+    public void DeclareFunctions(scoped ReadOnlySpan<FunctionIndex> functions)
+    {
+        section.U32((uint)SegmentKind.DeclarativeFunctions).Byte((byte)ElementKind.FunctionReference).U32((uint)functions.Length);
+        foreach (var function in functions) section.U32(function.Value);
+        count++;
+    }
     /// <summary>Patches the segment count and section length.</summary>
     public void Dispose() { section.PatchU32(countPosition, count); section.Dispose(); }
 }

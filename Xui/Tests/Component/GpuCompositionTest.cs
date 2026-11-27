@@ -134,20 +134,44 @@ public class GpuCompositionTest
         using var stream = new MemoryStream();
         using var svg = new SvgDrawingContext((300, 300), stream, keepOpen: true);
         var options = new GroupOptions { Key=new Content(), Bounds=(0, 0, 100, 100) };
-        Assert.False(((IContext)svg).GpuSurface(options));
+        Assert.False(((IContext)svg).GpuSurface(options, out var portableFailure));
+        Assert.Equal(GpuSurfaceFailure.PortableFallbackRequired, portableFailure);
         foreach (bool supported in new[] { false, true })
         {
             var factory = new Factory { IsSupported=supported };
             using var scene = new RetainedCanvasContext(svg, factory);
             scene.BeginFrame((0, 0, 300, 300), 1);
             if (supported) { scene.BeginPath(); scene.Rect((0, 0, 50, 50)); scene.Clip(); }
-            Assert.False(scene.GpuSurface(options));
+            Assert.False(scene.GpuSurface(options, out var failure));
+            Assert.Equal(supported ? GpuSurfaceFailure.PortableFallbackRequired : GpuSurfaceFailure.NotSupported, failure);
             scene.FillRect((0, 0, 100, 100));
             scene.EndFrame();
             Assert.Equal(0, scene.Root.Count);
             Assert.True(scene.Root.HasDrawing);
             Assert.Empty(factory.Created);
         }
+    }
+
+    [Fact]
+    public void NativeCreationFailureLeavesTheFrameUsableAndCanRecover()
+    {
+        using var stream = new MemoryStream();
+        using var svg = new SvgDrawingContext((300, 300), stream, keepOpen: true);
+        var factory = new Factory { FailCreation = true };
+        using var scene = new RetainedCanvasContext(svg, factory);
+        var options = new GroupOptions { Key = new Content(), Bounds = (0, 0, 100, 100) };
+        scene.BeginFrame((0, 0, 300, 300), 1);
+        Assert.False(scene.GpuSurface(options, out var failure));
+        Assert.Equal(GpuSurfaceFailure.NotSupported, failure);
+        Assert.Equal(0, scene.Root.Count);
+        scene.FillRect((0, 0, 100, 100));
+        scene.EndFrame(); scene.AcceptFrame();
+        factory.FailCreation = false;
+        scene.BeginFrame((0, 0, 300, 300), 1);
+        Assert.True(scene.GpuSurface(options, out failure));
+        Assert.Equal(GpuSurfaceFailure.None, failure);
+        scene.EndFrame(); scene.AcceptFrame();
+        Assert.Single(factory.Created);
     }
 
     [Fact]
@@ -216,8 +240,9 @@ public class GpuCompositionTest
     private sealed class Factory : IGpuSurfaceFactory
     {
         public bool IsSupported { get; set; } = true;
+        public bool FailCreation { get; set; }
         public List<Surface> Created { get; } = new();
-        public ICompositionGpuSurface CreateSurface() { var s = new Surface(); Created.Add(s); return s; }
+        public ICompositionGpuSurface CreateSurface() { if (FailCreation) throw new NotSupportedException(); var s = new Surface(); Created.Add(s); return s; }
     }
     private sealed class Surface : ICompositionGpuSurface
     {

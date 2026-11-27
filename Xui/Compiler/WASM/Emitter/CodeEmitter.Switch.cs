@@ -32,6 +32,7 @@ public readonly ref partial struct CodeEmitter
             EmitFlow(arm.Body);
             if (arm.CanContinue)
             {
+                CoerceNullStrings(block.Join!.Before!);
                 CheckStack(block.Join!.Before!, block.Join.Offset);
                 var values = stack.Reverse().ToArray();
                 if (result is null) { result = values; resultLocals = (bool[])initializedLocals.Clone(); }

@@ -1,516 +1,212 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using Xui.Core.Canvas;
 using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Filter;
-using System.Collections.Generic;
 using Xui.Core.Math2D;
 
 namespace Xui.Runtime.Browser.Actual;
 
+/// <summary>Records Canvas operations for one synchronous bulk replay in JavaScript.</summary>
 public partial class BrowserDrawingContext : IContext
 {
-    // This backend currently draws groups immediately; it never claims cached content.
+    // Wire order is shared with canvas-player.js. Coordinates become doubles only at this boundary.
+    private enum Op
+    {
+        Save, Restore, BeginPath, ClosePath, MoveTo, LineTo, Quadratic, Bezier, Arc, ArcTo, Ellipse,
+        Rect, RoundRect, Clip, Fill, Stroke, FillRect, StrokeRect, Transform, SetTransform,
+        FillColor, StrokeColor, GlobalAlpha, LineWidth, LineCap, LineJoin, MiterLimit, DashOffset,
+        LineDash, Font, TextAlign, TextBaseline, FillText, LinearGradient, RadialGradient,
+        DrawImage, Pattern, GpuSurface
+    }
+
+    private double[] commands = new double[4096];
+    private int count;
+    private readonly List<string> strings = new();
+    private readonly Dictionary<string, int> stringIds = new(StringComparer.Ordinal);
+    private readonly Dictionary<Font, string> fontNames = new();
+    private readonly Dictionary<(string Font, string Text), TextMetrics> measurements = new();
+    private readonly double[] metrics = new double[12];
+    private readonly Stack<(FilterState Filter, string Font, AffineTransform Transform)> states = new();
+    private FilterState filter;
+    private AffineTransform transform = AffineTransform.Identity;
+    private string font = "15px Inter";
     private ImmediateCompositionContext? composition;
+    private double pixelRatio = 1;
+
+    [JSImport("submit", "xui-browser")]
+    private static partial void Submit([JSMarshalAs<JSType.MemoryView>] Span<double> commands, string[] strings);
+    [JSImport("beginFrame", "xui-browser")]
+    private static partial void BeginFrame(double pixelRatio);
+    [JSImport("measureText", "xui-browser")]
+    private static partial void Measure(string font, string text, [JSMarshalAs<JSType.MemoryView>] Span<double> metrics);
+
+    internal void Reset(double scale)
+    {
+        count = 0;
+        strings.Clear();
+        stringIds.Clear();
+        states.Clear();
+        filter = default;
+        font = "15px Inter";
+        pixelRatio = scale;
+        transform = AffineTransform.Identity;
+        gpuFrame++;
+        BeginFrame(scale);
+    }
+
+    internal void Flush()
+    {
+        if (count == 0) return;
+        Submit(commands.AsSpan(0, count), strings.ToArray());
+        count = 0;
+        strings.Clear();
+        stringIds.Clear();
+    }
+
+    private void Write(Op op, params ReadOnlySpan<double> args)
+    {
+        Ensure(args.Length + 1);
+        commands[count++] = (int)op;
+        args.CopyTo(commands.AsSpan(count));
+        count += args.Length;
+    }
+    private void Ensure(int length)
+    {
+        if (count + length > commands.Length)
+            Array.Resize(ref commands, Math.Max(count + length, commands.Length * 2));
+    }
+    private int Text(string value)
+    {
+        if (stringIds.TryGetValue(value, out var id)) return id;
+        id = strings.Count;
+        strings.Add(value);
+        stringIds.Add(value, id);
+        return id;
+    }
+    private static uint Pack(Color color) =>
+        (uint)(Math.Clamp((double)color.Red, 0, 1) * 255 + .5) << 24 |
+        (uint)(Math.Clamp((double)color.Green, 0, 1) * 255 + .5) << 16 |
+        (uint)(Math.Clamp((double)color.Blue, 0, 1) * 255 + .5) << 8 |
+        (uint)(Math.Clamp((double)color.Alpha, 0, 1) * 255 + .5);
+
     public CompositionGroup Group(scoped in GroupOptions options) =>
         (composition ??= new ImmediateCompositionContext(this)).Group(in options);
     public void EndGroup() => (composition ?? throw new InvalidOperationException("No composition group to close.")).EndGroup();
-
-    private FilterState filter;
-    private readonly Stack<FilterState> filters = new();
-
     public void SetFilter() => filter = default;
     public void SetFilter(Brightness brightness) => filter = new(brightness);
-
-    internal void Reset()
-    {
-        filter = default;
-        filters.Clear();
-        CanvasReset();
-    }
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.reset", "main.js")]
-    internal static partial void CanvasReset();
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setFillStyle", "main.js")]
-    internal static partial void CanvasSetFillStyle(string fillStyle);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setLinearGradientFillStyle", "main.js")]
-    internal static partial void CanvasSetLinearGradientFillStyle(double startX, double startY, double endX, double endY, double[] offsets, string[] colors);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setRadialGradientFillStyle", "main.js")]
-    internal static partial void CanvasSetRadialGradientFillStyle(double startX, double startY, double startR, double endX, double endY, double endR, double[] offsets, string[] colors);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setStrokeStyle", "main.js")]
-    internal static partial void CanvasSetStrokeStyle(string strokeStyle);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setLinearGradientStrokeStyle", "main.js")]
-    internal static partial void CanvasSetLinearGradientStrokeStyle(double startX, double startY, double endX, double endY, double[] offsets, string[] colors);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setRadialGradientStrokeStyle", "main.js")]
-    internal static partial void CanvasSetRadialGradientStrokeStyle(double startX, double startY, double startR, double endX, double endY, double endR, double[] offsets, string[] colors);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.fillRect", "main.js")]
-    internal static partial void CanvasFillRect(double x, double y, double width, double height);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.strokeRect", "main.js")]
-    internal static partial void CanvasStrokeRect(double x, double y, double width, double height);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setFont", "main.js")]
-    internal static partial void CanvasSetFont(string font);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setGlobalAlpha", "main.js")]
-    internal static partial void CanvasSetGlobalAlpha(double alpha);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setGlobalAlpha", "main.js")]
-    internal static partial void CanvasSetLineCap(string lineCap);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setLineJoin", "main.js")]
-    internal static partial void CanvasSetLineJoin(string lineCap);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setLineWidth", "main.js")]
-    internal static partial void CanvasSetLineWidth(double lineWidth);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setLineMiterLimit", "main.js")]
-    internal static partial void CanvasSetLineMiterLimit(double miterLimit);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setLineDashOffset", "main.js")]
-    internal static partial void CanvasSetLineDashOffset(double lineDashOffset);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setTextAlign", "main.js")]
-    internal static partial void CanvasSetTextAlign(string textAlign);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setTextBaseline", "main.js")]
-    internal static partial void CanvasSetTextBaseline(string textBaseline);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.arc", "main.js")]
-    internal static partial void CanvasArc(double x, double y, double radius, double startAngle, double endAngle, bool counterClockWise);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.arcTo", "main.js")]
-    internal static partial void CanvasArcTo(double x1, double y1, double x2, double y2, double radius);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.beginPath", "main.js")]
-    internal static partial void CanvasBeginPath();
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.clip", "main.js")]
-    internal static partial void CanvasClip();
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.closePath", "main.js")]
-    internal static partial void CanvasClosePath();
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.quadraticCurveTo", "main.js")]
-    internal static partial void CanvasQuadraticCurveTo(double cpx, double cpy, double x, double y);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.bezierCurveTo", "main.js")]
-    internal static partial void CanvasBezierCurveTo(double cp1x, double cp1y, double xp2x, double xp2y, double x, double y);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.ellipse", "main.js")]
-    internal static partial void CanvasEllipse(double x, double y, double radiusX, double radiusY, double rotation, double startAngle, double endAngle, bool counterclockwise);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.fill", "main.js")]
-    internal static partial void CanvasFill(string fillRule);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.fillText", "main.js")]
-    internal static partial void CanvasFillText(string text, double x, double y);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.lineTo", "main.js")]
-    internal static partial void CanvasLineTo(double x, double y);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.measureText", "main.js")]
-    internal static partial JSObject CanvasMeasureText(string text);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.moveTo", "main.js")]
-    internal static partial void CanvasMoveTo(double x, double y);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.rect", "main.js")]
-    internal static partial void CanvasRect(double x, double y, double width, double height);
-    
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.restore", "main.js")]
-    internal static partial void CanvasRestore();
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.rotate", "main.js")]
-    internal static partial void CanvasRotate(double angle);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.roundRect", "main.js")]
-    internal static partial void CanvasRoundRect(double x, double y, double width, double height, double radii);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.roundRect4", "main.js")]
-    internal static partial void CanvasRoundRect4(double x, double y, double width, double height, double topLeft, double topRight, double bottomRight, double bottomLeft);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.save", "main.js")]
-    internal static partial void CanvasSave();
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.scale", "main.js")]
-    internal static partial void CanvasScale(double x, double y);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.translate", "main.js")]
-    internal static partial void CanvasTranslate(double x, double y);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.transform", "main.js")]
-    internal static partial void CanvasTransform(double a, double b, double c, double d, double e, double f);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setTransform", "main.js")]
-    internal static partial void CanvasSetTransform(double a, double b, double c, double d, double e, double f);
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.stroke", "main.js")]
-    internal static partial void CanvasStroke();
-
-    [JSImport("Xui.Runtime.Browser.Actual.BrowserDrawingContext.setLineDash", "main.js")]
-    internal static partial void CanvasSetLineDash(double[] segments);
-
-    public static readonly BrowserDrawingContext Instance = new BrowserDrawingContext();
-
-    public NFloat GlobalAlpha { set => CanvasSetGlobalAlpha(value); }
-
-    public LineCap LineCap
-    {
-        set
-        {
-            switch(value)
-            {
-                case LineCap.Butt:
-                    CanvasSetLineCap("butt");
-                    return;
-                case LineCap.Round:
-                    CanvasSetLineCap("butt");
-                    return;
-                case LineCap.Square:
-                    CanvasSetLineCap("square");
-                    return;
-            }
-        }
-    }
-
-    public LineJoin LineJoin
-    {
-        set
-        {
-            switch(value)
-            {
-                case LineJoin.Round:
-                    CanvasSetLineJoin("round");
-                    return;
-                case LineJoin.Bevel:
-                    CanvasSetLineJoin("bevel");
-                    return;
-                case LineJoin.Miter:
-                    CanvasSetLineJoin("miter");
-                    return;
-            }
-            // "round", "bevel", and "miter"
-        }
-    }
-
-    public NFloat LineWidth { set => CanvasSetLineWidth((double)value); }
-    public NFloat MiterLimit { set => CanvasSetLineMiterLimit((double)value); }
-    public NFloat LineDashOffset { set => CanvasSetLineDashOffset((double)value); }
-
-    public TextAlign TextAlign
-    {
-        set
-        {
-            switch(value)
-            {
-                case TextAlign.Start:
-                    CanvasSetTextAlign("start");
-                    break;
-                case TextAlign.End:
-                    CanvasSetTextAlign("end");
-                    break;
-                case TextAlign.Left:
-                    CanvasSetTextAlign("left");
-                    break;
-                case TextAlign.Right:
-                    CanvasSetTextAlign("right");
-                    break;
-                case TextAlign.Center:
-                    CanvasSetTextAlign("center");
-                    break;
-            }
-        }
-    }
-
-    public TextBaseline TextBaseline
-    {
-        set
-        {
-            switch(value)
-            {
-                case TextBaseline.Top:
-                    CanvasSetTextBaseline("top");
-                    break;
-                case TextBaseline.Hanging:
-                    CanvasSetTextBaseline("hanging");
-                    break;
-                case TextBaseline.Middle:
-                    CanvasSetTextBaseline("middle");
-                    break;
-                case TextBaseline.Alphabetic:
-                    CanvasSetTextBaseline("alphabetic");
-                    break;
-                case TextBaseline.Ideographic:
-                    CanvasSetTextBaseline("ideographic");
-                    break;
-                case TextBaseline.Bottom:
-                    CanvasSetTextBaseline("bottom");
-                    break;
-            }
-        }
-    }
-
-    public void Arc(Point center, NFloat radius, NFloat startAngle, NFloat endAngle, Winding winding = Winding.ClockWise) =>
-        CanvasArc(center.X, center.Y, radius, startAngle, endAngle, winding == Winding.CounterClockWise);
-
-    public void ArcTo(Point cp1, Point cp2, NFloat radius) =>
-        CanvasArcTo(cp1.X, cp1.Y, cp2.X, cp2.Y, radius);
-
-    public void BeginPath() => CanvasBeginPath();
-
-    public void Clip() => CanvasClip();
-
-    public void ClosePath() => CanvasClosePath();
-
-    public void CurveTo(Point cp1, Point to) => CanvasQuadraticCurveTo(cp1.X, cp1.Y, to.X, to.Y);
-
-    public void CurveTo(Point cp1, Point cp2, Point to) => CanvasBezierCurveTo(cp1.X, cp1.Y, cp2.X, cp2.Y, to.X, to.Y);
-
-    public void Dispose()
-    {
-        // throw new NotImplementedException();
-    }
-
-    public void Ellipse(Point center, NFloat radiusX, NFloat radiusY, NFloat rotation, NFloat startAngle, NFloat endAngle, Winding winding = Winding.ClockWise) =>
-        CanvasEllipse(center.X, center.Y, radiusX, radiusY, rotation, startAngle, endAngle, winding == Winding.CounterClockWise);
-
-    public void Fill(FillRule rule = FillRule.NonZero)
-    {
-        switch(rule)
-        {
-            case FillRule.EvenOdd:
-                CanvasFill("evenodd");
-                return;
-            case FillRule.NonZero:
-                CanvasFill("nonzero");
-                return;
-        }
-    }
-
-    public void FillRect(Rect rect) =>
-        CanvasFillRect(rect.X, rect.Y, rect.Width, rect.Height);
-
-    public void FillText(string text, Point pos) =>
-        CanvasFillText(text, pos.X, pos.Y);
-
-    public void LineTo(Point to) => CanvasLineTo(to.X, to.Y);
-
-    public TextMetrics MeasureText(string text)
-    {
-        using var jObj = CanvasMeasureText(text);
-        var width = (NFloat)jObj.GetPropertyAsDouble("width");
-        var line = new LineMetrics(
-            width,
-            left: (NFloat)jObj.GetPropertyAsDouble("actualBoundingBoxLeft"),
-            right: (NFloat)jObj.GetPropertyAsDouble("actualBoundingBoxRight"),
-            ascent: (NFloat)jObj.GetPropertyAsDouble("actualBoundingBoxAscent"),
-            descent: (NFloat)jObj.GetPropertyAsDouble("actualBoundingBoxDescent"));
-
-        // Canvas reports baseline distances in a y-up coordinate system. Xui's
-        // metrics are positions in its y-down drawing coordinates.
-        var font = new FontMetrics(
-            fontAscent: (NFloat)jObj.GetPropertyAsDouble("fontBoundingBoxAscent"),
-            fontDescent: (NFloat)jObj.GetPropertyAsDouble("fontBoundingBoxDescent"),
-            emAscent: (NFloat)jObj.GetPropertyAsDouble("emHeightAscent"),
-            emDescent: (NFloat)jObj.GetPropertyAsDouble("emHeightDescent"),
-            alphabeticBaseline: -(NFloat)jObj.GetPropertyAsDouble("alphabeticBaseline"),
-            hangingBaseline: -(NFloat)jObj.GetPropertyAsDouble("hangingBaseline"),
-            ideographicBaseline: -(NFloat)jObj.GetPropertyAsDouble("ideographicBaseline"));
-        return new TextMetrics(line, font);
-    }
-
-    public void MoveTo(Point to) => CanvasMoveTo(to.X, to.Y);
-
-    public void Rect(Rect rect) => CanvasRect(rect.X, rect.Y, rect.Width, rect.Height);
-
+    public NFloat GlobalAlpha { set => Write(Op.GlobalAlpha, value); }
+    public NFloat LineWidth { set => Write(Op.LineWidth, value); }
+    public NFloat MiterLimit { set => Write(Op.MiterLimit, value); }
+    public NFloat LineDashOffset { set => Write(Op.DashOffset, value); }
+    public LineCap LineCap { set => Write(Op.LineCap, value switch { LineCap.Round => 1, LineCap.Square => 2, _ => 0 }); }
+    public LineJoin LineJoin { set => Write(Op.LineJoin, value switch { LineJoin.Round => 1, LineJoin.Bevel => 2, _ => 0 }); }
+    public TextAlign TextAlign { set => Write(Op.TextAlign, value switch { TextAlign.End => 1, TextAlign.Left => 2, TextAlign.Right => 3, TextAlign.Center => 4, _ => 0 }); }
+    public TextBaseline TextBaseline { set => Write(Op.TextBaseline, value switch { TextBaseline.Top => 1, TextBaseline.Hanging => 2, TextBaseline.Middle => 3, TextBaseline.Ideographic => 4, TextBaseline.Bottom => 5, _ => 0 }); }
+
+    public void Save() { states.Push((filter, font, transform)); Write(Op.Save); }
     public void Restore()
     {
-        if (filters.TryPop(out var saved))
-        {
-            filter = saved;
-            CanvasRestore();
-        }
+        if (!states.TryPop(out var state)) return;
+        (filter, font, transform) = state;
+        Write(Op.Restore);
     }
-
-    public void Rotate(NFloat angle) => CanvasRotate(angle);
-
-    public void RoundRect(Rect rect, NFloat radius) =>
-        CanvasRoundRect(rect.X, rect.Y, rect.Width, rect.Height, radius);
-
-    public void RoundRect(Rect rect, CornerRadius radius) =>
-        CanvasRoundRect4(rect.X, rect.Y, rect.Width, rect.Height, radius.TopLeft, radius.TopRight, radius.BottomRight, radius.BottomLeft);
-
-    public void Save()
+    public void BeginPath() => Write(Op.BeginPath);
+    public void ClosePath() => Write(Op.ClosePath);
+    public void MoveTo(Point p) => Write(Op.MoveTo, p.X, p.Y);
+    public void LineTo(Point p) => Write(Op.LineTo, p.X, p.Y);
+    public void CurveTo(Point cp, Point to) => Write(Op.Quadratic, cp.X, cp.Y, to.X, to.Y);
+    public void CurveTo(Point cp1, Point cp2, Point to) => Write(Op.Bezier, cp1.X, cp1.Y, cp2.X, cp2.Y, to.X, to.Y);
+    public void Arc(Point center, NFloat radius, NFloat startAngle, NFloat endAngle, Winding winding = Winding.ClockWise) =>
+        Write(Op.Arc, center.X, center.Y, radius, startAngle, endAngle, winding == Winding.CounterClockWise ? 1 : 0);
+    public void ArcTo(Point cp1, Point cp2, NFloat radius) => Write(Op.ArcTo, cp1.X, cp1.Y, cp2.X, cp2.Y, radius);
+    public void Ellipse(Point center, NFloat radiusX, NFloat radiusY, NFloat rotation, NFloat startAngle, NFloat endAngle, Winding winding = Winding.ClockWise) =>
+        Write(Op.Ellipse, center.X, center.Y, radiusX, radiusY, rotation, startAngle, endAngle, winding == Winding.CounterClockWise ? 1 : 0);
+    public void Rect(Rect r) => Write(Op.Rect, r.X, r.Y, r.Width, r.Height);
+    public void RoundRect(Rect r, NFloat radius) => RoundRect(r, new CornerRadius(radius));
+    public void RoundRect(Rect r, CornerRadius radius) =>
+        Write(Op.RoundRect, r.X, r.Y, r.Width, r.Height, radius.TopLeft, radius.TopRight, radius.BottomRight, radius.BottomLeft);
+    public void Clip() => Write(Op.Clip);
+    public void Fill(FillRule rule = FillRule.NonZero) => Write(Op.Fill, rule == FillRule.EvenOdd ? 1 : 0);
+    public void Stroke() => Write(Op.Stroke);
+    public void FillRect(Rect r) => Write(Op.FillRect, r.X, r.Y, r.Width, r.Height);
+    public void StrokeRect(Rect r) => Write(Op.StrokeRect, r.X, r.Y, r.Width, r.Height);
+    public void Translate(Vector v) => Transform(AffineTransform.Translate(v));
+    public void Scale(Vector v) => Transform(AffineTransform.Scale(v));
+    public void Rotate(NFloat angle) => Transform(AffineTransform.Rotate(angle));
+    public void Transform(AffineTransform m)
     {
-        filters.Push(filter);
-        CanvasSave();
+        transform *= m;
+        Write(Op.Transform, m.A, m.B, m.C, m.D, m.Tx, m.Ty);
     }
-
-    public void Scale(Vector vector) => CanvasScale(vector.X, vector.Y);
-
-    public void SetFill(Color color)
+    public void SetTransform(AffineTransform m)
     {
-        color = filter.Apply(color);
-        CanvasSetFillStyle(FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})"));
+        transform = m;
+        Write(Op.SetTransform, m.A * pixelRatio, m.B * pixelRatio, m.C * pixelRatio, m.D * pixelRatio, m.Tx * pixelRatio, m.Ty * pixelRatio);
     }
-
-    public void SetFill(LinearGradient linearGradient)
+    public void SetFill(Color color) => Write(Op.FillColor, Pack(filter.Apply(color)));
+    public void SetStroke(Color color) => Write(Op.StrokeColor, Pack(filter.Apply(color)));
+    public void SetFill(LinearGradient g) => Linear(g, false);
+    public void SetStroke(LinearGradient g) => Linear(g, true);
+    private void Linear(LinearGradient g, bool stroke)
     {
-        var start = linearGradient.StartPoint;
-        var end = linearGradient.EndPoint;
-        
-        double[] offsets = new double[linearGradient.GradientStops.Length];
-        string[] colors = new string[linearGradient.GradientStops.Length];
-        
-        for (var i = 0; i < linearGradient.GradientStops.Length; i++)
-        {
-            var gradientStop = linearGradient.GradientStops[i];
-            var offset = gradientStop.Offset;
-            var color = filter.Apply(gradientStop.Color);
-            offsets[i] = offset;
-            colors[i] = FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
-        }
-
-        CanvasSetLinearGradientFillStyle(start.X, start.Y, end.X, end.Y, offsets, colors);
+        Write(Op.LinearGradient, stroke ? 1 : 0, g.StartPoint.X, g.StartPoint.Y, g.EndPoint.X, g.EndPoint.Y, g.GradientStops.Length);
+        Stops(g.GradientStops);
     }
-
-    public void SetFill(RadialGradient radialGradient)
+    public void SetFill(RadialGradient g) => Radial(g, false);
+    public void SetStroke(RadialGradient g) => Radial(g, true);
+    private void Radial(RadialGradient g, bool stroke)
     {
-        double[] offsets = new double[radialGradient.GradientStops.Length];
-        string[] colors = new string[radialGradient.GradientStops.Length];
-        
-        for (var i = 0; i < radialGradient.GradientStops.Length; i++)
-        {
-            var gradientStop = radialGradient.GradientStops[i];
-            var offset = gradientStop.Offset;
-            var color = filter.Apply(gradientStop.Color);
-            offsets[i] = offset;
-            colors[i] = FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
-        }
-
-        CanvasSetRadialGradientFillStyle(
-            radialGradient.StartCenter.X, radialGradient.StartCenter.Y, radialGradient.StartRadius,
-            radialGradient.EndCenter.X, radialGradient.EndCenter.Y, radialGradient.EndRadius,
-            offsets,
-            colors
-        );
+        Write(Op.RadialGradient, stroke ? 1 : 0, g.StartCenter.X, g.StartCenter.Y, g.StartRadius, g.EndCenter.X, g.EndCenter.Y, g.EndRadius, g.GradientStops.Length);
+        Stops(g.GradientStops);
     }
-
-    public void SetFont(Font font)
+    private void Stops(ReadOnlySpan<GradientStop> stops)
     {
-        string f = "";
-        if (font.FontStyle.IsItalic)
-        {
-            f += "italic ";
-        }
-        else if (font.FontStyle.IsOblique)
-        {
-            if (font.FontStyle.ObliqueAngle == 14f)
-            {
-                f += "oblique " + font.FontStyle.ObliqueAngle + "deg ";
-            }
-            else
-            {
-                f += "oblique ";
-            }
-        }
-
-        f += $"{Math.Round((double)font.FontWeight)} {font.FontSize}px/{font.LineHeight}px ";
-        // TODO: Escape " in font name...
-        f += $"\"{font.FontFamily}\"";
-
-        // TODO: <font-stretch>
-        
-        CanvasSetFont(f);
+        Ensure(stops.Length * 2);
+        foreach (var stop in stops) { commands[count++] = stop.Offset; commands[count++] = Pack(filter.Apply(stop.Color)); }
     }
-
     public void SetLineDash(ReadOnlySpan<NFloat> segments)
     {
-        // TODO: Try to do these things without garbage...
-        double[] s = new double[segments.Length];
-        for(var i = 0; i < segments.Length; i++)
-        {
-            s[i] = segments[i];
-        }
-        CanvasSetLineDash(s);
+        Write(Op.LineDash, segments.Length);
+        Ensure(segments.Length);
+        foreach (var segment in segments) commands[count++] = segment;
     }
-
-    public void SetStroke(Color color)
+    public void SetFont(Font value)
     {
-        color = filter.Apply(color);
-        CanvasSetStrokeStyle(FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})"));
-    }
-
-    public void SetStroke(LinearGradient linearGradient)
-    {
-        var start = linearGradient.StartPoint;
-        var end = linearGradient.EndPoint;
-        
-        double[] offsets = new double[linearGradient.GradientStops.Length];
-        string[] colors = new string[linearGradient.GradientStops.Length];
-        
-        for (var i = 0; i < linearGradient.GradientStops.Length; i++)
+        if (!fontNames.TryGetValue(value, out var css))
         {
-            var gradientStop = linearGradient.GradientStops[i];
-            var offset = gradientStop.Offset;
-            var color = filter.Apply(gradientStop.Color);
-            offsets[i] = offset;
-            colors[i] = FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
+            var style = value.FontStyle.IsItalic ? "italic " : value.FontStyle.IsOblique ? FormattableString.Invariant($"oblique {value.FontStyle.ObliqueAngle}deg ") : "";
+            var family = value.FontFamily.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            css = FormattableString.Invariant($"{style}{(double)value.FontWeight} {value.FontSize}px \"{family}\"");
+            if (fontNames.Count >= 256) fontNames.Clear();
+            fontNames.Add(value, css);
         }
-
-        CanvasSetLinearGradientStrokeStyle(start.X, start.Y, end.X, end.Y, offsets, colors);
+        font = css;
+        Write(Op.Font, Text(css));
     }
-
-    public void SetStroke(RadialGradient radialGradient)
+    public void FillText(string text, Point pos) => Write(Op.FillText, Text(text), pos.X, pos.Y);
+    public TextMetrics MeasureText(string text)
     {
-        double[] offsets = new double[radialGradient.GradientStops.Length];
-        string[] colors = new string[radialGradient.GradientStops.Length];
-        
-        for (var i = 0; i < radialGradient.GradientStops.Length; i++)
-        {
-            var gradientStop = radialGradient.GradientStops[i];
-            var offset = gradientStop.Offset;
-            var color = filter.Apply(gradientStop.Color);
-            offsets[i] = offset;
-            colors[i] = FormattableString.Invariant($"rgba({color.Red * 255}, {color.Green * 255}, {color.Blue * 255}, {color.Alpha})");
-        }
-
-        CanvasSetRadialGradientStrokeStyle(
-            radialGradient.StartCenter.X, radialGradient.StartCenter.Y, radialGradient.StartRadius,
-            radialGradient.EndCenter.X, radialGradient.EndCenter.Y, radialGradient.EndRadius,
-            offsets,
-            colors
-        );
+        var key = (font, text);
+        if (measurements.TryGetValue(key, out var result)) return result;
+        Measure(font, text, metrics);
+        result = new TextMetrics(
+            new LineMetrics((NFloat)metrics[0], (NFloat)metrics[1], (NFloat)metrics[2], (NFloat)metrics[3], (NFloat)metrics[4]),
+            new FontMetrics((NFloat)metrics[5], (NFloat)metrics[6], (NFloat)metrics[7], (NFloat)metrics[8],
+                -(NFloat)metrics[9], -(NFloat)metrics[10], -(NFloat)metrics[11]));
+        if (measurements.Count >= 4096) measurements.Clear();
+        measurements.Add(key, result);
+        return result;
     }
-
-
-    public void SetTransform(AffineTransform transform) =>
-        CanvasSetTransform(transform.A, transform.B, transform.C, transform.D, transform.Tx, transform.Ty);
-
-    public void Stroke() => CanvasStroke();
-
-    public void StrokeRect(Rect rect) =>
-        CanvasStrokeRect(rect.X, rect.Y, rect.Width, rect.Height);
-
-    public void Transform(AffineTransform matrix) =>
-        CanvasTransform(matrix.A, matrix.B, matrix.C, matrix.D, matrix.Tx, matrix.Ty);
-
-    public void Translate(Vector vector) =>
-        CanvasTranslate(vector.X, vector.Y);
-
-    public void SetFill(ImagePattern pattern) => throw new NotImplementedException();
-    public void SetStroke(ImagePattern pattern) => throw new NotImplementedException();
-
-    public void DrawImage(IImage image, Rect dest) => throw new NotImplementedException();
-    public void DrawImage(IImage image, Rect dest, NFloat opacity) => throw new NotImplementedException();
-    public void DrawImage(IImage image, Rect source, Rect dest, NFloat opacity) => throw new NotImplementedException();
+    public void SetFill(ImagePattern pattern) => Pattern(pattern, false);
+    public void SetStroke(ImagePattern pattern) => Pattern(pattern, true);
+    private void Pattern(ImagePattern p, bool stroke) => Write(Op.Pattern, ImageId(p.Image), (int)p.Repetition, stroke ? 1 : 0);
+    private static int ImageId(IImage image) => image is BrowserImage browser ? browser.Id : throw new ArgumentException("Image belongs to another runtime.", nameof(image));
+    public void DrawImage(IImage image, Rect dest) => DrawImage(image, dest, 1);
+    public void DrawImage(IImage image, Rect dest, NFloat opacity) => DrawImage(image, new Rect(Point.Zero, image.Size), dest, opacity);
+    public void DrawImage(IImage image, Rect source, Rect dest, NFloat opacity) =>
+        Write(Op.DrawImage, ImageId(image), source.X, source.Y, source.Width, source.Height, dest.X, dest.Y, dest.Width, dest.Height, opacity);
+    public void Dispose() { DisposeGpuSurfaces(); strings.Clear(); stringIds.Clear(); fontNames.Clear(); measurements.Clear(); states.Clear(); }
 }

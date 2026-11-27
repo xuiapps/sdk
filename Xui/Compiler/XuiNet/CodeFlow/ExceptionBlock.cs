@@ -1,18 +1,20 @@
 namespace Xui.Compiler.XuiNet.CodeFlow;
 
-/// <summary>A protected body and its ordered catch or cleanup handlers, with one normal continuation.</summary>
+/// <summary>A protected body and its ordered catch or cleanup handlers, with structured normal leave destinations.</summary>
 public sealed class ExceptionBlock : FlowNode
 {
-    internal ExceptionBlock(int start, int end, int? continuation, SequenceBlock body, IReadOnlyList<ExceptionHandler> handlers)
-    { Start = start; End = end; Continuation = continuation; Body = body; Handlers = handlers; }
+    internal ExceptionBlock(int start, int end, IReadOnlyList<int> continuations, SequenceBlock body, IReadOnlyList<ExceptionHandler> handlers)
+    { Start = start; End = end; Continuations = continuations; Body = body; Handlers = handlers; }
     /// <summary>The first protected IL offset.</summary>
     public int Start { get; }
     /// <summary>The exclusive end of the protected body and its handlers.</summary>
     public int End { get; }
     /// <summary>The common leave target, if any; a throwing finally can still prevent reaching it.</summary>
-    public int? Continuation { get; }
+    public int? Continuation => Continuations.Count == 1 ? Continuations[0] : null;
+    /// <summary>Normal leave destinations in this protected region.</summary>
+    public IReadOnlyList<int> Continuations { get; }
     /// <summary>Whether a leave can complete after any finally handler has executed.</summary>
-    public bool CanContinue => Continuation.HasValue &&
+    public bool CanContinue => Continuations.Count != 0 &&
         (Handlers[0].Kind != System.Reflection.Metadata.ExceptionRegionKind.Finally || CompletesCleanup(Handlers[0].Body));
 
     private static bool CompletesCleanup(SequenceBlock body) => body.Children.Any(node => node switch

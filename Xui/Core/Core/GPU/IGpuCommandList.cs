@@ -27,6 +27,21 @@ public interface IGpuCommandList : IDisposable
     /// <param name="desc">Vertex buffer description.</param>
     unsafe void SetVertexBuffer(void* data, GpuVertexBufferDesc desc);
 
+    /// <summary>Uploads tightly packed unmanaged vertices; the input is borrowed only for this call.</summary>
+    /// <remarks>Native backends use the pointer overload by default. Managed backends may override this
+    /// overload to copy non-contiguous managed storage into their upload representation.</remarks>
+    unsafe void SetVertexBuffer<T>(ReadOnlySpan<T> vertices) where T : unmanaged
+    {
+        fixed (T* data = vertices)
+            SetVertexBuffer(data, new GpuVertexBufferDesc { Stride = sizeof(T), VertexCount = vertices.Length });
+    }
+
+    /// <summary>Uploads one unmanaged constant-buffer value, borrowed only for this call.</summary>
+    unsafe void SetConstantBuffer<T>(in T value) where T : unmanaged
+    {
+        fixed (T* data = &value) SetConstantBuffer(data, sizeof(T));
+    }
+
     /// <summary>
     /// Sets the uniform/constant buffer data.
     /// </summary>

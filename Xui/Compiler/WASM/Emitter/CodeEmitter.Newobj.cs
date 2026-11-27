@@ -6,11 +6,16 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitNewobj(Instruction.Token instruction, int offset)
     {
+        if (TryRectangularArray(instruction, offset)) return;
         if (TryStaticSpan(instruction, offset)) return;
+        if (TryStringCharacters(instruction, offset)) return;
+        if (TryStringRepeat(instruction, offset)) return;
+        if (TryStringSpan(instruction, offset)) return;
+        if (TrySpanAccess(instruction, offset)) return;
         if (TryInterpolation(instruction, offset)) return;
         if (TryDelegateConstructor(instruction, offset)) return;
         if (TryExceptionMember(instruction, offset)) return;
-        var callee = methods[ResolveCall(source, method.Identity, instruction.Value, offset)];
+        var callee = methods[ResolveCall(source, method, instruction.Value, offset)];
         if (!callee.Signature.IsConstructor || !callee.Signature.HasThis) throw new InvalidProgramException("newobj requires an instance constructor.");
         var parameters = callee.Signature.Parameters;
         var temps = method.CallTemporaries[callee.Identity];

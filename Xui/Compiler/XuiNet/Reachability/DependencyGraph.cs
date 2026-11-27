@@ -9,6 +9,7 @@ public sealed class DependencyGraph
     private readonly HashSet<Dependency> membership;
     private readonly IReadOnlyDictionary<(TypeIdentity Type, MethodIdentity Method), MethodIdentity> interfaceImplementations;
     private readonly IReadOnlyDictionary<TypeIdentity, IReadOnlyList<VirtualSlot>> slots;
+    private readonly IReadOnlyDictionary<(TypeIdentity Type, MethodIdentity Method), MethodIdentity> genericVirtualImplementations;
 
     internal DependencyGraph(IEnumerable<Dependency> nodes, IEnumerable<DependencyEdge> edges, DispatchTable dispatch)
     {
@@ -17,6 +18,8 @@ public sealed class DependencyGraph
         membership = Nodes.ToHashSet();
         interfaceImplementations = new ReadOnlyDictionary<(TypeIdentity, MethodIdentity), MethodIdentity>(
             new Dictionary<(TypeIdentity, MethodIdentity), MethodIdentity>(dispatch.InterfaceImplementations));
+        genericVirtualImplementations = new ReadOnlyDictionary<(TypeIdentity, MethodIdentity), MethodIdentity>(
+            new Dictionary<(TypeIdentity, MethodIdentity), MethodIdentity>(dispatch.GenericVirtualImplementations));
         Methods = Array.AsReadOnly(Nodes.OfType<Dependency.Method>().Select(node => node.Identity).ToArray());
         slots = new ReadOnlyDictionary<TypeIdentity, IReadOnlyList<VirtualSlot>>(
             new Dictionary<TypeIdentity, IReadOnlyList<VirtualSlot>>(dispatch.Types));
@@ -51,6 +54,10 @@ public sealed class DependencyGraph
     /// <summary>The reachable interface target for a concrete receiver, or null when this pair was not reached.</summary>
     public MethodIdentity? InterfaceImplementation(TypeIdentity type, MethodIdentity method) =>
         interfaceImplementations.TryGetValue((type, method), out var implementation) ? implementation : null;
+
+    /// <summary>The reachable closed generic class-virtual target for this concrete receiver, or null.</summary>
+    public MethodIdentity? GenericVirtualImplementation(TypeIdentity type, MethodIdentity method) =>
+        genericVirtualImplementations.TryGetValue((type, method), out var implementation) ? implementation : null;
 
     /// <summary>The inherited slots of a retained class layout.</summary>
     public IReadOnlyList<VirtualSlot> VirtualSlots(TypeIdentity type) => slots.TryGetValue(type, out var result)

@@ -8,6 +8,27 @@ namespace Xui.Compiler.Tests.Wasm.Generics;
 public class ConstructorFactoryTests
 {
     [Fact]
+    public Task MissingPublicConstructorThrowsOnlyWhenFactoryIsInvoked() => InlineArrayTests.AssertLinked("""
+        using System;
+        public class Private { private Private() { throw new Exception("must not run"); } }
+        public class Required { public Required(int value) { } }
+        public class Generic<T> { private Generic() { } }
+        public static class Program {
+            static T Create<T>(bool run) => run ? Activator.CreateInstance<T>() : default;
+            public static int Main() {
+                if (Create<Private>(false) != null) return 1;
+                try { Create<Private>(true); throw new Exception("factory did not throw"); }
+                catch (MissingMethodException e) { if (e.InnerException != null) throw new Exception("unexpected wrapper"); }
+                try { Create<Required>(true); throw new Exception("factory did not throw"); }
+                catch (MissingMemberException) { Console.WriteLine("required"); }
+                try { Create<Generic<int>>(true); throw new Exception("factory did not throw"); }
+                catch (MemberAccessException) { Console.WriteLine("generic"); }
+                return 42;
+            }
+        }
+        """, "required\ngeneric\n", 42);
+
+    [Fact]
     public Task GenericFactoriesSelectClosedConstructorsAndVirtualReceivers() => InlineArrayTests.AssertLinked("""
         using System;
         public class Base { public virtual int Number()=>1; }

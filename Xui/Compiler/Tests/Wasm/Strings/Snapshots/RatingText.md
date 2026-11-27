@@ -65,7 +65,7 @@ Rating5: 5 of 5 stars
   (import "wasm:js-string" "charCodeAt" (func (;3;) (type 7) (param externref i32) (result i32)))
   (table (;0;) 65536 65536 eqref)
   (table (;1;) 65536 65536 externref)
-  (memory (;0;) 16 16)
+  (memory (;0;) 16 32768)
   (tag (;0;) (type 10) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
   (global (;1;) (mut externref) ref.null extern)

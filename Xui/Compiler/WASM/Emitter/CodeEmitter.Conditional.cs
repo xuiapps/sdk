@@ -15,6 +15,15 @@ public readonly ref partial struct CodeEmitter
                 case ForwardRegion forward:
                     EmitForwardRegion(forward);
                     break;
+                case ExceptionDispatch dispatch:
+                    EmitExceptionBlock(dispatch.Region);
+                    writer.LocalGet(method.ExceptionSelectors[dispatch.Region.Start]);
+                    stack.Push(new(SignatureTypeCode.Int32));
+                    EmitSwitch(dispatch.Selection);
+                    break;
+                case ExceptionTransfer transfer:
+                    EmitLeave(transfer.Target);
+                    break;
                 case ExceptionBlock exception:
                     EmitExceptionBlock(exception);
                     break;
@@ -28,6 +37,7 @@ public readonly ref partial struct CodeEmitter
                         EmitInstruction(ref reader);
                     }
                     CheckStack(node.After!, node.Offset);
+                    if (node.Successors.Length==1) CoerceNullStrings(node.Successors[0].Before!);
                     break;
                 case LoopBlock loop:
                     EmitLoop(loop);
@@ -58,13 +68,30 @@ public readonly ref partial struct CodeEmitter
         writer.If(method.BlockTypes[block]);
         labels.Push((null, default));
         EmitFlow(block.Taken);
+        if (block.TakenCanContinue)
+        {
+            CoerceNullStrings(block.Join!.Before!);
+            CheckStack(block.Join.Before!, block.Join.Offset);
+        }
+        var takenValues = stack.Reverse().ToArray();
         var takenInitialized = (bool[])initializedLocals.Clone();
         writer.Else();
         stack.Clear();
         foreach (var value in incomingValues) stack.Push(value);
         initialized.CopyTo(initializedLocals, 0);
         EmitFlow(block.NotTaken);
-        for (int i = 0; i < initializedLocals.Length; i++) initializedLocals[i] &= takenInitialized[i];
+        if (block.NotTakenCanContinue)
+        {
+            CoerceNullStrings(block.Join!.Before!);
+            CheckStack(block.Join.Before!, block.Join.Offset);
+            if (block.TakenCanContinue)
+                for (int i = 0; i < initializedLocals.Length; i++) initializedLocals[i] &= takenInitialized[i];
+        }
+        else if (block.TakenCanContinue)
+        {
+            stack.Clear(); foreach (var value in takenValues) stack.Push(value);
+            takenInitialized.CopyTo(initializedLocals, 0);
+        }
         writer.End();
         labels.Pop();
         if (block.Join is { } join) CheckStack(join.Before!, join.Offset);
@@ -121,7 +148,8 @@ public readonly ref partial struct CodeEmitter
             var wanted = SourceEntry(entry);
             if (!SameSourceType(actual, wanted))
             {
-                if (!(entry.Type == StackType.ArrayReference && actual.IsNull) && (entry.Type != StackType.ObjectReference ||
+                if (!(actual.Array is { } array && wanted.Identity is { } contract && XuiNet.DotNet.Intrinsics.ArrayInterface.Matches(array, contract)) &&
+                    !(entry.Type == StackType.ArrayReference && actual.IsNull) && (entry.Type != StackType.ObjectReference ||
                     !(wanted.TypeCode == SignatureTypeCode.Object && IsObjectReference(actual)) &&
                     (wanted.Identity is not { } target || (!actual.IsNull &&
                     (actual.IsByReference || actual.Identity is not { } from || !from.IsAssignableTo(target))))))
@@ -144,10 +172,11 @@ public readonly ref partial struct CodeEmitter
     }
 
     private static bool SameSourceType(MsilStackEntry left, MsilStackEntry right) =>
-        left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull && left.Array == right.Array && left.Method == right.Method && left.TypeToken == right.TypeToken;
+        left.TypeCode == right.TypeCode && left.Identity == right.Identity && left.IsByReference == right.IsByReference && left.IsNull == right.IsNull && left.Array == right.Array && left.Method == right.Method && left.TypeToken == right.TypeToken && left.FieldToken == right.FieldToken;
 
     private static MsilStackEntry SourceEntry(StackEntry entry)
     {
+        if (entry.Type == StackType.RuntimeFieldHandle) return new(SignatureTypeCode.IntPtr) { FieldToken = entry.FieldToken };
         if (entry.Type == StackType.RuntimeTypeHandle) return new(SignatureTypeCode.Object) { TypeToken = entry.TypeToken };
         if (entry.Type == StackType.MethodPointer) return new(SignatureTypeCode.IntPtr) { Method = entry.Method };
         if (entry.Type == StackType.Null) return new(SignatureTypeCode.Object) { IsNull = true };

@@ -15,7 +15,7 @@ internal sealed partial class StorageModel
     private HashSet<TypeIdentity> StackTypes { get; } = new();
     private readonly Dictionary<TypeIdentity, StackStructLayout> stackLayouts = new();
 
-    public static bool IsReference(LocalVariable type) => type.TypeCode is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray ||
+    public static bool IsReference(LocalVariable type) => type.TypeCode is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray or SignatureTypeCode.Array ||
         type.Identity is { IsValueType: false };
 
     private readonly Dictionary<TypeIdentity, bool> stackReferenceKinds = new();
@@ -33,7 +33,7 @@ internal sealed partial class StorageModel
             var field = type.Module.GetField(handle);
             if ((field.Attributes & FieldAttributes.Static) != 0) continue;
             var declared = SignatureReader.Field(type.Module, field.Signature, type.Arguments);
-            contains |= declared.IsReferenceType || declared.IsByReference || declared.Code is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray ||
+            contains |= declared.IsReferenceType || declared.IsByReference || declared.Code is SignatureTypeCode.String or SignatureTypeCode.Object or SignatureTypeCode.SZArray or SignatureTypeCode.Array ||
                 declared.Identity is { } nested && HasStackReferences(nested);
         }
         stackReferenceKinds.Add(type, contains);

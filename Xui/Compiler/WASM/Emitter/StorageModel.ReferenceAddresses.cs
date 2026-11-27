@@ -89,6 +89,8 @@ internal sealed partial class StorageModel
         writer.I32Const((int)XuiNet.DotNet.Exceptions.ExceptionKind.NullReferenceException).GlobalGet(literal.Global);
         if (ArgumentExceptionsEnabled) writer.RefNull(ValueTypeCode.ExternRef);
         if (InnerExceptionsEnabled) writer.RefNull(ValueTypeCode.EqRef);
+        if (ActualValueExceptionsEnabled) writer.RefNull(ValueTypeCode.EqRef);
+        WriteXmlExceptionDefaults(writer);
         writer.StructNew(ExceptionType).Throw(ExceptionTag).End();
         bool store = (accessor & 1) != 0;
         var value = accessorValues[accessor / 2];
@@ -107,14 +109,31 @@ internal sealed partial class StorageModel
             writer.Return().End();
         }
         // Arrays use the same owner/selector ABI, with a dynamic element index.
+        // A string span borrows its canonical carrier and indexes UTF-16 code units
+        // directly. No character array is copied by AsSpan, and slices retain ownership.
+        if (!store && value.TypeCode==SignatureTypeCode.Char && StringAccess.UsesSpans && StringObjects.Shape is { } text)
+        {
+            writer.LocalGet(new(0)).RefTest(text.Type).If();
+            writer.LocalGet(new(0)).RefCast(text.Type).StructGet(text.Type,new(0))
+                .GlobalGet(Classes.Resolve(text.Identity).Descriptor).RefEq().If();
+            writer.LocalGet(new(0)).RefCast(text.Type).StructGet(text.Type,new(1))
+                .LocalGet(new(1)).Call(StringAccess.Character).Return().End().End();
+        }
         // Test the owner first: these selectors are independent of GC field IDs.
         foreach (var array in addressedArrays)
         {
             var type = array.Element;
-            if (array.StructElements || (reference ? !IsReference(type) ||
+            if (array.StructElements)
+            {
+                EmitArrayStructAccessor(writer, array, value, store);
+                continue;
+            }
+            if (reference ? !IsReference(type) ||
                 (type.TypeCode == SignatureTypeCode.String) != (value.TypeCode == SignatureTypeCode.String)
-                : type.TypeCode != value.TypeCode)) continue;
-            writer.LocalGet(new(0)).RefTest(array.Type).If();
+                : type.TypeCode != value.TypeCode) continue;
+            if (ArrayIdentity.Enabled) writer.LocalGet(new(0)).ExternConvertAny().I32Const((int)array.Type.Value).Call(ArrayIdentity.Test);
+            else writer.LocalGet(new(0)).RefTest(array.Type);
+            writer.If();
             writer.LocalGet(new(0)).RefCast(array.Type).LocalGet(new(1));
             if (store)
             {

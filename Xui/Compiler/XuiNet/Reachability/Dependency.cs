@@ -21,6 +21,12 @@ public abstract record Dependency
     public sealed record VirtualCall(MethodIdentity Identity) : Dependency;
     /// <summary>Default class equality, retaining Object.Equals overrides on compatible instantiated receivers.</summary>
     public sealed record Equality(TypeIdentity Identity) : Dependency;
+    /// <summary>Default class hashing, retaining compatible virtual GetHashCode overrides.</summary>
+    public sealed record Hashing(TypeIdentity Identity) : Dependency;
+    /// <summary>Virtual Object.ToString, retaining overrides on instantiated classes.</summary>
+    public sealed record ObjectText : Dependency;
+    /// <summary>Virtual Object.GetHashCode, retaining overrides on instantiated classes.</summary>
+    public sealed record ObjectHash : Dependency;
     /// <summary>A field declaration, with access kinds recorded on incoming edges.</summary>
     public sealed record Field(FieldIdentity Identity) : Dependency;
     /// <summary>Potential type initialization; preserving this does not eagerly execute the initializer.</summary>

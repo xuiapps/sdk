@@ -7,6 +7,30 @@ namespace Xui.Compiler.WASM.Emitter;
 
 internal sealed partial class MethodPlan
 {
+    private void RegisterExceptionDispatches(SequenceBlock sequence)
+    {
+        foreach (var node in sequence.Children)
+            switch (node)
+            {
+                case ExceptionDispatch dispatch:
+                    UsesSwitch = true;
+                    ExceptionSelectors.TryAdd(dispatch.Region.Start, default);
+                    RegisterExceptionDispatches(new([dispatch.Region, dispatch.Selection]));
+                    break;
+                case ExceptionBlock region:
+                    RegisterExceptionDispatches(region.Body);
+                    foreach (var handler in region.Handlers) RegisterExceptionDispatches(handler.Body);
+                    break;
+                case ConditionalBlock conditional:
+                    RegisterExceptionDispatches(conditional.Taken); RegisterExceptionDispatches(conditional.NotTaken);
+                    break;
+                case SwitchBlock selection:
+                    foreach (var arm in selection.Arms) RegisterExceptionDispatches(arm.Body);
+                    break;
+                case LoopBlock loop: RegisterExceptionDispatches(loop.Body); break;
+            }
+    }
+
     public void DefineBlockTypes(ref TypeWriter types)
     {
         if (Flow is not null) DefineBlockTypes(Flow, ref types, new HashSet<FlowNode>());
@@ -19,6 +43,11 @@ internal sealed partial class MethodPlan
             if (!defined.Add(child)) continue;
             switch (child)
             {
+                case ExceptionDispatch dispatch:
+                    DefineBlockTypes(new([dispatch.Region, dispatch.Selection]), ref types, defined);
+                    break;
+                case ExceptionTransfer:
+                    break;
                 case ExceptionBlock exception:
                     DefineBlockTypes(exception.Body, ref types, defined);
                     foreach (var handler in exception.Handlers) DefineBlockTypes(handler.Body, ref types, defined);
@@ -41,6 +70,15 @@ internal sealed partial class MethodPlan
                 case ForwardRegion forward:
                     foreach (var segment in forward.Segments.Skip(1))
                         BlockTypes.Add(segment, types.FunctionType([], segment.Results.SelectMany(Types).ToArray()));
+                    foreach (var node in forward.Segments.SelectMany(s=>s.Instructions))
+                    {
+                        if (node.Successors.Length<2 || !node.Successors.Any(s=>NeedsStringMerge(node.After,s.Before))) continue;
+                        var entries=new List<StackEntry>();
+                        for(var state=node.After!;state.Entry is { } entry;state=state.Pop()) entries.Add(entry);
+                        entries.Reverse();
+                        var input=entries.SelectMany(Types).ToArray();
+                        MergeBranchTypes.Add(node,types.FunctionType(input,node.Code==XuiNet.DotNet.Op.OpCode.Switch?input:[]));
+                    }
                     break;
                 case InstructionBlock or LoopTransfer:
                     break;

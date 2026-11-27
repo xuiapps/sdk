@@ -117,12 +117,12 @@ is not retained. Separate CLR/Node tests cover growth, copies, nested calls, int
 limits, Unicode, and exceptional cleanup.
 
 Generic interface navigation methods now specialize into separate dispatch slots.
-The full-menu probe currently reaches HashSet<View> default equality in diagnostics;
-optional preload handlers also retain known Lazy/async dependencies. Separate optional async/resource-heavy showcases for
-the first browser profile, then continue through clocks,
-static initialization, collections, service/type lookup, text measurement/drawing,
-and the complete window/input lifecycle. This test does not claim the full
-application executes.
+The full-menu probe now passes single-agent volatile field access and supplies
+the actual XML implementation assemblies. Rectangular arrays now execute with checked
+row-major indexing and element byrefs. The next full-shell blocker is
+MissingMethodException in the lazy floorplan loader. Async floorplan loading, full-shell
+DOM composition, GPU execution and the complete window/input lifecycle remain
+separate requirements. This test does not claim the full application executes.
 
 ## Browser catalogue probe
 
@@ -229,3 +229,102 @@ Screenshots are saved under the ignored playground browser-test output directory
 Array.Clear preserves element byrefs; logarithm/exponential, scalar rounding and
 NFloat limits support the reached animation/event-routing paths. Math and array
 regressions compare CLR and Node execution, with explicit WASM32 limit checks.
+
+## Production catalogue pages
+
+`RealCatalogueTests` compiles a production example into its real `MobileExamplePage`
+and `ExampleCardCarousel`, then renders every section. It covers `BasicsExample`
+(3 sections), `FlexboxExample` (3), `GridExample` (12), `CanvasTestsExample` (22),
+`CanvasAnimationsExample` (3), `GesturesExample` (6), Text Layout (1), Text Metrics (1),
+View Collection Alignment (1), Device Info (1), Haptics (1), Text Input (1), and
+Design System (1), Live Vibration (1), Recorded Vibration (1), and Market (1): sixteen production
+examples with 59 sections, covering 14 of
+the current 17 mobile-menu entries. Haptics uses its real controls with inactive calls when the platform service is
+absent; hardware haptics is not supplied by this host. The
+fixture selects the page through `IExampleNavigation`; it is an integration gate,
+not a replacement catalogue. Other production pages are added as their dependencies
+become executable; the remaining work is tracked in the compiler PLAN.
+
+The test writes a standalone browser artifact to
+`Tests/bin/Release/net10.0/TestApp/BasicsExample.html`. Verify its three sections,
+real pointer routing, and offline rendering with:
+
+```sh
+dotnet test Xui/Compiler/Tests/Xui.Compiler.Tests.csproj -c Release --filter FullyQualifiedName~RealCatalogueTests
+node Xui/Compiler/Tests/Wasm/TestApp/real-catalogue.browser.mjs
+node Xui/Compiler/Tests/Wasm/TestApp/real-catalogue.browser.mjs Xui/Compiler/Tests/bin/Release/net10.0/TestApp/FlexboxExample.html 3
+node Xui/Compiler/Tests/Wasm/TestApp/real-catalogue.browser.mjs Xui/Compiler/Tests/bin/Release/net10.0/TestApp/GridExample.html 12
+node Xui/Compiler/Tests/Wasm/TestApp/real-catalogue.browser.mjs Xui/Compiler/Tests/bin/Release/net10.0/TestApp/CanvasTestsExample.html 22
+node Xui/Compiler/Tests/Wasm/TestApp/real-catalogue.browser.mjs Xui/Compiler/Tests/bin/Release/net10.0/TestApp/CanvasAnimationsExample.html 3
+node Xui/Compiler/Tests/Wasm/TestApp/real-catalogue.browser.mjs Xui/Compiler/Tests/bin/Release/net10.0/TestApp/GesturesExample.html 6
+```
+
+Screenshots are written to the ignored browser-test output directory for review.
+Animated pages are checked over rendered frames rather than being required to idle.
+The Gestures gate drags the actual temperature dial through browser pointer capture
+and verifies its formatted reading changes, in addition to rendering every section.
+The browser host gives backed composition groups dedicated keyed DOM surfaces.
+It preserves child order, inherited paint, transforms, rounded clips, borders,
+shadows, and browser backdrop blur (also used for LiquidGlass). Bounds do not
+implicitly clip content. Backing canvases cover the visible painted extent;
+omitted groups are released, and present keyed elements are reused. All content
+is currently redrawn; hidden caching and dirty-content reuse are future optimizations.
+An inherited arbitrary Canvas clip deliberately selects the immediate fallback.
+Node retains the recording/immediate host.
+
+`composition.browser.mjs` checks surface reuse/removal, ordering, transforms,
+inherited gradients/alpha against ordinary Canvas, overflow beyond unclipped bounds,
+blur, and clip fallback. The production browser checks also require DOM surfaces.
+
+The Canvas page embeds `asset://test-512.png` in an injected catalogue and decodes
+it before the application starts. The browser platform supplies `IImage` and
+`IImagePipeline`; synchronous loading resolves a cached handle with its real size.
+DrawImage supports destination rectangles, source cropping and opacity. Image
+patterns support repeat, repeat-x, repeat-y and no-repeat. Browser checks verify
+crop/pattern pixels, alpha restoration, and exact image/HTML size accounting.
+Node checks use catalogue metadata and recorded drawing commands; pixel checks
+run in Chromium. Missing assets fail through the managed Load path. Async image
+loading and raw pixel upload remain explicitly unsupported.
+
+Text Input uses the real Window and TextEditingState behind a native browser input
+bridge. Node and Chromium check insertion, grapheme deletion, Tab navigation,
+password masking and input filters; Chromium also checks committed composition
+text and removal of the input on disposal. Provisional IME text is not yet painted
+inside Xui, and native selection handles and keyboard-layout traits remain work.
+The bridge is currently included in the standalone Text Input gate, not the older
+curated preview. Shared array pools, span fill/clear, character-span concatenation,
+primitive CompareTo, host grapheme boundaries and the runtime String.Empty field
+are covered by separate compiler regressions.
+
+Design System embeds ColorWheel.png and ColorTriangle.png, renders through DOM
+composition, and passes hue selection, Palette/Preview navigation and its real
+“Plan a trip” callback/status update. Its standalone artifact is DesignSystemExample.html.
+TextBoxExample.html contains the interactive text fields. Run either with
+`real-catalogue.browser.mjs <artifact-path> 1`.
+
+The two vibration pages use invariant-provider interpolation and sizeof-driven
+stackalloc. Chromium checks changing strength/frequency while dragging, releasing
+the live pad, closing a recorded curve and restarting playback with Stop/Start.
+Both show the production “no vibration hardware” message; the host supplies no
+hardware service. The legacy standalone AnimatedHeart example executes but has a
+zero-height carousel view; the production Canvas Animations heart is the accepted
+animation example. Remaining full-menu dependencies are tracked in PLAN.
+
+MarketExample.html uses the production 5,000-company list, seeded price generation,
+row culling, static interface painters, stock-detail navigation, OHLC chart and
+company descriptions. Chromium checks signed percentages, opening a stock, detail
+scrolling, Back navigation and a changed slice of list rows after scrolling.
+The compiler regressions cover span materialization, simple invariant lowercasing,
+signed decimal format sections and direct specialized static-interface calls.
+
+
+The additional `HardwareCubeExample.html` gate hosts the actual production
+`GpuHardwareCubeTestView` inside the production carousel. Its vertices, matrix
+calculation, shaders, drag and inertia logic execute through XuiNet; WebGL 2 supplies
+GPU operations and the result is composed into a retained Canvas surface. The
+browser check verifies colored pixels, rotation after routed dragging, target
+replacement at changing pixel densities, view removal and GPU disposal. Run it
+with `real-catalogue.browser.mjs <artifact-path> 1`. This is a gate for the hardware
+view, not another completed mobile-menu entry: the complete `ThreeDExample` also
+constructs its optional software renderer, which still requires unsupported pinned
+arrays/native framebuffer storage. See [GPU infrastructure](../Gpu/README.md).

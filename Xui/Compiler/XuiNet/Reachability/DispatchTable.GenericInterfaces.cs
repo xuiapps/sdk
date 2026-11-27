@@ -6,15 +6,15 @@ namespace Xui.Compiler.XuiNet.Reachability;
 
 internal sealed partial class DispatchTable
 {
-    // Each closed interface method already has its own dispatch slot. Resolve its class
+    // Each closed generic call has its own specialized dispatch slot. Resolve its class
     // override in template space, then carry the method arguments to the selected body.
-    private static MethodIdentity GenericInterfaceOverride(TypeIdentity receiver, MethodIdentity implementation)
+    private static MethodIdentity GenericOverride(TypeIdentity receiver, MethodIdentity implementation)
     {
         var derived = new Stack<TypeIdentity>();
         for (var type = receiver; type != implementation.DeclaringType;)
         {
             derived.Push(type);
-            type = type.BaseType ?? throw new InvalidProgramException("Interface implementation is not on the receiver's base chain.");
+            type = type.BaseType ?? throw new InvalidProgramException("Virtual declaration is not on the receiver's base chain.");
         }
         var slots = new List<MethodIdentity> { implementation };
         while (derived.TryPop(out var type))

@@ -10,11 +10,13 @@ namespace Xui.Compiler.WASM.Emitter;
 
 public readonly ref partial struct CodeEmitter
 {
-    private int ElementSize(SignatureType element)
+    private int ElementSize(SignatureType element) => ElementSize(method.Storage, element);
+
+    private static int ElementSize(StorageModel storageModel, SignatureType element)
     {
-        var storage = method.Storage.Bind(element);
+        var storage = storageModel.Bind(element);
         if (StorageModel.IsReference(storage)) return 4; // frame-owned reference-table handle
-        if (storage.Identity is { } identity) return method.Storage.StackLayout(identity).Size;
+        if (storage.Identity is { } identity) return storageModel.StackLayout(identity).Size;
         return storage.TypeCode switch
         {
             SignatureTypeCode.Boolean or SignatureTypeCode.Byte or SignatureTypeCode.SByte => 1,
