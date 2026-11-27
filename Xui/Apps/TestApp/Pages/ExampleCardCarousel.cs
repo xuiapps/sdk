@@ -66,7 +66,7 @@ internal sealed class ExampleCardCarousel : ViewCollection
     }
 
     private static string DisplayName(string name) =>
-        System.Text.RegularExpressions.Regex.Replace(name, "(?<=[a-z])(?=[A-Z])", " ");
+        ExampleDisplayName.Format(name);
 
     public void Select(int index)
     {

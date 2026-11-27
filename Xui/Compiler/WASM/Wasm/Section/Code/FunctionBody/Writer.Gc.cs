@@ -6,6 +6,9 @@ namespace Xui.Compiler.WASM.Wasm.Section.Code.FunctionBody;
 
 public ref partial struct Writer
 {
+    /// <summary>Exposes a GC reference to the host without copying the object.</summary>
+    public readonly Writer ExternConvertAny() { body.Instruction(GcOpCode.ExternConvertAny); return this; }
+
     /// <summary>Allocates a GC struct initialized from its field values.</summary>
     public readonly Writer StructNew(TypeIndex type) { body.Instruction(GcOpCode.StructNew).U32(type.Value); return this; }
     /// <summary>Allocates a GC struct initialized to zero/null.</summary>
@@ -18,6 +21,8 @@ public ref partial struct Writer
     public readonly Writer RefTest(TypeIndex type) { body.Instruction(GcOpCode.RefTest).Signed(type.Value); return this; }
     /// <summary>Casts a GC reference to a non-null concrete struct type.</summary>
     public readonly Writer RefCast(TypeIndex type) { body.Instruction(GcOpCode.RefCast).Signed(type.Value); return this; }
+    /// <summary>Pushes a function declared in the element section.</summary>
+    public readonly Writer RefFunc(FunctionIndex function) { body.Instruction(OpCode.RefFunc).U32(function.Value); return this; }
     /// <summary>Compares two GC references by identity.</summary>
     public readonly Writer RefEq() { body.Instruction(OpCode.RefEq); return this; }
     /// <summary>Pushes null for a shorthand reference type.</summary>

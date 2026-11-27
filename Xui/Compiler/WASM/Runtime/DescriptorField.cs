@@ -9,5 +9,6 @@ internal enum DescriptorField : uint
     NameUtf16,
     VirtualSlotCount,
     FieldCount,
-    SimpleNameUtf16
+    SimpleNameUtf16,
+    AssemblyNameUtf16
 }

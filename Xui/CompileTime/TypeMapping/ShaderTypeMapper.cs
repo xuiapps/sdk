@@ -82,6 +82,18 @@ internal class ShaderTypeMapper
                         var index = (int)attr.ConstructorArguments[0].Value!;
                         irField.Decorations.Add(new IrLocationDecoration(index));
                     }
+                    else if (attrName == "Xui.GPU.Shaders.Attributes.InterpolationAttribute"
+                        && attr.ConstructorArguments.Length > 0)
+                    {
+                        // Attribute and IR enums have different numeric ordering.
+                        var mode = ((int)attr.ConstructorArguments[0].Value!) switch {
+                            0 => InterpolationMode.Perspective,
+                            1 => InterpolationMode.Linear,
+                            2 => InterpolationMode.Flat,
+                            _ => throw new NotSupportedException("Unknown shader interpolation mode.")
+                        };
+                        irField.Decorations.Add(new IrInterpolationDecoration(mode));
+                    }
                     else if (attrName == "Xui.GPU.Shaders.Attributes.BuiltInAttribute"
                         && attr.ConstructorArguments.Length > 0)
                     {

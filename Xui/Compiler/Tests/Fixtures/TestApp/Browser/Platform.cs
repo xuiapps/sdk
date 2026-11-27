@@ -8,10 +8,13 @@ using Abstract = Xui.Core.Abstract;
 namespace TestAppCanvas;
 
 // The browser supplies only platform services; Window, RootView and the design root are real Xui.
-public sealed class BrowserPlatform(CanvasContext context) : IServiceProvider, IRuntime, IDeviceInfo
+public sealed class BrowserPlatform(CanvasContext context) : IServiceProvider, IRuntime, IDeviceInfo, IImagePipeline
 {
     public readonly BrowserClock Clock = new();
-    public object GetService(Type type) => type == typeof(TimeProvider) ? Clock : type == typeof(IRuntime) || type == typeof(IDeviceInfo) ? this : null;
+    public IServiceProvider AdditionalServices { get; set; }
+    public object GetService(Type type) => type == typeof(IImage) ? CreateImage() : type == typeof(TimeProvider) ? Clock :
+        type == typeof(IRuntime) || type == typeof(IDeviceInfo) || type == typeof(IImagePipeline) ? this : AdditionalServices?.GetService(type);
+    public IImage CreateImage() => new BrowserImage();
     public IDispatcher MainDispatcher => throw new NotSupportedException("Browser dispatcher is not connected yet.");
     public IRunLoop CreateRunloop(Abstract.Application application) => throw new NotSupportedException("The browser owns its event loop.");
     public IWindow CreateWindow(Abstract.IWindow window, IServiceProvider services) => new BrowserWindow(window, services, context);

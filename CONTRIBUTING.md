@@ -16,9 +16,7 @@ docfx build docfx.json --serve
 Opens at http://localhost:8080. The landing page (`index.html`) is at the root;
 docs are at `/docs/`, API reference at `/api/`.
 
-> **Important:** use `docfx build`, not `docfx` (without subcommand). The bare
-> `docfx docfx.json --serve` also runs `metadata`, which overwrites the
-> hand-maintained `www/api/toc.yml` with an auto-generated one.
+> Use the explicit `docfx build` subcommand for a preview without regenerating API metadata.
 
 To regenerate canvas SVG figures (only needed when `Xui/Tests/Docs/Canvas/Views/` changes):
 ```
@@ -31,12 +29,32 @@ docfx build docfx.json --serve
 To regenerate API metadata from C# source (only needed after public API changes):
 ```
 docfx metadata docfx.json
-git checkout -- www/api/toc.yml
 ```
 
-The generated YAML lands in `www/api/` and is committed alongside the source.
-After regenerating, commit the changed `.yml` files but not `toc.yml`.
+The generated YAML and API navigation land in ignored `www/api/`; regenerate them
+from source and do not commit generated metadata.
 The full site builds to `_site/` (gitignored) and is deployed via GitHub Actions on push to main.
+
+### Complete website, including WASM demos
+
+Install the .NET 10 `wasm-tools` workload and DocFX, then run the same script as CI:
+
+```sh
+dotnet workload install wasm-tools
+pwsh -NoProfile -File tools/build-web.ps1
+python3 -m http.server 8080 --directory _site
+```
+
+This generates documentation figures and API metadata, builds DocFX, publishes
+TestApp with .NET WebAssembly AOT and stripped compiled IL at `/wasm/`, and keeps
+the custom compiler experiment at `/wasm/compiler/`. Old `/wasm/playground.html`
+bookmarks redirect to the compiler editor. `-SkipDocs` refreshes just the WASM
+portion of an existing site. `_site/` and `artifacts/` are generated and ignored.
+
+The Web workflow builds and browser-tests both published apps on pull requests.
+A push to `main` (including a merged PR) deploys the combined site to GitHub Pages;
+PR builds never deploy. See [browser runtime verification](Xui/Runtime/Browser/README.md)
+for local smoke tests and performance sampling.
 
 See [`www/docs/PLAN.md`](www/docs/PLAN.md) for the documentation roadmap.
 

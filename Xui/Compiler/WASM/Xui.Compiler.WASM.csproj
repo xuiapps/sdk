@@ -2,5 +2,8 @@
   <ItemGroup>
     <ProjectReference Include="../XuiNet/Xui.Compiler.XuiNet.csproj" />
     <EmbeddedResource Include="Runtime/xui-runtime.js" LogicalName="Xui.Runtime.JavaScript" />
+    <EmbeddedResource Include="Runtime/resource-host.js" LogicalName="Xui.Runtime.Resources" />
+    <EmbeddedResource Include="Runtime/json-host.js" LogicalName="Xui.Runtime.Json" />
+    <EmbeddedResource Include="Runtime/native-memory-host.js" LogicalName="Xui.Runtime.NativeMemory" />
   </ItemGroup>
 </Project>

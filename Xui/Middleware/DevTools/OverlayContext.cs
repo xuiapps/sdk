@@ -1,4 +1,5 @@
 using Xui.Core.Canvas;
+using Xui.Core.Canvas.Composition.GPU;
 using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Core.Canvas.Filter;
 using Xui.Core.Math2D;
@@ -19,6 +20,7 @@ internal sealed class OverlayContext(IContext inner, Point? pos, bool isTouch, s
 {
     public CompositionGroup Group(scoped in GroupOptions options) => inner.Group(in options);
     public bool GpuSurface(scoped in GroupOptions options) => inner.GpuSurface(in options);
+    public bool GpuSurface(scoped in GroupOptions options, out GpuSurfaceFailure failure) => inner.GpuSurface(in options, out failure);
     public void EndGroup() => inner.EndGroup();
 
     public void SetFilter() => inner.SetFilter();

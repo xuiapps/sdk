@@ -53,7 +53,7 @@ internal sealed partial class StorageModel
             // Reserve empty dispatch slots: boxed virtual/interface calls need adapters,
             // and must never accidentally address another class's methods.
             descriptor.TableStart = TableSize;
-            TableSize += (uint)Classes.InterfaceMethods.Count;
+            TableSize += (uint)Classes.DispatchMethods.Count;
         }
     }
 }

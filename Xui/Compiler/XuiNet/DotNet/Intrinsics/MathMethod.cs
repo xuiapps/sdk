@@ -27,7 +27,7 @@ public sealed record MathMethod(
             owner = new(module, method.DeclaringType); name = method.Name; blob = method.Signature;
         }
         else return null;
-        if (name is not ("Pow" or "Sqrt" or "Sin" or "Cos" or "Log" or "Exp" or "Min" or "Max" or "Abs" or "CopySign" or "Floor" or "Ceiling" or "Truncate" or "Round")) return null;
+        if (name is not ("Pow" or "Atan2" or "Sqrt" or "Cbrt" or "Sin" or "Cos" or "Tan" or "Log" or "Exp" or "Min" or "Max" or "Abs" or "CopySign" or "Floor" or "Ceiling" or "Truncate" or "Round")) return null;
         bool native = NativeFloat.Is(owner);
         bool single = native || FrameworkTypes.Is(owner, "System", "MathF") || FrameworkTypes.Is(owner, "System", "Single");
         if (!single && !FrameworkTypes.Is(owner, "System", "Math") && !FrameworkTypes.Is(owner, "System", "Double")) return null;
@@ -39,7 +39,7 @@ public sealed record MathMethod(
             signature.Parameters.Length == 2 && Scalar(signature.Result) && Scalar(signature.Parameters[0]) &&
             !signature.Parameters[1].IsByReference && signature.Parameters[1].Identity is { } mode && FrameworkTypes.Is(mode, "System", "MidpointRounding"))
             return new(name, single, true);
-        return !signature.HasThis && signature.GenericParameterCount == 0 && signature.Parameters.Length == (name is "Pow" or "CopySign" or "Min" or "Max" ? 2 : 1) &&
+        return !signature.HasThis && signature.GenericParameterCount == 0 && signature.Parameters.Length == (name is "Pow" or "Atan2" or "CopySign" or "Min" or "Max" ? 2 : 1) &&
             Scalar(signature.Result) && signature.Parameters.All(Scalar) ? new(name, single) : null;
     }
 }

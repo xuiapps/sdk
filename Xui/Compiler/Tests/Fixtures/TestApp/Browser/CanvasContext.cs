@@ -8,7 +8,7 @@ using Xui.Core.Math2D;
 namespace TestAppCanvas;
 
 // Browser-shell Canvas boundary. Unsupported surface effects remain explicit errors.
-public sealed class CanvasContext : IContext
+public sealed partial class CanvasContext : IContext
 {
     public void Save() => NativeCanvas.Command("Save");
     public void Restore() => NativeCanvas.Command("Restore");
@@ -35,7 +35,8 @@ public sealed class CanvasContext : IContext
         NativeCanvas.Command("FontStyle", font.FontStyle.IsItalic ? 1 : 0, font.FontStyle.IsOblique ? 1 : 0, (double)font.FontStyle.ObliqueAngle);
     }
     public void BeginPath() => NativeCanvas.Command("BeginPath");
-    public void Dispose() { }
+    public void Dispose() => DisposeGpu();
+    partial void DisposeGpu();
     public TextMetrics MeasureText(string text) => new(
         new LineMetrics((NFloat)NativeCanvas.Measure(text,0), (NFloat)NativeCanvas.Measure(text,1),
             (NFloat)NativeCanvas.Measure(text,2), (NFloat)NativeCanvas.Measure(text,3), (NFloat)NativeCanvas.Measure(text,4)),
@@ -46,7 +47,7 @@ public sealed class CanvasContext : IContext
     public void StrokeRect(Rect rect) => NativeCanvas.Command("StrokeRect", (double)rect.X, (double)rect.Y, (double)rect.Width, (double)rect.Height);
     public void SetStroke(LinearGradient value) { LinearBrush(value); NativeCanvas.Command("StrokeGradient"); }
     public void SetStroke(RadialGradient value) => throw new InvalidOperationException("Unsupported Canvas operation: SetStroke(RadialGradient value).");
-    public void SetStroke(ImagePattern value) => throw new InvalidOperationException("Unsupported Canvas operation: SetStroke(ImagePattern value).");
+    public void SetStroke(ImagePattern value) => NativeCanvas.Command("StrokePattern", ((BrowserImage)value.Image).Handle, (int)value.Repetition);
     public void SetFill(LinearGradient value) { LinearBrush(value); NativeCanvas.Command("FillGradient"); }
     private static void LinearBrush(LinearGradient value)
     {
@@ -59,11 +60,22 @@ public sealed class CanvasContext : IContext
         }
     }
     public void SetFill(RadialGradient value) => throw new InvalidOperationException("Unsupported Canvas operation: SetFill(RadialGradient value).");
-    public void SetFill(ImagePattern value) => throw new InvalidOperationException("Unsupported Canvas operation: SetFill(ImagePattern value).");
+    public void SetFill(ImagePattern value) => NativeCanvas.Command("FillPattern", ((BrowserImage)value.Image).Handle, (int)value.Repetition);
     public void SetFilter() => NativeCanvas.Command("ClearFilter");
     public void SetFilter(Brightness value) => throw new InvalidOperationException("Unsupported Canvas operation: SetFilter(Brightness value).");
     public CompositionGroup Group(scoped in GroupOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options.Key);
+        if (options.Key.GetType().IsValueType) throw new ArgumentException("A group key must be a stable reference.");
+        NativeCanvas.Command("GroupReset", options.ViewBacking ? 1 : 0, options.ClipToBounds ? 1 : 0, (double)options.CornerRadius, (int)options.Backdrop);
+        if (options.Bounds is { } box) NativeCanvas.Command("GroupBounds", (double)box.X, (double)box.Y, (double)box.Width, (double)box.Height);
+        var m = options.Transform;
+        NativeCanvas.Command("GroupMatrix", (double)m.A, (double)m.B, (double)m.C, (double)m.D);
+        NativeCanvas.Command("GroupTranslation", (double)m.Tx, (double)m.Ty);
+        if (options.Background is { } background) GroupColor("GroupBackground", background);
+        if (options.Border is { } border) { GroupColor("GroupBorderColor", border.Color); NativeCanvas.Command("GroupBorder", (double)border.Width); }
+        if (options.Shadow is { } shadow) { GroupColor("GroupShadowColor", shadow.Color); NativeCanvas.Command("GroupShadow", (double)shadow.Radius, (double)shadow.Offset.X, (double)shadow.Offset.Y); }
+        if (NativeCanvas.Group(options.Key) != 0) return new CompositionGroup(this, true);
         Save();
         try
         {
@@ -82,10 +94,20 @@ public sealed class CanvasContext : IContext
             throw;
         }
     }
-    public void EndGroup() => Restore();
-    public void DrawImage(IImage image, Rect dest) => throw new InvalidOperationException("Unsupported Canvas operation: DrawImage(IImage image, Rect dest).");
-    public void DrawImage(IImage image, Rect dest, NFloat opacity) => throw new InvalidOperationException("Unsupported Canvas operation: DrawImage(IImage image, Rect dest, NFloat opacity).");
-    public void DrawImage(IImage image, Rect source, Rect dest, NFloat opacity) => throw new InvalidOperationException("Unsupported Canvas operation: DrawImage(IImage image, Rect source, Rect dest, NFloat opacity).");
+    private static void GroupColor(string name, Color color) => NativeCanvas.Command(name, (double)color.Red, (double)color.Green, (double)color.Blue, (double)color.Alpha);
+    public void EndGroup() { if (NativeCanvas.EndGroup() == 0) Restore(); }
+    public void DrawImage(IImage image, Rect dest) => DrawImage(image, dest, 1);
+    public void DrawImage(IImage image, Rect dest, NFloat opacity)
+    {
+        NativeCanvas.Command("Image", ((BrowserImage)image).Handle, (double)opacity);
+        NativeCanvas.Command("DrawImage", (double)dest.X, (double)dest.Y, (double)dest.Width, (double)dest.Height);
+    }
+    public void DrawImage(IImage image, Rect source, Rect dest, NFloat opacity)
+    {
+        NativeCanvas.Command("Image", ((BrowserImage)image).Handle, (double)opacity);
+        NativeCanvas.Command("ImageSource", (double)source.X, (double)source.Y, (double)source.Width, (double)source.Height);
+        NativeCanvas.Command("DrawImage", (double)dest.X, (double)dest.Y, (double)dest.Width, (double)dest.Height);
+    }
     public void Translate(Vector value) => NativeCanvas.Command("Translate", (double)value.X, (double)value.Y);
     public void Rotate(NFloat value) => NativeCanvas.Command("Rotate", (double)value);
     public void Scale(Vector value) => NativeCanvas.Command("Scale", (double)value.X, (double)value.Y);
@@ -144,5 +166,25 @@ public static class NativeCanvas
 {
     public static void Command(string name, double a = 0, double b = 0, double c = 0, double d = 0, string text = "") =>
         throw new InvalidOperationException("Browser Canvas import required.");
+    public static int Group(object key) => throw new InvalidOperationException("Browser composition import required.");
+    public static int EndGroup() => throw new InvalidOperationException("Browser composition import required.");
     public static double Measure(string text, int metric) => throw new InvalidOperationException("Browser text measurement import required.");
+    public static int LoadImage(string uri) => throw new InvalidOperationException("Browser image catalogue import required.");
+    public static double ImageSize(int handle, int dimension) => throw new InvalidOperationException("Browser image size import required.");
+}
+
+
+/// <summary>A view-owned handle to an image decoded by the injected browser catalogue before application startup.</summary>
+public sealed class BrowserImage : IImage
+{
+    public int Handle { get; private set; }
+    public Size Size => Handle == 0 ? Size.Empty : new((NFloat)NativeCanvas.ImageSize(Handle, 0), (NFloat)NativeCanvas.ImageSize(Handle, 1));
+    public void Load(string uri)
+    {
+        int handle = NativeCanvas.LoadImage(uri);
+        if (handle == 0) throw new InvalidOperationException("Image asset is not preloaded: " + uri);
+        Handle = handle;
+    }
+    public System.Threading.Tasks.Task LoadAsync(string uri) => throw new NotSupportedException("Asynchronous image loading is not connected yet.");
+    public void LoadPixels(int width, int height, ReadOnlySpan<byte> data) => throw new NotSupportedException("Pixel upload is not connected yet.");
 }

@@ -14,6 +14,53 @@ namespace Xui.Compiler.Tests.Wasm.Strings;
 [Collection(nameof(ManagedConsoleCollection))]
 public class InterpolationTests
 {
+    [Theory]
+    [InlineData("0.##")]
+    [InlineData("0.0#")]
+    [InlineData("+0.00;-0.00;0.00")]
+    [InlineData("+0.00;-0.0;0.000")]
+    [InlineData("G")]
+    public Task FloatingInterpolationMatchesInvariantClr(string format)
+    {
+        double[] values = [0, -0d, .004, -.004, .005, -.005, 1.25, -1.25, 2.675, 12345.6789, 1e-8, 1e20, double.NaN, double.PositiveInfinity];
+        string literal(double value) => double.IsNaN(value) ? "double.NaN" : double.IsPositiveInfinity(value) ? "double.PositiveInfinity" :
+            value.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "d";
+        string expected = string.Join("\n", values.Select(value =>
+            $"[{value.ToString(format, System.Globalization.CultureInfo.InvariantCulture)}]|[{((float)value).ToString(format, System.Globalization.CultureInfo.InvariantCulture)}]")) + "\n";
+        return AssertInvariant($$"""
+            using System;
+            public static class Program {
+                static string Format(double value, float single) => $"[{value:{{format}}}]|[{single:{{format}}}]";
+                public static int Main() {
+                    double[] values=[{{string.Join(",",values.Select(literal))}}];
+                    foreach(double value in values) Console.WriteLine(Format(value,(float)value));
+                    return 42;
+                }
+            }
+            """, expected, 42);
+    }
+
+    [Fact]
+    public Task NativeFloatInterpolationAndDefaultFormatsUseNativeStrings() => AssertInvariant("""
+        using System; using System.Runtime.InteropServices;
+        public static class Program { public static int Main() {
+            NFloat value=(NFloat)1.25; Console.WriteLine($"scale:{value:0.#}×");
+            double d=-0d; float f=1.5f; Console.WriteLine($"[{d}]/[{f}]");
+            return 42;
+        } }
+        """, "scale:1.3×\n[-0]/[1.5]\n",42);
+
+    private static async Task AssertInvariant(string source, string expected, int exitCode)
+    {
+        var previous = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+            await InlineArrayTests.AssertLinked(source, expected, exitCode);
+        }
+        finally { System.Globalization.CultureInfo.CurrentCulture = previous; }
+    }
+
     [Fact]
     public async Task RatingTextExecutesAndSnapshots()
     {
@@ -156,8 +203,7 @@ public class InterpolationTests
         """, "finished:42\n", 42);
 
     [Theory]
-    [InlineData("double value=1.5;", "$\"{value}\"")]
-    [InlineData("int value=42;", "$\"{value:X}\"")]
+    [InlineData("int value=42;", "$\"{value,8:X}\"")]
     [InlineData("int value=42;", "$\"{value,8}\"")]
     public void UnsupportedFormattingFailsExplicitly(string declaration, string interpolation)
     {

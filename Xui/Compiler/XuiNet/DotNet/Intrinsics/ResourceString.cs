@@ -26,7 +26,7 @@ public static class ResourceString
             owner = new(module, method.DeclaringType); name = method.Name;
         }
         else return null;
-        if (!name.StartsWith("get_", StringComparison.Ordinal) || !FrameworkTypes.Is(owner, "System", "SR")) return null;
+        if (!name.StartsWith("get_", StringComparison.Ordinal) || !IsResourceOwner(owner)) return null;
         var identity = MemberResolver.Method(module, token, owner);
         var source = identity.DeclaringType.Module;
         var getter = source.GetMethod(identity.Handle);
@@ -50,7 +50,9 @@ public static class ResourceString
             lookupSignature.Parameters[0].Code != SignatureTypeCode.String || lookupSignature.Parameters[0].IsByReference) return null;
         if (!reader.HasRemaining || reader.Read().Code != OpCode.Ret || reader.HasRemaining) return null;
 
-        string resourceName = source.Metadata.GetString(source.Metadata.GetAssemblyDefinition().Name) + ".Strings.resources";
+        string assemblyName = source.Metadata.GetString(source.Metadata.GetAssemblyDefinition().Name);
+        string resourceName = assemblyName == "System.Private.CoreLib" ? assemblyName + ".Strings.resources" :
+            "FxResources." + assemblyName + ".SR.resources";
         foreach (var handle in source.ManifestResources)
         {
             var resource = source.GetManifestResource(handle);
@@ -58,5 +60,26 @@ public static class ResourceString
                 return resource.ReadString(key) ?? throw new NotSupportedException($"Null BCL resource string: {resourceName}/{key}.");
         }
         throw new NotSupportedException($"The supplied BCL PE has no neutral resource table '{resourceName}'.");
+    }
+
+    private static bool IsResourceOwner(TypeIdentity owner)
+    {
+        if (FrameworkTypes.Is(owner, "System", "SR")) return true;
+        string assembly;
+        if (owner.Handle.Kind == HandleKind.TypeDefinition)
+        {
+            var type = owner.Module.GetType((TypeDefinitionHandle)owner.Handle);
+            if (type.Namespace != "System" || type.Name != "SR") return false;
+            assembly = owner.Module.Metadata.GetString(owner.Module.Metadata.GetAssemblyDefinition().Name);
+        }
+        else if (owner.Handle.Kind == HandleKind.TypeReference)
+        {
+            var type = owner.Module.GetTypeReference((TypeReferenceHandle)owner.Handle);
+            if (type.Namespace != "System" || type.Name != "SR" || type.ResolutionScope.Kind != HandleKind.AssemblyReference) return false;
+            assembly = owner.Module.GetAssemblyReference((AssemblyReferenceHandle)type.ResolutionScope).Name;
+        }
+        else return false;
+        return assembly is "System.Private.Xml.Linq" or "System.Private.Xml" or "System.Private.Uri" or
+            "System.Text.Json" or "System.IO.Compression" or "System.Linq";
     }
 }

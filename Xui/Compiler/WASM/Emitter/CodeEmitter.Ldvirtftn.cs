@@ -7,7 +7,7 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitLdvirtftn(Instruction.Token instruction, int offset)
     {
-        var target = ResolveCall(source, method.Identity, instruction.Value, offset);
+        var target = ResolveCall(source, method, instruction.Value, offset);
         var callee = methods[target];
         if (!callee.Signature.HasThis || target.DeclaringType.IsValueType)
             throw new NotSupportedException("ldvirtftn requires a class or interface instance method.");

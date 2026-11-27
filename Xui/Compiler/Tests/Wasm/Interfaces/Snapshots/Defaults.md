@@ -110,7 +110,7 @@ panel
   (import "xui" "console-log" (func (;1;) (type 3) (param i32)))
   (import "wasm:js-string" "fromCharCodeArray" (func (;2;) (type 1) (param (ref null 0) i32 i32) (result (ref extern))))
   (table (;0;) 9 9 funcref)
-  (memory (;0;) 16 16)
+  (memory (;0;) 16 32768)
   (tag (;0;) (type 5) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
   (global (;1;) (mut externref) ref.null extern)

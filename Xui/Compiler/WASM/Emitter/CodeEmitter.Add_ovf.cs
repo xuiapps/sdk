@@ -1,0 +1,6 @@
+using Xui.Compiler.XuiNet.DotNet.Op;
+namespace Xui.Compiler.WASM.Emitter;
+public readonly ref partial struct CodeEmitter
+{
+    private void EmitAdd_ovf(int offset) => EmitCheckedAddSub(OpCode.Add_ovf, offset);
+}

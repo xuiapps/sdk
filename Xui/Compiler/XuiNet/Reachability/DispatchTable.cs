@@ -47,7 +47,7 @@ internal sealed partial class DispatchTable
             {
                 var reference = module.GetTypeReference((TypeReferenceHandle)definition.BaseType);
                 if (reference.Namespace != "System" || reference.Name != "Object")
-                    throw new NotSupportedException("External class inheritance is not implemented.");
+                    throw new NotSupportedException($"External class inheritance is not implemented: {identity} derives from {identity.BaseType}.");
             }
             else throw new NotSupportedException($"Unsupported class base type: {identity}.");
             foreach (var handle in definition.Methods)

@@ -12,3 +12,6 @@ api/
 
 # Allocation snapshot failures are review artifacts, never approved baselines.
 *.received.txt
+
+# Local website publish staging
+/artifacts/

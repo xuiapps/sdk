@@ -12,8 +12,8 @@ Sources: [Interactive.cs](Fixtures/TestApp/Browser/Interactive.cs), [Platform.cs
 
 ```text
 Node: 30/60/120 FPS warmup and label updates, idle exclusion, persistent window, touch down/up, all 21 pages, scrolling, ArcTo drawing, Back navigation and animation completion passed.
-WASM bytes: 1647836
-Retained managed methods: 1863
+WASM bytes: 1645909
+Retained managed methods: 1869
 ```
 
 ## Exit Code

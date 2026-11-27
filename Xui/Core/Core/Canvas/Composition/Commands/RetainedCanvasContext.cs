@@ -88,18 +88,31 @@ public sealed partial class RetainedCanvasContext : IContext
         }
     }
 
-    public bool GpuSurface(scoped in GroupOptions options)
+    public bool GpuSurface(scoped in GroupOptions options) => GpuSurface(in options, out _);
+
+    public bool GpuSurface(scoped in GroupOptions options, out GpuSurfaceFailure failure)
     {
         ICompositionContext.ValidateGpuSurface(in options);
         if (!recording) throw new InvalidOperationException("GPU surfaces require an open frame.");
-        if (state.Clipped || gpuSurfaces?.IsSupported != true) return false;
-        var node = (GpuNode)GetOrCreateNode(options.Key, gpu: true);
+        failure = GpuSurfaceFailure.None;
+        if (state.Clipped) { failure = GpuSurfaceFailure.PortableFallbackRequired; return false; }
+        if (gpuSurfaces?.IsSupported != true) { failure = GpuSurfaceFailure.NotSupported; return false; }
+        // Acquire before changing the tree, so expected creation failure leaves composition untouched.
+        ICompositionGpuSurface? created = null;
+        if (!current.ByKey.TryGetValue(options.Key, out var existing) || existing is not GpuNode { Surface: not null })
+        {
+            try { created = gpuSurfaces.CreateSurface(); }
+            catch (NotSupportedException) { failure = GpuSurfaceFailure.NotSupported; return false; }
+        }
+        GpuNode node;
+        try { node = (GpuNode)GetOrCreateNode(options.Key, gpu: true); }
+        catch { created?.Dispose(); throw; }
+        node.Surface ??= created;
         var redraw = NeedsUpdate(node, in options);
         ConfigureNode(node, options with { ViewBacking = true });
         node.Updating = redraw;
-        node.Surface ??= gpuSurfaces.CreateSurface();
-        if (redraw || !node.Surface.HasContent)
-            node.Surface.RequestRender((IGpuSurfaceContent)options.Key);
+        if (redraw || !node.Surface!.HasContent)
+            node.Surface!.RequestRender((IGpuSurfaceContent)options.Key);
         return true;
     }
 

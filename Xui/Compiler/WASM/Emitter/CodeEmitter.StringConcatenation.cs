@@ -15,6 +15,11 @@ public readonly ref partial struct CodeEmitter
         for (int i = count - 1; i >= 0; i--)
         {
             var argument = method.StringConcatArguments[i];
+            if (access.Spans)
+            {
+                PopAssignable(method.Storage.Bind(access.Signature.Parameters[i]), instruction.Code, offset);
+                EmitCharacterSpanString();
+            }
             Pop(SignatureTypeCode.String, instruction.Code, offset);
             writer.LocalSet(argument).LocalGet(argument).RefIsNull().If();
             EmitString("");

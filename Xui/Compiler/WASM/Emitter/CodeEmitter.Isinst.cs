@@ -12,7 +12,10 @@ public readonly ref partial struct CodeEmitter
         method.Storage.ExceptionsEnabled = true;
         method.RequireGcTemporaries();
         var signature = XuiNet.DotNet.Signatures.SignatureReader.StorageType(source, token, method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+        if (signature.Identity is { Arguments.Values.Length: 1 } contract &&
+            XuiNet.DotNet.Intrinsics.ArrayInterface.Matches(new(contract.Arguments.Values[0]), contract)) method.Storage.ArrayIdentity.Enabled = true;
         if (signature.Code == SignatureTypeCode.Object) return;
+        if (signature.Code == SignatureTypeCode.String) { method.Storage.StringObjects.Enable(method.Storage, source); return; }
         if (BoxingType.Read(source, token, method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } box)
         {
             _ = method.Storage.Box(box);
@@ -20,6 +23,9 @@ public readonly ref partial struct CodeEmitter
         }
         if (signature.Identity is not { } target || !method.Storage.IsClass(target))
             throw new NotSupportedException("Reference type tests currently require a named class or interface.");
+        if (XuiNet.DotNet.Intrinsics.InvariantCulture.Is(target) || FrameworkTypes.Is(target, "System", "IFormatProvider"))
+            throw new NotSupportedException("Runtime casts of formatting providers are not implemented.");
+        method.Storage.ArrayTypeTests.Add(target);
         method.RequireGc(target);
         if (XuiNet.DotNet.Intrinsics.DefaultEquality.IsInterface(target))
             method.RequireGc(XuiNet.DotNet.Intrinsics.DefaultEquality.InterfaceOwner(target));
@@ -30,6 +36,7 @@ public readonly ref partial struct CodeEmitter
     private void EmitTypeTest(Instruction.Token instruction, int offset, bool throwing)
     {
         var testedStorage = XuiNet.DotNet.Signatures.SignatureReader.StorageType(source, MetadataTokens.EntityHandle(instruction.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments);
+        if (testedStorage.Code == SignatureTypeCode.String) { EmitStringCast(instruction.Code, offset, throwing); return; }
         if (testedStorage.Code == SignatureTypeCode.Object)
         {
             if (!IsObjectReference(Pop(instruction.Code, offset))) throw new NotSupportedException("Object type tests require a managed object reference.");
@@ -90,7 +97,19 @@ public readonly ref partial struct CodeEmitter
                 .RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef).End().Else()
                 .RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef).End();
         }
-        else writer.GlobalGet(method.Storage.Classes.Resolve(target).Descriptor).Call(method.Storage.InstanceTest);
+        else
+        {
+            var arrays = method.Storage.ArrayImplementations(target).ToArray();
+            if (arrays.Length == 0) writer.GlobalGet(method.Storage.Classes.Resolve(target).Descriptor).Call(method.Storage.InstanceTest);
+            else
+            {
+                writer.LocalSet(method.GcOwner);
+                foreach (var array in arrays)
+                    writer.LocalGet(method.GcOwner).ExternConvertAny().I32Const((int)array.Type.Value).Call(method.Storage.ArrayIdentity.Test).If(method.Storage.ExceptionPayloadBlock).LocalGet(method.GcOwner).Else();
+                writer.LocalGet(method.GcOwner).GlobalGet(method.Storage.Classes.Resolve(target).Descriptor).Call(method.Storage.InstanceTest);
+                foreach (var _ in arrays) writer.End();
+            }
+        }
         if (throwing)
         {
             writer.LocalSet(method.GcOwner).LocalGet(method.GcSource).RefIsNull().I32Eqz()

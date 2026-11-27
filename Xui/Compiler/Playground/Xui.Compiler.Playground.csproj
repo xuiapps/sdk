@@ -5,7 +5,8 @@
     <!-- Keep Roslyn and its metadata intact; this host interprets managed code. -->
     <PublishTrimmed>false</PublishTrimmed>
     <WasmBuildNative>false</WasmBuildNative>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Match the prebuilt runtime, including when wasm-tools is installed. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
     <WasmEnableThreads>false</WasmEnableThreads>
   </PropertyGroup>
   <ItemGroup>

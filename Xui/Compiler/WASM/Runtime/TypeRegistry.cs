@@ -11,9 +11,9 @@ internal sealed class TypeRegistry(DependencyGraph dependencies)
 {
     private readonly Dictionary<TypeIdentity, Type> types = new();
     public IReadOnlyCollection<Type> Types => types.Values;
-    public IReadOnlyList<MethodIdentity> InterfaceMethods { get; } = dependencies.Nodes
+    public IReadOnlyList<MethodIdentity> DispatchMethods { get; } = dependencies.Nodes
         .OfType<Dependency.VirtualCall>().Select(node => node.Identity)
-        .Where(method => method.DeclaringType.IsInterface).Distinct().ToArray();
+        .Where(method => method.DeclaringType.IsInterface || method.Arguments is not null).Distinct().ToArray();
 
     public Type Resolve(TypeIdentity identity)
     {
@@ -21,7 +21,7 @@ internal sealed class TypeRegistry(DependencyGraph dependencies)
         if (identity.Handle.Kind != HandleKind.TypeDefinition)
             throw new NotSupportedException($"Runtime metadata requires a linked type definition: {identity}.");
         var definition = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);
-        if (identity.IsValueType || FrameworkTypes.IsRuntimeBase(identity))
+        if (identity.IsValueType || FrameworkTypes.IsRuntimeBase(identity) || FrameworkTypes.Is(identity, "System", "String"))
         {
             var valueParent = identity.BaseType is { } baseValue && !FrameworkTypes.Is(baseValue, "System", "Object") ? Resolve(baseValue) : null;
             var value = new Type((uint)types.Count + 1, identity, valueParent, (definition.Attributes & TypeAttributes.Abstract) != 0, []);
@@ -36,21 +36,27 @@ internal sealed class TypeRegistry(DependencyGraph dependencies)
         types.Add(identity, type);
         type.Interfaces = Array.AsReadOnly((DelegateInfo.Is(identity) ? [] : identity.Interfaces().Select(Resolve).ToArray()));
         if (!type.IsInterface)
-            type.InterfaceSlots = Array.AsReadOnly(InterfaceMethods.Select((method, index) =>
-                (Method: method, Index: (uint)index, Implementation: dependencies.InterfaceImplementation(identity, method)))
-                .Where(slot => slot.Implementation is not null)
+        {
+            var specialized = DispatchMethods.Select((method, index) =>
+                (Method: method, Index: (uint)index, Implementation: method.DeclaringType.IsInterface
+                    ? dependencies.InterfaceImplementation(identity, method) : dependencies.GenericVirtualImplementation(identity, method)))
+                .Where(slot => slot.Implementation is not null).ToArray();
+            type.InterfaceSlots = Array.AsReadOnly(specialized.Where(slot => slot.Method.DeclaringType.IsInterface)
                 .Select(slot => new InterfaceSlot(slot.Index, slot.Method, slot.Implementation!.Value)).ToArray());
+            type.GenericVirtualSlots = Array.AsReadOnly(specialized.Where(slot => !slot.Method.DeclaringType.IsInterface)
+                .Select(slot => new GenericVirtualSlot(slot.Index, slot.Method, slot.Implementation!.Value)).ToArray());
+        }
         return type;
     }
 
     public uint Slot(MethodIdentity handle)
     {
-        if (handle.DeclaringType.IsInterface)
+        if (handle.DeclaringType.IsInterface || handle.Arguments is not null)
         {
-            for (int i = 0; i < InterfaceMethods.Count; i++) if (InterfaceMethods[i] == handle) return (uint)i;
+            for (int i = 0; i < DispatchMethods.Count; i++) if (DispatchMethods[i] == handle) return (uint)i;
         }
         else foreach (var slot in Resolve(handle.DeclaringType).VirtualSlots)
-            if (slot.Implementation == handle || slot.Declaration == handle) return (uint)InterfaceMethods.Count + slot.Index;
+            if (slot.Implementation == handle || slot.Declaration == handle) return (uint)DispatchMethods.Count + slot.Index;
         throw new NotSupportedException($"No virtual slot for {handle}.");
     }
 }

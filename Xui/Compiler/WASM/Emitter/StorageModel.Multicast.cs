@@ -43,7 +43,10 @@ internal sealed partial class StorageModel
         {
             foreach (var slot in type.VirtualSlots)
                 if (methods.TryGetValue(slot.Implementation, out var method) && !method.IsDeclaration)
-                    ids[type.TableStart + (uint)Classes.InterfaceMethods.Count + slot.Index] = (int)method.Function.Value;
+                    ids[type.TableStart + (uint)Classes.DispatchMethods.Count + slot.Index] = (int)method.Function.Value;
+            foreach (var slot in type.GenericVirtualSlots)
+                if (methods.TryGetValue(slot.Implementation, out var method) && !method.IsDeclaration)
+                    ids[type.TableStart + slot.Index] = (int)method.Function.Value;
             foreach (var slot in type.InterfaceSlots)
                 if (methods.TryGetValue(slot.Implementation, out var method) && !method.IsDeclaration)
                     ids[type.TableStart + slot.Index] = (int)method.Function.Value;

@@ -35,6 +35,8 @@ public sealed class Type
     public IReadOnlyList<Type> Interfaces { get; internal set; } = [];
     /// <summary>Reachable interface declarations and their selected concrete implementations.</summary>
     public IReadOnlyList<InterfaceSlot> InterfaceSlots { get; internal set; } = [];
+    /// <summary>Reachable closed generic class-virtual calls and their selected implementations.</summary>
+    public IReadOnlyList<GenericVirtualSlot> GenericVirtualSlots { get; internal set; } = [];
     /// <summary>Inherited slots with overrides substituted; newslot declarations append entries.</summary>
     public IReadOnlyList<VirtualSlot> VirtualSlots { get; }
     /// <summary>Inherited and declared instance fields mapped to flattened GC field ranges.</summary>
@@ -45,6 +47,6 @@ public sealed class Type
     public TypeIndex WasmType { get; internal set; }
     /// <summary>The immutable global containing this class's runtime descriptor.</summary>
     public GlobalIndex Descriptor { get; internal set; }
-    /// <summary>The first function-table entry for this class; interface slots precede class virtual slots.</summary>
+    /// <summary>The first function-table entry for this class; interface and specialized generic slots precede ordinary class virtual slots.</summary>
     public uint TableStart { get; internal set; }
 }

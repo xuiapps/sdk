@@ -1,5 +1,6 @@
 using Xui.Core.Canvas;
 using Xui.Core.Math2D;
+using Xui.Core.Canvas.Composition.Graphics;
 using Xui.Middleware.Emulator.Devices;
 using Xui.Middleware.Emulator.UI.Phone;
 using NFloat = System.Runtime.InteropServices.NFloat;
@@ -13,6 +14,29 @@ public sealed class CompilerPhoneHost
     private readonly PhoneChromeRenderer chrome = new();
     public double ScreenX, ScreenY, ScreenScale;
     private double width, height;
+    private readonly object screenKey = new(), cutoutKey = new();
+
+    public void BeginComposed(IContext context, double width, double height)
+    {
+        this.width = width; this.height = height;
+        var device = DeviceProfiles.IPhone15Pro;
+        var specification = PhoneFrameSpecification.IPhone;
+        var geometry = PhoneFrameGeometry.Create(new Rect(24, 24, (NFloat)width - 48, (NFloat)height - 48), device, specification);
+        ScreenX = (double)geometry.ScreenFrame.X; ScreenY = (double)geometry.ScreenFrame.Y; ScreenScale = (double)geometry.Scale;
+        chrome.RenderFrame(context, device, specification, in geometry);
+        _ = context.Group(new GroupOptions { Key = screenKey, Bounds = geometry.ScreenFrame, ViewBacking = true,
+            ClipToBounds = true, CornerRadius = device.ScreenCornerRadius * geometry.Scale });
+        context.Translate(geometry.ScreenFrame.TopLeft); context.Scale((geometry.Scale, geometry.Scale));
+    }
+
+    public void EndComposed(IContext context)
+    {
+        context.EndGroup();
+        var device = DeviceProfiles.IPhone15Pro;
+        var geometry = PhoneFrameGeometry.Create(new Rect(24, 24, (NFloat)width - 48, (NFloat)height - 48), device, PhoneFrameSpecification.IPhone);
+        using var overlay = context.Group(new GroupOptions { Key = cutoutKey, Bounds = geometry.ScreenFrame, ViewBacking = true });
+        chrome.RenderDisplayCutout(context, device, in geometry);
+    }
 
     public void Begin(IContext context, double width, double height)
     {

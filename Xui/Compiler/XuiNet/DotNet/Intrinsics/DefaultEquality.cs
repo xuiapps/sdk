@@ -10,7 +10,10 @@ public sealed partial record DefaultEquality(
     SignatureType Element,
     MethodSignature Signature,
     MethodIdentity? Implementation = null,
-    bool UsesObjectEquality = false)
+    bool UsesObjectEquality = false,
+    bool UsesObjectHash = false,
+    bool UsesArrayIdentity = false,
+    bool UsesPrimitiveStructHash = false)
 {
     /// <summary>Recognizes the trusted framework comparer definition.</summary>
     public static bool Is(TypeIdentity type) => FrameworkTypes.Is(type, "System.Collections.Generic", "EqualityComparer`1");
@@ -44,8 +47,17 @@ public sealed partial record DefaultEquality(
     }
     private static DefaultEquality Create(string operation, TypeIdentity owner, SignatureType element, MethodSignature signature)
     {
+        // Acquiring the singleton does not execute equality or hashing. Retain
+        // and validate each operation only when a call actually needs it.
+        if (operation == "get_Default") return new(operation, owner, element, signature);
+        if (element.Array is not null && !element.IsByReference) return new(operation, owner, element, signature, UsesArrayIdentity: true);
         if (operation == "GetHashCode")
         {
+            if (ObjectHash.Supports(element)) return new(operation, owner, element, signature, UsesObjectHash: true);
+            if (!PrimitiveValue.Supports(element) && ValueHash.Find(element) is { } hash)
+                return new(operation, owner, element, signature, hash);
+            if (!PrimitiveValue.Supports(element) && PrimitiveStructHash.Supports(element))
+                return new(operation, owner, element, signature, UsesPrimitiveStructHash: true);
             if (!PrimitiveValue.Supports(element))
                 throw new NotSupportedException($"Default hashing is not implemented for {element}.");
             return new(operation, owner, element, signature);

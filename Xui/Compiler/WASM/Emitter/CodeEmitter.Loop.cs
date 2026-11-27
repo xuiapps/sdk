@@ -27,6 +27,7 @@ public readonly ref partial struct CodeEmitter
     private void EmitLoopTransfer(LoopTransfer transfer)
     {
         var target = transfer.Kind == LoopTransferKind.Continue ? transfer.Target.Header : transfer.Target.Exit;
+        CoerceNullStrings(target.Before!);
         CheckStack(target.Before!, target.Offset);
         if (transfer.Kind == LoopTransferKind.Break)
         {

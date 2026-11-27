@@ -23,4 +23,19 @@ public class TrigonometryTests
             return 42;
         } }
         """, "1\n0\n-Infinity\nNaN\nNaN\nNaN\nTrue\nTrue\nTrue\nTrue\n", 42);
+    [Fact]
+    public Task TangentSupportsProjectionAndSpecialValues() => InlineArrayTests.AssertLinked("""
+        using System;
+        using System.Runtime.InteropServices;
+        public static class Program { public static int Main() {
+            Console.WriteLine(Math.Tan(0));Console.WriteLine(1/Math.Tan(-0d));
+            Console.WriteLine(Math.Tan(double.NaN));Console.WriteLine(MathF.Tan(float.PositiveInfinity));
+            Console.WriteLine(Math.Tan(double.NegativeInfinity));
+            Console.WriteLine(double.Tan(Math.PI/4)>.999999 && double.Tan(Math.PI/4)<1.000001);
+            Console.WriteLine(MathF.Tan(MathF.PI/8)>.4142135f && float.Tan(MathF.PI/8)<.4142137f);
+            Console.WriteLine(NFloat.Tan((NFloat).5)>(NFloat).5463024 && NFloat.Tan((NFloat).5)<(NFloat).5463026);
+            return 42;
+        } }
+        """, "0\n-Infinity\nNaN\nNaN\nNaN\nTrue\nTrue\nTrue\n",42);
+
 }

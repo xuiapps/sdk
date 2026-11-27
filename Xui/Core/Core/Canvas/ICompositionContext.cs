@@ -71,6 +71,20 @@ public interface ICompositionContext
         return false;
     }
 
+    /// <summary>
+    /// Attempts native GPU presentation and reports why it could not be accepted.
+    /// Use <see cref="GpuSurfaceFailure.NotSupported"/> to display an unavailable message;
+    /// <see cref="GpuSurfaceFailure.PortableFallbackRequired"/> permits an explicit export
+    /// or offscreen fallback. Invalid options and rendering/shader errors still throw.
+    /// </summary>
+    /// <remarks>Older contexts preserve their existing portable-fallback behavior.</remarks>
+    bool GpuSurface(scoped in GroupOptions options, out GpuSurfaceFailure failure)
+    {
+        var accepted = GpuSurface(in options);
+        failure = accepted ? GpuSurfaceFailure.None : GpuSurfaceFailure.PortableFallbackRequired;
+        return accepted;
+    }
+
     /// <summary>Validates GPU identity and bounds before a backend changes state.</summary>
     static void ValidateGpuSurface(scoped in GroupOptions options)
     {

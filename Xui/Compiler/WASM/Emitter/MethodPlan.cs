@@ -11,6 +11,7 @@ namespace Xui.Compiler.WASM.Emitter;
 /// <summary>One reachable method's signature, source locals, temporary locals, and module indices.</summary>
 internal sealed partial class MethodPlan
 {
+    public Dictionary<int, LocalIndex> ExceptionSelectors { get; } = new();
     public Dictionary<int, LocalIndex> ExceptionLocals { get; } = new();
     public Dictionary<int, LocalIndex> CatchExceptionRefs { get; } = new();
     public LocalIndex UnwindException { get; private set; }
@@ -24,7 +25,7 @@ internal sealed partial class MethodPlan
     public MemoryFrame? Frame { get; }
     public StorageModel Storage { get; }
     public bool UsesGc { get; private set; }
-    public bool UsesReferenceCompareExchange { get; set; }
+    public bool UsesReferenceInterlocked { get; set; }
     public LocalIndex CompareExchangeReplacement { get; private set; }
     public LocalIndex CompareExchangeOriginal { get; private set; }
     public LocalIndex AddressOwner { get; private set; }
@@ -37,11 +38,20 @@ internal sealed partial class MethodPlan
     public LocalIndex GcI64 { get; private set; }
     public LocalIndex GcF64 { get; private set; }
     public LocalIndex ExceptionParamName { get; private set; }
+    public bool UsesExceptionText { get; set; }
+    public LocalIndex ExceptionTextState { get; private set; }
+    public bool UsesExceptionMessage { get; set; }
+    public LocalIndex AggregateMessage { get; private set; }
+    public LocalIndex AggregateDepth { get; private set; }
+    public LocalIndex ExceptionMessage { get; private set; }
+    public LocalIndex ExceptionActualValue { get; private set; }
     public LocalIndex GcExtern { get; private set; }
     public LocalVariable[] Locals { get; }
     public List<IR.MethodIdentity> Calls { get; } = new();
+    public IReadOnlyDictionary<int, IR.Intrinsics.SpanAccess> SpanCalls { get; } = new Dictionary<int, IR.Intrinsics.SpanAccess>();
     public IReadOnlyDictionary<int, IR.Intrinsics.InterpolatedStringHandler> InterpolationCalls { get; } = new Dictionary<int, IR.Intrinsics.InterpolatedStringHandler>();
     public IReadOnlyDictionary<int, StaticSpanCall> StaticSpans { get; } = new Dictionary<int, StaticSpanCall>();
+    public IReadOnlyDictionary<int, ConstrainedCall> ConstrainedCalls { get; } = new Dictionary<int, ConstrainedCall>();
     public IReadOnlyDictionary<int, PrimitiveCall> PrimitiveCalls { get; } = new Dictionary<int, PrimitiveCall>();
     public IReadOnlyDictionary<int, InvariantFormattingCall> InvariantFormatting { get; } = new Dictionary<int, InvariantFormattingCall>();
     public InstructionGraph Graph { get; }
@@ -61,14 +71,33 @@ internal sealed partial class MethodPlan
     public FunctionIndex Function { get; set; }
     public Dictionary<IR.MethodIdentity, LocalIndex[]> CallTemporaries { get; } = new();
     public Dictionary<LocalVariable, (LocalIndex Left, LocalIndex Right)> EqualityTemporaries { get; } = new();
+    public bool UsesXmlConstructor { get; set; }
+    public LocalIndex XmlLine { get; private set; }
+    public LocalIndex XmlPosition { get; private set; }
+    public LocalIndex XmlSourceUri { get; private set; }
+    public LocalIndex XmlResource { get; private set; }
+    public LocalIndex XmlInner { get; private set; }
+    public LocalIndex XmlArgument { get; private set; }
     public bool UsesCompositeFormatting { get; set; }
     public LocalIndex FormatText { get; private set; }
     public LocalIndex FormatState { get; private set; }
     public LocalIndex[] FormatArguments { get; private set; } = [];
     public int StringConcatArgumentCount { get; set; }
     public LocalIndex[] StringConcatArguments { get; private set; } = [];
+    public bool UsesStringAccess { get; set; }
+    public LocalIndex StringIndex { get; private set; }
+    public LocalIndex StringCount { get; private set; }
+    public bool UsesStringSplit { get; set; }
+    public LocalIndex SplitText { get; private set; }
+    public LocalIndex SplitSeparator { get; private set; }
+    public LocalIndex SplitCount { get; private set; }
+    public LocalIndex SplitOptions { get; private set; }
     public bool UsesArrays { get; set; }
+    public int RectangularIndexCount { get; set; }
+    public LocalIndex[] RectangularIndices { get; private set; } = [];
     public bool UsesArrayCopy { get; set; }
+    public bool UsesNumericParsing { get; set; }
+    public LocalIndex NumericParsingStyle { get; private set; }
     public bool UsesSpanOperations { get; set; }
     public bool UsesEqualitySearch { get; set; }
     public LocalIndex EqualitySearchEnd { get; private set; }
@@ -106,25 +135,24 @@ internal sealed partial class MethodPlan
         Locals = LocalVariable.Read(source, Body.LocalSignature, storage, identity.DeclaringType.Arguments, identity.Arguments);
         foreach (var local in Locals.Concat(Signature.Parameters).Append(Signature.Result))
             if (local.UsesGc) { if (local.Identity is { } id) RequireGc(id); else RequireGcTemporaries(); }
-        if (Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(p => p.IsByReference)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
-        Graph = InstructionGraph.Read(Body.Instructions);
-        TypeSpecialization.Apply(source, Body, identity, Graph);
+        if (UsesSpanOperations || Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(p => p.IsByReference)) { storage.ReferenceAddressesEnabled = true; RequireGcTemporaries(); }
+        // Even straight-line calls can convert native strings into managed object
+        // carriers or expose addressed values. Collect those stack effects once.
+        Graph = Analyzer.Analyze(source, identity);
         StaticSpans = StaticSpanCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
         PrimitiveCalls = XuiNet.CodeFlow.PrimitiveCalls.Discover(source, Body, Graph, identity);
+        ConstrainedCalls = XuiNet.CodeFlow.ConstrainedCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
         InvariantFormatting = InvariantFormattingCalls.Read(source, Body, Graph);
+        SpanCalls = XuiNet.CodeFlow.SpanCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
         InterpolationCalls = XuiNet.CodeFlow.InterpolationCalls.Read(source, Body, Graph, identity.DeclaringType, identity.Arguments);
-        if (CallsTimeSpanFactory() || Locals.Any(local => local.Identity is not null) || Signature.Parameters.Any(p => p.Identity is not null) || Signature.Result.Identity is not null ||
-            Graph.Instructions.Any(n => n.Code is OpCode.Div or OpCode.Div_un or OpCode.Rem or OpCode.Rem_un or OpCode.Ldtoken or OpCode.Newobj or OpCode.Ldsfld or OpCode.Stsfld or OpCode.Ldsflda or OpCode.Ldftn or OpCode.Ldvirtftn || n.Code is >= OpCode.Newarr and <= OpCode.Stelem)) Graph = Analyzer.Analyze(source, identity);
         if (Body.ExceptionRegions.Length != 0)
         {
-            Graph = Analyzer.Analyze(source, identity);
-            try { Flow = ExceptionBlocks.Build(source, Body, Graph); }
+            try { Flow = ExceptionBlocks.Build(source, Body, Graph); RegisterExceptionDispatches(Flow); }
             catch (NotSupportedException error) { AddFlowDiagnostic(error); throw; }
         }
         else if (Graph.Specializations.Values.Any(s => s.Kind == SpecializationKind.Branch) || Graph.Instructions.Any(node => node.Code is OpCode.Switch or OpCode.Throw or OpCode.Rethrow || node.Successors.Length > 1 ||
             node.Code is OpCode.Br or OpCode.Br_s))
         {
-            Graph = Analyzer.Analyze(source, identity);
             try { Flow = StructuredBlocks.Build(Graph); }
             catch (NotSupportedException error)
             {
@@ -133,7 +161,7 @@ internal sealed partial class MethodPlan
             }
         }
         CollectReferenceVariables();
-        if (addressedReferenceLocals.Count + addressedReferenceArguments.Count + addressedScalarLocals.Count + addressedScalarArguments.Count != 0 || Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
+        if (Graph.Instructions.Any(n => n.Code == OpCode.Localloc) || addressedReferenceLocals.Count + addressedReferenceArguments.Count + addressedScalarLocals.Count + addressedScalarArguments.Count != 0 || Locals.Concat(Signature.Parameters).Any(local => local.Identity is not null && !local.UsesGc) ||
             Graph.Instructions.Any(n => n.After?.Entry is { DeclaredType.Identity: { IsValueType: true } id } entry && !storage.IsGc(id) &&
                 (entry.Type == StackType.ValueType || entry.Type == StackType.ManagedPointer && n.Code is OpCode.Call or OpCode.Callvirt)))
         {
@@ -166,7 +194,7 @@ internal sealed partial class MethodPlan
     {
         var types = Locals.Select(local => local.WasmType).ToList();
         uint parameterCount = (uint)Signature.WasmParameterCount;
-        if (Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(v => v.IsByReference) ||
+        if (UsesSpanOperations || Locals.Concat(Signature.Parameters).Append(Signature.Result).Any(v => v.IsByReference) ||
             Calls.Any(call => methods[call].Signature.Parameters.Any(p => p.IsByReference)) ||
             Graph is not null && Graph.Instructions.Any(n => n.Code is OpCode.Ldloca or OpCode.Ldloca_s or OpCode.Ldarga or OpCode.Ldarga_s or OpCode.Ldflda or OpCode.Ldelema or OpCode.Ldobj or OpCode.Stobj or OpCode.Cpobj or OpCode.Initobj ||
                 n.After?.Entry?.DeclaredType is { IsByReference: true }))
@@ -227,6 +255,11 @@ internal sealed partial class MethodPlan
                 CallReferenceTemporaries.Add(target, selectors);
             }
         }
+        foreach (int start in ExceptionSelectors.Keys.ToArray())
+        {
+            ExceptionSelectors[start] = new(parameterCount + (uint)types.Count);
+            types.Add(ValueTypeCode.I32);
+        }
         if (!IsDeclaration) foreach (var region in Body.ExceptionRegions)
         {
             ExceptionLocals[region.HandlerOffset] = new(parameterCount + (uint)types.Count);
@@ -237,7 +270,7 @@ internal sealed partial class MethodPlan
                 types.Add(ValueTypeCode.ExnRef);
             }
         }
-        if (Frame is not null && Storage.ExceptionsEnabled)
+        if ((Frame is not null || Storage.ExecutionStack.Enabled) && Storage.ExceptionsEnabled)
         {
             UnwindException = new(parameterCount + (uint)types.Count);
             types.Add(ValueTypeCode.ExnRef);
@@ -257,7 +290,7 @@ internal sealed partial class MethodPlan
             frame.I64Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I64);
             frame.F64Scratch = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F64);
         }
-        if (UsesCompositeFormatting)
+        if (UsesCompositeFormatting || Storage.ActualValueExceptionsEnabled && UsesExceptionMessage)
         {
             FormatText = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
             FormatState = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
@@ -265,11 +298,39 @@ internal sealed partial class MethodPlan
             for (int i = 0; i < FormatArguments.Length; i++)
             { FormatArguments[i] = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef); }
         }
+        if (UsesNumericParsing)
+        { NumericParsingStyle = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32); }
+        if (UsesExceptionText)
+        { ExceptionTextState = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef); }
+        if (UsesXmlConstructor)
+        {
+            XmlLine = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            XmlPosition = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            XmlSourceUri = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+            XmlResource = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+            XmlInner = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
+            XmlArgument = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+        }
+        if (UsesStringAccess)
+        {
+            StringIndex = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            StringCount = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+        }
+        if (UsesStringSplit)
+        {
+            SplitText = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+            SplitSeparator = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+            SplitCount = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            SplitOptions = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+        }
         if (UsesArrays)
         {
             ArrayReference = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
             ArrayIndex = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
         }
+        RectangularIndices = new LocalIndex[RectangularIndexCount];
+        for (int i = 0; i < RectangularIndices.Length; i++)
+        { RectangularIndices[i] = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32); }
         if (UsesGc)
         {
             GcSource = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
@@ -278,6 +339,16 @@ internal sealed partial class MethodPlan
             GcI64 = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I64);
             GcF64 = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.F64);
             GcExtern = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+            if (UsesExceptionMessage && Storage.ExtraExceptionKinds.Contains(IR.Exceptions.ExceptionKind.AggregateException))
+            {
+                AggregateMessage = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+                AggregateDepth = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.I32);
+            }
+            if (Storage.ActualValueExceptionsEnabled)
+            {
+                ExceptionMessage = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef);
+                ExceptionActualValue = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
+            }
             if (Storage.ArgumentExceptionsEnabled) { ExceptionParamName = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.ExternRef); }
         }
         foreach (var category in EqualityTemporaries.Keys.ToArray())
@@ -291,7 +362,7 @@ internal sealed partial class MethodPlan
             };
             types.Add(wasm); types.Add(wasm);
         }
-        if (UsesReferenceCompareExchange)
+        if (UsesReferenceInterlocked)
         {
             CompareExchangeReplacement = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
             CompareExchangeOriginal = new(parameterCount + (uint)types.Count); types.Add(ValueTypeCode.EqRef);
@@ -302,6 +373,7 @@ internal sealed partial class MethodPlan
             StringConcatArguments[i] = new(parameterCount + (uint)types.Count);
             types.Add(ValueTypeCode.ExternRef);
         }
+        AllocateMergeLocals(types, parameterCount);
         LocalTypes = types.ToArray();
     }
 

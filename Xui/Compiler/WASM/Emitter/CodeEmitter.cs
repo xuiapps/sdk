@@ -26,7 +26,7 @@ public readonly ref partial struct CodeEmitter
     private readonly bool initLocals;
     private readonly Stack<MsilStackEntry> stack = new();
 
-    private readonly Stack<(int? Target, int Level)> exceptionExits = new();
+    private readonly Stack<(ExceptionBlock Block, int Level)> exceptionExits = new();
     private readonly Stack<int> cleanupExits = new();
     private readonly Stack<LocalIndex> caughtExceptions = new();
 
@@ -66,12 +66,14 @@ public readonly ref partial struct CodeEmitter
     {
         stack.Clear();
         Array.Fill(initializedLocals, initLocals);
+        CheckExecutionDepth();
         InitializeMethodType();
         EnterFrame();
         InitializeGcLocals();
         if (initLocals)
             foreach (var selector in method.ReferenceLocals.Values) writer.I32Const(-1).LocalSet(selector);
-        if (method.Frame is not null && method.Storage.ExceptionsEnabled)
+        EnterExecutionDepth();
+        if ((method.Frame is not null || method.Storage.ExecutionStack.Enabled) && method.Storage.ExceptionsEnabled)
         {
             OpenExceptionLabel(method.Storage.ExceptionReferenceBlock);
             writer.TryCatchAllRef(new(0)); labels.Push((null, default));
@@ -82,6 +84,7 @@ public readonly ref partial struct CodeEmitter
             CloseExceptionLabel();
             writer.LocalSet(method.UnwindException);
             LeaveFrame();
+            LeaveExecutionDepth();
             writer.LocalGet(method.UnwindException).ThrowRef();
         }
         else EmitBody(reader);
@@ -106,7 +109,16 @@ public readonly ref partial struct CodeEmitter
             if (specialized.Kind == XuiNet.CodeFlow.SpecializationKind.Int32)
             { writer.I32Const(specialized.Value); stack.Push(new(SignatureTypeCode.Int32)); }
             else if (specialized.Kind == XuiNet.CodeFlow.SpecializationKind.Branch)
-            { Pop(SignatureTypeCode.Int32, OpCode.Pop, offset); writer.Drop(); }
+            { stack.Pop(); writer.Drop(); }
+            else if (specialized.Kind == XuiNet.CodeFlow.SpecializationKind.NullTypeTest)
+            { stack.Pop(); writer.Drop(); EmitLdnull(); }
+            else if (specialized.Kind == XuiNet.CodeFlow.SpecializationKind.NullCheckAndInt32)
+            {
+                stack.Pop(); writer.RefIsNull().If(); ThrowException(IR.Exceptions.ExceptionKind.NullReferenceException);
+                writer.End().I32Const(specialized.Value); stack.Push(new(SignatureTypeCode.Int32));
+            }
+            else if (specialized.Kind == XuiNet.CodeFlow.SpecializationKind.DiscardAndInt32)
+            { EmitPop(offset); writer.I32Const(specialized.Value); stack.Push(new(SignatureTypeCode.Int32)); }
             return;
         }
         var instruction = reader.Read();
@@ -118,9 +130,15 @@ public readonly ref partial struct CodeEmitter
         }
         switch (instruction.Code)
         {
+            case OpCode.Localloc: EmitLocalloc(offset); break;
+            case OpCode.Mul_ovf_un: EmitMul_ovf_un(offset); break;
+            case OpCode.Add_ovf: EmitAdd_ovf(offset); break;
+            case OpCode.Add_ovf_un: EmitAdd_ovf_un(offset); break;
+            case OpCode.Sub_ovf: EmitSub_ovf(offset); break;
+            case OpCode.Sub_ovf_un: EmitSub_ovf_un(offset); break;
             case OpCode.Constrained:
                 _ = instruction.ReadToken(ref reader);
-                if (!method.InterpolationCalls.ContainsKey(reader.Offset) && !method.PrimitiveCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString and primitive hashing/equality.");
+                if (!method.SpanCalls.ContainsKey(reader.Offset) && !method.InterpolationCalls.ContainsKey(reader.Offset) && !method.PrimitiveCalls.ContainsKey(reader.Offset) && !method.ConstrainedCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch requiring boxing or a native primitive receiver is not implemented.");
                 break;
             case OpCode.Ldind_i4: EmitLdind_i4(offset); break;
             case OpCode.Stind_i4: EmitStind_i4(offset); break;
@@ -166,6 +184,8 @@ public readonly ref partial struct CodeEmitter
                 EmitUnbox_any(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Box:
                 EmitBox(instruction.ReadToken(ref reader), offset); break;
+            case OpCode.Sizeof:
+                EmitSizeof(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Initobj:
                 EmitInitobj(instruction.ReadToken(ref reader), offset); break;
             case OpCode.Ldobj:
@@ -214,6 +234,8 @@ public readonly ref partial struct CodeEmitter
             case OpCode.Stelem_ref: EmitStelem_ref(offset); break;
             case OpCode.Nop:
                 EmitNop(); break;
+            case OpCode.Volatile:
+                EmitVolatile(); break;
             case OpCode.Ldc_i4_m1:
                 EmitLdc_i4_m1(); break;
             case OpCode.Ldc_i4_0:
@@ -375,12 +397,19 @@ public readonly ref partial struct CodeEmitter
         var reader = method.Body.Instructions;
         var literals = new List<string>();
         var seenLiterals = new HashSet<string>(StringComparer.Ordinal);
+        if (method.Graph.Instructions.Any(n => n.IsReachable && method.Graph.Specializations.TryGetValue(n.Offset, out var replacement) &&
+            replacement.Kind == XuiNet.CodeFlow.SpecializationKind.NullCheckAndInt32))
+        {
+            method.Storage.ExceptionsEnabled = true;
+            method.RequireGcTemporaries();
+        }
         foreach (var address in method.Graph.Instructions.Select(n => n.After?.Entry).OfType<XuiNet.CodeFlow.StackEntry>())
             if (address.DeclaredType is { IsByReference: true } declared)
             { method.Storage.RequireAddress(method.Storage.Bind(declared)); method.RequireGcTemporaries(); }
         foreach (var node in method.Graph.Instructions)
         {
             if (method.Flow is not null && !node.IsReachable || method.Graph.Specializations.ContainsKey(node.Offset)) continue;
+            if (node.StoresStringAsObject) { method.Storage.StringObjects.Enable(method.Storage, source); method.RequireGcTemporaries(); }
             reader.Seek(node.Offset);
             int offset = reader.Offset;
             var instruction = reader.Read();
@@ -404,7 +433,7 @@ public readonly ref partial struct CodeEmitter
                     break;
                 case OpCode.Constrained:
                     _ = instruction.ReadToken(ref reader);
-                    if (!method.InterpolationCalls.ContainsKey(reader.Offset) && !method.PrimitiveCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch is only implemented for interpolation ToString and primitive hashing/equality.");
+                    if (!method.SpanCalls.ContainsKey(reader.Offset) && !method.InterpolationCalls.ContainsKey(reader.Offset) && !method.PrimitiveCalls.ContainsKey(reader.Offset) && !method.ConstrainedCalls.ContainsKey(reader.Offset)) throw new NotSupportedException("Constrained dispatch requiring boxing or a native primitive receiver is not implemented.");
                     break;
                 case OpCode.Ldsflda:
                 case OpCode.Ldtoken:
@@ -423,6 +452,19 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Isinst:
                 case OpCode.Castclass:
                     RequireTypeTest(method, source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value));
+                    break;
+                case OpCode.Mul_ovf_un:
+                case OpCode.Add_ovf:
+                case OpCode.Add_ovf_un:
+                case OpCode.Sub_ovf:
+                case OpCode.Sub_ovf_un:
+                    var productType = node.After?.Entry?.Type switch {
+                        XuiNet.CodeFlow.StackType.Int64 => SignatureTypeCode.Int64,
+                        XuiNet.CodeFlow.StackType.NativeInt => SignatureTypeCode.IntPtr,
+                        _ => SignatureTypeCode.Int32 };
+                    method.EqualityTemporaries.TryAdd(new(productType), default);
+                    method.RequireGcTemporaries(); method.Storage.ExceptionsEnabled = true;
+                    method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.OverflowException);
                     break;
                 case OpCode.Div:
                 case OpCode.Div_un:
@@ -476,6 +518,8 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Ldind_i4:
                 case OpCode.Stind_i4:
                 case OpCode.Nop:
+                case OpCode.Localloc:
+                case OpCode.Volatile:
                 case OpCode.Ldarg_0:
                 case OpCode.Ldarg_1:
                 case OpCode.Ldarg_2:
@@ -546,6 +590,11 @@ public readonly ref partial struct CodeEmitter
                     _ = instruction.ReadShortVariable(ref reader); break;
                 case OpCode.Ldsfld:
                     var staticField = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(instruction.ReadToken(ref reader).Value);
+                    if (IR.Intrinsics.StringEmpty.Is(source, staticField))
+                    {
+                        if (seenLiterals.Add("")) literals.Add("");
+                        break;
+                    }
                     if (IR.Intrinsics.StopwatchConstant.Read(source, staticField) is not null) break;
                     if (IR.Intrinsics.TimeSpanZero.Read(source, staticField, method.Identity.DeclaringType) is not null) break;
                     reader.Seek(offset); _ = reader.Read();
@@ -594,6 +643,9 @@ public readonly ref partial struct CodeEmitter
                         RequireTypeTest(method, source, boxToken);
                     }
                     break;
+                case OpCode.Sizeof:
+                    _ = SizeOfType(method, source, instruction.ReadToken(ref reader).Value);
+                    break;
                 case OpCode.Initobj:
                 case OpCode.Ldobj:
                 case OpCode.Stobj:
@@ -618,7 +670,7 @@ public readonly ref partial struct CodeEmitter
                     break;
                 case OpCode.Ldftn:
                 case OpCode.Ldvirtftn:
-                    var pointed = ResolveCall(source, method.Identity, instruction.ReadToken(ref reader).Value, offset);
+                    var pointed = ResolveCall(source, method, instruction.ReadToken(ref reader).Value, offset);
                     if (instruction.Code == OpCode.Ldftn) method.Storage.DelegateMethods.Add(pointed);
                     else
                     {
@@ -631,29 +683,210 @@ public readonly ref partial struct CodeEmitter
                 case OpCode.Callvirt:
                 case OpCode.Call:
                     var call = instruction.ReadToken(ref reader);
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ExecutionStack.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is not null)
+                    {
+                        method.Storage.ExecutionStack.Enabled = method.Storage.ExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.InsufficientExecutionStackException);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.MemoryBarrier.Is(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value))) break;
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.CurrentThread.Is(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value))) break;
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.GcArrayAllocation.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } allocation)
+                    {
+                        method.UsesArrays = method.Storage.ExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.OverflowException, IR.Exceptions.ExceptionKind.NotSupportedException]);
+                        _ = method.Storage.ArrayShape(allocation.Signature.Result.Array!);
+                        if (allocation.Element.Identity is { } elementType) method.RequireGc(elementType);
+                        method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (!method.PrimitiveCalls.ContainsKey(offset) &&
+                        (!method.ConstrainedCalls.TryGetValue(offset, out var hashCall) || hashCall.ReferenceReceiver is not null) &&
+                        IR.Intrinsics.ObjectHash.Is(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
+                    {
+                        if (hashCall?.ReferenceReceiver is { } hashReceiver)
+                            method.Storage.RequireAddress(method.Storage.Bind(hashReceiver));
+                        method.Storage.Primitives.UsesObjectHash = method.Storage.Primitives.UsesStringHash = true;
+                        method.Storage.ExceptionsEnabled = true;
+                        method.RequireGcTemporaries();
+                        if (instruction.Code == OpCode.Callvirt)
+                            foreach (var (receiver, implementation) in method.Storage.ObjectHashTargets)
+                            {
+                                method.RequireGc(receiver);
+                                if (!method.Calls.Contains(implementation)) method.Calls.Add(implementation);
+                            }
+                        break;
+                    }
+                    if (!method.PrimitiveCalls.ContainsKey(offset) && !method.ConstrainedCalls.ContainsKey(offset) &&
+                        !method.SpanCalls.ContainsKey(offset) && !method.InterpolationCalls.ContainsKey(offset) &&
+                        IR.Intrinsics.ObjectText.Is(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
+                    {
+                        method.Storage.ObjectTextEnabled = method.Storage.ArrayIdentity.Enabled = true;
+                        method.UsesExceptionText = method.UsesExceptionMessage = method.Storage.Formatting.ExceptionText = true;
+                        method.UsesCompositeFormatting = method.Storage.Formatting.Composite = true;
+                        method.Storage.ExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.NotSupportedException);
+                        method.RequireGcTemporaries();
+                        foreach (var textTarget in method.Storage.ObjectTextTargets)
+                        {
+                            method.RequireGc(textTarget.Type);
+                            if (instruction.Code == OpCode.Callvirt && textTarget.Override is { } implementation && !method.Calls.Contains(implementation))
+                                method.Calls.Add(implementation);
+                        }
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.RuntimeImport.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } hostImport)
+                    {
+                        method.Storage.HostImports.Require(hostImport);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.HostScheduler.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } scheduler)
+                    {
+                        method.Storage.Tasks.Callback = scheduler.Callback;
+                        method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.MonitorMethod.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } monitor)
+                    {
+                        method.Storage.Monitors.Enabled = true;
+                        method.RequireGcTemporaries();
+                        if (monitor.HasLockTaken) method.Storage.RequireAddress(new(SignatureTypeCode.Boolean));
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentNullException);
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentException);
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.SynchronizationLockException);
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.NotSupportedException);
+                        foreach (string parameter in new[] { "obj", "lockTaken", MonitorRuntime.InvalidLockTakenMessage })
+                            if (seenLiterals.Add(parameter)) literals.Add(parameter);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.BitConversion.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is not null) break;
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.SuppressFinalization.Is(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
+                    {
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentNullException);
+                        if (seenLiterals.Add("obj")) literals.Add("obj");
+                        break;
+                    }
+                    if (IR.Intrinsics.RectangularArray.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } rectangle)
+                    {
+                        method.UsesArrays = true;
+                        method.RequireGcTemporaries();
+                        method.RectangularIndexCount = Math.Max(method.RectangularIndexCount, rectangle.ArrayType?.Array?.Rank ?? 1);
+                        method.Storage.ExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.IndexOutOfRangeException, IR.Exceptions.ExceptionKind.OverflowException]);
+                        if (rectangle.ArrayType?.Array is { } array)
+                        {
+                            _ = method.Storage.ArrayShape(array);
+                            if (rectangle.Operation == "Address") method.Storage.RequireArrayAddress(new(array.Element));
+                        }
+                        break;
+                    }
                     if (method.StaticSpans.TryGetValue(offset, out var staticSpan))
                     {
                         method.Storage.StaticData.Add(staticSpan);
+                        if (staticSpan.ArrayInitializer)
+                        {
+                            method.UsesArrays = true; method.RequireGcTemporaries(); method.Storage.ExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.ArgumentException, IR.Exceptions.ExceptionKind.ArgumentNullException]);
+                            method.Storage.ArgumentExceptionsEnabled = true;
+                            if (seenLiterals.Add("array")) literals.Add("array");
+                        }
                         break;
                     }
                     if (method.PrimitiveCalls.TryGetValue(offset, out var primitive))
                     {
                         if (primitive.AddressReceiver) method.Storage.RequireAddress(method.Storage.Bind(primitive.Element.ByReference()));
                         RequirePrimitiveOperation(method, primitive.Element, primitive.Operation);
+                        if (primitive.Operation == "ToString")
+                        {
+                            string descriptor = method.Storage.Formatting.RequireEnum(primitive.Element.Identity!.Value);
+                            if (seenLiterals.Add(descriptor)) literals.Add(descriptor);
+                        }
                         break;
                     }
                     if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.ManagedType.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } managedType)
                     {
                         method.Storage.ManagedTypesEnabled = true;
+                        if (managedType.Factory is { } assemblyFactory)
+                        {
+                            method.Storage.ManagedAssemblyEnabled = true;
+                            if (!method.Calls.Contains(assemblyFactory)) method.Calls.Add(assemblyFactory);
+                        }
                         method.Storage.ExceptionsEnabled |= managedType.Signature.HasThis;
                         method.RequireGcTemporaries();
                         if (managedType.Signature.Result.Identity is { } typeIdentity) method.RequireGc(typeIdentity);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.NativeStringComparer.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is not null) break;
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.CharFormatting.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } character)
+                    {
+                        method.Storage.StringAccess.UsesCharFormatting = true;
+                        if (character.HasThis) method.Storage.RequireAddress(new(SignatureTypeCode.Char, IsByReference: true));
+                        method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.StringAccess.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } stringAccess)
+                    {
+                        method.UsesStringAccess = method.Storage.StringAccess.Enabled = true;
+                        method.Storage.StringAccess.UsesLowerInvariant |= stringAccess.Operation == "ToLowerInvariant";
+                        if (stringAccess.Operation == "Replace")
+                        {
+                            method.Storage.StringAccess.UsesReplace = true;
+                            method.Storage.StringAccess.UsesCharFormatting |= stringAccess.Signature.Parameters[0].Code == SignatureTypeCode.Char;
+                            method.EqualityTemporaries.TryAdd(new(SignatureTypeCode.String), default);
+                            method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.ArgumentNullException, IR.Exceptions.ExceptionKind.ArgumentException]);
+                            if (seenLiterals.Add("oldValue")) literals.Add("oldValue");
+                        }
+                        if (stringAccess.Search is not null)
+                        {
+                            method.Storage.StringAccess.UsesSearch = true;
+                            method.Storage.StringAccess.UsesCharFormatting |= stringAccess.Signature.Parameters[0].Code == SignatureTypeCode.Char;
+                            method.EqualityTemporaries.TryAdd(new(SignatureTypeCode.String), default);
+                            method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.ArgumentNullException, IR.Exceptions.ExceptionKind.NotSupportedException]);
+                            foreach (string text in new[] { "value", "comparisonType" }) if (seenLiterals.Add(text)) literals.Add(text);
+                        }
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException, IR.Exceptions.ExceptionKind.IndexOutOfRangeException]);
+                        method.RequireGcTemporaries();
+                        foreach (string text in new[] { "startIndex", "length", "count" }) if (seenLiterals.Add(text)) literals.Add(text);
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.StringSplit.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } split)
+                    {
+                        method.UsesStringSplit = method.UsesArrays = method.Storage.StringSplit.Enabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.RequireGcTemporaries();
+                        _ = method.Storage.ArrayShape(split.Signature.Result.Array!);
+                        if (split.Signature.Parameters[0].Array is { } separators) _ = method.Storage.ArrayShape(separators);
+                        foreach (string text in new[] { "count", "options" }) if (seenLiterals.Add(text)) literals.Add(text);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.TextElement.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } textElement)
+                    {
+                        method.Storage.StringAccess.UsesTextElements = true;
+                        method.UsesSpanOperations = true;
+                        method.RequireGc(textElement.Signature.Parameters[0].Identity!.Value);
+                        method.Storage.RequireAddress(new(SignatureTypeCode.Char));
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.StringConcatenation.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } concat)
                     {
+                        if (concat.Spans)
+                        {
+                            method.UsesSpanOperations = true;
+                            method.RequireGc(concat.Signature.Parameters[0].Identity!.Value);
+                            method.Storage.RequireAddress(new(SignatureTypeCode.Char));
+                        }
                         method.StringConcatArgumentCount = Math.Max(method.StringConcatArgumentCount, concat.Signature.Parameters.Length);
                         method.Storage.StringConcatEnabled = true;
                         literals.Add("");
@@ -680,19 +913,65 @@ public readonly ref partial struct CodeEmitter
                         foreach (string text in new[] { "format", "args" }) if (seenLiterals.Add(text)) literals.Add(text);
                         break;
                     }
+                    if (method.InvariantFormatting.TryGetValue(offset, out var parsed) && parsed.Parsing is { } parsing)
+                    {
+                        method.UsesNumericParsing = true;
+                        method.Storage.Formatting.UsesDoubleParsing |= parsing.Result.Code == SignatureTypeCode.Double;
+                        method.Storage.Formatting.UsesUInt32Parsing |= parsing.Result.Code == SignatureTypeCode.UInt32;
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.FormatException, IR.Exceptions.ExceptionKind.NotSupportedException,
+                            IR.Exceptions.ExceptionKind.ArgumentNullException, IR.Exceptions.ExceptionKind.OverflowException]);
+                        method.RequireGcTemporaries();
+                        if (seenLiterals.Add("s")) literals.Add("s");
+                        if (parsing.IsSpan)
+                        {
+                            method.UsesSpanOperations = true;
+                            method.RequireGc(parsing.Input.Identity!.Value);
+                            method.Storage.RequireAddress(new(SignatureTypeCode.Char));
+                        }
+                        break;
+                    }
+                    if (method.InvariantFormatting.TryGetValue(offset, out var decimalFormatting) && decimalFormatting.Value.Identity is { } decimalType &&
+                        IR.FrameworkTypes.Is(decimalType, "System", "Decimal"))
+                    {
+                        method.Storage.Formatting.UsesDecimal = true;
+                        method.Storage.RequireAddress(method.Storage.Bind(decimalFormatting.Value));
+                        method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (method.InvariantFormatting.TryGetValue(offset, out var scalarFormatting) && scalarFormatting.ValueType is SignatureTypeCode.Double or SignatureTypeCode.Single)
+                    {
+                        method.Storage.Formatting.UsesDouble |= scalarFormatting.ValueType == SignatureTypeCode.Double;
+                        method.Storage.Formatting.UsesSingle |= scalarFormatting.ValueType == SignatureTypeCode.Single;
+                        method.Storage.ExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.FormatException, IR.Exceptions.ExceptionKind.NotSupportedException]);
+                        method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (!method.InvariantFormatting.ContainsKey(offset) && instruction.Code == OpCode.Call && IR.Intrinsics.Int32Formatting.InvariantProvider(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } provider)
+                    {
+                        method.RequireGc(provider.Identity!.Value);
+                        break;
+                    }
                     if (method.InvariantFormatting.ContainsKey(offset) || instruction.Code == OpCode.Call && IR.Intrinsics.Int32Formatting.Is(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
                     {
-                        method.Storage.Formatting.UsesInt32 = true;
+                        method.Storage.Formatting.RequireInteger(method.InvariantFormatting.TryGetValue(offset, out var integerFormat) ? integerFormat.ValueType : SignatureTypeCode.Int32);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.ConstructorFactory.Read(source,
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } factoryConstructor)
                     {
-                        method.RequireGc(factoryConstructor.DeclaringType);
-                        if (!method.Calls.Contains(factoryConstructor)) method.Calls.Add(factoryConstructor);
-                        method.Storage.ExceptionsEnabled = method.Storage.InnerExceptionsEnabled = true;
-                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.TargetInvocationException);
+                        method.RequireGc(factoryConstructor.Type);
+                        method.Storage.ExceptionsEnabled = true;
+                        if (factoryConstructor.Constructor is { } constructor)
+                        {
+                            if (!method.Calls.Contains(constructor)) method.Calls.Add(constructor);
+                            method.Storage.InnerExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.TargetInvocationException);
+                        }
+                        else method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.MissingMethodException);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.ArrayClear.Read(source,
@@ -707,14 +986,15 @@ public readonly ref partial struct CodeEmitter
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.ArrayCopy.Read(source,
-                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is not null)
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } copyOperation)
                     {
                         method.UsesArrayCopy = true;
                         method.RequireGcTemporaries();
                         method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentNullException);
                         method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
-                        foreach (var name in new[] { "sourceArray", "destinationArray", "sourceIndex", "destinationIndex", "length" })
+                        foreach (var name in copyOperation.ByteOffsets ? new[] { "src", "dst", "srcOffset", "dstOffset", "count" } :
+                            new[] { "sourceArray", "destinationArray", "sourceIndex", "destinationIndex", "length" })
                             if (seenLiterals.Add(name)) literals.Add(name);
                         break;
                     }
@@ -735,28 +1015,91 @@ public readonly ref partial struct CodeEmitter
                             method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentException);
                             if (seenLiterals.Add("mode")) literals.Add("mode");
                         }
+                        method.Storage.MathImports.UsesCbrt |= math.Operation == "Cbrt";
                         method.Storage.MathImports.UsesExp |= math.Operation == "Exp";
                         method.Storage.MathImports.UsesLog |= math.Operation == "Log";
                         method.Storage.MathImports.UsesSin |= math.Operation == "Sin";
                         method.Storage.MathImports.UsesCos |= math.Operation == "Cos";
-                        if (math.Operation is "Pow" or "CopySign" or "Min" or "Max")
+                        method.Storage.MathImports.UsesTan |= math.Operation == "Tan";
+                        method.Storage.MathImports.UsesAtan2 |= math.Operation == "Atan2";
+                        if (math.Operation is "Pow" or "Atan2" or "CopySign" or "Min" or "Max")
                         {
                             method.Storage.MathImports.UsesPow |= math.Operation == "Pow";
                             method.UsesNativeFloat |= math.IsSingle;
                         }
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && IR.Intrinsics.SpanAccess.Read(source,
-                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } spanAccess)
+                    if ((method.SpanCalls.GetValueOrDefault(offset) ?? (instruction.Code is OpCode.Call or OpCode.Newobj ? IR.Intrinsics.SpanAccess.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) : null)) is { } spanAccess)
                     {
-                        method.UsesSpanOperations |= spanAccess.Operation is "Slice" or "CopyTo" or "TryCopyTo";
+                        method.UsesSpanOperations |= spanAccess.Operation is "Fill" or "Clear" or "Slice" or "CopyTo" or "TryCopyTo" or "FromArray" or "FromReference" or "FromPointer" or "ToString" or "ToArray";
+                        if (spanAccess.Operation == "ToArray")
+                        {
+                            method.UsesArrays = true;
+                            method.Storage.RequireArrayAddress(spanAccess.Signature.Result.Array!);
+                        }
+                        if (spanAccess.Operation == "Fill")
+                        {
+                            var element = method.Storage.Bind(spanAccess.Owner.Arguments!.Values[0]);
+                            if (element.Identity is { IsValueType: true })
+                                throw new NotSupportedException("Span.Fill with struct values is not implemented.");
+                            method.EqualityTemporaries.TryAdd(element, default);
+                        }
+                        if (spanAccess.Operation == "FromPointer")
+                        {
+                            var element = method.Storage.Bind(spanAccess.Owner.Arguments!.Values[0]);
+                            if (element.UsesGc || StorageModel.IsReference(element) || element.Identity is { } identity && method.Storage.HasStackReferences(identity))
+                                throw new NotSupportedException("Pointer-backed spans require reference-free linear elements.");
+                        }
+                        if (spanAccess.Operation == "FromReference") method.RequireGc(spanAccess.Owner);
+                        if (spanAccess.Operation == "FromArray")
+                        {
+                            method.UsesArrays = true;
+                            method.RequireGc(spanAccess.Owner);
+                            method.Storage.RequireArrayAddress(spanAccess.Signature.Parameters[0].Array!);
+                        }
                         method.Storage.ExceptionsEnabled = true;
                         if (spanAccess.Operation == "get_Item") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.IndexOutOfRangeException);
-                        if (spanAccess.Operation == "Slice") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
+                        if (spanAccess.Operation is "Fill" or "Clear" or "Slice" or "FromArray" or "FromPointer") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
                         if (spanAccess.Operation == "CopyTo") method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentException);
                         method.RequireGcTemporaries();
-                        if (spanAccess.Operation is "CopyTo" or "TryCopyTo")
+                        if (spanAccess.Operation is "Fill" or "Clear" or "CopyTo" or "TryCopyTo" or "ToString")
                             method.Storage.RequireAddress(method.Storage.Bind(spanAccess.Owner.Arguments!.Values[0]));
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Newobj && IR.Intrinsics.StringCharacters.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } characters)
+                    {
+                        method.UsesStringAccess = true;
+                        method.RequireGcTemporaries();
+                        _ = method.Storage.ArrayShape(characters.Parameters[0].Array!);
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.ArgumentNullException, IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException]);
+                        foreach (string text in new[] { "value", "startIndex", "length" }) if (seenLiterals.Add(text)) literals.Add(text);
+                        break;
+                    }
+                    if (instruction.Code == OpCode.Newobj && IR.Intrinsics.StringRepeat.Is(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)))
+                    {
+                        method.RequireGcTemporaries();
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
+                        if (seenLiterals.Add("count")) literals.Add("count");
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Newobj && IR.Intrinsics.StringSpan.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } stringSpan)
+                    {
+                        method.UsesSpanOperations=true;
+                        method.RequireGc((stringSpan.Constructor?stringSpan.Signature.Parameters[0]:stringSpan.Signature.Result).Identity!.Value);
+                        if (!stringSpan.Constructor)
+                        {
+                            method.Storage.StringObjects.Enable(method.Storage,source);
+                            method.Storage.StringAccess.Enabled=method.Storage.StringAccess.UsesSpans=true;
+                        }
+                        method.Storage.RequireAddress(new(SignatureTypeCode.Char));
+                        method.Storage.ExceptionsEnabled=true;
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException);
                         break;
                     }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.InlineArrayAccess.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null)
@@ -766,10 +1109,33 @@ public readonly ref partial struct CodeEmitter
                         method.RequireGcTemporaries();
                         break;
                     }
-                    if (method.InterpolationCalls.ContainsKey(offset) || instruction.Code is OpCode.Call or OpCode.Newobj && IR.Intrinsics.InterpolatedStringHandler.Read(source,
-                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is not null)
+                    if ((method.InterpolationCalls.GetValueOrDefault(offset) ?? (instruction.Code is OpCode.Call or OpCode.Newobj ? IR.Intrinsics.InterpolatedStringHandler.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) : null)) is { } interpolation)
                     {
                         method.Storage.Interpolation.Enabled = true;
+                        if (interpolation.HasProvider)
+                        {
+                            method.RequireGc(IR.Intrinsics.InvariantCulture.Resolve(source));
+                            method.Storage.ExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.NotSupportedException);
+                        }
+                        if (interpolation.IsEnum)
+                        {
+                            string descriptor = method.Storage.Formatting.RequireEnum(interpolation.Signature.Parameters[0].Identity!.Value);
+                            if (seenLiterals.Add(descriptor)) literals.Add(descriptor);
+                        }
+                        if (interpolation.IsFormattedInteger)
+                        {
+                            method.Storage.Formatting.UsesFormattedInteger = method.Storage.ExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.FormatException, IR.Exceptions.ExceptionKind.NotSupportedException]);
+                        }
+                        if (interpolation.IsFloatingPoint)
+                        {
+                            method.Storage.Formatting.UsesSingle |= interpolation.IsSingle;
+                            method.Storage.Formatting.UsesDouble |= !interpolation.IsSingle;
+                            method.Storage.ExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.FormatException, IR.Exceptions.ExceptionKind.NotSupportedException]);
+                        }
                         method.RequireGcTemporaries();
                         foreach (string text in new[] { "True", "False" }) if (seenLiterals.Add(text)) literals.Add(text);
                         break;
@@ -785,9 +1151,27 @@ public readonly ref partial struct CodeEmitter
                         System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value)) is { } textEquality)
                     {
                         method.Storage.StringEqualityEnabled = true;
+                        if (textEquality.HasComparison)
+                        {
+                            method.UsesStringAccess = method.Storage.StringAccess.UsesIgnoreCaseEquality = true;
+                            method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.ArgumentException, IR.Exceptions.ExceptionKind.NotSupportedException]);
+                            if (seenLiterals.Add("comparisonType")) literals.Add("comparisonType");
+                        }
                         method.Storage.ExceptionsEnabled |= textEquality.Signature.HasThis;
                         method.EqualityTemporaries.TryAdd(new(SignatureTypeCode.String), default);
                         method.RequireGcTemporaries();
+                        break;
+                    }
+                    if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.SharedArrayPool.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } pool)
+                    {
+                        method.RequireGc(pool.Owner);
+                        method.UsesArrays = method.UsesArrayCopy = true;
+                        _ = method.Storage.ArrayShape(new(pool.Element));
+                        method.Storage.ExceptionsEnabled = method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.ArgumentNullException, IR.Exceptions.ExceptionKind.ArgumentOutOfRangeException]);
+                        foreach (string name in new[] { "array", "minimumLength" }) if (seenLiterals.Add(name)) literals.Add(name);
                         break;
                     }
                     if (instruction.Code is OpCode.Call or OpCode.Callvirt && IR.Intrinsics.DefaultEquality.Read(source,
@@ -795,7 +1179,7 @@ public readonly ref partial struct CodeEmitter
                     {
                         if (IR.Intrinsics.DefaultEquality.Is(equality.Owner)) method.RequireGc(equality.Owner);
                         else method.RequireGcTemporaries();
-                        if (equality.Operation == "GetHashCode") RequirePrimitiveOperation(method, equality.Element, equality.Operation);
+                        if (equality.Operation == "GetHashCode") RequireDefaultHash(method, equality);
                         if (equality.Operation is "Equals" or "IndexOf")
                         {
                             method.Storage.ExceptionsEnabled = true;
@@ -833,16 +1217,28 @@ public readonly ref partial struct CodeEmitter
                         if (seenLiterals.Add(IR.Intrinsics.TimeSpanFactory.OverflowMessage)) literals.Add(IR.Intrinsics.TimeSpanFactory.OverflowMessage);
                         break;
                     }
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ManagedBuffer.Read(source,
+                        System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } buffer)
+                    {
+                        method.UsesSpanOperations = true;
+                        method.RequireGcTemporaries();
+                        method.Storage.ExceptionsEnabled = method.Storage.ReferenceAddressesEnabled = true;
+                        method.Storage.RequireAddress(method.Storage.Bind(buffer.Element));
+                        if (buffer.Operation == "GetArrayDataReference") method.Storage.RequireArrayAddress(new(buffer.Element));
+                        break;
+                    }
                     if (instruction.Code == OpCode.Call && IR.Intrinsics.ManagedReference.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } address)
                     {
                         method.Storage.RequireAddress(method.Storage.Bind(address.Element.ByReference()));
                         method.RequireGcTemporaries();
                         break;
                     }
-                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ReferenceCompareExchange.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } exchange)
+                    if (instruction.Code == OpCode.Call && IR.Intrinsics.ReferenceInterlocked.Read(source, System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(call.Value), method.Identity.DeclaringType.Arguments, method.Identity.Arguments) is { } exchange)
                     {
-                        _ = method.Storage.Bind(exchange.Result);
-                        method.UsesReferenceCompareExchange = true;
+                        var exchangeValue = method.Storage.Bind(exchange.Result);
+                        method.Storage.RequireAddress(exchangeValue);
+                        if (exchange.Result.Code == SignatureTypeCode.String) method.EqualityTemporaries.TryAdd(exchangeValue, default);
+                        else method.UsesReferenceInterlocked = true;
                         method.Storage.ReferenceAddressesEnabled = true;
                         method.RequireGcTemporaries();
                         break;
@@ -865,8 +1261,47 @@ public readonly ref partial struct CodeEmitter
                     {
                         method.Storage.ExceptionsEnabled = true;
                         method.Storage.ExtraExceptionKinds.Add(exceptionKind);
+                        if (exceptionKind == IR.Exceptions.ExceptionKind.XmlException)
+                        {
+                            method.Storage.XmlExceptionsEnabled = true;
+                            if (exceptionMember == IR.Exceptions.ExceptionMember.XmlConstructor)
+                            {
+                                method.UsesXmlConstructor = method.UsesArrays = method.UsesCompositeFormatting = true;
+                                method.Storage.InnerExceptionsEnabled = method.Storage.StringConcatEnabled = true;
+                                method.Storage.Formatting.Composite = method.Storage.Formatting.UsesInt32 = true;
+                                _ = method.Storage.ArrayShape(new(new(SignatureTypeCode.String)));
+                                method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.FormatException, IR.Exceptions.ExceptionKind.NotSupportedException]);
+                                foreach (string text in new[] { "{0}", " Line ", ", position ", "." })
+                                    if (seenLiterals.Add(text)) literals.Add(text);
+                            }
+                        }
+                        if (exceptionKind == IR.Exceptions.ExceptionKind.ObjectDisposedException)
+                            foreach (string text in new[] { "", "\nObject name: '", "'." })
+                                if (seenLiterals.Add(text)) literals.Add(text);
                         method.Storage.ArgumentExceptionsEnabled |= IR.Exceptions.ExceptionTypes.UsesParameterName(exceptionMember) || exceptionMember == IR.Exceptions.ExceptionMember.TypeName;
-                        method.Storage.InnerExceptionsEnabled |= exceptionMember == IR.Exceptions.ExceptionMember.InnerException;
+                        method.Storage.InnerExceptionsEnabled |= exceptionMember is IR.Exceptions.ExceptionMember.InnerException or IR.Exceptions.ExceptionMember.MessageInnerConstructor;
+                        if (exceptionMember == IR.Exceptions.ExceptionMember.MessageInnerConstructor && exceptionKind == IR.Exceptions.ExceptionKind.AggregateException)
+                        {
+                            method.Storage.ArgumentExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.ArgumentNullException);
+                            if (seenLiterals.Add("innerException")) literals.Add("innerException");
+                        }
+                        if (exceptionKind == IR.Exceptions.ExceptionKind.AggregateException)
+                        {
+                            method.Storage.StringConcatEnabled = method.Storage.InnerExceptionsEnabled = true;
+                            foreach (string text in new[] { "", " (", ")" })
+                                if (seenLiterals.Add(text)) literals.Add(text);
+                        }
+                        if (exceptionMember == IR.Exceptions.ExceptionMember.Text)
+                            method.UsesExceptionText = method.Storage.Formatting.ExceptionText = true;
+                        method.UsesExceptionMessage |= exceptionMember is IR.Exceptions.ExceptionMember.Message or IR.Exceptions.ExceptionMember.Text;
+                        if (exceptionMember is IR.Exceptions.ExceptionMember.ActualValue or IR.Exceptions.ExceptionMember.ParameterValueMessageConstructor)
+                        {
+                            method.Storage.ActualValueExceptionsEnabled = method.Storage.Formatting.Composite = true;
+                            method.Storage.ArgumentExceptionsEnabled = true;
+                            method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.FormatException, IR.Exceptions.ExceptionKind.NotSupportedException]);
+                            if (seenLiterals.Add("\nActual value was {0}.")) literals.Add("\nActual value was {0}.");
+                        }
                         method.RequireGcTemporaries();
                         break;
                     }
@@ -887,21 +1322,48 @@ public readonly ref partial struct CodeEmitter
                         break;
                     }
                     if (instruction.Code == OpCode.Callvirt) { method.Storage.ExceptionsEnabled = true; method.RequireGcTemporaries(); }
-                    var target = ResolveCall(source, method.Identity, call.Value, offset);
+                    var target = method.ConstrainedCalls.TryGetValue(offset, out var concrete) ? concrete.Target : ResolveCall(source, method, call.Value, offset);
+                    if (method.ConstrainedCalls.TryGetValue(offset, out var receiverCall) && receiverCall.ReferenceReceiver is { } referenceReceiver)
+                        method.Storage.RequireAddress(method.Storage.Bind(referenceReceiver));
+                    method.Storage.RequireArrayInterface(target);
+                    if (method.Storage.ArrayEnumerator(target) is { } enumerator)
+                    {
+                        method.RequireGc(enumerator.DeclaringType);
+                        if (!method.Calls.Contains(enumerator)) method.Calls.Add(enumerator);
+                    }
+                    if (IR.Intrinsics.ArrayInterface.Operation(target) == "CopyTo")
+                    {
+                        method.UsesArrayCopy = true;
+                        method.Storage.ArgumentExceptionsEnabled = true;
+                        method.Storage.ExtraExceptionKinds.UnionWith([IR.Exceptions.ExceptionKind.ArgumentNullException, IR.Exceptions.ExceptionKind.ArgumentException]);
+                        foreach (var name in new[] { "destinationArray", "destinationIndex" })
+                            if (seenLiterals.Add(name)) literals.Add(name);
+                    }
+                    if (IR.Intrinsics.ArrayInterface.Operation(target) == "FixedSize")
+                        method.Storage.ExtraExceptionKinds.Add(IR.Exceptions.ExceptionKind.NotSupportedException);
+                    if (IR.Intrinsics.ArrayInterface.Operation(target) == "Item")
+                    {
+                        method.Storage.ArgumentExceptionsEnabled = true;
+                        if (seenLiterals.Add("index")) literals.Add("index");
+                    }
                     if (IR.Intrinsics.DefaultEquality.ForInterface(target) is { } interfaceComparer)
                     {
                         method.Storage.ComparerInterfacesEnabled = true;
                         method.RequireGc(interfaceComparer.Owner);
                         var elementStorage = method.Storage.Bind(interfaceComparer.Element);
-                        if (interfaceComparer.Operation == "GetHashCode") RequirePrimitiveOperation(method, interfaceComparer.Element, interfaceComparer.Operation);
+                        if (interfaceComparer.Operation == "GetHashCode") RequireDefaultHash(method, interfaceComparer);
                         if (interfaceComparer.Operation == "Equals")
                         {
                             method.EqualityTemporaries.TryAdd(elementStorage, default);
                             method.Storage.StringEqualityEnabled |= elementStorage.TypeCode == SignatureTypeCode.String;
+                            if (interfaceComparer.Implementation is { } implementation && !method.Calls.Contains(implementation)) method.Calls.Add(implementation);
+                            if (interfaceComparer.UsesObjectEquality)
+                                foreach (var equalityTarget in method.Storage.EqualityTargets(interfaceComparer.Element.Identity!.Value))
+                                    if (!method.Calls.Contains(equalityTarget.Method)) method.Calls.Add(equalityTarget.Method);
                         }
                     }
                     var attributes = target.DeclaringType.Module.GetMethod(target.Handle).Attributes;
-                    if (instruction.Code == OpCode.Callvirt && (attributes & System.Reflection.MethodAttributes.Virtual) != 0)
+                    if (instruction.Code == OpCode.Callvirt && (!method.ConstrainedCalls.TryGetValue(offset, out var constrainedCall) || constrainedCall.ReferenceReceiver is not null) && (attributes & System.Reflection.MethodAttributes.Virtual) != 0)
                     {
                         _ = method.Storage.Classes.Slot(target);
                     }

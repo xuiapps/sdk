@@ -243,6 +243,7 @@ finished
             local.get 4
             throw_ref
           end
+          br 2 (;@1;)
         end
         br 1 (;@1;)
       end

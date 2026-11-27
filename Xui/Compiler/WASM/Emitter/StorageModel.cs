@@ -42,19 +42,35 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
 
     public InterpolationRuntime Interpolation { get; } = new();
     public MathRuntime MathImports { get; } = new();
+    public ExecutionStackRuntime ExecutionStack { get; } = new();
+    public MonitorRuntime Monitors { get; } = new();
+    public HostImports HostImports { get; } = new();
+    public TaskSchedulerRuntime Tasks { get; } = new();
     public StaticData StaticData { get; } = new();
+    public ArrayIdentityRuntime ArrayIdentity { get; } = new();
+    public StringAccessRuntime StringAccess { get; } = new();
+    public StringSplitRuntime StringSplit { get; } = new();
     public ClockRuntime Clock { get; } = new();
     public PrimitiveRuntime Primitives { get; } = new();
+    public StringObjectsRuntime StringObjects { get; } = new();
     public FormattingRuntime Formatting { get; } = new();
+    public Dictionary<TypeIdentity, GlobalIndex> InvariantCultures { get; } = new();
+    public Dictionary<TypeIdentity, (GlobalIndex Instance, GlobalIndex Cached)> SharedPools { get; } = new();
     public Dictionary<TypeIdentity, GlobalIndex> DefaultComparers { get; } = new();
+    public bool ManagedAssemblyEnabled { get; set; }
     public bool ManagedTypesEnabled { get; set; }
     public bool StringConcatEnabled { get; set; }
     public bool StringEqualityEnabled { get; set; }
     public bool ComparerInterfacesEnabled { get; set; }
     public TypeIndex ComparerResultType { get; private set; }
 
+    public bool XmlExceptionsEnabled { get; set; }
+    public uint XmlExceptionField => ActualValueField + (ActualValueExceptionsEnabled ? 1u : 0u);
+
     public bool ArgumentExceptionsEnabled { get; set; }
     public bool InnerExceptionsEnabled { get; set; }
+    public bool ActualValueExceptionsEnabled { get; set; }
+    public uint ActualValueField => 2u + (ArgumentExceptionsEnabled ? 1u : 0u) + (InnerExceptionsEnabled ? 1u : 0u);
     public uint InnerExceptionField => ArgumentExceptionsEnabled ? 3u : 2u;
 
     public bool IsClass(TypeIdentity identity) => XuiNet.DotNet.Intrinsics.ManagedType.Is(identity) || DelegateInfo.IsRuntimeBase(identity) || XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null || identity.Handle.Kind == HandleKind.TypeDefinition && !identity.IsValueType;
@@ -68,6 +84,8 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
 
     public LocalVariable Bind(SignatureType type)
     {
+        // Raw pointers are WASM32 linear addresses. Managed byrefs retain their separate owner/selector ABI.
+        if (type.Code == SignatureTypeCode.Pointer) type = new(SignatureTypeCode.IntPtr, IsByReference: type.IsByReference);
         if (type.Identity is { } native && XuiNet.DotNet.Intrinsics.NativeFloat.Is(native))
         {
             var scalar = new LocalVariable(SignatureTypeCode.Single, IsByReference: type.IsByReference);
@@ -82,7 +100,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
         if (type.IsReferenceType && type.Identity is { Handle.Kind: not HandleKind.TypeDefinition } external && !XuiNet.DotNet.Intrinsics.ManagedType.Is(external) && !DelegateInfo.IsRuntimeBase(external) && XuiNet.DotNet.Exceptions.ExceptionTypes.Kind(external) is null)
             throw new NotSupportedException($"External class storage is not implemented: {type}.");
         if (type.Array is { } array) _ = ArrayShape(array);
-        var bound = new LocalVariable(type.Code, type.Identity, type.IsByReference, type.Code is SignatureTypeCode.Object or SignatureTypeCode.SZArray || type.Identity is { } identity && IsGc(identity), type.Array);
+        var bound = new LocalVariable(type.Code, type.Identity, type.IsByReference, type.Code is SignatureTypeCode.Object or SignatureTypeCode.SZArray or SignatureTypeCode.Array || type.Identity is { } identity && IsGc(identity), type.Array);
         if (type.IsByReference) RequireAddress(bound);
         return bound;
     }
@@ -104,6 +122,29 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             var descriptor = new GcShape(identity);
             shapes.Add(identity, descriptor);
             return descriptor;
+        }
+        if (FrameworkTypes.Is(identity, "System", "String"))
+        {
+            _ = Classes.Resolve(identity);
+            var text = new GcShape(identity);
+            text.Leaves.Add(new(new(SignatureTypeCode.Object, UsesGc: true), 0));
+            text.Leaves.Add(new(new(SignatureTypeCode.String), 0));
+            shapes.Add(identity, text);
+            return text;
+        }
+        if (XuiNet.DotNet.Intrinsics.InvariantCulture.Is(identity))
+        {
+            InvariantCultures.TryAdd(identity, default);
+            var provider = new GcShape(identity);
+            shapes.Add(identity, provider);
+            return provider;
+        }
+        if (XuiNet.DotNet.Intrinsics.SharedArrayPool.Is(identity))
+        {
+            SharedPools.TryAdd(identity, default);
+            var pool = new GcShape(identity);
+            shapes.Add(identity, pool);
+            return pool;
         }
         if (XuiNet.DotNet.Intrinsics.DefaultEquality.Is(identity))
         {
@@ -221,12 +262,15 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
 
     public void DefineTypes(ref TypeWriter writer, TypeIndex utf16ArrayType)
     {
+        DefineArrayInterfaceTypes(ref writer);
         if (ComparerInterfacesEnabled) ComparerResultType = writer.FunctionType([], ValueTypeCode.I32);
         if (ExceptionsEnabled)
         {
             List<WasmValue> exceptionFields = [ValueTypeCode.I32, ValueTypeCode.ExternRef];
             if (ArgumentExceptionsEnabled) exceptionFields.Add(ValueTypeCode.ExternRef);
             if (InnerExceptionsEnabled) exceptionFields.Add(ValueTypeCode.EqRef);
+            if (ActualValueExceptionsEnabled) exceptionFields.Add(ValueTypeCode.EqRef);
+            if (XmlExceptionsEnabled) exceptionFields.AddRange([ValueTypeCode.I32, ValueTypeCode.I32, ValueTypeCode.ExternRef, ValueTypeCode.ExternRef]);
             ExceptionType = writer.StructType(exceptionFields.ToArray(), Mutability.Immutable);
             ExceptionTagType = writer.FunctionType([ValueTypeCode.EqRef]);
             ExceptionPayloadBlock = writer.FunctionType([], ValueTypeCode.EqRef);
@@ -239,6 +283,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
             List<WasmValue> descriptorFields = [ValueTypeCode.I32, ValueTypeCode.EqRef, ValueTypeCode.I32,
                 WasmValue.RefNull(utf16ArrayType), ValueTypeCode.I32, ValueTypeCode.I32];
             if (ManagedTypesEnabled) descriptorFields.Add(WasmValue.RefNull(utf16ArrayType));
+            if (ManagedAssemblyEnabled) descriptorFields.Add(WasmValue.RefNull(utf16ArrayType));
             DescriptorType = writer.StructType(descriptorFields.ToArray(), Mutability.Immutable);
             ClassRoot = writer.StructType([ValueTypeCode.EqRef], extensible: true);
             InstanceTestType = writer.FunctionType([ValueTypeCode.EqRef, ValueTypeCode.EqRef], ValueTypeCode.EqRef);
@@ -257,7 +302,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
                 shape.Type = DescriptorType;
                 continue;
             }
-            if (XuiNet.DotNet.Intrinsics.DefaultEquality.Is(shape.Identity))
+            if (XuiNet.DotNet.Intrinsics.InvariantCulture.Is(shape.Identity) || XuiNet.DotNet.Intrinsics.DefaultEquality.Is(shape.Identity) || XuiNet.DotNet.Intrinsics.SharedArrayPool.Is(shape.Identity))
             {
                 shape.Type = writer.StructType([]);
                 continue;
@@ -282,7 +327,7 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
                     descriptor.WasmType = DelegateType;
                     descriptor.FieldCount = (uint)shape.Leaves.Count;
                     descriptor.TableStart = TableSize;
-                    TableSize += (uint)Classes.InterfaceMethods.Count;
+                    TableSize += (uint)Classes.DispatchMethods.Count;
                 }
                 continue;
             }
@@ -301,13 +346,13 @@ internal sealed partial class StorageModel(XuiNet.Reachability.DependencyGraph d
                         SignatureReader.Field(declaring.Module, field.Signature, declaring.Arguments), new((uint)pair.Value.First), (uint)pair.Value.Count);
                 }).ToArray());
                 type.TableStart = TableSize;
-                TableSize += (uint)(Classes.InterfaceMethods.Count + type.VirtualSlots.Count);
+                TableSize += (uint)(Classes.DispatchMethods.Count + type.VirtualSlots.Count);
             }
             else shape.Type = writer.StructType(fields);
         }
         DefineStaticTypes(ref writer);
         DefineBoxTypes(ref writer);
         DefineArrayTypes(ref writer);
-        if (Classes.InterfaceMethods.Count != 0 && TableSize == 0) TableSize = (uint)Classes.InterfaceMethods.Count;
+        if (Classes.DispatchMethods.Count != 0 && TableSize == 0) TableSize = (uint)Classes.DispatchMethods.Count;
     }
 }

@@ -18,7 +18,7 @@ public class CompareExchangeTests
         var owner = module.Types.Single(h => module.GetType(h).Namespace == "System.Threading" && module.GetType(h).Name == "Interlocked");
         var handle = module.GetType(owner).Methods.Single(h => module.GetMethod(h).Name == "CompareExchangeObject");
         Assert.Null(module.GetMethod(handle).Body);
-        var signature = Xui.Compiler.XuiNet.DotNet.Intrinsics.ReferenceCompareExchange.Read(module, handle, null);
+        var signature = Xui.Compiler.XuiNet.DotNet.Intrinsics.ReferenceInterlocked.Read(module, handle, null);
         Assert.NotNull(signature);
         Assert.Equal(SignatureTypeCode.Object, signature.Value.Result.Code);
         Assert.Equal(signature.Value.Result.ByReference(), signature.Value.Parameters[0]);

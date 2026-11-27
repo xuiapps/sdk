@@ -3,10 +3,10 @@ using Xui.Compiler.XuiNet.DotNet.Signatures;
 
 namespace Xui.Compiler.XuiNet.DotNet.Intrinsics;
 
-/// <summary>The framework vector-copy entry points with 32-bit indices and length.</summary>
-public sealed record ArrayCopy(bool HasIndices)
+/// <summary>Framework array copies with element indices or primitive byte offsets.</summary>
+public sealed record ArrayCopy(bool HasIndices, bool ByteOffsets = false)
 {
-    /// <summary>Recognizes Array.Copy(Array, Array, int) and its five-argument overload.</summary>
+    /// <summary>Recognizes Array.Copy's 32-bit overloads and Buffer.BlockCopy.</summary>
     public static ArrayCopy? Read(Module module, EntityHandle token)
     {
         TypeIdentity owner;
@@ -24,11 +24,13 @@ public sealed record ArrayCopy(bool HasIndices)
             owner = new(module, method.DeclaringType); name = method.Name; blob = method.Signature;
         }
         else return null;
-        if (name != "Copy" || !FrameworkTypes.Is(owner, "System", "Array")) return null;
+        bool bytes = name == "BlockCopy" && FrameworkTypes.Is(owner, "System", "Buffer");
+        if (!bytes && (name != "Copy" || !FrameworkTypes.Is(owner, "System", "Array"))) return null;
         var signature = SignatureReader.Method(module, blob);
         if (signature.HasThis || signature.GenericParameterCount != 0 || signature.Result.Code != SignatureTypeCode.Void ||
             signature.Parameters.Length is not (3 or 5)) return null;
         bool indices = signature.Parameters.Length == 5;
+        if (bytes && !indices) return null;
         for (int i = 0; i < signature.Parameters.Length; i++)
         {
             var p = signature.Parameters[i];
@@ -39,6 +41,6 @@ public sealed record ArrayCopy(bool HasIndices)
             }
             else if (p.Code != SignatureTypeCode.Int32) return null;
         }
-        return new(indices);
+        return new(indices, bytes);
     }
 }

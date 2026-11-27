@@ -33,14 +33,41 @@ public readonly ref partial struct CodeEmitter
                 if (node.Code == OpCode.Switch)
                 {
                     Pop(SignatureTypeCode.Int32, node.Code, node.Offset);
-                    writer.BrTable(node.Successors.Skip(1).Select(next => Target(next, i, destinations)).ToArray(),
-                        Target(node.Successors[0], i, destinations));
+                    if (method.MergeBranchTypes.TryGetValue(node,out var branchType))
+                    {
+                        writer.LocalSet(method.SwitchSelector);
+                        for(int arm=1;arm<node.Successors.Length;arm++)
+                        {
+                            writer.LocalGet(method.SwitchSelector).I32Const(arm-1).I32Eq().If(branchType);
+                            CoerceNullStrings(node.Successors[arm].Before!);
+                            writer.Br(new(Target(node.Successors[arm],i,destinations).Value+1)).Else().End();
+                            stack.Clear();RestorePrefix(node.After!);
+                        }
+                        CoerceNullStrings(node.Successors[0].Before!);
+                        writer.Br(Target(node.Successors[0],i,destinations));
+                        stack.Clear();RestorePrefix(node.After!);
+                    }
+                    else writer.BrTable(node.Successors.Skip(1).Select(next => Target(next, i, destinations)).ToArray(),
+                            Target(node.Successors[0], i, destinations));
                 }
                 else if (node.Successors.Length == 2)
                 {
                     EmitCondition(node);
-                    writer.BrIf(Target(node.Successors[1], i, destinations));
-                    writer.Br(Target(node.Successors[0], i, destinations));
+                    if (method.MergeBranchTypes.TryGetValue(node,out var branchType))
+                    {
+                        writer.If(branchType);
+                        CoerceNullStrings(node.Successors[1].Before!);
+                        writer.Br(new(Target(node.Successors[1],i,destinations).Value+1)).Else();
+                        stack.Clear();RestorePrefix(node.After!);
+                        CoerceNullStrings(node.Successors[0].Before!);
+                        writer.Br(new(Target(node.Successors[0],i,destinations).Value+1)).End();
+                        stack.Clear();RestorePrefix(node.After!);
+                    }
+                    else
+                    {
+                        writer.BrIf(Target(node.Successors[1], i, destinations));
+                        writer.Br(Target(node.Successors[0], i, destinations));
+                    }
                 }
                 else if (node.Code is not (OpCode.Br or OpCode.Br_s))
                 {
@@ -58,7 +85,10 @@ public readonly ref partial struct CodeEmitter
                 else for (int local = 0; local < state.Length; local++) state[local] &= initializedLocals[local];
             }
             if (last.Successors.Length == 1 && last.Code != OpCode.Switch)
+            {
+                CoerceNullStrings(last.Successors[0].Before!);
                 writer.Br(Target(last.Successors[0], i, destinations));
+            }
         }
         // Every reachable terminal instruction returns or throws. The method must
         // not appear to fall through after closing result-producing destination blocks.

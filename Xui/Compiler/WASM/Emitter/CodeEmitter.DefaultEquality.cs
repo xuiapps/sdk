@@ -29,7 +29,7 @@ public readonly ref partial struct CodeEmitter
             if (comparer.IsByReference || comparer.Identity is not null && comparer.Identity != access.Owner)
                 throw new InvalidProgramException("Default hashing requires its declared comparer receiver.");
             writer.RefIsNull().If(); ThrowException(ExceptionKind.NullReferenceException); writer.End();
-            EmitPrimitiveHash(method.Storage.Bind(access.Element), hashLocal);
+            EmitDefaultHash(access, hashLocal);
             stack.Push(new(SignatureTypeCode.Int32));
             return true;
         }
@@ -49,8 +49,25 @@ public readonly ref partial struct CodeEmitter
     private void CompareEquality(DefaultEquality access, LocalIndex left, LocalIndex right)
     {
         var storage = method.Storage.Bind(access.Element);
+        if (access.UsesArrayIdentity)
+        {
+            writer.LocalGet(left).LocalGet(right).RefEq();
+            return;
+        }
         if (access.Implementation is { } equals)
         {
+            if (equals.DeclaringType.IsInterface)
+            {
+                writer.LocalGet(left).RefIsNull().If();
+                writer.LocalGet(right).RefIsNull().LocalSet(method.GcI32).Else();
+                writer.LocalGet(right).RefIsNull().If().I32Const(0).LocalSet(method.GcI32).Else();
+                writer.LocalGet(left).LocalGet(right).LocalGet(left).RefCast(method.Storage.ClassRoot)
+                    .StructGet(method.Storage.ClassRoot, new(0)).RefCast(method.Storage.DescriptorType)
+                    .StructGet(method.Storage.DescriptorType, new((uint)Xui.Compiler.WASM.Runtime.DescriptorField.TableStart))
+                    .I32Const((int)method.Storage.Classes.Slot(equals)).I32Add().CallIndirect(methods[equals].Type)
+                    .LocalSet(method.GcI32).End().End().LocalGet(method.GcI32);
+                return;
+            }
             if (equals.DeclaringType.IsValueType)
             {
                 if (storage.UsesGc) writer.LocalGet(left); else writer.RefNull(Wasm.Section.TypeDefinitions.ValueTypeCode.EqRef);

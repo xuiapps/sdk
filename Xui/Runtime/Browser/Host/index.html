@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <base href="./">
+    <link rel="icon" href="data:,">
+    <title>Xui · .NET WebAssembly</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #f4f5f7; color: #273142; font: 12px system-ui, sans-serif; }
+        body { display: flex; flex-direction: column; }
+        header { min-height: 36px; display: flex; align-items: center; gap: 18px; padding: 8px 14px; flex-wrap: wrap; border-bottom: 1px solid #dce0e7; }
+        #status { margin-left: auto; font-variant-numeric: tabular-nums; }
+        #xui-canvas { display: block; width: 100%; flex: 1; min-height: 0; outline: none; touch-action: none; }
+        #loading { position: absolute; top: 45%; left: 10%; right: 10%; white-space: pre-wrap; text-align: center; }
+        label { cursor: pointer; display: flex; align-items: center; gap: 5px; }
+    </style>
+</head>
+<body>
+    <header>
+        <strong id="app-title">Xui</strong>
+        <span id="runtime-mode">Loading .NET WebAssembly…</span>
+        <label title="Request a complete frame on every browser animation callback"><input id="continuous" type="checkbox">Continuous render</label>
+        <output id="status" aria-live="off"></output>
+    </header>
+    <canvas id="xui-canvas" tabindex="0" aria-label="Xui mobile emulator"></canvas>
+    <div id="loading" role="status">Starting the .NET runtime and loading Inter fonts…</div>
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <script type="module">
+        import { showError } from './xui-browser.js';
+        Blazor.start().catch(showError);
+    </script>
+</body>
+</html>

@@ -26,7 +26,7 @@ public readonly record struct LocalVariable(
         SignatureTypeCode.IntPtr or SignatureTypeCode.UIntPtr => SignatureTypeCode.IntPtr,
         SignatureTypeCode.String => SignatureTypeCode.String,
         SignatureTypeCode.Object => SignatureTypeCode.Object,
-        SignatureTypeCode.SZArray => SignatureTypeCode.SZArray,
+        SignatureTypeCode.SZArray or SignatureTypeCode.Array => TypeCode,
         _ => throw new NotSupportedException($"Unsupported local type: {TypeCode}.")
     };
 

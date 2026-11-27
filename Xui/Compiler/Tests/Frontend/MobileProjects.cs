@@ -32,10 +32,12 @@ internal static class MobileProjects
         {
             byte[] image = SourceProject.Compile(directory, name, references,
                 extraSources: name switch {
-                    "TestApp.Mobile" => [File.ReadAllText(Path.Combine(SourceProject.XuiRoot, "Compiler/Tests/Fixtures/TestApp/Mobile/BrowserMenu.cs"))],
+                    "TestApp.Mobile" => [File.ReadAllText(Path.Combine(SourceProject.XuiRoot, "Compiler/Tests/Fixtures/TestApp/Mobile/BrowserMenu.cs")),
+                        File.ReadAllText(Path.Combine(SourceProject.XuiRoot, "Compiler/Tests/Fixtures/TestApp/Mobile/CataloguePage.cs"))],
                     "Xui.Middleware.Emulator" => [File.ReadAllText(Path.Combine(SourceProject.XuiRoot, "Compiler/Tests/Fixtures/TestApp/Mobile/PhoneHost.cs"))],
                     _ => null },
-                exclude: exclude, generateShaders: name == "TestApp.Mobile");
+                exclude: exclude, generateShaders: name == "TestApp.Mobile",
+                resources: name == "TestApp.Mobile" ? TestAppResources.Read() : null);
             result.Add(name, image); references.Add(MetadataReference.CreateFromImage(image));
         }
     }

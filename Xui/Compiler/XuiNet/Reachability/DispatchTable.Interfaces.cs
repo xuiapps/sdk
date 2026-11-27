@@ -12,7 +12,7 @@ internal sealed partial class DispatchTable
     public MethodIdentity InterfaceImplementation(TypeIdentity type, MethodIdentity declaration)
     {
         if (InterfaceImplementations.TryGetValue((type, declaration), out var cached)) return cached;
-        if (!type.IsAssignableTo(declaration.DeclaringType))
+        if (!(type.IsValueType ? type.Interfaces().Any(contract => contract.IsAssignableTo(declaration.DeclaringType)) : type.IsAssignableTo(declaration.DeclaringType)))
             throw new InvalidProgramException($"{type} does not implement {declaration.DeclaringType}.");
         MethodIdentity? target = null;
         for (TypeIdentity? current = type; current is { Handle.Kind: HandleKind.TypeDefinition } owner; current = owner.BaseType)
@@ -31,8 +31,8 @@ internal sealed partial class DispatchTable
         }
         if (target is { } implementation)
         {
-            if ((implementation.DeclaringType.Module.GetMethod(implementation.Handle).Attributes & MethodAttributes.Virtual) != 0)
-                implementation = implementation.Arguments is not null ? GenericInterfaceOverride(type, implementation)
+            if (!type.IsValueType && (implementation.DeclaringType.Module.GetMethod(implementation.Handle).Attributes & (MethodAttributes.Virtual | MethodAttributes.Static)) == MethodAttributes.Virtual)
+                implementation = implementation.Arguments is not null ? GenericOverride(type, implementation)
                     : Resolve(type)[(int)Slot(implementation)].Implementation;
         }
         else
@@ -56,6 +56,7 @@ internal sealed partial class DispatchTable
     // a default inherited through a base class, but never a concrete class implementation.
     private MethodIdentity? ClassInterfaceImplementation(TypeIdentity type, MethodIdentity declaration)
     {
+        var expectedAttributes = MethodAttributes.Public | (declaration.DeclaringType.Module.GetMethod(declaration.Handle).Attributes & MethodAttributes.Static);
         var definition = type.Module.GetType((TypeDefinitionHandle)type.Handle);
         TypeIdentity? templateContract = null;
         foreach (var handle in definition.Interfaces)
@@ -80,7 +81,7 @@ internal sealed partial class DispatchTable
                 foreach (var handle in owner.Module.GetType((TypeDefinitionHandle)owner.Handle).Methods)
                 {
                     var method = owner.Module.GetMethod(handle);
-                    if ((method.Attributes & (MethodAttributes.MemberAccessMask | MethodAttributes.Static)) != MethodAttributes.Public) continue;
+                    if ((method.Attributes & (MethodAttributes.MemberAccessMask | MethodAttributes.Static)) != expectedAttributes) continue;
                     if (InterfaceSignatureMatches(new(openOwner, handle), new(contract, declaration.Handle, declaration.Arguments)))
                     {
                         target = new(owner, handle, declaration.Arguments);

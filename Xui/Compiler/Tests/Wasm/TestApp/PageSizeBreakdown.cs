@@ -17,8 +17,11 @@ internal static class PageSizeBreakdown
         var fonts = Regex.Matches(html, @"font-weight:(\d+); src:url\(data:font/ttf;base64,([^)]*)\)")
             .Select(m => (Weight: m.Groups[1].Value, Raw: Convert.FromBase64String(m.Groups[2].Value).Length, Encoded: m.Groups[2].Length)).ToArray();
         int fontText = fonts.Sum(f => f.Encoded);
+        var images = Regex.Matches(html, @"data:image/[^;]+;base64,([A-Za-z0-9+/=]+)")
+            .Select(m => (Raw: Convert.FromBase64String(m.Groups[1].Value).Length, Encoded: m.Groups[1].Length)).ToArray();
+        int imageText = images.Sum(i => i.Encoded);
         int javascript = Regex.Matches(html, @"<script>([\s\S]*?)</script>")
-            .Sum(m => Encoding.UTF8.GetByteCount(m.Groups[1].Value)) - wasmText;
+            .Sum(m => Encoding.UTF8.GetByteCount(m.Groups[1].Value)) - wasmText - imageText;
         int envelope = Encoding.UTF8.GetByteCount(html) - Placeholder.Length;
         var sections = new StringBuilder();
         sections.Append(SectionRow("Header", 8, "Magic bytes and module version"));
@@ -54,7 +57,7 @@ internal static class PageSizeBreakdown
         int total = envelope;
         while (true)
         {
-            int markup = total - wasmText - fontText - javascript;
+            int markup = total - wasmText - fontText - javascript - imageText;
             string panel = $"""
                 <details id="page-size">
                   <summary>Page size · {Bytes(total)} bytes</summary>
@@ -65,9 +68,9 @@ internal static class PageSizeBreakdown
                   {string.Join("\n", fonts.Select(f => Row("Inter font · " + f.Weight, f.Raw, f.Encoded, total)))}
                   {Row("JavaScript · runtime, Canvas, input and bootstrap", javascript, javascript, total)}
                   {Row("HTML, CSS and metadata", markup, markup, total)}
-                  {Row("Image resources", 0, 0, total)}
+                  {Row("Image resources", images.Sum(i => i.Raw), imageText, total)}
                   </tbody><tfoot><tr><th colspan="2">Total file</th><td data-total="{total}">{Bytes(total)}</td><td>100%</td></tr></tfoot></table>
-                  <p>No external assets or image files. The logo, phone frame and icons are drawn through Canvas by compiled Xui code. Inter's four font files are embedded above.</p>
+                  <p>{(images.Length == 0 ? "No external assets or image files." : "Packaged image assets are embedded in the browser catalogue.")} The logo, phone frame and icons are drawn through Canvas by compiled Xui code. Inter's four font files are embedded above.</p>
                   <h2>Inside the WASM module</h2>
                   <p>These bytes are already included in the WASM row above. Section sizes include their ID and length prefix.</p>
                   <table id="wasm-size"><thead><tr><th>Section</th><th>Bytes</th><th>Contents</th></tr></thead><tbody>{sections}</tbody><tfoot><tr><th>Total binary</th><td>{Bytes(wasm.Length)}</td><td></td></tr></tfoot></table>

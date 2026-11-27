@@ -26,23 +26,39 @@ public readonly ref partial struct CodeEmitter
             case ManagedTypeOperation.GetType:
                 var receiver = Pop(instruction.Code, offset);
                 if (!receiver.IsNull && receiver.TypeCode != SignatureTypeCode.Object && (receiver.IsByReference || receiver.Identity is not { } identity ||
-                    !storage.IsClass(identity) || ManagedType.Is(identity) || DefaultEquality.Is(identity) || DefaultEquality.IsInterface(identity) ||
+                    !storage.IsClass(identity) || ManagedType.Is(identity) || InvariantCulture.Is(identity) || SharedArrayPool.Is(identity) || DefaultEquality.Is(identity) || DefaultEquality.IsInterface(identity) ||
                     ExceptionTypes.Kind(identity) is not null || DelegateInfo.IsRuntimeBase(identity)))
                     throw new NotSupportedException("GetType currently requires a named class or interface receiver with a runtime descriptor.");
                 CheckExceptionNull();
                 writer.RefCast(storage.ClassRoot).StructGet(storage.ClassRoot, new(0));
                 stack.Push(new(SignatureTypeCode.TypeHandle, access.Signature.Result.Identity));
                 break;
+            case ManagedTypeOperation.Assembly:
             case ManagedTypeOperation.Name:
+            case ManagedTypeOperation.IsValueType:
                 var type = Pop(instruction.Code, offset);
                 if (!type.IsNull && (type.IsByReference || type.Identity is not { } typeIdentity || !ManagedType.Is(typeIdentity)))
                     throw new NotSupportedException("MemberInfo.Name currently requires a System.Type descriptor.");
                 CheckExceptionNull();
-                writer.RefCast(storage.DescriptorType).StructGet(storage.DescriptorType, new((uint)DescriptorField.SimpleNameUtf16))
+                if (access.Operation == ManagedTypeOperation.IsValueType)
+                {
+                    // The module's closed descriptor set is fixed after reachability.
+                    writer.LocalSet(method.GcOwner).I32Const(0);
+                    foreach (var candidate in storage.Classes.Types.Where(t => t.Identity.IsValueType))
+                        writer.LocalGet(method.GcOwner).GlobalGet(candidate.Descriptor).RefEq().I32Or();
+                    stack.Push(new(SignatureTypeCode.Int32));
+                    break;
+                }
+                writer.RefCast(storage.DescriptorType).StructGet(storage.DescriptorType, new((uint)(access.Operation == ManagedTypeOperation.Assembly ? DescriptorField.AssemblyNameUtf16 : DescriptorField.SimpleNameUtf16)))
                     .LocalTee(method.GcSource).RefCast(Runtime.Utf16ArrayType).I32Const(0)
                     .LocalGet(method.GcSource).RefCast(Runtime.Utf16ArrayType).ArrayLen()
                     .Call(Runtime.FromCharCodeArrayFunction);
-                stack.Push(new(SignatureTypeCode.String));
+                if (access.Operation == ManagedTypeOperation.Assembly)
+                {
+                    writer.Call(methods[access.Factory!.Value].Function);
+                    stack.Push(new(SignatureTypeCode.TypeHandle, access.Signature.Result.Identity));
+                }
+                else stack.Push(new(SignatureTypeCode.String));
                 break;
             case ManagedTypeOperation.Equal:
             case ManagedTypeOperation.NotEqual:

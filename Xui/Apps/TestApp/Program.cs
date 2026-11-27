@@ -4,7 +4,19 @@ using Xui.Apps.TestApp;
 using Xui.Apps.TestApp.Pages.WindowModes.MacOS;
 using Xui.Core.DI;
 
-#if !ANDROID
+#if BROWSER
+var browserHost = Microsoft.AspNetCore.Components.WebAssembly.Hosting.WebAssemblyHostBuilder.CreateDefault(args).Build();
+#if XUI_BROWSER_AOT
+await Xui.Runtime.Browser.Actual.BrowserPlatform.InitializeAsync(".NET 10 · AOT");
+#elif DEBUG
+await Xui.Runtime.Browser.Actual.BrowserPlatform.InitializeAsync(".NET 10 · interpreter · Debug");
+#else
+await Xui.Runtime.Browser.Actual.BrowserPlatform.InitializeAsync(".NET 10 · interpreter / Jiterpreter · Release");
+#endif
+TestAppBootstrap.Run();
+await browserHost.RunAsync();
+return 0;
+#elif !ANDROID
 return TestAppBootstrap.Run();
 #endif
 

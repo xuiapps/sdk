@@ -47,6 +47,11 @@ public static class SignatureReader
                 return new(code, GenericParameterIndex: index);
             case SignatureTypeCode.RequiredModifier:
                 var modifier = module.ResolveType(reader.ReadTypeHandle());
+                // Volatility qualifies field access, not its value or storage shape.
+                // The original field blob retains the modifier; IL volatile. carries
+                // the access semantics into code generation.
+                if (FrameworkTypes.Is(modifier, "System.Runtime.CompilerServices", "IsVolatile"))
+                    return Type(module, ref reader, arguments, methodArguments);
                 if (FrameworkTypes.Is(modifier, "System.Runtime.CompilerServices", "IsExternalInit"))
                 {
                     var result = Type(module, ref reader, arguments, methodArguments);
@@ -62,8 +67,22 @@ public static class SignatureReader
                 throw new NotSupportedException($"Required signature modifier is not implemented: {modifier}.");
             case SignatureTypeCode.ByReference:
                 return Type(module, ref reader, arguments, methodArguments).ByReference();
+            case SignatureTypeCode.Pointer:
+                var pointee = Type(module, ref reader, arguments, methodArguments);
+                if (pointee.IsByReference) throw new BadImageFormatException("A pointer cannot point to a managed byref.");
+                return new(code, Pointer: new(pointee));
             case SignatureTypeCode.SZArray:
                 return SignatureType.Vector(NonVoid(module, ref reader, arguments, methodArguments));
+            case SignatureTypeCode.Array:
+                var element = NonVoid(module, ref reader, arguments, methodArguments);
+                int rank = reader.ReadCompressedInteger();
+                int sizes = reader.ReadCompressedInteger();
+                if (sizes < 0 || sizes > rank) throw new BadImageFormatException("Invalid array size count.");
+                for (int i = 0; i < sizes; i++) _ = reader.ReadCompressedInteger();
+                int bounds = reader.ReadCompressedInteger();
+                if (bounds < 0 || bounds > rank) throw new BadImageFormatException("Invalid array bound count.");
+                for (int i = 0; i < bounds; i++) _ = reader.ReadCompressedSignedInteger();
+                return SignatureType.Rectangular(element, rank);
             case SignatureTypeCode.Object:
                 return new(code, IsReferenceType: true);
             case SignatureTypeCode.Void:

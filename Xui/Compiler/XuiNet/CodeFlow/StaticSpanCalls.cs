@@ -59,6 +59,7 @@ public static partial class StaticSpanCalls
             result.Add(tokenNode.Offset, access); result.Add(call.Offset, access);
         }
         ReadPointerConstructors(module, body, graph, context, methodArguments, result);
+        ReadArrayInitializers(module, body, graph, context, methodArguments, result);
         return result;
     }
 

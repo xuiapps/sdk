@@ -925,6 +925,46 @@ public static class Program
     ""
   ],
   [
+    "GroupReset",
+    1,
+    1,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    0,
+    0,
+    393,
+    759,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBackground",
+    1,
+    1,
+    1,
+    1,
+    ""
+  ],
+  [
     "Save",
     0,
     0,
@@ -1173,6 +1213,38 @@ public static class Program
     ""
   ],
   [
+    "GroupReset",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    0,
+    0,
+    393,
+    759,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
     "Save",
     0,
     0,
@@ -1334,6 +1406,38 @@ public static class Program
   ],
   [
     "BeginPath",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupReset",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    0,
+    0,
+    393,
+    759,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
     0,
     0,
     0,
@@ -2377,6 +2481,78 @@ public static class Program
     0,
     0,
     0,
+    0,
+    ""
+  ],
+  [
+    "GroupReset",
+    1,
+    0,
+    42,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    16,
+    325,
+    361,
+    990,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBackground",
+    0.9934102892875671,
+    0.9934104084968567,
+    0.9934102892875671,
+    1,
+    ""
+  ],
+  [
+    "GroupBorderColor",
+    0.7432059049606323,
+    0.7432058453559875,
+    0.7432058453559875,
+    1,
+    ""
+  ],
+  [
+    "GroupBorder",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupShadowColor",
+    0,
+    0,
+    0,
+    0.05999999865889549,
+    ""
+  ],
+  [
+    "GroupShadow",
+    6,
+    0,
+    2,
     0,
     ""
   ],
@@ -12253,6 +12429,38 @@ public static class Program
     ""
   ],
   [
+    "GroupReset",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    0,
+    0,
+    393,
+    759,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
     "Save",
     0,
     0,
@@ -12592,6 +12800,38 @@ public static class Program
     "BeginPath",
     0,
     0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupReset",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    164.5,
+    66,
+    64,
+    64,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1.125,
+    0,
+    0,
+    1.125,
+    ""
+  ],
+  [
+    "GroupTranslation",
+    -24.5625,
+    -12.25,
     0,
     0,
     ""
@@ -13437,6 +13677,38 @@ public static class Program
     ""
   ],
   [
+    "GroupReset",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    90.9000015258789,
+    154,
+    211.1999969482422,
+    24,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
     "Save",
     0,
     0,
@@ -13798,6 +14070,38 @@ public static class Program
   ],
   [
     "BeginPath",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupReset",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    108.5,
+    216,
+    48,
+    48,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
     0,
     0,
     0,
@@ -14325,6 +14629,38 @@ public static class Program
     ""
   ],
   [
+    "GroupReset",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    168.5,
+    216,
+    56,
+    48,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
     "Save",
     0,
     0,
@@ -14814,6 +15150,38 @@ public static class Program
   ],
   [
     "BeginPath",
+    0,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupReset",
+    1,
+    0,
+    0,
+    0,
+    ""
+  ],
+  [
+    "GroupBounds",
+    236.5,
+    216,
+    48,
+    48,
+    ""
+  ],
+  [
+    "GroupMatrix",
+    1,
+    0,
+    0,
+    1,
+    ""
+  ],
+  [
+    "GroupTranslation",
     0,
     0,
     0,

@@ -8,6 +8,7 @@ public readonly ref partial struct CodeEmitter
     private bool TryStaticSpan(Instruction.Token instruction, int offset)
     {
         if (!method.StaticSpans.TryGetValue(offset, out var span)) return false;
+        if (span.ArrayInitializer) { EmitArrayInitializer(instruction, offset, span); return true; }
         if (span.PointerConstructor) { Pop(SignatureTypeCode.Int32, instruction.Code, offset); writer.Drop(); }
         if (Pop(instruction.Code, offset).FieldToken != span.Field)
             throw new InvalidProgramException("CreateSpan requires its paired static data token.");

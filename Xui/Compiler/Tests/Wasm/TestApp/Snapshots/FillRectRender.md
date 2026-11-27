@@ -740,7 +740,7 @@ public class FillRectTest : View, ICanvasDrawingExample
   (table (;0;) 342 342 funcref)
   (table (;1;) 65536 65536 eqref)
   (table (;2;) 65536 65536 externref)
-  (memory (;0;) 16 16)
+  (memory (;0;) 16 32768)
   (tag (;0;) (type 4) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
   (global (;1;) (mut externref) ref.null extern)
@@ -10834,6 +10834,7 @@ public class FillRectTest : View, ICanvasDrawingExample
                 local.get 43
                 throw_ref
               end
+              br 2 (;@3;)
             end
             br 1 (;@3;)
           end

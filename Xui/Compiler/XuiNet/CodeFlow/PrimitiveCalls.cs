@@ -85,7 +85,7 @@ public static class PrimitiveCalls
                 parent = method.DeclaringType; name = method.Name; signature = method.Signature;
             }
             else continue;
-            if (name is not ("GetHashCode" or "Equals") || parent.Kind is not
+            if (name is not ("GetHashCode" or "Equals" or "ToString" or "CompareTo") || parent.Kind is not
                 (HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification)) continue;
             var owner = SignatureReader.Resolve(module, parent, context.Arguments, methodArguments).Identity;
             if (owner is null) continue;
@@ -104,16 +104,27 @@ public static class PrimitiveCalls
             else if (call.Before?.Type is StackType.String or StackType.Null && IsObjectHash(module, token))
                 element = new(SignatureTypeCode.String);
             else element = SignatureReader.StorageType(module, parent, context.Arguments, methodArguments);
-            if (!PrimitiveValue.Supports(element)) continue;
+            if (!PrimitiveValue.Supports(element) || name == "CompareTo" && element.Code == SignatureTypeCode.String) continue;
+            if (name == "ToString")
+            {
+                if (element.Identity is not { } enumType || EnumInfo.UnderlyingType(enumType) is null || !constrained ||
+                    !(FrameworkTypes.Is(owner.Value, "System", "Object") || FrameworkTypes.Is(owner.Value, "System", "Enum"))) continue;
+                var text = SignatureReader.Method(module, signature, owner.Value.Arguments);
+                if (text.HasThis && text.GenericParameterCount == 0 && text.Parameters.Length == 0 && text.Result == new SignatureType(SignatureTypeCode.String))
+                    result.Add(call.Offset, new(name, element, true));
+                continue;
+            }
             bool sameOwner = SignatureReader.StorageType(module, parent, context.Arguments, methodArguments) == element;
             bool objectHash = name == "GetHashCode" && (constrained || element.Code == SignatureTypeCode.String) && FrameworkTypes.Is(owner.Value, "System", "Object");
             bool equatable = name == "Equals" && constrained && FrameworkTypes.Is(owner.Value, "System", "IEquatable`1") &&
                 owner.Value.Arguments?.Values.Length == 1 && owner.Value.Arguments.Values[0] == element;
-            if (!sameOwner && !objectHash && !equatable) continue;
+            bool comparable = name == "CompareTo" && constrained && FrameworkTypes.Is(owner.Value, "System", "IComparable`1") &&
+                owner.Value.Arguments?.Values.Length == 1 && owner.Value.Arguments.Values[0] == element;
+            if (!sameOwner && !objectHash && !equatable && !comparable) continue;
             var declared = SignatureReader.Method(module, signature, owner.Value.Arguments);
             if (!declared.HasThis || declared.GenericParameterCount != 0) continue;
             if (name == "GetHashCode" ? declared.Parameters.Length != 0 || declared.Result != new SignatureType(SignatureTypeCode.Int32)
-                : declared.Parameters.Length != 1 || declared.Parameters[0] != element || declared.Result != new SignatureType(SignatureTypeCode.Boolean)) continue;
+                : declared.Parameters.Length != 1 || declared.Parameters[0] != element || declared.Result != new SignatureType(name == "CompareTo" ? SignatureTypeCode.Int32 : SignatureTypeCode.Boolean)) continue;
             result.Add(call.Offset, new(name, element, constrained || element.Code != SignatureTypeCode.String));
         }
         return result;

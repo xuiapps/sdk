@@ -204,7 +204,8 @@ public class PrimitiveOpcodeTests
     [InlineData(ILOpCode.Conv_u8)]
     public void OtherFloatingPointToIntegerConversionsRemainUnsupported(ILOpCode op)
     {
-        byte[] image = Program(il => { il.LoadConstantR8(1.25); il.OpCode(op); });
+        // Keep the method's Int32 return valid so this isolates the unsupported conversion.
+        byte[] image = Program(il => { il.LoadConstantR8(1.25); il.OpCode(op); il.OpCode(ILOpCode.Pop); il.LoadConstantI4(0); });
         Assert.Contains("Double", Assert.Throws<NotSupportedException>(() => Emit(image)).Message);
     }
 

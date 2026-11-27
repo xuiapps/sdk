@@ -8,6 +8,25 @@ namespace Xui.Compiler.Tests.Wasm.Exceptions;
 public class ArgumentOutOfRangeTests
 {
     [Fact]
+    public Task ActualValueIsRetainedAndFormattedOnlyWhenMessageIsRead() => InlineArrayTests.AssertLinked("""
+        using System;
+        class Payload { public int Value=42; }
+        public static class Program {
+            public static int Main() {
+                var text=new ArgumentOutOfRangeException("name","invalid","unknown");
+                Console.WriteLine(text.ParamName); Console.WriteLine((string)text.ActualValue); Console.WriteLine(text.Message);
+                var number=new ArgumentOutOfRangeException("index",42,"bad");
+                Console.WriteLine((int)number.ActualValue); Console.WriteLine(number.Message);
+                var missing=new ArgumentOutOfRangeException(null,null,"bad");
+                Console.WriteLine(missing.ActualValue==null); Console.WriteLine(missing.Message);
+                var payload=new Payload(); var retained=new ArgumentOutOfRangeException("payload",payload,"bad");
+                // Construction and ActualValue access must not try to format an arbitrary object.
+                return retained.ActualValue==payload ? ((Payload)retained.ActualValue).Value : 1;
+            }
+        }
+        """, "name\ninvalid\nunknown (Parameter 'name')\nActual value was invalid.\n42\nbad (Parameter 'index')\nActual value was 42.\nTrue\nbad\n", 42);
+
+    [Fact]
     public Task ConstructorsAndCatchHierarchyMatchClr() => InlineArrayTests.AssertLinked("""
         using System;
         public static class Program {

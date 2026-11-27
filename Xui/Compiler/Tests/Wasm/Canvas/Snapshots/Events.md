@@ -137,7 +137,7 @@ public static class Program
   (table (;0;) 2 2 funcref)
   (table (;1;) 65536 65536 eqref)
   (table (;2;) 65536 65536 externref)
-  (memory (;0;) 16 16)
+  (memory (;0;) 16 32768)
   (tag (;0;) (type 6) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
   (global (;1;) (mut externref) ref.null extern)

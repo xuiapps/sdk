@@ -16,7 +16,11 @@ public sealed partial class Analyzer
     private readonly DispatchTable dispatch = new();
     private readonly Dictionary<TypeIdentity, List<Root.Type>> typeRoots = new();
     private readonly Dictionary<TypeIdentity, List<Dependency.VirtualCall>> virtualCalls = new();
+    private readonly Dictionary<ArraySignature, Dependency> arraySignatures = new();
     private readonly Dictionary<TypeIdentity, Dependency.Equality> equalityCalls = new();
+    private readonly Dictionary<TypeIdentity, Dependency.Hashing> hashCalls = new();
+    private Dependency.ObjectText? objectTextCall;
+    private Dependency.ObjectHash? objectHashCall;
     private readonly Dictionary<TypeIdentity, List<Dependency.Instantiation>> instantiated = new();
     private readonly HashSet<Model.Module> modules = new();
     private readonly InstructionRewriter? rewrite;
@@ -28,7 +32,7 @@ public sealed partial class Analyzer
 
     /// <summary>Expands mixed roots and follows their dependencies to a fixed point.</summary>
     /// <remarks>Resolves members in the supplied compilation and closed generic types and methods. Unknown external calls,
-    /// generic class-virtual calls, and exception filters fail explicitly. Generic argument identities retain
+    /// open generic calls and exception filters fail explicitly. Generic argument identities retain
     /// their existing nesting bound to reject expanding generic recursion.</remarks>
     public static DependencyGraph Analyze(IEnumerable<Root> roots, InstructionRewriter? rewrite = null)
     {
@@ -37,7 +41,7 @@ public sealed partial class Analyzer
         for (int i = 0; i < analyzer.nodes.Count; i++)
         {
             try { analyzer.Visit(analyzer.nodes[i]); }
-            catch (NotSupportedException error)
+            catch (Exception error) when (error is NotSupportedException or InvalidProgramException)
             {
                 var path = new List<string>();
                 var seen = new HashSet<Dependency>();
@@ -86,12 +90,19 @@ public sealed partial class Analyzer
             case Dependency.Instantiation allocation: Instantiate(allocation); break;
             case Dependency.VirtualCall call: InvokeVirtual(call); break;
             case Dependency.Equality equality: InvokeEquality(equality); break;
+            case Dependency.Hashing hash: InvokeHashing(hash); break;
+            case Dependency.ObjectText text: InvokeObjectText(text); break;
+            case Dependency.ObjectHash hash: InvokeObjectHash(hash); break;
         }
     }
 
     private void Signature(Dependency source, SignatureType signature, DependencyReason reason, int? offset = null)
     {
-        if (signature.Array is { } array) Signature(source, array.Element, reason, offset);
+        if (signature.Array is { } array)
+        {
+            TrackArray(array, source);
+            Signature(source, array.Element, reason, offset);
+        }
         if (signature.Identity is not { } identity) return;
         Add(new Dependency.Type(identity), source, reason, offset);
         // Preserve the existing representation, including complete layouts of named reference fields.
@@ -102,12 +113,17 @@ public sealed partial class Analyzer
     private void ReadType(Dependency.Type node)
     {
         var identity = node.Identity;
-        if (DotNet.Intrinsics.DefaultEquality.Is(identity) || DotNet.Intrinsics.ManagedType.Is(identity)) return;
+        if (DotNet.Intrinsics.InvariantCulture.Is(identity) || DotNet.Intrinsics.SharedArrayPool.Is(identity) || DotNet.Intrinsics.DefaultEquality.Is(identity) || DotNet.Intrinsics.ManagedType.Is(identity)) return;
+        if (identity.BaseType is { } parentCulture && DotNet.Intrinsics.InvariantCulture.Is(parentCulture))
+            throw new NotSupportedException("Custom CultureInfo subclasses are not implemented.");
+        if (identity.BaseType is { } parentPool && DotNet.Intrinsics.SharedArrayPool.Is(parentPool))
+            throw new NotSupportedException($"Custom ArrayPool subclasses are not implemented: {identity}.");
         if (identity.BaseType is { } parentType && DotNet.Intrinsics.ManagedType.Is(parentType))
             throw new NotSupportedException("Custom System.Type subclasses are not implemented.");
         if (identity.BaseType is { } parentComparer && DotNet.Intrinsics.DefaultEquality.Is(parentComparer))
-            throw new NotSupportedException("Custom EqualityComparer subclasses are not implemented.");
+            throw new NotSupportedException($"Custom EqualityComparer subclasses are not implemented: {identity}.");
         if (DelegateInfo.IsRuntimeBase(identity)) return;
+        if (FrameworkTypes.Is(identity, "System", "String")) return;
         if (FrameworkTypes.IsRuntimeBase(identity) || DotNet.Intrinsics.NativeFloat.Is(identity) || DotNet.Exceptions.ExceptionTypes.Kind(identity) is not null) return;
         if (identity.Arguments is { } arguments)
         {
@@ -136,7 +152,7 @@ public sealed partial class Analyzer
             throw new NotSupportedException($"Layout requires a closed resolved type: {identity}.");
         if (DelegateInfo.IsRuntimeBase(identity)) return;
         if (DelegateInfo.Is(identity)) { _ = dispatch.Resolve(identity); return; }
-        if (DotNet.Intrinsics.DefaultEquality.Is(identity) || DotNet.Intrinsics.ManagedType.Is(identity)) return;
+        if (DotNet.Intrinsics.InvariantCulture.Is(identity) || DotNet.Intrinsics.SharedArrayPool.Is(identity) || DotNet.Intrinsics.DefaultEquality.Is(identity) || DotNet.Intrinsics.ManagedType.Is(identity)) return;
         if (DotNet.Intrinsics.InterpolatedStringHandler.Is(identity)) return; // Compiler-owned buffer handle and length.
         if (DotNet.Intrinsics.SpanAccess.Is(identity)) return; // Backing and length have a compiler-owned ABI.
         var type = identity.Module.GetType((TypeDefinitionHandle)identity.Handle);

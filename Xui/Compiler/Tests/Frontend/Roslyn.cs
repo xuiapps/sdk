@@ -9,7 +9,7 @@ internal static class Roslyn
     public static byte[] Compile(string source, OutputKind outputKind = OutputKind.ConsoleApplication,
         string assemblyName = "HelloWorld", OptimizationLevel optimizationLevel = OptimizationLevel.Release,
         IEnumerable<MetadataReference>? additionalReferences = null, IEnumerable<string>? additionalSources = null,
-        IEnumerable<ResourceDescription>? resources = null)
+        IEnumerable<ResourceDescription>? resources = null, bool allowUnsafe = false)
     {
         var references = new[]
         {
@@ -26,6 +26,7 @@ internal static class Roslyn
             references.Concat(additionalReferences ?? []),
             new CSharpCompilationOptions(
                 outputKind,
+                allowUnsafe: allowUnsafe,
                 optimizationLevel: optimizationLevel,
                 deterministic: true)
         );

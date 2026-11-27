@@ -23,7 +23,8 @@ internal sealed class RegionContinuations
     {
         var strict = continuations[node];
         if (strict is not null && !IsReturnTail(strict)) return strict;
-        if (enclosingStop is not null) return enclosingStop;
+        if (enclosingStop is not null)
+            return node.Successors.Any(successor => Reachable(successor).Contains(enclosingStop)) ? enclosingStop : null;
         // Early returns can all converge at a Debug return epilogue. Prefer an
         // earlier shared continuation, but retain ordinary value-producing joins.
         var common = Reachable(node.Successors[0]);

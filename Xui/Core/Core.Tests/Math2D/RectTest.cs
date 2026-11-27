@@ -3,6 +3,21 @@ namespace Xui.Core.Math2D;
 public class RectTest
 {
     [Fact]
+    public void GenericEqualityPreservesTypedAndBoxedSemantics()
+    {
+        Rect[] values = [new(1, 2, 3, 4), new(1, 2, 3, 5), new(0, 0, 3, 4),
+            new((nfloat)(-0.0), 0, 3, 4), new(nfloat.NaN, 2, 3, 4), new(nfloat.PositiveInfinity, 2, 3, 4)];
+        foreach (var left in values)
+            foreach (var right in values)
+            {
+                bool expected = left.Equals((object)right);
+                Assert.Equal(expected, EqualityComparer<Rect>.Default.Equals(left, right));
+                Assert.Equal(expected, Typed(left, right));
+            }
+        static bool Typed<T>(T left, T right) where T : IEquatable<T> => left.Equals(right);
+    }
+
+    [Fact]
     public void InequalityIsTheComplementOfEquality()
     {
         var rect = new Rect(1, 2, 30, 40);

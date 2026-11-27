@@ -1,3 +1,4 @@
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Xui.Compiler.XuiNet.DotNet;
 using Xui.Compiler.XuiNet.DotNet.Intrinsics;
@@ -6,10 +7,18 @@ using Xui.Compiler.XuiNet.DotNet.Signatures;
 
 namespace Xui.Compiler.XuiNet.CodeFlow;
 
-/// <summary>A call in the nonescaping InvariantCulture/Int32.ToString pair.</summary>
-public readonly record struct InvariantFormattingCall(bool IsProvider, SignatureType Provider);
+/// <summary>A call in a nonescaping invariant-provider/scalar.ToString pair.</summary>
+public readonly record struct InvariantFormattingCall(
+    bool IsProvider,
+    SignatureType Provider,
+    SignatureType Value,
+    bool HasNullFormat = false,
+    NumericParsing? Parsing = null)
+{
+    public SignatureTypeCode ValueType => Value.Identity is { } identity && NativeFloat.Is(identity) ? SignatureTypeCode.Single : Value.Code;
+}
 
-/// <summary>Recognizes an invariant provider consumed immediately by integer formatting, with no alternate incoming edge.</summary>
+/// <summary>Recognizes an invariant provider consumed immediately by scalar formatting, with no alternate incoming edge.</summary>
 public static class InvariantFormattingCalls
 {
     public static IReadOnlyDictionary<int, InvariantFormattingCall> Read(Module module, MethodBody body, InstructionGraph graph)
@@ -29,9 +38,17 @@ public static class InvariantFormattingCalls
             var type = Int32Formatting.InvariantProvider(module, MetadataTokens.EntityHandle(reader.Read().ReadToken(ref reader).Value));
             if (type is null) continue;
             reader.Seek(call.Offset);
-            if (!Int32Formatting.Is(module, MetadataTokens.EntityHandle(reader.Read().ReadToken(ref reader).Value), withProvider: true)) continue;
-            result.Add(provider.Offset, new(true, type.Value));
-            result.Add(call.Offset, new(false, type.Value));
+            var token = MetadataTokens.EntityHandle(reader.Read().ReadToken(ref reader).Value);
+            bool nullFormat = (IntegerFormatting.Read(module, token, withFormat: true) is not null ||
+                DecimalFormatting.Read(module, token, withFormat: true) is not null) && i > 0 &&
+                graph.Instructions[i - 1].Code == OpCode.Ldnull && incoming[provider.Offset].Count() == 1 &&
+                graph.Instructions[i - 1].Successors.Length == 1 && graph.Instructions[i - 1].Successors[0] == provider;
+            var parsing = NumericParsing.Read(module, token);
+            SignatureType? valueType = parsing?.Result ?? DecimalFormatting.Read(module, token, withFormat: nullFormat) ??
+                IntegerFormatting.Read(module, token, withFormat: nullFormat) ?? FloatingPointFormatting.Read(module, token);
+            if (valueType is null) continue;
+            result.Add(provider.Offset, new(true, type.Value, valueType.Value, nullFormat, parsing));
+            result.Add(call.Offset, new(false, type.Value, valueType.Value, nullFormat, parsing));
         }
         return result;
     }

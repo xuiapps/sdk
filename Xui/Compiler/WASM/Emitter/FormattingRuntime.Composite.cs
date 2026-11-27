@@ -55,6 +55,13 @@ internal sealed partial class FormattingRuntime
     {
         LocalIndex value = new(0);
         writer.LocalGet(value).RefIsNull().If().RefNull(ExternRef).Return().End();
+        if (storage.StringObjects.Shape is { } text)
+        {
+            writer.LocalGet(value).RefTest(text.Type).If();
+            writer.LocalGet(value).RefCast(text.Type).StructGet(text.Type, new(0))
+                .GlobalGet(storage.Classes.Resolve(text.Identity).Descriptor).RefEq().If();
+            writer.LocalGet(value).RefCast(text.Type).StructGet(text.Type, new(1)).Call(TextValue).Return().End().End();
+        }
         foreach (var (box, shape) in storage.Boxes)
         {
             if (EnumInfo.UnderlyingType(box.Identity) is not null) continue; // Enum names/Flags require a separate formatter.

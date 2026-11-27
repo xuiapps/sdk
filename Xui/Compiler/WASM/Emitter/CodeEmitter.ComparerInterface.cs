@@ -17,7 +17,7 @@ public readonly ref partial struct CodeEmitter
                 left = method.EqualityTemporaries[storage].Left;
                 writer.LocalGet(arguments[1]).F64PromoteF32().LocalSet(left);
             }
-            EmitPrimitiveHash(storage, left);
+            EmitDefaultHash(comparer, left);
             return;
         }
         var right = arguments[2];

@@ -20,6 +20,7 @@
     <Compile Include="../Core/Core/GPU/Backends/IShaderBackend.cs" LinkBase="Backends" />
     <Compile Include="../Core/Core/GPU/Backends/HlslCodeGenerator.cs" LinkBase="Backends" />
     <Compile Include="../Core/Core/GPU/Backends/MslCodeGenerator.cs" LinkBase="Backends" />
+    <Compile Include="../Core/Core/GPU/Backends/GlslCodeGenerator.cs" LinkBase="Backends" />
   </ItemGroup>
 
 </Project>

@@ -13,6 +13,36 @@ namespace Xui.Compiler.Tests.Wasm.Exceptions;
 [Collection(nameof(ManagedConsoleCollection))]
 public class ExceptionTests
 {
+    [Theory]
+    [InlineData(OptimizationLevel.Debug)]
+    [InlineData(OptimizationLevel.Release)]
+    public async Task IoAndDisposedExceptionsPreserveMessagesAndHierarchy(OptimizationLevel optimization)
+    {
+        byte[] pe = Frontend.Roslyn.Compile("""
+            using System;
+            using System.IO;
+            public static class Program {
+                static void Dump(Exception error) {
+                    Console.WriteLine(error.Message);
+                    Console.WriteLine(error is IOException);
+                    Console.WriteLine(error is InvalidOperationException);
+                    Console.WriteLine(error is SystemException);
+                }
+                public static int Main() {
+                    Dump(new IOException()); Dump(new EndOfStreamException()); Dump(new InvalidDataException());
+                    var named=new ObjectDisposedException("atlas", "Closed.");
+                    Dump(named); Console.WriteLine(named.ObjectName);
+                    var anonymous=new ObjectDisposedException((string)null);
+                    Dump(anonymous); Console.WriteLine(anonymous.ObjectName=="");
+                    try { throw new EndOfStreamException("short"); } catch(IOException error) { Console.WriteLine(error.Message); }
+                    try { throw named; } catch(InvalidOperationException error) { Console.WriteLine(error==named); }
+                    return 42;
+                }
+            }
+            """, optimizationLevel: optimization);
+        Assert.Equal(GcTests.RunManaged(pe), await Node.ExecuteAsync(GcTests.Emit(pe)));
+    }
+
     [Fact]
     public Task SharedExceptionTailsDefineTheirBlockTypesOnce() => GcTests.AssertExecution("""
         public static class Program {

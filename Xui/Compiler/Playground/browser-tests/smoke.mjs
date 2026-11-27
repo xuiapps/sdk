@@ -11,8 +11,8 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 const server = createServer(async (request, response) => {
     try {
         const url = new URL(request.url, 'http://localhost');
-        if (!url.pathname.startsWith('/wasm/')) throw new Error('Not found');
-        const path = resolve(root, decodeURIComponent(url.pathname.slice(6)) || 'index.html');
+        if (!url.pathname.startsWith('/wasm/compiler/')) throw new Error('Not found');
+        const path = resolve(root, decodeURIComponent(url.pathname.slice(15)) || 'index.html');
         if (!path.startsWith(root + sep)) throw new Error('Not found');
         response.setHeader('Content-Type', types[extname(path)] ?? 'application/octet-stream');
         response.end(await readFile(path));
@@ -26,7 +26,7 @@ try {
     page.on('pageerror', error => errors.push(error.message));
     const workers = [];
     page.on('worker', worker => workers.push(worker.url()));
-    await page.goto(`http://127.0.0.1:${server.address().port}/wasm/playground.html`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/wasm/compiler/playground.html`);
     await page.waitForFunction(() => !document.getElementById('run').disabled, null, { timeout: 120000 });
 
     async function run(source) {
@@ -107,8 +107,8 @@ try {
         return d?.error || (d?.ready && !d.pending && !d.api.NeedsFrame(d.session));
     });
     assert.equal(await page.evaluate(() => window.mobileDemo.error),null);
-    assert.equal(new URL(page.url()).pathname,'/wasm/','The emulator must be the default /wasm/ page');
-    assert.deepEqual(demoRequests,['/wasm/'],'The emulator must not load the compiler framework or external assets');
+    assert.equal(new URL(page.url()).pathname,'/wasm/compiler/','The emulator must be the default /wasm/compiler/ page');
+    assert.deepEqual(demoRequests,['/wasm/compiler/'],'The emulator must not load the compiler framework or external assets');
     const fps = await page.evaluate(() => { const d=window.mobileDemo; return d.api.FramesPerSecond(d.session); });
     assert.ok(fps>0 && fps<=1000,`Published TestApp FPS must update after warmup, got ${fps}`);
     const target = id => page.evaluate(id=>{
@@ -125,13 +125,13 @@ try {
     await page.mouse.click(...await target('Back')); await settle();
     assert.equal(await page.evaluate(()=>{const d=window.mobileDemo;return d.api.HasView(d.session,'Back');}),0);
     await page.screenshot({ path:fileURLToPath(new URL('published-testapp.png',screenshots)) });
-    await page.goto(`http://127.0.0.1:${server.address().port}/wasm/testapp.html`);
-    await page.waitForURL(`http://127.0.0.1:${server.address().port}/wasm/`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/wasm/compiler/testapp.html`);
+    await page.waitForURL(`http://127.0.0.1:${server.address().port}/wasm/compiler/`);
     await page.waitForFunction(()=>window.mobileDemo?.ready || window.mobileDemo?.error);
     await settle();
     assert.equal(await page.evaluate(() => window.mobileDemo.error),null);
     assert.deepEqual(errors, []);
-    console.log('Browser smoke passed: examples, diagnostics, exceptions, console output, download, stop/re-run, worker reuse, responsive layout, default /wasm/ emulator, legacy preview redirect, published TestApp navigation and FPS.');
+    console.log('Browser smoke passed: examples, diagnostics, exceptions, console output, download, stop/re-run, worker reuse, responsive layout, default /wasm/compiler/ emulator, legacy preview redirect, published TestApp navigation and FPS.');
 } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));

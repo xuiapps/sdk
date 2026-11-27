@@ -16,6 +16,7 @@ public readonly ref partial struct CodeEmitter
         switch (right.TypeCode)
         {
             case SignatureTypeCode.Int32:
+            case SignatureTypeCode.IntPtr:
                 writer.I32Eq(); break;
             case SignatureTypeCode.Int64:
                 writer.I64Eq(); break;

@@ -9,6 +9,10 @@ public readonly ref partial struct CodeEmitter
 {
     private void EmitLdsfld(Instruction.Token instruction, int offset)
     {
+        if (StringEmpty.Is(source, MetadataTokens.EntityHandle(instruction.Value)))
+        {
+            EmitString(""); stack.Push(new(SignatureTypeCode.String)); return;
+        }
         if (StopwatchConstant.Read(source, MetadataTokens.EntityHandle(instruction.Value)) is { } clock)
         {
             switch (clock.Code)

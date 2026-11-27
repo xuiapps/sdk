@@ -12,7 +12,14 @@ public readonly ref partial struct CodeEmitter
         var shape = method.Storage.ArrayShape(new(ArrayElement(instruction.Value)));
         writer.LocalTee(method.ArrayIndex).I32Const(0).I32LtS().If();
         ThrowException(ExceptionKind.OverflowException);
-        writer.End().LocalGet(method.ArrayIndex).ArrayNewDefault(shape.Type);
+        writer.End().LocalGet(method.ArrayIndex);
+        NewArray(shape);
+        stack.Push(new(SignatureTypeCode.SZArray, array: shape.Signature));
+    }
+
+    private void NewArray(ArrayShape shape)
+    {
+        writer.ArrayNewDefault(shape.Type);
         if (shape.StructElements)
         {
             writer.LocalSet(method.ArrayReference).I32Const(0).LocalSet(method.ArrayIndex);
@@ -23,6 +30,6 @@ public readonly ref partial struct CodeEmitter
             writer.LocalGet(method.ArrayIndex).I32Const(1).I32Add().LocalSet(method.ArrayIndex).Br(new(0));
             writer.End().End().LocalGet(method.ArrayReference);
         }
-        stack.Push(new(SignatureTypeCode.SZArray, array: shape.Signature));
+        TagArray(shape);
     }
 }

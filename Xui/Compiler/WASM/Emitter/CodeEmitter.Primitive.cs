@@ -26,7 +26,7 @@ public readonly ref partial struct CodeEmitter
     {
         var storage = method.Storage.Bind(call.Element);
         var (left, right) = method.EqualityTemporaries[storage];
-        if (call.Operation == "Equals")
+        if (call.Operation is "Equals" or "CompareTo")
         {
             PopAssignable(storage, code, offset);
             StorePrimitive(storage, right);
@@ -34,6 +34,13 @@ public readonly ref partial struct CodeEmitter
         if (call.AddressReceiver) ReadScalarAddress(Pop(code, offset), storage);
         else PopAssignable(storage, code, offset);
         writer.LocalSet(left);
+        if (call.Operation == "ToString")
+        {
+            writer.LocalGet(left);
+            FormatEnum(call.Element.Identity!.Value, storage);
+            stack.Push(new(SignatureTypeCode.String));
+            return;
+        }
         if (storage.TypeCode == SignatureTypeCode.String)
         {
             writer.LocalGet(left).RefIsNull().If();
@@ -41,6 +48,7 @@ public readonly ref partial struct CodeEmitter
             writer.End();
         }
         if (call.Operation == "GetHashCode") EmitPrimitiveHash(storage, left);
+        else if (call.Operation == "CompareTo") ComparePrimitiveOrder(storage, left, right);
         else ComparePrimitive(storage, left, right);
         stack.Push(new(SignatureTypeCode.Int32));
     }

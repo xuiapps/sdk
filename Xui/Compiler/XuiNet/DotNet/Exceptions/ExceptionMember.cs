@@ -4,12 +4,21 @@ namespace Xui.Compiler.XuiNet.DotNet.Exceptions;
 public enum ExceptionMember
 {
     DefaultConstructor,
+    MessageInnerConstructor,
     MessageConstructor,
     ParameterConstructor,
     ParameterMessageConstructor,
     MessageParameterConstructor,
+    Text,
     Message,
     ParamName,
     InnerException,
-    TypeName
+    TypeName,
+    ActualValue,
+    ParameterValueMessageConstructor,
+    XmlConstructor,
+    XmlLineNumber,
+    XmlLinePosition,
+    XmlSourceUri,
+    XmlResource
 }

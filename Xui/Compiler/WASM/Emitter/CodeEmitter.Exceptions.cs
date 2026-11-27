@@ -24,7 +24,7 @@ public readonly ref partial struct CodeEmitter
     {
         var storage = method.Storage;
         int done = OpenExceptionLabel(storage.EmptyBlock);
-        exceptionExits.Push((block.Continuation, done));
+        exceptionExits.Push((block, done));
         bool cleanup = block.Handlers[0].Kind is ExceptionRegionKind.Finally or ExceptionRegionKind.Fault;
         OpenExceptionLabel(cleanup ? storage.ExceptionReferenceBlock : storage.ExceptionCatchBlock);
         if (cleanup) writer.TryCatchAllRef(new(0)); else writer.TryCatchRef(storage.ExceptionTag, new(0));
@@ -69,6 +69,12 @@ public readonly ref partial struct CodeEmitter
         stack.Clear();
         if (cleanup && block.Handlers[0].Kind == ExceptionRegionKind.Finally) EmitCleanup(block.Handlers[0]);
         if (!block.CanContinue) writer.Unreachable();
+        else if (block.Continuation is { } continuation && exceptionExits.Any(exit => exit.Block.Continuations.Contains(continuation)))
+        {
+            // A nested leave may exit several protected scopes. Finish this scope's
+            // cleanup, then resume the enclosing exit so its finally runs as well.
+            EmitLeave(block.Continuation!.Value);
+        }
     }
 
     private void EmitCleanup(ExceptionHandler handler)
@@ -89,7 +95,7 @@ public readonly ref partial struct CodeEmitter
         if (target == ExceptionKind.SystemException)
         {
             writer.I32Const((int)ExceptionKind.Exception).I32Eq().I32Eqz();
-            foreach (var excluded in new[] { ExceptionKind.ApplicationException, ExceptionKind.TargetInvocationException })
+            foreach (var excluded in new[] { ExceptionKind.ApplicationException, ExceptionKind.TargetInvocationException, ExceptionKind.AggregateException, ExceptionKind.JsonException })
                 if (method.Storage.ExtraExceptionKinds.Contains(excluded))
                     writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
                         .I32Const((int)excluded).I32Eq().I32Eqz().I32And();
@@ -105,9 +111,21 @@ public readonly ref partial struct CodeEmitter
                     if (method.Storage.ExtraExceptionKinds.Contains(derived))
                         writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
                             .I32Const((int)derived).I32Eq().I32Or();
+            if (target is ExceptionKind.IOException or ExceptionKind.InvalidOperationException or ExceptionKind.NotSupportedException or ExceptionKind.FormatException)
+            {
+                var derived = target == ExceptionKind.FormatException ? ExceptionKind.UriFormatException : target == ExceptionKind.IOException ? ExceptionKind.EndOfStreamException : target == ExceptionKind.NotSupportedException ? ExceptionKind.PlatformNotSupportedException : ExceptionKind.ObjectDisposedException;
+                if (method.Storage.ExtraExceptionKinds.Contains(derived))
+                    writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
+                        .I32Const((int)derived).I32Eq().I32Or();
+            }
             if (target == ExceptionKind.ArgumentException)
-                foreach (var derived in new[] { ExceptionKind.ArgumentNullException, ExceptionKind.ArgumentOutOfRangeException })
+                foreach (var derived in new[] { ExceptionKind.ArgumentNullException, ExceptionKind.ArgumentOutOfRangeException, ExceptionKind.EncoderFallbackException, ExceptionKind.DecoderFallbackException })
                     if (method.Storage.ExtraExceptionKinds.Contains(derived))
+                        writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
+                            .I32Const((int)derived).I32Eq().I32Or();
+            if (target is ExceptionKind.MemberAccessException or ExceptionKind.MissingMemberException)
+                foreach (var derived in new[] { ExceptionKind.MissingMemberException, ExceptionKind.MissingMethodException, ExceptionKind.MissingFieldException })
+                    if (derived != target && ExceptionTypes.IsAssignable(derived, target) && method.Storage.ExtraExceptionKinds.Contains(derived))
                         writer.LocalGet(value).RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(0))
                             .I32Const((int)derived).I32Eq().I32Or();
         }
@@ -128,6 +146,8 @@ public readonly ref partial struct CodeEmitter
         }
         if (method.Storage.ArgumentExceptionsEnabled) writer.RefNull(ValueTypeCode.ExternRef);
         if (method.Storage.InnerExceptionsEnabled) writer.RefNull(ValueTypeCode.EqRef);
+        if (method.Storage.ActualValueExceptionsEnabled) writer.RefNull(ValueTypeCode.EqRef);
+        method.Storage.WriteXmlExceptionDefaults(writer);
         writer.StructNew(method.Storage.ExceptionType);
     }
 
@@ -152,7 +172,9 @@ public readonly ref partial struct CodeEmitter
         if (ExceptionTypes.IsConstructor(member))
         {
             if (instruction.Code != OpCode.Newobj) throw new NotSupportedException("Exception base-constructor calls are not implemented.");
-            if (ExceptionTypes.UsesParameterName(member)) EmitArgumentException(kind, member, instruction, offset);
+            if (member == ExceptionMember.XmlConstructor) EmitXmlException(instruction, offset);
+            else if (member == ExceptionMember.MessageInnerConstructor) EmitExceptionWithInner(kind, instruction, offset);
+            else if (ExceptionTypes.UsesParameterName(member)) EmitArgumentException(kind, member, instruction, offset);
             else
             {
                 bool message = member == ExceptionMember.MessageConstructor;
@@ -167,8 +189,23 @@ public readonly ref partial struct CodeEmitter
         {
             _ = Pop(instruction.Code, offset);
             CheckExceptionNull();
-            uint field = member == ExceptionMember.InnerException ? method.Storage.InnerExceptionField : member is ExceptionMember.ParamName or ExceptionMember.TypeName ? 2u : 1u;
-            writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(field));
+            uint field = member == ExceptionMember.ActualValue ? method.Storage.ActualValueField : member == ExceptionMember.InnerException ? method.Storage.InnerExceptionField : member is ExceptionMember.ParamName or ExceptionMember.TypeName ? 2u : 1u;
+            if (member is ExceptionMember.XmlLineNumber or ExceptionMember.XmlLinePosition or ExceptionMember.XmlSourceUri or ExceptionMember.XmlResource)
+            {
+                uint xmlField = method.Storage.XmlExceptionField + (member switch {
+                    ExceptionMember.XmlLineNumber => 0u, ExceptionMember.XmlLinePosition => 1u,
+                    ExceptionMember.XmlSourceUri => 2u, _ => 3u });
+                writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(xmlField));
+            }
+            else if (member == ExceptionMember.Text) EmitExceptionText();
+            else if (member == ExceptionMember.Message && method.Storage.ExtraExceptionKinds.Contains(ExceptionKind.AggregateException)) EmitAggregateMessage();
+            else if (member == ExceptionMember.Message && method.Storage.ActualValueExceptionsEnabled) EmitExceptionMessage();
+            else writer.RefCast(method.Storage.ExceptionType).StructGet(method.Storage.ExceptionType, new(field));
+            if (kind == ExceptionKind.ObjectDisposedException && member == ExceptionMember.ParamName)
+            {
+                writer.LocalTee(method.GcExtern).RefIsNull().If(); EmitString("");
+                writer.LocalSet(method.GcExtern).End().LocalGet(method.GcExtern);
+            }
             var signature = XuiNet.DotNet.Signatures.SignatureReader.Method(source, token.Kind == HandleKind.MemberReference ? source.GetMemberReference((MemberReferenceHandle)token).Signature
                 : source.GetMethod((MethodDefinitionHandle)token).Signature);
             stack.Push(new(signature.Result.Code, signature.Result.Identity));

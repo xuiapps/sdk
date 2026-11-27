@@ -89,7 +89,7 @@ Construction and the default WritingMode passed. Layout, rendering, input, and t
   (type (;55;) (func (param eqref f32 f32 f32 f32 i32)))
   (import "wasm:js-string" "fromCharCodeArray" (func (;0;) (type 1) (param (ref null 0) i32 i32) (result (ref extern))))
   (table (;0;) 162 162 funcref)
-  (memory (;0;) 16 16)
+  (memory (;0;) 16 32768)
   (tag (;0;) (type 3) (param eqref))
   (global (;0;) (mut externref) ref.null extern)
   (global (;1;) (mut externref) ref.null extern)

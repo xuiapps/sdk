@@ -4,13 +4,15 @@ namespace Xui.Compiler.XuiNet.CodeFlow;
 public sealed class ConditionalBlock : FlowNode
 {
     internal ConditionalBlock(InstructionNode condition, SequenceBlock taken, SequenceBlock notTaken,
-        InstructionNode? join, StackState preserved)
+        InstructionNode? join, StackState preserved, bool takenCanContinue, bool notTakenCanContinue)
     {
         Condition = condition;
         Taken = taken;
         NotTaken = notTaken;
         Join = join;
         Preserved = preserved;
+        TakenCanContinue = takenCanContinue;
+        NotTakenCanContinue = notTakenCanContinue;
         Parameters = StackSignature.Suffix(condition.After!, preserved);
         Results = join is null ? [] : StackSignature.Suffix(join.Before!, preserved);
     }
@@ -21,6 +23,10 @@ public sealed class ConditionalBlock : FlowNode
     public SequenceBlock Taken { get; }
     /// <summary>The source branch's fallthrough arm.</summary>
     public SequenceBlock NotTaken { get; }
+    /// <summary>Whether the taken arm can reach the common continuation.</summary>
+    public bool TakenCanContinue { get; }
+    /// <summary>Whether the fallthrough arm can reach the common continuation.</summary>
+    public bool NotTakenCanContinue { get; }
     /// <summary>The common continuation, or null when both arms transfer control out of the conditional.</summary>
     public InstructionNode? Join { get; }
     /// <summary>The untouched stack prefix below this block's inputs and outputs.</summary>

@@ -8,6 +8,24 @@ namespace Xui.Compiler.Tests.Wasm.Classes;
 public class ManagedTypeTests
 {
     [Fact]
+    public Task DynamicValueTypeChecksUseClosedDescriptors() => InlineArrayTests.AssertLinked("""
+        using System;
+        public class Item { }
+        public enum Kind : byte { One }
+        public static class Program {
+            static bool Value(Type type) => type.IsValueType;
+            static bool Key(object value) => value.GetType().IsValueType;
+            public static int Main() {
+                Console.WriteLine(Key(new Item())); Console.WriteLine(Key(42));
+                Console.WriteLine(Key(Kind.One)); Console.WriteLine(Key("text"));
+                Console.WriteLine(Value(typeof(Item))); Console.WriteLine(Value(typeof(double)));
+                try { Value(null); } catch(NullReferenceException) { Console.WriteLine("null"); }
+                return 42;
+            }
+        }
+        """, "False\nTrue\nTrue\nFalse\nFalse\nTrue\nnull\n", 42);
+
+    [Fact]
     public Task TypeOfSharesDescriptorsWithInstancesAndGenericSpecializations() => InlineArrayTests.AssertLinked("""
         using System;
         public interface IItem { }
