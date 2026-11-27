@@ -34,7 +34,15 @@ jobs:
         run: dotnet tool install --global docfx
 
       - name: Install WASM AOT tools
-        run: dotnet workload install wasm-tools
+        shell: pwsh
+        run: |
+          # setup-dotnet installs an SDK; global.json selects it over newer runner SDKs.
+          $sdkVersion = dotnet --version
+          if ($LASTEXITCODE -ne 0 -or $sdkVersion -notmatch '^10\.0\.') {
+            throw "The website requires the .NET 10 SDK; selected '$sdkVersion'."
+          }
+          Write-Host "Selected .NET SDK: $sdkVersion"
+          dotnet workload restore Xui/Apps/TestApp/TestApp.Browser.csproj
 
       - name: Build docs and published WASM apps
         shell: pwsh
