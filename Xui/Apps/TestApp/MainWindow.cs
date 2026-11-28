@@ -37,7 +37,7 @@ public class MainWindow : Window
         if (sampleFrameRate) mobilePerformanceMetrics.FrameRate.BeginWarmup();
         View shell = deviceInfo?.FormFactor == DeviceFormFactor.Desktop
             ? new TestAppShell(
-                new SdkNavigation(),
+                new DesktopDemoShell(),
                 instruments,
                 testSettings?.IsDebugOverlayEnabled ?? true)
             : new MobileTestAppShell(mobilePerformanceMetrics);

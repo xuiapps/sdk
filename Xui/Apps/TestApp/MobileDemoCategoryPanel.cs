@@ -41,4 +41,18 @@ internal sealed class MobileDemoCategoryPanel : VerticalStack
         items.Add(button);
         return button;
     }
+
+    public MobileDemoCatalogButton AddExample(ExampleCatalogEntry entry)
+    {
+        var button = new MobileDemoCatalogButton
+        {
+            Id = entry.Id,
+            Text = entry.Name,
+            Icon = entry.Icon,
+            Create = entry.Create,
+            Margin = (0, 0, 2, 0),
+        };
+        items.Add(button);
+        return button;
+    }
 }

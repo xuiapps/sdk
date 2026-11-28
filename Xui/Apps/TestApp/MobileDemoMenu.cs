@@ -15,75 +15,28 @@ internal sealed class MobileDemoMenu : MobileSurfaceStack
 {
     public MobileDemoMenu()
     {
-        AddCanvas();
-        AddLayout();
-        AddInput();
-        AddHaptics();
-        AddGpu();
-        AddDesign();
-        AddDeviceInfo();
-        AddPerformance();
-    }
-
-    private void AddCanvas()
-    {
-        var panel = AddPanel("Canvas");
-        panel.AddExample<CanvasTestsExample>("CanvasTests", "Canvas Drawing", MobileDemoIcon.Drawing);
-        panel.AddExample<CanvasAnimationsExample>("AnimatedHeart", "Canvas Animations", MobileDemoIcon.Animation);
-        panel.AddExample<TextMetricsExample>("TextMetrics", "Text Metrics", MobileDemoIcon.TextMetrics);
-    }
-
-    private void AddLayout()
-    {
-        var panel = AddPanel("Layout");
-        panel.AddExample<BasicsExample>("Basics", "Basics", MobileDemoIcon.Basics);
-        panel.AddExample<GridExample>("GridLayout", "Grid Layout", MobileDemoIcon.Grid);
-        panel.AddExample<FlexboxExample>("FlexboxLayout", "Flexbox Layout", MobileDemoIcon.Flexbox);
-    }
-
-    private void AddInput()
-    {
-        var panel = AddPanel("Input");
-        panel.AddExample<GesturesExample>("Gestures", "Gestures", MobileDemoIcon.Gestures);
-        panel.AddExample<TextBoxExample>("TextBox", "Text Input", MobileDemoIcon.TextInput);
-    }
-
-    private void AddHaptics()
-    {
-        var panel = AddPanel("Haptics & Vibration");
-        panel.AddExample<HapticsExample>("Haptics", "Haptics", MobileDemoIcon.Haptics);
-        panel.AddExample<LiveVibrationExample>("VibrationLive", "Live vibration", MobileDemoIcon.Vibration);
-        panel.AddExample<RecordedVibrationExample>("VibrationRecord", "Record & repeat", MobileDemoIcon.Recording);
-    }
-
-    private void AddGpu()
-    {
-        var panel = AddPanel("GPU");
-        panel.AddExample<ThreeDExample>("3D", "3D", MobileDemoIcon.Cube);
-    }
-
-    private void AddDesign()
-    {
-        var panel = AddPanel("Design");
-        panel.AddExample<DesignSystemExample>("DesignSystem", "Design System", MobileDemoIcon.Design);
-    }
-
-    private void AddDeviceInfo()
-    {
-        var panel = AddPanel("Device Info");
-        panel.AddExample<DeviceInfoExample>("DeviceInfo", "Device Info", MobileDemoIcon.Device);
-    }
-
-    private void AddPerformance()
-    {
-        var panel = AddPanel("Performance");
-        panel.AddExample<Pages.Market.MarketExample>("MarketPulse", "Market Pulse · 5,000 rows", MobileDemoIcon.Market);
-        var floorplan = panel.AddExample<Pages.Floorplan.FloorplanExample>("OfficeFloorplan", "Office Floorplan · Vector map", MobileDemoIcon.Basics);
-        floorplan.ClickMaybe += Pages.Floorplan.FloorplanDrawing.Preload;
-        floorplan.ClickFarFetch += Pages.Floorplan.FloorplanDrawing.Preload;
-        var gpu = panel.AddExample<Pages.FloorplanGpu.FloorplanGpuExample>("FloorplanGpu", "Floorplan GPU", MobileDemoIcon.Basics);
-        gpu.ClickMaybe += Pages.FloorplanGpu.FloorplanGpuModel.Preload;
-        gpu.ClickFarFetch += Pages.FloorplanGpu.FloorplanGpuModel.Preload;
+        foreach (var category in ExampleCatalog.Categories)
+        {
+            if (!category.Entries.Any(entry => entry.Mobile))
+                continue;
+            var panel = AddPanel(category.Name);
+            foreach (var entry in category.Entries)
+            {
+                if (!entry.Mobile)
+                    continue;
+                var button = panel.AddExample(entry);
+                if (entry.Id == "OfficeFloorplan")
+                {
+                    button.ClickMaybe += Pages.Floorplan.FloorplanDrawing.Preload;
+                    button.ClickFarFetch += Pages.Floorplan.FloorplanDrawing.Preload;
+                }
+                else if (entry.Id == "FloorplanGpu")
+                {
+                    button.ClickMaybe += Pages.FloorplanGpu.FloorplanGpuModel.Preload;
+                    button.ClickFarFetch += Pages.FloorplanGpu.FloorplanGpuModel.Preload;
+                }
+            }
+        }
     }
 
     private MobileDemoCategoryPanel AddPanel(string heading)
